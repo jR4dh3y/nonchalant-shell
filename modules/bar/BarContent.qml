@@ -561,44 +561,45 @@ Item {
                         NonchalantTaskbar {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
+                            width: implicitWidth
+                            height: implicitHeight
                             bar: root
                         }
 
                         Clock {
                             anchors.centerIn: parent
+                            width: implicitWidth
+                            height: implicitHeight
                             bar: root
                             layerEnabled: root.shadowsEnabled
-                            startRadius: Styling.radius(7)
-                            endRadius: Styling.radius(7)
+                            startRadius: root.outerRadius
+                            endRadius: root.outerRadius
                         }
 
-                        Row {
+                        RowLayout {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
+                            height: 36
                             spacing: 4
 
                             SysTray {
                                 bar: root
-                                enableShadow: false
-                                startRadius: Styling.radius(7)
-                                endRadius: Styling.radius(7)
-                            }
-
-                            Bar.NonchalantStatus {
-                                bar: root
+                                enableShadow: root.shadowsEnabled
+                                startRadius: root.outerRadius
+                                endRadius: root.innerRadius
                             }
 
                             Bar.BatteryIndicator {
                                 bar: root
-                                layerEnabled: false
-                                startRadius: Styling.radius(7)
-                                endRadius: Styling.radius(7)
+                                layerEnabled: root.shadowsEnabled
+                                startRadius: root.innerRadius
+                                endRadius: root.innerRadius
                             }
 
                             PowerButton {
-                                startRadius: Styling.radius(7)
-                                endRadius: Styling.radius(7)
-                                enableShadow: false
+                                startRadius: root.innerRadius
+                                endRadius: root.outerRadius
+                                enableShadow: root.shadowsEnabled
                             }
                         }
                     }

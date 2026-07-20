@@ -5,6 +5,7 @@ import qs.config
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
+import qs.modules.globals
 import "../../widgets/dashboard/widgets"
 
 Item {
@@ -15,7 +16,6 @@ Item {
     property string currentHours: ""
     property string currentMinutes: ""
     property string currentFullDate: ""
-    property string currentDateShort: ""
 
     required property var bar
     property bool vertical: bar.orientation === "vertical"
@@ -28,9 +28,22 @@ Item {
 
     // Popup visibility state
     property bool popupOpen: clockPopup.isOpen
+    readonly property bool menuOpen: Visibilities.currentActiveModule === "dashboard"
+
+    function toggleCenterMenu() {
+        clockPopup.close();
+        if (root.menuOpen) {
+            Visibilities.setActiveModule("");
+        } else {
+            GlobalStates.dashboardCurrentTab = 0;
+            Visibilities.setActiveModule("dashboard");
+        }
+    }
 
     readonly property bool weatherAvailable: WeatherService.dataAvailable
 
+    implicitWidth: vertical ? 36 : buttonBg.implicitWidth
+    implicitHeight: vertical ? buttonBg.implicitHeight : 36
     Layout.preferredWidth: vertical ? 36 : buttonBg.implicitWidth
     Layout.preferredHeight: vertical ? buttonBg.implicitHeight : 36
 
@@ -41,7 +54,7 @@ Item {
     // Main button
     StyledRect {
         id: buttonBg
-        variant: root.popupOpen ? "primary" : "bg"
+        variant: root.popupOpen || root.menuOpen ? "primary" : "bg"
         anchors.fill: parent
         enableShadow: root.layerEnabled
 
@@ -56,7 +69,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
-            opacity: root.popupOpen ? 0 : (root.isHovered ? 0.25 : 0)
+            opacity: root.popupOpen || root.menuOpen ? 0 : (root.isHovered ? 0.25 : 0)
             radius: parent.radius ?? 0
 
             Behavior on opacity {
@@ -73,15 +86,31 @@ Item {
             anchors.centerIn: parent
             spacing: 8
 
-            Text {
-                id: weatherDisplay
-                text: root.weatherAvailable
-                    ? WeatherService.weatherSymbol + " " + Math.round(WeatherService.currentTemp) + "°"
-                    : root.currentDayAbbrev
-                color: root.popupOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: Config.theme.fontSize
-                font.family: Config.theme.font
-                font.bold: true
+            Item {
+                Layout.preferredWidth: weatherDisplay.implicitWidth
+                Layout.preferredHeight: 28
+
+                Text {
+                    id: weatherDisplay
+                    anchors.centerIn: parent
+                    text: root.weatherAvailable
+                        ? WeatherService.weatherSymbol + " " + Math.round(WeatherService.currentTemp) + "°"
+                        : root.currentDayAbbrev
+                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    font.pixelSize: Config.theme.fontSize
+                    font.family: Config.theme.font
+                    font.bold: true
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (root.menuOpen)
+                            Visibilities.setActiveModule("");
+                        clockPopup.toggle();
+                    }
+                }
             }
 
             Separator {
@@ -89,26 +118,44 @@ Item {
                 vert: true
             }
 
-            Text {
-                id: dateDisplay
-                text: root.currentDateShort
-                color: root.popupOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: Config.theme.fontSize
-                font.family: Config.theme.font
-                font.weight: Font.Medium
+            Item {
+                Layout.preferredWidth: dateDisplay.implicitWidth
+                Layout.preferredHeight: 28
+
+                Text {
+                    id: dateDisplay
+                    anchors.centerIn: parent
+                    text: root.currentFullDate
+                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    font.pixelSize: Config.theme.fontSize
+                    font.family: Config.theme.font
+                    font.weight: Font.Medium
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.toggleCenterMenu()
+                }
             }
 
             Separator {
                 vert: true
             }
 
-            Text {
-                id: timeDisplay
-                text: root.currentTime
-                color: root.popupOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: Config.theme.fontSize
-                font.family: Config.theme.font
-                font.bold: true
+            Item {
+                Layout.preferredWidth: timeDisplay.implicitWidth
+                Layout.preferredHeight: 28
+
+                Text {
+                    id: timeDisplay
+                    anchors.centerIn: parent
+                    text: root.currentTime
+                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    font.pixelSize: Config.theme.fontSize
+                    font.family: Config.theme.font
+                    font.bold: true
+                }
             }
         }
 
@@ -162,12 +209,6 @@ Item {
             }
         }
 
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: false
-            cursorShape: Qt.PointingHandCursor
-            onClicked: clockPopup.toggle()
-        }
     }
 
     // Clock & Weather popup
@@ -633,8 +674,7 @@ Item {
         var now = new Date();
         var day = Qt.formatDateTime(now, Qt.locale(), "ddd");
         root.currentDayAbbrev = day.slice(0, 3).charAt(0).toUpperCase() + day.slice(1, 3);
-        root.currentFullDate = Qt.formatDateTime(now, Qt.locale(), "dddd, MMMM d, yyyy");
-        root.currentDateShort = Qt.formatDateTime(now, Qt.locale(), "ddd, d MMM");
+        root.currentFullDate = Qt.formatDateTime(now, Qt.locale(), "dddd, d MMMM yyyy");
         scheduleNextDayUpdate();
     }
 
