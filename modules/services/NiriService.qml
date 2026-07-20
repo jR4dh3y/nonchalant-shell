@@ -144,6 +144,7 @@ Singleton {
                 id: Number(workspace.id),
                 idx: Number(workspace.idx),
                 name: workspace.name || String(workspace.idx),
+                isNamed: typeof workspace.name === "string" && workspace.name.trim().length > 0,
                 output: workspace.output || "",
                 monitor: workspace.output || "",
                 active: workspace.is_active === true,

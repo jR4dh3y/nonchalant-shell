@@ -15,7 +15,7 @@ var data = {
     "pinnedOnStartup": true,
     "hoverToReveal": true,
     "hoverRegionHeight": 8,
-    "showPinButton": true,
+    "showPinButton": false,
     "availableOnFullscreen": false,
     "use12hFormat": false,
     "containBar": false,

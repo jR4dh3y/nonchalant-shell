@@ -356,8 +356,13 @@ Item {
                     id: horizontalLoader
                     active: root.orientation === "horizontal"
                     anchors.fill: parent
-                    sourceComponent: RowLayout {
-                        spacing: 4
+                    sourceComponent: Item {
+                        implicitHeight: 36
+
+                        Loader {
+                            active: false
+                            sourceComponent: RowLayout {
+                                spacing: 4
 
                         // Obtener referencia al notch de esta pantalla
                         readonly property var notchContainer: Visibilities.getNotchForScreen(root.screen.name)
@@ -549,6 +554,52 @@ Item {
                             startRadius: root.innerRadius
                             endRadius: root.outerRadius
                             enableShadow: root.shadowsEnabled
+                        }
+                            }
+                        }
+
+                        NonchalantTaskbar {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            bar: root
+                        }
+
+                        Clock {
+                            anchors.centerIn: parent
+                            bar: root
+                            layerEnabled: root.shadowsEnabled
+                            startRadius: Styling.radius(7)
+                            endRadius: Styling.radius(7)
+                        }
+
+                        Row {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 4
+
+                            SysTray {
+                                bar: root
+                                enableShadow: false
+                                startRadius: Styling.radius(7)
+                                endRadius: Styling.radius(7)
+                            }
+
+                            Bar.NonchalantStatus {
+                                bar: root
+                            }
+
+                            Bar.BatteryIndicator {
+                                bar: root
+                                layerEnabled: false
+                                startRadius: Styling.radius(7)
+                                endRadius: Styling.radius(7)
+                            }
+
+                            PowerButton {
+                                startRadius: Styling.radius(7)
+                                endRadius: Styling.radius(7)
+                                enableShadow: false
+                            }
                         }
                     }
                 }

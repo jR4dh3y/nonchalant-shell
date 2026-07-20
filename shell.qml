@@ -76,13 +76,6 @@ ShellRoot {
                 targetScreen: screenShellContainer.modelData
             }
 
-            Loader {
-                active: Config.theme.enableCorners && Config.roundness > 0
-                sourceComponent: ScreenCorners {
-                    screen: screenShellContainer.modelData
-                }
-            }
-
             // Exclusive zone reservations
             ReservationWindows {
                 screen: screenShellContainer.modelData

@@ -18,9 +18,9 @@ Item {
     readonly property bool effectiveContainBar: Config.bar.containBar && (Config.bar.frameEnabled ?? false)
 
     // Corner size logic: only when at the very edge (no margins)
-    readonly property int cornerSize: (Config.theme.enableCorners && !effectiveContainBar && root.outerMargin === 0) ? Styling.radius(4) : 0
+    readonly property int cornerSize: 0
     readonly property bool isHorizontal: position === "top" || position === "bottom"
-    readonly property bool cornersVisible: Config.theme.enableCorners && cornerSize > 0
+    readonly property bool cornersVisible: false
 
     // New logic: padding 4 if opaque (>1%), 0 if transparent
     readonly property real bgOpacity: Config.theme.srBarBg.opacity

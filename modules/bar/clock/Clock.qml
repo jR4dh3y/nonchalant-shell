@@ -15,6 +15,7 @@ Item {
     property string currentHours: ""
     property string currentMinutes: ""
     property string currentFullDate: ""
+    property string currentDateShort: ""
 
     required property var bar
     property bool vertical: bar.orientation === "vertical"
@@ -73,16 +74,31 @@ Item {
             spacing: 8
 
             Text {
-                id: dayDisplay
-                text: root.weatherAvailable ? WeatherService.weatherSymbol : root.currentDayAbbrev
+                id: weatherDisplay
+                text: root.weatherAvailable
+                    ? WeatherService.weatherSymbol + " " + Math.round(WeatherService.currentTemp) + "°"
+                    : root.currentDayAbbrev
                 color: root.popupOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: root.weatherAvailable ? 16 : Config.theme.fontSize
-                font.family: root.weatherAvailable ? Config.theme.font : Config.theme.font
-                font.bold: !root.weatherAvailable
+                font.pixelSize: Config.theme.fontSize
+                font.family: Config.theme.font
+                font.bold: true
             }
 
             Separator {
                 id: separator
+                vert: true
+            }
+
+            Text {
+                id: dateDisplay
+                text: root.currentDateShort
+                color: root.popupOpen ? buttonBg.item : Colors.overBackground
+                font.pixelSize: Config.theme.fontSize
+                font.family: Config.theme.font
+                font.weight: Font.Medium
+            }
+
+            Separator {
                 vert: true
             }
 
@@ -335,7 +351,7 @@ Item {
                         id: weatherWidget
                         width: 300
                         height: 140
-                        showDebugControls: true
+                        showDebugControls: false
                         animationsEnabled: clockPopup.isOpen
                     }
 
@@ -602,22 +618,6 @@ Item {
                 }
             }
 
-            // Pomodoro Wrapper StyledRect
-            StyledRect {
-                id: pomodoroWrapper
-                variant: "popup"
-                radius: Styling.radius(8)
-                enableShadow: false
-                width: 300 + 16 // Match weather popup width
-                height: pomodoroWidget.height + 16
-
-                Pomodoro {
-                    id: pomodoroWidget
-                    anchors.centerIn: parent
-                    width: 300
-                    onRequestPopupOpen: clockPopup.open()
-                }
-            }
         }
     }
 
@@ -634,6 +634,7 @@ Item {
         var day = Qt.formatDateTime(now, Qt.locale(), "ddd");
         root.currentDayAbbrev = day.slice(0, 3).charAt(0).toUpperCase() + day.slice(1, 3);
         root.currentFullDate = Qt.formatDateTime(now, Qt.locale(), "dddd, MMMM d, yyyy");
+        root.currentDateShort = Qt.formatDateTime(now, Qt.locale(), "ddd, d MMM");
         scheduleNextDayUpdate();
     }
 

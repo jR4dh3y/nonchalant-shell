@@ -5,7 +5,6 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.modules.globals
 import qs.modules.theme
-import qs.modules.widgets.defaultview
 import qs.modules.widgets.dashboard
 import qs.modules.widgets.powermenu
 import qs.modules.widgets.tools
@@ -97,31 +96,9 @@ Item {
     // Track if mouse is over any notch-related area
     readonly property bool isMouseOverNotch: notchMouseAreaHover.hovered || notchRegionHover.hovered
 
-    // Reveal logic:
-    readonly property bool reveal: {
-        // If keepHidden is true, ONLY show on interaction
-        // UNLESS notch and bar are on same side (e.g. both top), then keepHidden is IGNORED for sync consistency
-        if (((Config.notch && Config.notch.keepHidden !== undefined) ? Config.notch.keepHidden : false) && barPosition !== notchPosition) {
-            return (screenNotchOpen || hasActiveNotifications || hoverActive || barHoverActive);
-        }
-
-        // If fullscreen and bar is NOT available on fullscreen, hard-hide the notch too
-        // This prevents barHoverActive from leaking through when the bar itself is hidden
-        if (activeWindowFullscreen && !(Config.bar && Config.bar.availableOnFullscreen !== undefined ? Config.bar.availableOnFullscreen : false)) {
-            return false;
-        }
-
-        // If not auto-hiding (pinned and not fullscreen), always show
-        if (!shouldAutoHide) return true;
-        
-        // Show on interaction (hover, open, notifications)
-        // This works even in fullscreen, ensuring hover always works
-        if (screenNotchOpen || hasActiveNotifications || hoverActive || barHoverActive) {
-            return true;
-        }
-        
-        return false;
-    }
+    // The center pill owns the idle state. The notch only exists for an open
+    // module or a real notification, so no idle circle/cutout is rendered.
+    readonly property bool reveal: screenNotchOpen || hasActiveNotifications
 
     // Timer to delay hiding the notch after mouse leaves
     Timer {
@@ -150,10 +127,14 @@ Item {
     // The hitbox for the mask
     readonly property Item notchHitbox: root.reveal ? notchRegionContainer : notchHoverRegion
 
-    // Default view component - user@host text
+    // Keep the stack's base item for its push/pop semantics without rendering
+    // the inherited idle profile/player notch.
     Component {
         id: defaultViewComponent
-        DefaultView {}
+        Item {
+            implicitWidth: 0
+            implicitHeight: 0
+        }
     }
 
     // Persistent views to avoid creation lag when opening the notch

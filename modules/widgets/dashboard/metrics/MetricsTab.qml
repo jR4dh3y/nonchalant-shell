@@ -1,13 +1,9 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Effects
-import Quickshell
-import Quickshell.Io
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
-import qs.modules.globals
 import qs.config
 
 Rectangle {
@@ -16,10 +12,6 @@ Rectangle {
     implicitWidth: 400
     implicitHeight: 400
 
-    property string hostname: ""
-    property string osName: ""
-    property string osIcon: ""
-    property var linuxLogos: null
     property real chartZoom: 1.0
 
     // Adjust history points based on zoom and repaint chart
@@ -30,36 +22,6 @@ Rectangle {
 
         // Repaint chart when zoom changes
         chartCanvas.requestPaint();
-    }
-
-    // Function to get OS icon based on name
-    function getOsIcon(osName) {
-        if (!osName || !linuxLogos) {
-            return "";
-        }
-
-        // Try exact match first
-        if (linuxLogos[osName]) {
-            return linuxLogos[osName];
-        }
-
-        // Try partial match
-        for (const distro in linuxLogos) {
-            if (osName.toLowerCase().includes(distro.toLowerCase())) {
-                return linuxLogos[distro];
-            }
-        }
-
-        // Default to generic Linux icon
-        return linuxLogos["Linux"] || "";
-    }
-
-    // Update OS icon when logos are loaded
-    onLinuxLogosChanged: {
-        if (linuxLogos && osName) {
-            const icon = getOsIcon(osName);
-            osIcon = icon || "";
-        }
     }
 
     // Load refresh interval from state
@@ -73,72 +35,6 @@ Rectangle {
         // Limit zoom range: 0.2 (show all available) to 3.0 (zoom in)
         chartZoom = Math.max(0.2, Math.min(3.0, savedZoom));
 
-        hostnameReader.running = true;
-        osReader.running = true;
-        linuxLogosReader.running = true;
-    }
-
-    // Load Linux logos JSON
-    Process {
-        id: linuxLogosReader
-        running: false
-        command: ["cat", Qt.resolvedUrl("../../../../assets/linux-logos.json").toString().replace("file://", "")]
-
-        stdout: StdioCollector {
-            waitForEnd: true
-            onStreamFinished: {
-                try {
-                    if (!text || text.trim().length === 0) {
-                        console.warn("linux-logos.json is empty");
-                        return;
-                    }
-                    root.linuxLogos = JSON.parse(text);
-                    console.log("Loaded", Object.keys(root.linuxLogos).length, "Linux logos");
-                } catch (e) {
-                    console.warn("Failed to parse linux-logos.json:", e);
-                    console.warn("Text received:", text.substring(0, 100));
-                }
-            }
-        }
-    }
-
-    // Get hostname
-    Process {
-        id: hostnameReader
-        running: false
-        command: ["hostname"]
-
-        stdout: StdioCollector {
-            waitForEnd: true
-            onStreamFinished: {
-                const host = text.trim();
-                if (host) {
-                    root.hostname = host.charAt(0).toUpperCase() + host.slice(1);
-                }
-            }
-        }
-    }
-
-    // Get OS name
-    Process {
-        id: osReader
-        running: false
-        command: ["sh", "-c", "grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '\"'"]
-
-        stdout: StdioCollector {
-            waitForEnd: true
-            onStreamFinished: {
-                const os = text.trim();
-                if (os) {
-                    root.osName = os;
-                    // Only set icon if logos are already loaded
-                    if (root.linuxLogos) {
-                        const icon = getOsIcon(os);
-                        root.osIcon = icon || "";
-                    }
-                }
-            }
-        }
     }
 
     // Update chart when becoming visible
@@ -170,160 +66,6 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 2
-
-                // User info section - Avatar left, info right
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    spacing: 16
-
-                    // User avatar
-                    StyledRect {
-                        id: avatarContainer
-                        Layout.preferredWidth: 96
-                        Layout.preferredHeight: 96
-                        radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
-                        variant: "primary"
-
-                        Image {
-                            id: userAvatar
-                            anchors.fill: parent
-                            anchors.margins: 2
-                            source: `file://${Quickshell.env("HOME")}/.face.icon?${GlobalStates.avatarCacheBuster}`
-                            fillMode: Image.PreserveAspectCrop
-                            smooth: true
-                            asynchronous: true
-                            visible: status === Image.Ready
-
-                            layer.enabled: true
-                            layer.effect: MultiEffect {
-                                maskEnabled: true
-                                maskThresholdMin: 0.5
-                                maskSpreadAtMin: 1.0
-                                maskSource: ShaderEffectSource {
-                                    sourceItem: Rectangle {
-                                        width: userAvatar.width
-                                        height: userAvatar.height
-                                        radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
-                                    }
-                                }
-                            }
-                        }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: Icons.user
-                            font.family: Icons.font
-                            font.pixelSize: 48
-                            color: Colors.overSurfaceVariant
-                            visible: userAvatar.status !== Image.Ready
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: GlobalStates.pickUserAvatar()
-
-                            Rectangle {
-                                anchors.fill: parent
-                                color: Colors.overSurface
-                                opacity: parent.containsMouse ? 0.1 : 0
-                                radius: avatarContainer.radius
-
-                                Behavior on opacity {
-                                    NumberAnimation {
-                                        duration: 150
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // User info column
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 4
-
-                        // Username
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            Text {
-                                text: Icons.user
-                                font.family: Icons.font
-                                font.pixelSize: Config.theme.fontSize + 2
-                                color: Styling.srItem("overprimary")
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: {
-                                    const user = Quickshell.env("USER") || "user";
-                                    return user.charAt(0).toUpperCase() + user.slice(1);
-                                }
-                                font.family: Config.theme.font
-                                font.pixelSize: Config.theme.fontSize
-                                font.weight: Font.Medium
-                                color: Colors.overBackground
-                                elide: Text.ElideRight
-                            }
-                        }
-
-                        // Hostname
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            Text {
-                                text: Icons.at
-                                font.family: Icons.font
-                                font.pixelSize: Config.theme.fontSize + 2
-                                color: Styling.srItem("overprimary")
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: {
-                                    if (!root.hostname)
-                                        return "Hostname";
-                                    const host = root.hostname.toLowerCase();
-                                    return host.charAt(0).toUpperCase() + host.slice(1);
-                                }
-                                font.family: Config.theme.font
-                                font.pixelSize: Config.theme.fontSize
-                                font.weight: Font.Medium
-                                color: Colors.overBackground
-                                elide: Text.ElideRight
-                            }
-                        }
-
-                        // OS
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            Text {
-                                text: root.osIcon || (root.linuxLogos ? (root.linuxLogos["Linux"] || "") : "")
-                                font.family: "Symbols Nerd Font Mono"
-                                font.pixelSize: Config.theme.fontSize + 2
-                                color: Styling.srItem("overprimary")
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: root.osName || "Linux"
-                                font.family: Config.theme.font
-                                font.pixelSize: Config.theme.fontSize
-                                font.weight: Font.Medium
-                                color: Colors.overBackground
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
-                }
 
                 // System separator
                 RowLayout {
