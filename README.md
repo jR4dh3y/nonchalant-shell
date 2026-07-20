@@ -28,9 +28,10 @@ in the middle, and a small native system-status cluster on the right.
 ## Run the development tree
 
 Install Quickshell and the runtime tools required by the inherited Ambxst
-features, then run:
+features. Install the shell's icon and interface fonts once, then run:
 
 ```bash
+./scripts/install-fonts.sh
 qs -p /path/to/nonchalant-shell
 ```
 
