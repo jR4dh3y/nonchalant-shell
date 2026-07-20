@@ -1,7 +1,7 @@
 //@ pragma UseQApplication
-//@ pragma ShellId ambxst
-//@ pragma DataDir $BASE/ambxst
-//@ pragma StateDir $BASE/ambxst
+//@ pragma ShellId nonchalant
+//@ pragma DataDir $BASE/nonchalant
+//@ pragma StateDir $BASE/nonchalant
 
 import QtQuick
 import Quickshell
@@ -173,10 +173,6 @@ ShellRoot {
         LockScreen {}
     }
 
-    CompositorConfig {
-        id: compositorConfig
-    }
-
     // Screenshot tool
     Variants {
         model: Quickshell.screens
@@ -284,8 +280,7 @@ ShellRoot {
         Component.onCompleted: {
             // Critical services — init immediately (next tick)
             Qt.callLater(() => {
-                let _ = CaffeineService.inhibit;
-                _ = IdleService.lockCmd; // Force init
+                let _ = IdleService.lockCmd; // Native Wayland idle + lock handling
                 _ = GlobalShortcuts.appId; // Force init (IPC pipe listener)
             });
         }
@@ -297,7 +292,6 @@ ShellRoot {
         running: true
         onTriggered: {
             let _ = NightLightService.active;
-            _ = GameModeService.toggled;
         }
     }
 }

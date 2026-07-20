@@ -15,7 +15,7 @@ Item {
     id: workspacesWidget
     required property var bar
     required property string orientation
-    readonly property var monitor: AxctlService.monitorFor(bar.screen)
+    readonly property var monitor: NiriService.monitorFor(bar.screen)
     readonly property Toplevel activeWindow: ToplevelManager.activeToplevel
 
     readonly property int workspaceGroup: Math.floor(((monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : undefined) - 1 || 0) / Config.workspaces.shown)
@@ -40,7 +40,7 @@ Item {
     function updateWorkspaceOccupied() {
         if (Config.workspaces.dynamic) {
             // Get occupied workspace IDs using the precomputed occupation map, sorted and limited by 'shown'
-            const occupiedIds = AxctlService.workspaces.values.filter(ws => CompositorData.workspaceOccupationMap[ws.id]).map(ws => ws.id).sort((a, b) => a - b).slice(0, Config.workspaces.shown);
+            const occupiedIds = NiriService.workspaces.values.filter(ws => CompositorData.workspaceOccupationMap[ws.id]).map(ws => ws.id).sort((a, b) => a - b).slice(0, Config.workspaces.shown);
 
             // Always include active workspace, even if empty
             const activeId = (monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : undefined) || 1;
@@ -123,7 +123,7 @@ Item {
     Component.onCompleted: updateTimer.restart()
 
     Connections {
-        target: AxctlService.workspaces
+        target: NiriService.workspaces
         function onValuesChanged() {
             updateTimer.restart();
         }
@@ -167,9 +167,9 @@ Item {
     WheelHandler {
         onWheel: event => {
             if (event.angleDelta.y < 0)
-                AxctlService.dispatch(`workspace r+1`);
+                NiriService.dispatch(`workspace r+1`);
             else if (event.angleDelta.y > 0)
-                AxctlService.dispatch(`workspace r-1`);
+                NiriService.dispatch(`workspace r-1`);
         }
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
     }
@@ -179,7 +179,7 @@ Item {
         acceptedButtons: Qt.BackButton
         onPressed: event => {
             if (event.button === Qt.BackButton) {
-                AxctlService.dispatch(`togglespecialworkspace`);
+                NiriService.dispatch(`togglespecialworkspace`);
             }
         }
     }
@@ -415,7 +415,7 @@ Item {
                 id: button
                 property int workspaceValue: getWorkspaceId(index)
                 Layout.fillHeight: true
-                onPressed: AxctlService.dispatch(`workspace ${workspaceValue}`)
+                onPressed: NiriService.dispatch(`workspace ${workspaceValue}`)
                 width: workspaceButtonWidth
 
                 background: Item {
@@ -552,7 +552,7 @@ Item {
                 id: buttonVert
                 property int workspaceValue: getWorkspaceId(index)
                 Layout.fillWidth: true
-                onPressed: AxctlService.dispatch(`workspace ${workspaceValue}`)
+                onPressed: NiriService.dispatch(`workspace ${workspaceValue}`)
                 height: workspaceButtonWidth
 
                 background: Item {

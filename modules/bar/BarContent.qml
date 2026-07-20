@@ -38,8 +38,8 @@ Item {
     property bool pinned: (Config.bar && Config.bar.pinnedOnStartup !== undefined ? Config.bar.pinnedOnStartup : true)
 
     // Monitor reference and reference to toplevels on monitor
-    readonly property var compositorMonitor: AxctlService.monitorFor(screen)
-    readonly property var toplevels: (!compositorMonitor || !compositorMonitor.activeWorkspace || !AxctlService.clients.values) ? [] : AxctlService.clients.values.filter(c => c.workspace.id === compositorMonitor.activeWorkspace.id)
+    readonly property var compositorMonitor: NiriService.monitorFor(screen)
+    readonly property var toplevels: (!compositorMonitor || !compositorMonitor.activeWorkspace || !NiriService.clients.values) ? [] : NiriService.clients.values.filter(c => c.workspace.id === compositorMonitor.activeWorkspace.id)
 
     // Fullscreen detection - use ToplevelManager (native Wayland) for reliable detection
     readonly property bool activeWindowFullscreen: {

@@ -11,8 +11,8 @@ import Quickshell.Io
 QtObject {
     id: root
 
-    readonly property string appId: "ambxst"
-    readonly property string ipcPipe: "/tmp/ambxst_ipc.pipe"
+    readonly property string appId: "nonchalant"
+    readonly property string ipcPipe: "/tmp/nonchalant_ipc.pipe"
 
     // High-performance Pipe Listener (Daemon mode)
     property Process pipeListener: Process {
@@ -77,7 +77,7 @@ QtObject {
     }
 
     property IpcHandler ipcHandler: IpcHandler {
-        target: "ambxst"
+        target: "nonchalant"
 
         function run(command: string) {
             root.run(command);
@@ -87,11 +87,11 @@ QtObject {
     function toggleSettings(screenName) {
         const willOpen = !GlobalStates.settingsWindowVisible;
         if (willOpen) {
-            const targetMonitor = screenName ? AxctlService.monitorFor(screenName) : AxctlService.focusedMonitor;
-            GlobalStates.settingsTargetWorkspaceId = targetMonitor?.activeWorkspace?.id || AxctlService.focusedMonitor?.activeWorkspace?.id || AxctlService.focusedWorkspace?.id || 0;
-            GlobalStates.settingsTargetScreenName = targetMonitor?.name || AxctlService.focusedMonitor?.name || "";
-            if (targetMonitor && targetMonitor.id !== AxctlService.focusedMonitor?.id) {
-                AxctlService.dispatch(`focusmonitor ${targetMonitor.id}`);
+            const targetMonitor = screenName ? NiriService.monitorFor(screenName) : NiriService.focusedMonitor;
+            GlobalStates.settingsTargetWorkspaceId = targetMonitor?.activeWorkspace?.id || NiriService.focusedMonitor?.activeWorkspace?.id || NiriService.focusedWorkspace?.id || 0;
+            GlobalStates.settingsTargetScreenName = targetMonitor?.name || NiriService.focusedMonitor?.name || "";
+            if (targetMonitor && targetMonitor.id !== NiriService.focusedMonitor?.id) {
+                NiriService.dispatch(`focusmonitor ${targetMonitor.id}`);
             }
             Qt.callLater(() => Visibilities.setActiveModule(""));
         }

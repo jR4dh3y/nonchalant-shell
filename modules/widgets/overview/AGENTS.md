@@ -28,7 +28,7 @@ Mission Control-style workspace overview. Two layout modes: grid (default) and s
 
 ## CONVENTIONS
 
-- Uses `AxctlService.dispatch()` for Hyprland commands (workspace switch, window move/focus)
+- Uses `NiriService.dispatch()` for Hyprland commands (workspace switch, window move/focus)
 - Uses `CompositorData.windowList` and `CompositorData.monitors` for window data
 - Uses `ToplevelManager.toplevels` + `ScreencopyView` for live window previews
 - Uses `Styling.srItem("overprimary")` for overview accent color

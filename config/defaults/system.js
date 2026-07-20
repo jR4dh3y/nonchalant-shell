@@ -5,15 +5,15 @@ var data = {
     "updateServiceEnabled": true,
     "idle": {
         "general": {
-            "lock_cmd": "ambxst lock",
+            "lock_cmd": "nonchalant lock",
             "before_sleep_cmd": "loginctl lock-session",
-            "after_sleep_cmd": "ambxst screen on"
+            "after_sleep_cmd": "nonchalant screen on"
         },
         "listeners": [
             {
                 "timeout": 150,
-                "onTimeout": "ambxst brightness 10 -s",
-                "onResume": "ambxst brightness -r"
+                "onTimeout": "nonchalant brightness 10 -s",
+                "onResume": "nonchalant brightness -r"
             },
             {
                 "timeout": 300,
@@ -21,12 +21,12 @@ var data = {
             },
             {
                 "timeout": 330,
-                "onTimeout": "ambxst screen off",
-                "onResume": "ambxst screen on"
+                "onTimeout": "nonchalant screen off",
+                "onResume": "nonchalant screen on"
             },
             {
                 "timeout": 1800,
-                "onTimeout": "ambxst suspend"
+                "onTimeout": "nonchalant suspend"
             }
         ]
     },

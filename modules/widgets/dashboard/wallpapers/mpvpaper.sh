@@ -23,7 +23,7 @@ else
         fi
     done
 fi
-SOCKET="/tmp/ambxst_mpv_socket_${MONITOR}"
+SOCKET="/tmp/nonchalant_mpv_socket_${MONITOR}"
 
 MPV_OPTS="no-audio loop hwdec=auto scale=bilinear interpolation=no video-sync=display-resample panscan=1.0 video-scale-x=1.0 video-scale-y=1.0 load-scripts=no input-ipc-server=$SOCKET"
 

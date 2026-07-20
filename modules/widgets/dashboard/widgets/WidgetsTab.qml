@@ -246,7 +246,7 @@ Rectangle {
                         property real brightnessValue: 0
                         property var currentMonitor: {
                             if (Brightness.monitors.length > 0) {
-                                let focusedName = AxctlService.focusedMonitor?.name ?? "";
+                                let focusedName = NiriService.focusedMonitor?.name ?? "";
                                 let found = null;
                                 for (let i = 0; i < Brightness.monitors.length; i++) {
                                     let mon = Brightness.monitors[i];

@@ -34,9 +34,9 @@ Singleton {
         onLoaded: root.version = text().trim()
     }
 
-    property string configDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/ambxst/config"
-    property string keybindsPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/ambxst/binds.json"
-    property string presetDir: Qt.resolvedUrl("../assets/presets/Ambxst Default").toString().replace("file://", "")
+    property string configDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/nonchalant/config"
+    property string keybindsPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/nonchalant/binds.json"
+    property string presetDir: Qt.resolvedUrl("../assets/presets/Nonchalant Default").toString().replace("file://", "")
 
     property bool pauseAutoSave: false
 
@@ -675,7 +675,7 @@ Singleton {
             property int hoverRegionHeight: 8
             property bool keepHidden: false
             property string noMediaDisplay: "userHost"
-            property string customText: "Ambxst"
+            property string customText: "Nonchalant"
             property bool disableHoverExpansion: true
         }
     }
@@ -1007,15 +1007,15 @@ Singleton {
             property bool updateServiceEnabled: true
             property JsonObject idle: JsonObject {
                 property JsonObject general: JsonObject {
-                    property string lock_cmd: "ambxst lock"
+                    property string lock_cmd: "nonchalant lock"
                     property string before_sleep_cmd: "loginctl lock-session"
-                    property string after_sleep_cmd: "ambxst screen on"
+                    property string after_sleep_cmd: "nonchalant screen on"
                 }
                 property list<var> listeners: [
                     {
                         "timeout": 150,
-                        "onTimeout": "ambxst brightness 10 -s",
-                        "onResume": "ambxst brightness -r"
+                        "onTimeout": "nonchalant brightness 10 -s",
+                        "onResume": "nonchalant brightness -r"
                     },
                     {
                         "timeout": 300,
@@ -1023,12 +1023,12 @@ Singleton {
                     },
                     {
                         "timeout": 330,
-                        "onTimeout": "ambxst screen off",
-                        "onResume": "ambxst screen on"
+                        "onTimeout": "nonchalant screen off",
+                        "onResume": "nonchalant screen on"
                     },
                     {
                         "timeout": 1800,
-                        "onTimeout": "ambxst suspend"
+                        "onTimeout": "nonchalant suspend"
                     }
                 ]
             }
@@ -1220,72 +1220,72 @@ Singleton {
             const current = JSON.parse(raw);
             let needsUpdate = false;
 
-            // Ensure ambxst structure exists
-            if (!current.ambxst) {
-                current.ambxst = {};
+            // Ensure nonchalant structure exists
+            if (!current.nonchalant) {
+                current.nonchalant = {};
                 needsUpdate = true;
             }
 
             // Migrate nested to flat structure
-            if (current.ambxst.dashboard && typeof current.ambxst.dashboard === "object" && !current.ambxst.dashboard.modifiers) {
-                console.log("Migrating nested ambxst binds to flat structure...");
-                const nested = current.ambxst.dashboard;
+            if (current.nonchalant.dashboard && typeof current.nonchalant.dashboard === "object" && !current.nonchalant.dashboard.modifiers) {
+                console.log("Migrating nested nonchalant binds to flat structure...");
+                const nested = current.nonchalant.dashboard;
                 
                 // Map old names to new names and update arguments
                 if (nested.widgets) {
-                    current.ambxst.launcher = nested.widgets;
-                    current.ambxst.launcher.argument = "ambxst run launcher";
-                    current.ambxst.launcher.action = createAction(current.ambxst.launcher);
+                    current.nonchalant.launcher = nested.widgets;
+                    current.nonchalant.launcher.argument = "nonchalant run launcher";
+                    current.nonchalant.launcher.action = createAction(current.nonchalant.launcher);
                 }
                 if (nested.dashboard) {
-                    current.ambxst.dashboard = nested.dashboard;
-                    current.ambxst.dashboard.argument = "ambxst run dashboard";
-                    current.ambxst.dashboard.action = createAction(current.ambxst.dashboard);
+                    current.nonchalant.dashboard = nested.dashboard;
+                    current.nonchalant.dashboard.argument = "nonchalant run dashboard";
+                    current.nonchalant.dashboard.action = createAction(current.nonchalant.dashboard);
                 }
                 if (nested.assistant) {
-                    current.ambxst.assistant = nested.assistant;
-                    current.ambxst.assistant.argument = "ambxst run assistant";
-                    current.ambxst.assistant.action = createAction(current.ambxst.assistant);
+                    current.nonchalant.assistant = nested.assistant;
+                    current.nonchalant.assistant.argument = "nonchalant run assistant";
+                    current.nonchalant.assistant.action = createAction(current.nonchalant.assistant);
                 }
                 if (nested.clipboard) {
-                    current.ambxst.clipboard = nested.clipboard;
-                    current.ambxst.clipboard.argument = "ambxst run clipboard";
-                    current.ambxst.clipboard.action = createAction(current.ambxst.clipboard);
+                    current.nonchalant.clipboard = nested.clipboard;
+                    current.nonchalant.clipboard.argument = "nonchalant run clipboard";
+                    current.nonchalant.clipboard.action = createAction(current.nonchalant.clipboard);
                 }
                 if (nested.emoji) {
-                    current.ambxst.emoji = nested.emoji;
-                    current.ambxst.emoji.argument = "ambxst run emoji";
-                    current.ambxst.emoji.action = createAction(current.ambxst.emoji);
+                    current.nonchalant.emoji = nested.emoji;
+                    current.nonchalant.emoji.argument = "nonchalant run emoji";
+                    current.nonchalant.emoji.action = createAction(current.nonchalant.emoji);
                 }
                 if (nested.notes) {
-                    current.ambxst.notes = nested.notes;
-                    current.ambxst.notes.argument = "ambxst run notes";
-                    current.ambxst.notes.action = createAction(current.ambxst.notes);
+                    current.nonchalant.notes = nested.notes;
+                    current.nonchalant.notes.argument = "nonchalant run notes";
+                    current.nonchalant.notes.action = createAction(current.nonchalant.notes);
                 }
                 if (nested.tmux) {
-                    current.ambxst.tmux = nested.tmux;
-                    current.ambxst.tmux.argument = "ambxst run tmux";
-                    current.ambxst.tmux.action = createAction(current.ambxst.tmux);
+                    current.nonchalant.tmux = nested.tmux;
+                    current.nonchalant.tmux.argument = "nonchalant run tmux";
+                    current.nonchalant.tmux.action = createAction(current.nonchalant.tmux);
                 }
                 if (nested.wallpapers) {
-                    current.ambxst.wallpapers = nested.wallpapers;
-                    current.ambxst.wallpapers.argument = "ambxst run wallpapers";
-                    current.ambxst.wallpapers.action = createAction(current.ambxst.wallpapers);
+                    current.nonchalant.wallpapers = nested.wallpapers;
+                    current.nonchalant.wallpapers.argument = "nonchalant run wallpapers";
+                    current.nonchalant.wallpapers.action = createAction(current.nonchalant.wallpapers);
                 }
 
                 // Remove the old nested object
-                delete current.ambxst.dashboard;
+                delete current.nonchalant.dashboard;
                 needsUpdate = true;
             }
 
-            if (!current.ambxst.system) {
-                current.ambxst.system = {};
+            if (!current.nonchalant.system) {
+                current.nonchalant.system = {};
                 needsUpdate = true;
             }
 
             // Get default binds from adapter
             const adapter = keybindsLoader.adapter;
-            if (!adapter || !adapter.ambxst) return;
+            if (!adapter || !adapter.nonchalant) return;
 
             // Helper function to create clean bind object
             function createAction(bindObj) {
@@ -1303,18 +1303,18 @@ Singleton {
                 };
             }
 
-            // Check ambxst core binds
-            const ambxstKeys = ["launcher", "dashboard", "assistant", "clipboard", "emoji", "notes", "tmux", "wallpapers"];
-            for (const key of ambxstKeys) {
-                if (!current.ambxst[key] && adapter.ambxst[key]) {
-                    console.log("Adding missing ambxst bind:", key);
-                    current.ambxst[key] = createCleanBind(adapter.ambxst[key]);
+            // Check nonchalant core binds
+            const nonchalantKeys = ["launcher", "dashboard", "assistant", "clipboard", "emoji", "notes", "tmux", "wallpapers"];
+            for (const key of nonchalantKeys) {
+                if (!current.nonchalant[key] && adapter.nonchalant[key]) {
+                    console.log("Adding missing nonchalant bind:", key);
+                    current.nonchalant[key] = createCleanBind(adapter.nonchalant[key]);
                     needsUpdate = true;
-                } else if (current.ambxst[key] && !current.ambxst[key].action) {
-                    current.ambxst[key].action = createAction(current.ambxst[key]);
-                    delete current.ambxst[key].dispatcher;
-                    delete current.ambxst[key].argument;
-                    delete current.ambxst[key].flags;
+                } else if (current.nonchalant[key] && !current.nonchalant[key].action) {
+                    current.nonchalant[key].action = createAction(current.nonchalant[key]);
+                    delete current.nonchalant[key].dispatcher;
+                    delete current.nonchalant[key].argument;
+                    delete current.nonchalant[key].flags;
                     needsUpdate = true;
                 }
             }
@@ -1322,15 +1322,15 @@ Singleton {
             // Check system binds
             const systemKeys = ["overview", "powermenu", "config", "lockscreen", "tools", "screenshot", "screenrecord", "lens", "reload", "quit"];
             for (const key of systemKeys) {
-                if (!current.ambxst.system[key] && adapter.ambxst.system && adapter.ambxst.system[key]) {
+                if (!current.nonchalant.system[key] && adapter.nonchalant.system && adapter.nonchalant.system[key]) {
                     console.log("Adding missing system bind:", key);
-                    current.ambxst.system[key] = createCleanBind(adapter.ambxst.system[key]);
+                    current.nonchalant.system[key] = createCleanBind(adapter.nonchalant.system[key]);
                     needsUpdate = true;
-                } else if (current.ambxst.system[key] && !current.ambxst.system[key].action) {
-                    current.ambxst.system[key].action = createAction(current.ambxst.system[key]);
-                    delete current.ambxst.system[key].dispatcher;
-                    delete current.ambxst.system[key].argument;
-                    delete current.ambxst.system[key].flags;
+                } else if (current.nonchalant.system[key] && !current.nonchalant.system[key].action) {
+                    current.nonchalant.system[key].action = createAction(current.nonchalant.system[key]);
+                    delete current.nonchalant.system[key].dispatcher;
+                    delete current.nonchalant.system[key].argument;
+                    delete current.nonchalant.system[key].flags;
                     needsUpdate = true;
                 }
             }
@@ -1405,52 +1405,52 @@ Singleton {
         }
 
         adapter: JsonAdapter {
-            property JsonObject ambxst: JsonObject {
+            property JsonObject nonchalant: JsonObject {
                 property JsonObject launcher: JsonObject {
                     property list<string> modifiers: ["SUPER"]
                     property string key: "Super_L"
-                property var action: ({ "id": "ambxst.launcher", "args": {} })
+                property var action: ({ "id": "nonchalant.launcher", "args": {} })
             }
             property JsonObject dashboard: JsonObject {
                 property list<string> modifiers: ["SUPER"]
                 property string key: "D"
-                property var action: ({ "id": "ambxst.dashboard", "args": {} })
+                property var action: ({ "id": "nonchalant.dashboard", "args": {} })
             }
             property JsonObject assistant: JsonObject {
                 property list<string> modifiers: ["SUPER"]
                 property string key: "A"
-                property var action: ({ "id": "ambxst.assistant", "args": {} })
+                property var action: ({ "id": "nonchalant.assistant", "args": {} })
             }
             property JsonObject clipboard: JsonObject {
                 property list<string> modifiers: ["SUPER"]
                 property string key: "V"
-                property var action: ({ "id": "ambxst.clipboard", "args": {} })
+                property var action: ({ "id": "nonchalant.clipboard", "args": {} })
             }
             property JsonObject emoji: JsonObject {
                 property list<string> modifiers: ["SUPER"]
                 property string key: "PERIOD"
-                property var action: ({ "id": "ambxst.emoji", "args": {} })
+                property var action: ({ "id": "nonchalant.emoji", "args": {} })
             }
             property JsonObject notes: JsonObject {
                 property list<string> modifiers: ["SUPER"]
                 property string key: "N"
-                property var action: ({ "id": "ambxst.notes", "args": {} })
+                property var action: ({ "id": "nonchalant.notes", "args": {} })
             }
             property JsonObject tmux: JsonObject {
                 property list<string> modifiers: ["SUPER"]
                 property string key: "T"
-                property var action: ({ "id": "ambxst.tmux", "args": {} })
+                property var action: ({ "id": "nonchalant.tmux", "args": {} })
             }
             property JsonObject wallpapers: JsonObject {
                 property list<string> modifiers: ["SUPER"]
                 property string key: "COMMA"
-                property var action: ({ "id": "ambxst.wallpapers", "args": {} })
+                property var action: ({ "id": "nonchalant.wallpapers", "args": {} })
             }
             property JsonObject system: JsonObject {
                 property JsonObject config: JsonObject {
                     property list<string> modifiers: ["SUPER", "SHIFT"]
                     property string key: "C"
-                    property var action: ({ "id": "ambxst.config", "args": {} })
+                    property var action: ({ "id": "nonchalant.config", "args": {} })
                 }
                 property JsonObject lockscreen: JsonObject {
                     property list<string> modifiers: ["SUPER"]
@@ -1460,74 +1460,74 @@ Singleton {
                 property JsonObject overview: JsonObject {
                     property list<string> modifiers: ["SUPER"]
                     property string key: "TAB"
-                    property var action: ({ "id": "ambxst.overview", "args": {} })
+                    property var action: ({ "id": "nonchalant.overview", "args": {} })
                 }
                 property JsonObject powermenu: JsonObject {
                     property list<string> modifiers: ["SUPER"]
                     property string key: "ESCAPE"
-                    property var action: ({ "id": "ambxst.powermenu", "args": {} })
+                    property var action: ({ "id": "nonchalant.powermenu", "args": {} })
                 }
                 property JsonObject tools: JsonObject {
                     property list<string> modifiers: ["SUPER"]
                     property string key: "S"
-                    property var action: ({ "id": "ambxst.tools", "args": {} })
+                    property var action: ({ "id": "nonchalant.tools", "args": {} })
                 }
                 property JsonObject screenshot: JsonObject {
                     property list<string> modifiers: ["SUPER", "SHIFT"]
                     property string key: "S"
-                    property var action: ({ "id": "ambxst.screenshot", "args": {} })
+                    property var action: ({ "id": "nonchalant.screenshot", "args": {} })
                 }
                 property JsonObject screenrecord: JsonObject {
                     property list<string> modifiers: ["SUPER", "SHIFT"]
                     property string key: "R"
-                    property var action: ({ "id": "ambxst.screenrecord", "args": {} })
+                    property var action: ({ "id": "nonchalant.screenrecord", "args": {} })
                 }
                 property JsonObject lens: JsonObject {
                     property list<string> modifiers: ["SUPER", "SHIFT"]
                     property string key: "A"
-                    property var action: ({ "id": "ambxst.lens", "args": {} })
+                    property var action: ({ "id": "nonchalant.lens", "args": {} })
                 }
                 property JsonObject reload: JsonObject {
                     property list<string> modifiers: ["SUPER", "ALT"]
                     property string key: "B"
-                    property var action: ({ "id": "ambxst.reload", "args": {} })
+                    property var action: ({ "id": "nonchalant.reload", "args": {} })
                 }
                 property JsonObject quit: JsonObject {
                     property list<string> modifiers: ["SUPER", "CTRL", "ALT"]
                     property string key: "B"
-                    property var action: ({ "id": "ambxst.quit", "args": {} })
+                    property var action: ({ "id": "nonchalant.quit", "args": {} })
                 }
             }
             }
             // Default getters
-            readonly property var defaultAmbxstBinds: {
-                "ambxst": {
-                    "launcher": { "modifiers": ["SUPER"], "key": "Super_L", "action": { "id": "ambxst.launcher", "args": {} } },
-                    "dashboard": { "modifiers": ["SUPER"], "key": "D", "action": { "id": "ambxst.dashboard", "args": {} } },
-                    "assistant": { "modifiers": ["SUPER"], "key": "A", "action": { "id": "ambxst.assistant", "args": {} } },
-                    "clipboard": { "modifiers": ["SUPER"], "key": "V", "action": { "id": "ambxst.clipboard", "args": {} } },
-                    "emoji": { "modifiers": ["SUPER"], "key": "PERIOD", "action": { "id": "ambxst.emoji", "args": {} } },
-                    "notes": { "modifiers": ["SUPER"], "key": "N", "action": { "id": "ambxst.notes", "args": {} } },
-                    "tmux": { "modifiers": ["SUPER"], "key": "T", "action": { "id": "ambxst.tmux", "args": {} } },
-                    "wallpapers": { "modifiers": ["SUPER"], "key": "COMMA", "action": { "id": "ambxst.wallpapers", "args": {} } }
+            readonly property var defaultNonchalantBinds: {
+                "nonchalant": {
+                    "launcher": { "modifiers": ["SUPER"], "key": "Super_L", "action": { "id": "nonchalant.launcher", "args": {} } },
+                    "dashboard": { "modifiers": ["SUPER"], "key": "D", "action": { "id": "nonchalant.dashboard", "args": {} } },
+                    "assistant": { "modifiers": ["SUPER"], "key": "A", "action": { "id": "nonchalant.assistant", "args": {} } },
+                    "clipboard": { "modifiers": ["SUPER"], "key": "V", "action": { "id": "nonchalant.clipboard", "args": {} } },
+                    "emoji": { "modifiers": ["SUPER"], "key": "PERIOD", "action": { "id": "nonchalant.emoji", "args": {} } },
+                    "notes": { "modifiers": ["SUPER"], "key": "N", "action": { "id": "nonchalant.notes", "args": {} } },
+                    "tmux": { "modifiers": ["SUPER"], "key": "T", "action": { "id": "nonchalant.tmux", "args": {} } },
+                    "wallpapers": { "modifiers": ["SUPER"], "key": "COMMA", "action": { "id": "nonchalant.wallpapers", "args": {} } }
                 },
                 "system": {
-                    "config": { "modifiers": ["SUPER", "SHIFT"], "key": "C", "action": { "id": "ambxst.config", "args": {} } },
+                    "config": { "modifiers": ["SUPER", "SHIFT"], "key": "C", "action": { "id": "nonchalant.config", "args": {} } },
                     "lockscreen": { "modifiers": ["SUPER"], "key": "L", "action": { "id": "system.lock", "args": {} } },
-                    "overview": { "modifiers": ["SUPER"], "key": "TAB", "action": { "id": "ambxst.overview", "args": {} } },
-                    "powermenu": { "modifiers": ["SUPER"], "key": "ESCAPE", "action": { "id": "ambxst.powermenu", "args": {} } },
-                    "tools": { "modifiers": ["SUPER"], "key": "S", "action": { "id": "ambxst.tools", "args": {} } },
-                    "screenshot": { "modifiers": ["SUPER", "SHIFT"], "key": "S", "action": { "id": "ambxst.screenshot", "args": {} } },
-                    "screenrecord": { "modifiers": ["SUPER", "SHIFT"], "key": "R", "action": { "id": "ambxst.screenrecord", "args": {} } },
-                    "lens": { "modifiers": ["SUPER", "SHIFT"], "key": "A", "action": { "id": "ambxst.lens", "args": {} } },
-                    "reload": { "modifiers": ["SUPER", "ALT"], "key": "B", "action": { "id": "ambxst.reload", "args": {} } },
-                    "quit": { "modifiers": ["SUPER", "CTRL", "ALT"], "key": "B", "action": { "id": "ambxst.quit", "args": {} } }
+                    "overview": { "modifiers": ["SUPER"], "key": "TAB", "action": { "id": "nonchalant.overview", "args": {} } },
+                    "powermenu": { "modifiers": ["SUPER"], "key": "ESCAPE", "action": { "id": "nonchalant.powermenu", "args": {} } },
+                    "tools": { "modifiers": ["SUPER"], "key": "S", "action": { "id": "nonchalant.tools", "args": {} } },
+                    "screenshot": { "modifiers": ["SUPER", "SHIFT"], "key": "S", "action": { "id": "nonchalant.screenshot", "args": {} } },
+                    "screenrecord": { "modifiers": ["SUPER", "SHIFT"], "key": "R", "action": { "id": "nonchalant.screenrecord", "args": {} } },
+                    "lens": { "modifiers": ["SUPER", "SHIFT"], "key": "A", "action": { "id": "nonchalant.lens", "args": {} } },
+                    "reload": { "modifiers": ["SUPER", "ALT"], "key": "B", "action": { "id": "nonchalant.reload", "args": {} } },
+                    "quit": { "modifiers": ["SUPER", "CTRL", "ALT"], "key": "B", "action": { "id": "nonchalant.quit", "args": {} } }
                 }
             }
 
-            function getAmbxstDefault(section, key) {
-                if (defaultAmbxstBinds[section] && defaultAmbxstBinds[section][key]) {
-                    const bind = defaultAmbxstBinds[section][key];
+            function getNonchalantDefault(section, key) {
+                if (defaultNonchalantBinds[section] && defaultNonchalantBinds[section][key]) {
+                    const bind = defaultNonchalantBinds[section][key];
                     return {
                         "modifiers": bind.modifiers || [],
                         "key": bind.key || "",
@@ -2395,7 +2395,7 @@ Singleton {
                     "actions": [
                         {
                             "dispatcher": "exec",
-                            "argument": "ambxst brightness +5",
+                            "argument": "nonchalant brightness +5",
                             "flags": "le",
                             "layouts": []
                         }
@@ -2413,7 +2413,7 @@ Singleton {
                     "actions": [
                         {
                             "dispatcher": "exec",
-                            "argument": "ambxst brightness -5",
+                            "argument": "nonchalant brightness -5",
                             "flags": "le",
                             "layouts": []
                         }

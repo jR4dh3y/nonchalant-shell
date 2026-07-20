@@ -39,7 +39,7 @@ PanelWindow {
         }
         return WlrKeyboardFocus.None;
     }
-    WlrLayershell.namespace: "ambxst"
+    WlrLayershell.namespace: "nonchalant"
     WlrLayershell.layer: WlrLayer.Overlay
     exclusionMode: ExclusionMode.Ignore
 
@@ -88,9 +88,9 @@ PanelWindow {
 
     readonly property bool unifiedEffectActive: false // Flag to notify children to disable internal borders
 
-    readonly property var compositorMonitor: AxctlService.monitorFor(targetScreen)
+    readonly property var compositorMonitor: NiriService.monitorFor(targetScreen)
     readonly property bool hasFullscreenWindow: {
-        if (!compositorMonitor)
+        if (!compositorMonitor || !compositorMonitor.activeWorkspace)
             return false;
 
         const activeWorkspaceId = compositorMonitor.activeWorkspace.id;
@@ -98,7 +98,7 @@ PanelWindow {
 
         // Check active toplevel first (fast path)
         const toplevel = ToplevelManager.activeToplevel;
-        if (toplevel && toplevel.fullscreen && AxctlService.focusedMonitor.id === monId) {
+        if (toplevel && toplevel.fullscreen && NiriService.focusedMonitor?.id === monId) {
             return true;
         }
 

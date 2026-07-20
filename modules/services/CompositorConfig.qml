@@ -57,7 +57,7 @@ QtObject {
     }
 
     function formatColorForCompositor(color) {
-        // AxctlService expects colors in format: rgb(rrggbb) or rgba(rrggbbaa)
+        // NiriService expects colors in format: rgb(rrggbb) or rgba(rrggbbaa)
         const r = Math.round(color.r * 255).toString(16).padStart(2, '0');
         const g = Math.round(color.g * 255).toString(16).padStart(2, '0');
         const b = Math.round(color.b * 255).toString(16).padStart(2, '0');
@@ -84,7 +84,7 @@ QtObject {
 
         // Wait for layout to be ready.
         if (!GlobalStates.compositorLayoutReady) {
-            console.log("CompositorConfig: Esperando que se detecte el layout de AxctlService...");
+            console.log("CompositorConfig: Esperando que se detecte el layout de NiriService...");
             return;
         }
 

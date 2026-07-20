@@ -41,7 +41,7 @@ ActionGrid {
         },
         {
             icon: Icons.logout,
-            tooltip: "Exit AxctlService",
+            tooltip: "Exit NiriService",
             command: "axctl system exit"
         },
         {

@@ -1,4 +1,4 @@
-# Utility functions for Ambxst flake
+# Utility functions for Nonchalant flake
 { nixpkgs }:
 
 let

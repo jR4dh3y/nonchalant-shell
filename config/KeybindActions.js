@@ -29,23 +29,23 @@ function directionToLetter(direction) {
 }
 
 var ACTION_CATALOG = [
-    { id: "ambxst.launcher", label: "Open Launcher", category: "Ambxst", dispatcher: "exec", argument: "ambxst run launcher", flags: "r" },
-    { id: "ambxst.dashboard", label: "Open Dashboard", category: "Ambxst", dispatcher: "exec", argument: "ambxst run dashboard" },
-    { id: "ambxst.assistant", label: "Open Assistant", category: "Ambxst", dispatcher: "exec", argument: "ambxst run assistant" },
-    { id: "ambxst.clipboard", label: "Open Clipboard", category: "Ambxst", dispatcher: "exec", argument: "ambxst run clipboard" },
-    { id: "ambxst.emoji", label: "Open Emoji", category: "Ambxst", dispatcher: "exec", argument: "ambxst run emoji" },
-    { id: "ambxst.notes", label: "Open Notes", category: "Ambxst", dispatcher: "exec", argument: "ambxst run notes" },
-    { id: "ambxst.tmux", label: "Open Tmux", category: "Ambxst", dispatcher: "exec", argument: "ambxst run tmux" },
-    { id: "ambxst.wallpapers", label: "Open Wallpapers", category: "Ambxst", dispatcher: "exec", argument: "ambxst run wallpapers" },
-    { id: "ambxst.config", label: "Open Settings", category: "Ambxst", dispatcher: "exec", argument: "ambxst run config" },
-    { id: "ambxst.overview", label: "Open Overview", category: "Ambxst", dispatcher: "exec", argument: "ambxst run overview" },
-    { id: "ambxst.powermenu", label: "Open Power Menu", category: "Ambxst", dispatcher: "exec", argument: "ambxst run powermenu" },
-    { id: "ambxst.tools", label: "Open Tools", category: "Ambxst", dispatcher: "exec", argument: "ambxst run tools" },
-    { id: "ambxst.screenshot", label: "Take Screenshot", category: "Ambxst", dispatcher: "exec", argument: "ambxst run screenshot" },
-    { id: "ambxst.screenrecord", label: "Screen Record", category: "Ambxst", dispatcher: "exec", argument: "ambxst run screenrecord" },
-    { id: "ambxst.lens", label: "Open Lens", category: "Ambxst", dispatcher: "exec", argument: "ambxst run lens" },
-    { id: "ambxst.reload", label: "Reload Ambxst", category: "Ambxst", dispatcher: "exec", argument: "ambxst reload" },
-    { id: "ambxst.quit", label: "Quit Ambxst", category: "Ambxst", dispatcher: "exec", argument: "ambxst quit" },
+    { id: "nonchalant.launcher", label: "Open Launcher", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run launcher", flags: "r" },
+    { id: "nonchalant.dashboard", label: "Open Dashboard", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run dashboard" },
+    { id: "nonchalant.assistant", label: "Open Assistant", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run assistant" },
+    { id: "nonchalant.clipboard", label: "Open Clipboard", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run clipboard" },
+    { id: "nonchalant.emoji", label: "Open Emoji", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run emoji" },
+    { id: "nonchalant.notes", label: "Open Notes", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run notes" },
+    { id: "nonchalant.tmux", label: "Open Tmux", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run tmux" },
+    { id: "nonchalant.wallpapers", label: "Open Wallpapers", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run wallpapers" },
+    { id: "nonchalant.config", label: "Open Settings", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run config" },
+    { id: "nonchalant.overview", label: "Open Overview", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run overview" },
+    { id: "nonchalant.powermenu", label: "Open Power Menu", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run powermenu" },
+    { id: "nonchalant.tools", label: "Open Tools", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run tools" },
+    { id: "nonchalant.screenshot", label: "Take Screenshot", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run screenshot" },
+    { id: "nonchalant.screenrecord", label: "Screen Record", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run screenrecord" },
+    { id: "nonchalant.lens", label: "Open Lens", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run lens" },
+    { id: "nonchalant.reload", label: "Reload Nonchalant", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant reload" },
+    { id: "nonchalant.quit", label: "Quit Nonchalant", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant quit" },
 
     { id: "window.close", label: "Close Window", category: "Window", dispatcher: "killactive", argument: "" },
     { id: "window.focus", label: "Focus Window", category: "Window", dispatcher: "movefocus", args: [{ key: "direction", label: "Direction", placeholder: "up/down/left/right", defaultValue: "up" }], argumentBuilder: function (args) {
@@ -109,8 +109,8 @@ var ACTION_CATALOG = [
     { id: "audio.volume-down", label: "Volume Down", category: "Audio", dispatcher: "exec", argument: "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%-", flags: "le" },
     { id: "audio.mute-toggle", label: "Mute Audio", category: "Audio", dispatcher: "exec", argument: "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle", flags: "le" },
 
-    { id: "brightness.up", label: "Brightness Up", category: "Brightness", dispatcher: "exec", argument: "ambxst brightness +5", flags: "le" },
-    { id: "brightness.down", label: "Brightness Down", category: "Brightness", dispatcher: "exec", argument: "ambxst brightness -5", flags: "le" },
+    { id: "brightness.up", label: "Brightness Up", category: "Brightness", dispatcher: "exec", argument: "nonchalant brightness +5", flags: "le" },
+    { id: "brightness.down", label: "Brightness Down", category: "Brightness", dispatcher: "exec", argument: "nonchalant brightness -5", flags: "le" },
 
     { id: "system.calculator", label: "Calculator", category: "System", dispatcher: "exec", argument: "notify-send \"Soon\"" },
     { id: "system.lock", label: "Lock Session", category: "System", dispatcher: "exec", argument: "loginctl lock-session" },
@@ -278,8 +278,8 @@ function actionFromLegacy(dispatcher, argument, flags) {
         if (arg.indexOf("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%+") === 0) return { id: "audio.volume-up", args: {} };
         if (arg.indexOf("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%-") === 0) return { id: "audio.volume-down", args: {} };
         if (arg.indexOf("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle") === 0) return { id: "audio.mute-toggle", args: {} };
-        if (arg.indexOf("ambxst brightness +5") === 0) return { id: "brightness.up", args: {} };
-        if (arg.indexOf("ambxst brightness -5") === 0) return { id: "brightness.down", args: {} };
+        if (arg.indexOf("nonchalant brightness +5") === 0) return { id: "brightness.up", args: {} };
+        if (arg.indexOf("nonchalant brightness -5") === 0) return { id: "brightness.down", args: {} };
         if (arg === "notify-send \"Soon\"") return { id: "system.calculator", args: {} };
         if (arg === "loginctl lock-session" && flags === "l") return { id: "system.lock-locked", args: {} };
         if (arg === "loginctl lock-session") return { id: "system.lock", args: {} };

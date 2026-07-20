@@ -266,7 +266,7 @@ Item {
             TapHandler {
                 acceptedButtons: Qt.LeftButton
                 onDoubleTapped: {
-                    AxctlService.dispatch(`workspace ${root.workspaceId}`);
+                    NiriService.dispatch(`workspace ${root.workspaceId}`);
                     Visibilities.setActiveModule("", true);
                 }
             }
@@ -337,7 +337,7 @@ Item {
                     Drag.hotSpot.x: width / 2
                     Drag.hotSpot.y: height / 2
 
-                    // Timer to reset override position after AxctlService update
+                    // Timer to reset override position after NiriService update
                     Timer {
                         id: resetOverrideTimer
                         interval: 200
@@ -579,14 +579,14 @@ Item {
                                             const percentageY = Math.round((actualY / adjustedMonitorHeight) * 100);
                                             
                                             // Move to workspace and set position
-                                            AxctlService.dispatch(`movetoworkspacesilent ${targetWs}, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
-                                            AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
+                                            NiriService.dispatch(`movetoworkspacesilent ${targetWs}, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
+                                            NiriService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
                                             
                                             // Force immediate window data update
                                             CompositorData.updateWindowList();
                                         } else {
                                             // Just move workspace without repositioning for tiled windows
-                                            AxctlService.dispatch(`movetoworkspacesilent ${targetWs}, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
+                                            NiriService.dispatch(`movetoworkspacesilent ${targetWs}, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
                                             
                                             // Force immediate window data update
                                             CompositorData.updateWindowList();
@@ -642,7 +642,7 @@ Item {
                                         const percentageY = Math.round((actualY / adjustedMonitorHeight) * 100);
                                         
                                         // Dispatch movewindowpixel command
-                                        AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
+                                        NiriService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${(windowDelegate.windowData && windowDelegate.windowData.address !== undefined ? windowDelegate.windowData.address : "")}`);
                                         
                                         // Force immediate window data update
                                         CompositorData.updateWindowList();
@@ -687,9 +687,9 @@ Item {
                             if (!windowDelegate.windowData)
                                 return;
                             if (mouse.button === Qt.LeftButton && !windowDelegate.dragging) {
-                                AxctlService.dispatch(`focuswindow address:${windowDelegate.windowData.address}`);
+                                NiriService.dispatch(`focuswindow address:${windowDelegate.windowData.address}`);
                             } else if (mouse.button === Qt.MiddleButton) {
-                                AxctlService.dispatch(`closewindow address:${windowDelegate.windowData.address}`);
+                                NiriService.dispatch(`closewindow address:${windowDelegate.windowData.address}`);
                             }
                         }
 
@@ -699,7 +699,7 @@ Item {
                             if (mouse.button === Qt.LeftButton) {
                                 Visibilities.setActiveModule("", true);
                                 Qt.callLater(() => {
-                                    AxctlService.dispatch(`focuswindow address:${windowDelegate.windowData.address}`);
+                                    NiriService.dispatch(`focuswindow address:${windowDelegate.windowData.address}`);
                                 });
                             }
                         }

@@ -41,13 +41,13 @@ QtObject {
         const textdarkest = isLight ? toRGB(Qt.lighter(fg, 3.19)) : toRGB(Qt.darker(fg, 3.19))
 
         let css = `/**
- * @name Ambxst
- * @description A Discord recolor theme, generated with Ambxst.
+ * @name Nonchalant
+ * @description A Discord recolor theme, generated with Nonchalant.
  * @author Axenide
  * @version 1.0.0
  * @invite gHG9WHyNvH
- * @website https://axeni.de/ambxst
- * @source https://github.com/Axenide/Ambxst
+ * @website https://axeni.de/nonchalant
+ * @source https://github.com/Axenide/Nonchalant
  * @authorId 294856304969908224
  * @authorLink https://axeni.de
 */ 
@@ -79,7 +79,7 @@ QtObject {
 `
 
         const home = Quickshell.env("HOME")
-        const vesktopPath = home + "/.config/vesktop/themes/ambxst.css"
+        const vesktopPath = home + "/.config/vesktop/themes/nonchalant.css"
         
         const escape = (str) => {
             if (!str) return ""

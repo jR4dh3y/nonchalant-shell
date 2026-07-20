@@ -4,17 +4,8 @@
 **Framework:** QtQuick / Quickshell
 **Language:** QML / JavaScript
 
-## IMPORTANT: axctl Build Requirement
-
-When changes are made to axctl (in `/home/adriano/Repos/Axenide/axctl/`), manual build and install is required:
-
-1. Build: `cd /home/adriano/Repos/Axenide/axctl && go build -o bin/axctl .`
-2. Install: Replace `/usr/local/bin/axctl` with the new binary (requires manual intervention)
-
-The agent cannot test axctl changes directly because the daemon runs in the user's session environment.
-
 ## OVERVIEW
-Ambxst is a highly customizable Wayland shell built with Quickshell. It provides a unified panel (bar, dock, notch), dashboard, lockscreen, desktop widgets, and notification system, driven by a reactive JSON configuration system. Multi-monitor support via `Variants` on `Quickshell.screens`.
+Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built with Quickshell. It provides a unified panel (bar, dock, notch), dashboard, lockscreen, desktop widgets, and notification system, driven by a reactive JSON configuration system. Multi-monitor support uses `Variants` on `Quickshell.screens`.
 
 ## STRUCTURE
 ```
@@ -59,7 +50,7 @@ Ambxst is a highly customizable Wayland shell built with Quickshell. It provides
 | **Config Logic** | `config/Config.qml` | >3100 lines. `FileView` + `JsonAdapter` persistence |
 | **Transient State** | `modules/globals/GlobalStates.qml` | Window visibility, active modes, runtime flags |
 | **Services** | `modules/services/*.qml` | 30+ singletons. System integration layer |
-| **Theme/Colors** | `modules/theme/Colors.qml` | Watches `~/.cache/ambxst/colors.json` reactively |
+| **Theme/Colors** | `modules/theme/Colors.qml` | Watches `~/.cache/nonchalant/colors.json` reactively |
 | **Styling** | `modules/theme/Styling.qml` | `radius()`, `fontSize()`, `getStyledRectConfig()` |
 | **UI Primitives** | `modules/components/` | `StyledRect`, `BarPopup`, `SearchInput`, shaders |
 | **Dashboard** | `modules/widgets/dashboard/` | Tabbed hub with LRU lazy-loading |
@@ -85,7 +76,7 @@ Ambxst is a highly customizable Wayland shell built with Quickshell. It provides
 | `GradientCache` | Singleton | `modules/components/GradientCache.qml` | GPU texture sharing optimization |
 | `UnifiedShellPanel` | Component | `modules/shell/UnifiedShellPanel.qml` | Full-screen `PanelWindow` for Bar + Notch + Dock |
 | `ShellRoot` | Component | `shell.qml` | Root window. `Variants` per screen |
-| `AxctlService` | Singleton | `modules/services/AxctlService.qml` | Compositor abstraction (focus, dispatch) |
+| `NiriService` | Singleton | `modules/services/NiriService.qml` | Compositor abstraction (focus, dispatch) |
 | `StateService` | Singleton | `modules/services/StateService.qml` | JSON persistence for session state |
 | `FocusGrabManager` | Singleton | `modules/services/FocusGrabManager.qml` | Input focus coordination |
 
@@ -112,13 +103,10 @@ Ambxst is a highly customizable Wayland shell built with Quickshell. It provides
 
 ## COMMANDS
 ```bash
-# Run shell (requires Quickshell + Hyprland)
-qs -p shell.qml
+# Run shell (requires Quickshell + Niri)
+qs -p .
 # Or via CLI wrapper:
 ./cli.sh
-
-# Install (Arch/Fedora/NixOS)
-curl -L get.axeni.de/ambxst | sh
 ```
 
 ## NOTES
@@ -127,13 +115,9 @@ curl -L get.axeni.de/ambxst | sh
 - The `qs.` import prefix is a Quickshell VFS construct, not a physical directory.
 - `screenshotToolMode` in `GlobalStates.qml` is **DEPRECATED**.
 - Gemini AI provider doesn't support the `system` role; handled in `services/ai/strategies/`.
-- `axctl` is a core part of this project. It abstracts compositor interactions. It is one of Axenide's projects and the source code is available at `/home/adriano/Repos/Axenide/axctl/`.
-- We register a changelog in a website. The local repo for this website is at `/home/adriano/Repos/Axenide/web/`. The changelog entries are stored in `content/ambxst/changelog/` as Zola markdown files. Write following the structure by referencing other entries, and add links to PRs and issues when relevant. Only write a changelog when the user asks for it.
+- New compositor integration must use Niri IPC or native Quickshell/Wayland APIs. Do not introduce `axctl` or Hyprland as runtime dependencies. Some inherited optional paths still contain them and should be replaced as those features are ported.
+- Keep the inherited wallpaper and `WlSessionLock` implementations during initial bring-up. Treat lock/login modularization as later work.
 
 - Some projects to keep in mind for reference:
-  - DankMaterialShell (DMS): https://github.com/AvengeMedia/DankMaterialShell
-  - Noctalia: https://github.com/noctalia-dev/noctalia-shell
   - end-4 Dotfiles: https://github.com/end-4/dots-hyprland
-  - Hyprland: https://github.com/hyprwm/hyprland
-  - MangoWC: https://github.com/DreamMaoMao/mangowc
   - Niri: https://github.com/YaLTeR/niri

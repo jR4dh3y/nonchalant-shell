@@ -41,10 +41,10 @@ Singleton {
     }
 
     Connections {
-        target: AxctlService.clients
+        target: NiriService.clients
 
         function onValuesChanged() {
-            root.windowList = AxctlService.clients.values
+            root.windowList = NiriService.clients.values
             let tempWinByAddress = {}
             for (var i = 0; i < root.windowList.length; ++i) {
                 var win = root.windowList[i]
@@ -57,10 +57,10 @@ Singleton {
     }
 
     Connections {
-        target: AxctlService.monitors
+        target: NiriService.monitors
 
         function onValuesChanged() {
-            root.monitors = AxctlService.monitors.values
+            root.monitors = NiriService.monitors.values
         }
     }
 }

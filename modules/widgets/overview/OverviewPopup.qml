@@ -24,7 +24,7 @@ PanelWindow {
     color: "transparent"
 
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "ambxst:overview"
+    WlrLayershell.namespace: "nonchalant:overview"
     WlrLayershell.keyboardFocus: overviewOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     // Get this screen's visibility state
@@ -199,12 +199,12 @@ PanelWindow {
 
                     onTabPressed: {
                         if (searchInput.text.length === 0) {
-                            const current = AxctlService.focusedWorkspace?.id || 1;
+                            const current = NiriService.focusedWorkspace?.id || 1;
                             const next = current + 1;
                             if (next > Config.workspaces.shown) {
-                                AxctlService.dispatch("workspace 1");
+                                NiriService.dispatch("workspace 1");
                             } else {
-                                AxctlService.dispatch("workspace r+1");
+                                NiriService.dispatch("workspace r+1");
                             }
                         } else if (overviewLoader.item) {
                             overviewLoader.item.selectNextMatch();
@@ -213,12 +213,12 @@ PanelWindow {
                     
                     onShiftTabPressed: {
                         if (searchInput.text.length === 0) {
-                            const current = AxctlService.focusedWorkspace?.id || 1;
+                            const current = NiriService.focusedWorkspace?.id || 1;
                             const prev = current - 1;
                             if (prev < 1) {
-                                AxctlService.dispatch("workspace " + Config.workspaces.shown);
+                                NiriService.dispatch("workspace " + Config.workspaces.shown);
                             } else {
-                                AxctlService.dispatch("workspace r-1");
+                                NiriService.dispatch("workspace r-1");
                             }
                         } else if (overviewLoader.item) {
                             overviewLoader.item.selectPrevMatch();
@@ -250,12 +250,12 @@ PanelWindow {
 
                     onLeftPressed: {
                         if (searchInput.text.length === 0) {
-                            const current = AxctlService.focusedWorkspace?.id || 1;
+                            const current = NiriService.focusedWorkspace?.id || 1;
                             const prev = current - 1;
                             if (prev < 1) {
-                                AxctlService.dispatch("workspace " + Config.workspaces.shown);
+                                NiriService.dispatch("workspace " + Config.workspaces.shown);
                             } else {
-                                AxctlService.dispatch("workspace r-1");
+                                NiriService.dispatch("workspace r-1");
                             }
                         } else if (overviewLoader.item) {
                             overviewLoader.item.selectPrevMatch();
@@ -264,12 +264,12 @@ PanelWindow {
 
                     onRightPressed: {
                         if (searchInput.text.length === 0) {
-                            const current = AxctlService.focusedWorkspace?.id || 1;
+                            const current = NiriService.focusedWorkspace?.id || 1;
                             const next = current + 1;
                             if (next > Config.workspaces.shown) {
-                                AxctlService.dispatch("workspace 1");
+                                NiriService.dispatch("workspace 1");
                             } else {
-                                AxctlService.dispatch("workspace r+1");
+                                NiriService.dispatch("workspace r+1");
                             }
                         } else if (overviewLoader.item) {
                             overviewLoader.item.selectNextMatch();

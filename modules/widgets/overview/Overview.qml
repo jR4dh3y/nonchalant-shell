@@ -27,7 +27,7 @@ Item {
 
     // Use the screen's monitor instead of focused monitor for multi-monitor support
     property var currentScreen: null  // This will be set from parent
-    readonly property var monitor: currentScreen ? AxctlService.monitorFor(currentScreen) : AxctlService.focusedMonitor
+    readonly property var monitor: currentScreen ? NiriService.monitorFor(currentScreen) : NiriService.focusedMonitor
     readonly property int workspaceGroup: Math.floor((monitor?.activeWorkspace?.id - 1 || 0) / workspacesShown)
 
     // Cache these references
@@ -144,7 +144,7 @@ Item {
         // Close overview and focus the matched window
         Visibilities.setActiveModule("", true);
         Qt.callLater(() => {
-            AxctlService.dispatch(`focuswindow address:${win.address}`);
+            NiriService.dispatch(`focuswindow address:${win.address}`);
         });
     }
 
@@ -265,14 +265,14 @@ Item {
                                 onClicked: {
                                     if (overviewRoot.draggingTargetWorkspace === -1) {
                                         // Only switch workspace, don't close overview
-                                        AxctlService.dispatch(`workspace ${workspaceValue}`);
+                                        NiriService.dispatch(`workspace ${workspaceValue}`);
                                     }
                                 }
                                 onDoubleClicked: {
                                     if (overviewRoot.draggingTargetWorkspace === -1) {
                                         // Double click closes overview and switches workspace
                                         Visibilities.setActiveModule("");
-                                        AxctlService.dispatch(`workspace ${workspaceValue}`);
+                                        NiriService.dispatch(`workspace ${workspaceValue}`);
                                     }
                                 }
                             }
@@ -354,7 +354,7 @@ Item {
                     onDragFinished: targetWorkspace => {
                         overviewRoot.draggingFromWorkspace = -1;
                         if (targetWorkspace !== -1 && targetWorkspace !== windowData?.workspace.id) {
-                            AxctlService.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${windowData?.address}`);
+                            NiriService.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${windowData?.address}`);
                         }
                     }
                     onWindowClicked: {
@@ -362,11 +362,11 @@ Item {
                         // Skip generic focus restoration since we're handling it specifically
                         Visibilities.setActiveModule("", true);
                         Qt.callLater(() => {
-                            AxctlService.dispatch(`focuswindow address:${windowData.address}`);
+                            NiriService.dispatch(`focuswindow address:${windowData.address}`);
                         });
                     }
                     onWindowClosed: {
-                        AxctlService.dispatch(`closewindow address:${windowData.address}`);
+                        NiriService.dispatch(`closewindow address:${windowData.address}`);
                     }
                 }
             }

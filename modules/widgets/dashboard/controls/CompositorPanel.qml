@@ -608,7 +608,7 @@ Item {
                     spacing: 8
 
                     CompositorTabButton {
-                        label: "AxctlService"
+                        label: "NiriService"
                         image: "../../../../assets/compositors/hyprland.svg"
                         isSelected: stackLayout.currentIndex === 0
                         onClicked: stackLayout.currentIndex = 0

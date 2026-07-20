@@ -78,7 +78,7 @@ Item {
 
     clip: true
 
-    // Timer to reset override position after a delay (waiting for AxctlService update)
+    // Timer to reset override position after a delay (waiting for NiriService update)
     Timer {
         id: resetOverrideTimer
         interval: 200
@@ -251,13 +251,13 @@ Item {
             root.hovered = true;
             // Only focus window on hover if it's in the current workspace
             if (root.windowData) {
-                // Get current active workspace from AxctlService
-                let currentWorkspace = AxctlService.focusedMonitor?.activeWorkspace?.id;
+                // Get current active workspace from NiriService
+                let currentWorkspace = NiriService.focusedMonitor?.activeWorkspace?.id;
                 let windowWorkspace = root.windowData?.workspace?.id;
 
                 // Only focus if the window is in the current workspace
                 if (currentWorkspace && windowWorkspace && currentWorkspace === windowWorkspace) {
-                    AxctlService.dispatch(`focuswindow address:${windowData.address}`);
+                    NiriService.dispatch(`focuswindow address:${windowData.address}`);
                 }
             }
         }
@@ -317,14 +317,14 @@ Item {
                         const percentageY = Math.round((relativeY / root.availableWorkspaceHeight) * 100);
                         
                         // Move to workspace and set position
-                        AxctlService.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${windowData?.address}`);
-                        AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${windowData?.address}`);
+                        NiriService.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${windowData?.address}`);
+                        NiriService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${windowData?.address}`);
                         
                         // Force immediate window data update
                         CompositorData.updateWindowList();
                     } else {
                         // Just move workspace without repositioning
-                        AxctlService.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${windowData?.address}`);
+                        NiriService.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${windowData?.address}`);
                         
                         // Force immediate window data update
                         CompositorData.updateWindowList();
@@ -344,7 +344,7 @@ Item {
                     const draggedX = root.x;
                     const draggedY = root.y;
                     
-                    AxctlService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${windowData?.address}`);
+                    NiriService.dispatch(`movewindowpixel exact ${percentageX}% ${percentageY}%, address:${windowData?.address}`);
                     
                     // Force immediate window data update
                     CompositorData.updateWindowList();
@@ -372,7 +372,7 @@ Item {
 
             if (mouse.button === Qt.LeftButton) {
                 // Single click just focuses the window without closing overview
-                AxctlService.dispatch(`focuswindow address:${windowData.address}`);
+                NiriService.dispatch(`focuswindow address:${windowData.address}`);
             } else if (mouse.button === Qt.MiddleButton) {
                 root.windowClosed();
             }

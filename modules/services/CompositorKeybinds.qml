@@ -9,7 +9,7 @@ QtObject {
 
     property Process compositorProcess: Process {}
 
-    property var previousAmbxstBinds: ({})
+    property var previousNonchalantBinds: ({})
     property var previousCustomBinds: []
     property bool hasPreviousBinds: false
 
@@ -45,31 +45,31 @@ QtObject {
         if (!Config.keybindsLoader.loaded)
             return;
 
-        const ambxst = Config.keybindsLoader.adapter.ambxst;
+        const nonchalant = Config.keybindsLoader.adapter.nonchalant;
 
-        // Store ambxst core keybinds
-        previousAmbxstBinds = {
-            ambxst: {
-                launcher: cloneKeybind(ambxst.launcher),
-                dashboard: cloneKeybind(ambxst.dashboard),
-                assistant: cloneKeybind(ambxst.assistant),
-                clipboard: cloneKeybind(ambxst.clipboard),
-                emoji: cloneKeybind(ambxst.emoji),
-                notes: cloneKeybind(ambxst.notes),
-                tmux: cloneKeybind(ambxst.tmux),
-                wallpapers: cloneKeybind(ambxst.wallpapers)
+        // Store nonchalant core keybinds
+        previousNonchalantBinds = {
+            nonchalant: {
+                launcher: cloneKeybind(nonchalant.launcher),
+                dashboard: cloneKeybind(nonchalant.dashboard),
+                assistant: cloneKeybind(nonchalant.assistant),
+                clipboard: cloneKeybind(nonchalant.clipboard),
+                emoji: cloneKeybind(nonchalant.emoji),
+                notes: cloneKeybind(nonchalant.notes),
+                tmux: cloneKeybind(nonchalant.tmux),
+                wallpapers: cloneKeybind(nonchalant.wallpapers)
             },
             system: {
-                overview: cloneKeybind(ambxst.system.overview),
-                powermenu: cloneKeybind(ambxst.system.powermenu),
-                config: cloneKeybind(ambxst.system.config),
-                lockscreen: cloneKeybind(ambxst.system.lockscreen),
-                tools: cloneKeybind(ambxst.system.tools),
-                screenshot: cloneKeybind(ambxst.system.screenshot),
-                screenrecord: cloneKeybind(ambxst.system.screenrecord),
-                lens: cloneKeybind(ambxst.system.lens),
-                reload: ambxst.system.reload ? cloneKeybind(ambxst.system.reload) : null,
-                quit: ambxst.system.quit ? cloneKeybind(ambxst.system.quit) : null
+                overview: cloneKeybind(nonchalant.system.overview),
+                powermenu: cloneKeybind(nonchalant.system.powermenu),
+                config: cloneKeybind(nonchalant.system.config),
+                lockscreen: cloneKeybind(nonchalant.system.lockscreen),
+                tools: cloneKeybind(nonchalant.system.tools),
+                screenshot: cloneKeybind(nonchalant.system.screenshot),
+                screenrecord: cloneKeybind(nonchalant.system.screenrecord),
+                lens: cloneKeybind(nonchalant.system.lens),
+                reload: nonchalant.system.reload ? cloneKeybind(nonchalant.system.reload) : null,
+                quit: nonchalant.system.quit ? cloneKeybind(nonchalant.system.quit) : null
             }
         };
 
@@ -151,7 +151,7 @@ QtObject {
 
         // Wait for layout to be ready.
         if (!GlobalStates.compositorLayoutReady) {
-            console.log("CompositorKeybinds: Esperando que se detecte el layout de AxctlService...");
+            console.log("CompositorKeybinds: Esperando que se detecte el layout de NiriService...");
             return;
         }
 
@@ -162,30 +162,30 @@ QtObject {
 
         // First, unbind previous keybinds if we have them stored
         if (hasPreviousBinds) {
-            // Unbind previous ambxst core keybinds
-            if (previousAmbxstBinds.ambxst) {
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.launcher));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.dashboard));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.assistant));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.clipboard));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.emoji));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.notes));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.tmux));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.ambxst.wallpapers));
+            // Unbind previous nonchalant core keybinds
+            if (previousNonchalantBinds.nonchalant) {
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.nonchalant.launcher));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.nonchalant.dashboard));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.nonchalant.assistant));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.nonchalant.clipboard));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.nonchalant.emoji));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.nonchalant.notes));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.nonchalant.tmux));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.nonchalant.wallpapers));
             }
 
-            // Unbind previous ambxst system keybinds
-            if (previousAmbxstBinds.system) {
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.overview));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.powermenu));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.config));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.lockscreen));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.tools));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.screenshot));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.screenrecord));
-                payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.lens));
-                if (previousAmbxstBinds.system.reload) payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.reload));
-                if (previousAmbxstBinds.system.quit) payload.unbinds.push(makeUnbindTarget(previousAmbxstBinds.system.quit));
+            // Unbind previous nonchalant system keybinds
+            if (previousNonchalantBinds.system) {
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.overview));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.powermenu));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.config));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.lockscreen));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.tools));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.screenshot));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.screenrecord));
+                payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.lens));
+                if (previousNonchalantBinds.system.reload) payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.reload));
+                if (previousNonchalantBinds.system.quit) payload.unbinds.push(makeUnbindTarget(previousNonchalantBinds.system.quit));
             }
 
             // Unbind previous custom keybinds
@@ -202,26 +202,26 @@ QtObject {
         }
 
         // Process core keybinds.
-        const ambxst = Config.keybindsLoader.adapter.ambxst;
+        const nonchalant = Config.keybindsLoader.adapter.nonchalant;
 
         // Unbind current core keybinds (ensures clean state before rebinding)
-        payload.unbinds.push(makeUnbindTarget(ambxst.launcher));
-        payload.unbinds.push(makeUnbindTarget(ambxst.dashboard));
-        payload.unbinds.push(makeUnbindTarget(ambxst.assistant));
-        payload.unbinds.push(makeUnbindTarget(ambxst.clipboard));
-        payload.unbinds.push(makeUnbindTarget(ambxst.emoji));
-        payload.unbinds.push(makeUnbindTarget(ambxst.notes));
-        payload.unbinds.push(makeUnbindTarget(ambxst.tmux));
-        payload.unbinds.push(makeUnbindTarget(ambxst.wallpapers));
+        payload.unbinds.push(makeUnbindTarget(nonchalant.launcher));
+        payload.unbinds.push(makeUnbindTarget(nonchalant.dashboard));
+        payload.unbinds.push(makeUnbindTarget(nonchalant.assistant));
+        payload.unbinds.push(makeUnbindTarget(nonchalant.clipboard));
+        payload.unbinds.push(makeUnbindTarget(nonchalant.emoji));
+        payload.unbinds.push(makeUnbindTarget(nonchalant.notes));
+        payload.unbinds.push(makeUnbindTarget(nonchalant.tmux));
+        payload.unbinds.push(makeUnbindTarget(nonchalant.wallpapers));
 
         // Bind current core keybinds
-        [ambxst.launcher, ambxst.dashboard, ambxst.assistant, ambxst.clipboard, ambxst.emoji, ambxst.notes, ambxst.tmux, ambxst.wallpapers].forEach(bind => {
+        [nonchalant.launcher, nonchalant.dashboard, nonchalant.assistant, nonchalant.clipboard, nonchalant.emoji, nonchalant.notes, nonchalant.tmux, nonchalant.wallpapers].forEach(bind => {
             const resolved = makeBindFromCore(bind);
             if (resolved) payload.binds.push(resolved);
         });
 
         // System keybinds
-        const system = ambxst.system;
+        const system = nonchalant.system;
 
         // Unbind current system keybinds
         payload.unbinds.push(makeUnbindTarget(system.overview));
@@ -316,7 +316,7 @@ QtObject {
     }
 
     // property Connections compositorConnections: Connections {
-    //     target: AxctlService
+    //     target: NiriService
     //     function onRawEvent(event) {
     //         if (event.name === "configreloaded") {
     //             console.log("CompositorKeybinds: Detectado configreloaded, reaplicando keybindings...");

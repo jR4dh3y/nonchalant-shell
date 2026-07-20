@@ -10,6 +10,7 @@ import qs.modules.theme
 import qs.modules.bar.workspaces
 import qs.modules.services
 import qs.modules.components
+import qs.modules.globals
 import qs.config
 
 Item {
@@ -36,7 +37,7 @@ Item {
     }
 
     readonly property string focusedTitle: {
-        const activeWsId = AxctlService.focusedMonitor?.activeWorkspace?.id;
+        const activeWsId = NiriService.focusedMonitor?.activeWorkspace?.id;
         if (!activeWsId) return "";
         const windows = CompositorData.workspaceWindowsMap[activeWsId] || [];
         if (windows.length === 0) return "";
@@ -75,8 +76,8 @@ Item {
     readonly property string noMediaText: {
         const displayType = Config.notch.noMediaDisplay ?? "userHost";
         if (displayType === "userHost") return userHostText;
-        if (displayType === "compositor") return "AxctlService";
-        return Config.notch.customText ?? "Ambxst";
+        if (displayType === "compositor") return "NiriService";
+        return Config.notch.customText ?? "Nonchalant";
     }
 
     readonly property string displayedTitle: {
@@ -266,7 +267,7 @@ Item {
                         anchors.fill: parent
                         variant: "internalbg"
                         opacity: ((hasArtwork || wallpaperPath !== "") && compactPlayer.notchHovered) ? 0.5 : 0.0
-                        radius: parent.radius
+                        radius: Styling.radius(-4)
                         Behavior on opacity {
                             enabled: Config.animDuration > 0
                             NumberAnimation {

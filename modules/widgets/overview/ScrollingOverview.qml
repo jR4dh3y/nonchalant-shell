@@ -23,7 +23,7 @@ Item {
 
     // Monitor info
     property var currentScreen: null
-    readonly property var monitor: currentScreen ? AxctlService.monitorFor(currentScreen) : AxctlService.focusedMonitor
+    readonly property var monitor: currentScreen ? NiriService.monitorFor(currentScreen) : NiriService.focusedMonitor
     readonly property int monitorId: monitor?.id ?? -1
     readonly property var monitors: CompositorData.monitors
     readonly property var monitorData: monitors.find(m => m.id === monitorId) ?? null
@@ -37,7 +37,7 @@ Item {
     readonly property var windowList: CompositorData.windowList
 
     // Focused window address for centering
-    readonly property string focusedWindowAddress: AxctlService.focusedClient?.address ?? ""
+    readonly property string focusedWindowAddress: NiriService.focusedClient?.address ?? ""
 
     // Search functionality
     property string searchQuery: ""
@@ -124,7 +124,7 @@ Item {
             return;
         Visibilities.setActiveModule("", true);
         Qt.callLater(() => {
-            AxctlService.dispatch(`focuswindow address:${win.address}`);
+            NiriService.dispatch(`focuswindow address:${win.address}`);
         });
     }
 

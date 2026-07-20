@@ -1,21 +1,21 @@
-# NixOS module for Ambxst
+# NixOS module for Nonchalant
 { config, lib, pkgs, ... }:
 
 let
-  cfg = config.programs.ambxst;
+  cfg = config.programs.nonchalant;
 in {
-  options.programs.ambxst = {
-    enable = lib.mkEnableOption "Ambxst shell";
+  options.programs.nonchalant = {
+    enable = lib.mkEnableOption "Nonchalant shell";
 
     package = lib.mkOption {
       type = lib.types.package;
-      description = "The Ambxst package to use";
+      description = "The Nonchalant package to use";
     };
 
     fonts.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether to install Ambxst fonts (including Phosphor Icons)";
+      description = "Whether to install Nonchalant fonts (including Phosphor Icons)";
     };
   };
 

@@ -49,38 +49,13 @@ Singleton {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // COMPOSITOR LAYOUT STATE (persisted via StateService)
+    // Niri always uses its scrolling layout. Keep this property for the
+    // existing settings and overview code while the Hyprland-specific panels
+    // are removed from the fork.
     // ═══════════════════════════════════════════════════════════════
-    property string compositorLayout: ""
-    property bool compositorLayoutReady: false
-    readonly property var availableLayouts: ["dwindle", "master", "scrolling"]
-
-    Process {
-        id: getLayoutProcess
-        command: ["hyprctl", "getoption", "general:layout", "-j"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const parsed = JSON.parse(text);
-                    if (parsed && typeof parsed.str === 'string') {
-                        const layout = parsed.str.trim();
-                        if (root.availableLayouts.includes(layout)) {
-                            root.compositorLayout = layout;
-                        } else {
-                            // Fallback if the layout isn't one of the known ones
-                            root.compositorLayout = StateService.get("compositorLayout", "dwindle");
-                        }
-                    } else {
-                        root.compositorLayout = StateService.get("compositorLayout", "dwindle");
-                    }
-                } catch (e) {
-                    console.warn("GlobalStates: Failed to parse hyprctl layout:", e);
-                    root.compositorLayout = StateService.get("compositorLayout", "dwindle");
-                }
-                root.compositorLayoutReady = true;
-            }
-        }
-    }
+    property string compositorLayout: "scrolling"
+    property bool compositorLayoutReady: true
+    readonly property var availableLayouts: ["scrolling"]
 
     function setCompositorLayout(layout) {
         if (availableLayouts.includes(layout)) {
@@ -100,8 +75,6 @@ Singleton {
     Component.onCompleted: {
         // Reference the singleton to ensure it loads
         LockscreenService.toString();
-        // Fetch the active layout from the compositor
-        getLayoutProcess.running = true;
     }
 
     // Persistent launcher state across monitors
@@ -464,7 +437,7 @@ Singleton {
     property bool compositorHasChanges: false
     property var compositorSnapshot: null
 
-    // Compositor config properties (AxctlService)
+    // Compositor config properties (NiriService)
     readonly property var _compositorProps: [
         "syncBorderWidth", "borderSize",
         "syncRoundness", "rounding",
@@ -559,8 +532,8 @@ Singleton {
             assistantFocusRequested(true);
         } else {
             assistantVisible = true;
-            if (AxctlService.focusedMonitor && AxctlService.focusedMonitor.name) {
-                assistantScreenName = AxctlService.focusedMonitor.name;
+            if (NiriService.focusedMonitor && NiriService.focusedMonitor.name) {
+                assistantScreenName = NiriService.focusedMonitor.name;
             } else if (Quickshell.screens.length > 0) {
                 assistantScreenName = Quickshell.screens[0].name;
             }

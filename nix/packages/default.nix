@@ -1,4 +1,4 @@
-# Main Ambxst package
+# Main Nonchalant package
 { pkgs, lib, self, system, axctl, version }:
 
 let
@@ -25,23 +25,23 @@ let
     ++ fontsPkgs
     ++ tesseractPkgs;
 
-  envAmbxst = pkgs.buildEnv {
-    name = "Ambxst-env";
+  envNonchalant = pkgs.buildEnv {
+    name = "Nonchalant-env";
     paths = baseEnv;
   };
 
   # Create fontconfig configuration to find bundled fonts
-  fontconfigConf = pkgs.writeTextDir "etc/fonts/conf.d/99-ambxst-fonts.conf" ''
+  fontconfigConf = pkgs.writeTextDir "etc/fonts/conf.d/99-nonchalant-fonts.conf" ''
     <?xml version="1.0"?>
     <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
     <fontconfig>
-      <dir>${envAmbxst}/share/fonts</dir>
+      <dir>${envNonchalant}/share/fonts</dir>
     </fontconfig>
   '';
 
   # Copy shell sources to the Nix store
   shellSrc = pkgs.stdenv.mkDerivation {
-    pname = "ambxst-shell";
+    pname = "nonchalant-shell";
     inherit version;
     src = lib.cleanSource self;
     dontBuild = true;
@@ -51,12 +51,12 @@ let
     '';
   };
 
-  launcher = pkgs.writeShellScriptBin "ambxst" ''
-    export AMBXST_QS="${quickshellPkg}/bin/qs"
-    export PATH="${envAmbxst}/bin:$PATH"
+  launcher = pkgs.writeShellScriptBin "nonchalant" ''
+    export NONCHALANT_QS="${quickshellPkg}/bin/qs"
+    export PATH="${envNonchalant}/bin:$PATH"
 
-    # Set QML2_IMPORT_PATH to include modules from envAmbxst (like syntax-highlighting)
-    export QML2_IMPORT_PATH="${envAmbxst}/lib/qt-6/qml:$QML2_IMPORT_PATH"
+    # Set QML2_IMPORT_PATH to include modules from envNonchalant (like syntax-highlighting)
+    export QML2_IMPORT_PATH="${envNonchalant}/lib/qt-6/qml:$QML2_IMPORT_PATH"
     export QML_IMPORT_PATH="$QML2_IMPORT_PATH"
 
     # Make bundled fonts available to fontconfig
@@ -67,7 +67,7 @@ let
   '';
 
 in pkgs.buildEnv {
-  name = "Ambxst-${version}";
-  paths = [ envAmbxst launcher ];
-  meta.mainProgram = "ambxst";
+  name = "Nonchalant-${version}";
+  paths = [ envNonchalant launcher ];
+  meta.mainProgram = "nonchalant";
 }
