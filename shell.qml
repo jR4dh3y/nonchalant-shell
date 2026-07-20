@@ -12,7 +12,6 @@ import qs.modules.notifications
 import qs.modules.widgets.dashboard.wallpapers
 
 import qs.modules.notch
-import qs.modules.widgets.overview
 import qs.modules.widgets.presets
 import qs.modules.services
 import qs.modules.corners
@@ -20,7 +19,6 @@ import qs.modules.frame
 import qs.modules.components
 import qs.modules.desktop
 import qs.modules.lockscreen
-import qs.modules.dock
 import qs.modules.globals
 import qs.modules.shell
 import qs.config
@@ -91,15 +89,7 @@ ShellRoot {
                 barOuterMargin: unifiedPanel.barOuterMargin
 
                 // Dock status for reservations
-                dockEnabled: {
-                    if (!((Config.dock && Config.dock.enabled !== undefined ? Config.dock.enabled : false)) || (Config.dock && Config.dock.theme !== undefined ? Config.dock.theme : "default") === "integrated")
-                        return false;
-
-                    const list = (Config.dock && Config.dock.screenList !== undefined ? Config.dock.screenList : []);
-                    if (!list || list.length === 0)
-                        return true;
-                    return list.indexOf(screenShellContainer.modelData.name) !== -1;
-                }
+                dockEnabled: false
                 dockPosition: unifiedPanel.dockPosition
                 dockPinned: unifiedPanel.dockPinned
                 dockHeight: unifiedPanel.dockHeight
@@ -113,26 +103,6 @@ ShellRoot {
                 sidebarPinned: GlobalStates.assistantPinned
                 sidebarWidth: GlobalStates.assistantWidth
                 sidebarPosition: GlobalStates.assistantPosition
-            }
-        }
-    }
-
-    // Overview popup
-    Variants {
-        model: {
-            const screens = Quickshell.screens;
-            const list = (Config.bar && Config.bar.screenList !== undefined ? Config.bar.screenList : []);
-            if (!list || list.length === 0)
-                return screens;
-            return screens.filter(screen => list.indexOf(screen.name) !== -1);
-        }
-
-        Loader {
-            id: overviewLoader
-            active: ((Config.overview && Config.overview.enabled !== undefined ? Config.overview.enabled : true)) && SuspendManager.wakeReady && (Visibilities.getForScreen(modelData.name) ? Visibilities.getForScreen(modelData.name).overview : false)
-            required property ShellScreen modelData
-            sourceComponent: OverviewPopup {
-                screen: overviewLoader.modelData
             }
         }
     }

@@ -672,9 +672,9 @@ Item {
 
     function updateDay() {
         var now = new Date();
-        var day = Qt.formatDateTime(now, Qt.locale(), "ddd");
+        var day = now.toLocaleDateString(Qt.locale(), "ddd");
         root.currentDayAbbrev = day.slice(0, 3).charAt(0).toUpperCase() + day.slice(1, 3);
-        root.currentFullDate = Qt.formatDateTime(now, Qt.locale(), "dddd, d MMMM yyyy");
+        root.currentFullDate = now.toLocaleDateString(Qt.locale(), "dddd, d MMMM yyyy");
         scheduleNextDayUpdate();
     }
 

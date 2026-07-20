@@ -14,8 +14,12 @@ Item {
 
     required property var bar
 
-    readonly property var namedWorkspaces: NiriService.workspaces.values
-        .filter(workspace => workspace.output === root.bar.screen.name && workspace.isNamed)
+    readonly property var visibleWorkspaces: NiriService.workspaces.values
+        .filter(workspace => {
+            if (workspace.output !== root.bar.screen.name)
+                return false;
+            return workspace.isNamed || workspace.active || root.windowsForWorkspace(workspace.id).length > 0;
+        })
         .sort((left, right) => left.idx - right.idx)
 
     function windowsForWorkspace(workspaceId) {
@@ -44,7 +48,7 @@ Item {
         spacing: 2
 
         Repeater {
-            model: root.namedWorkspaces
+            model: root.visibleWorkspaces
 
             Item {
                 id: workspaceButton
@@ -54,13 +58,14 @@ Item {
                 readonly property bool active: workspace.active
                 readonly property var windows: root.windowsForWorkspace(workspace.id)
                 readonly property bool occupied: windows.length > 0
+                readonly property string displayName: workspace.isNamed ? workspace.name : String(workspace.idx)
 
                 Layout.preferredWidth: active ? Math.max(32, appsRow.implicitWidth + 10) : workspaceName.implicitWidth + 16
                 Layout.preferredHeight: 28
 
                 StyledRect {
                     anchors.fill: parent
-                    variant: workspaceButton.active ? "primary" : "bg"
+                    variant: "bg"
                     radius: Styling.radius(5)
                     enableShadow: false
 
@@ -77,7 +82,7 @@ Item {
                     z: 1
                     anchors.centerIn: parent
                     visible: !workspaceButton.active
-                    text: workspaceButton.workspace.name
+                    text: workspaceButton.displayName
                     color: workspaceButton.workspace.is_urgent
                         ? Colors.red
                         : (workspaceButton.occupied ? Styling.srItem("overprimary") : Colors.overBackground)
@@ -109,8 +114,10 @@ Item {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: Styling.radius(4)
-                                color: Styling.srItem("overprimary")
-                                opacity: appButton.windowData.is_focused ? 0.38 : (appMouse.containsMouse ? 0.16 : 0)
+                                color: appButton.windowData.is_focused ? Colors.primary : Styling.srItem("overprimary")
+                                opacity: appButton.windowData.is_focused ? 1 : (appMouse.containsMouse ? 0.18 : 0)
+                                border.width: appButton.windowData.is_focused ? 1 : 0
+                                border.color: Colors.primaryFixed
 
                                 Behavior on opacity {
                                     NumberAnimation { duration: Math.min(Config.animDuration, 150) }
@@ -120,8 +127,9 @@ Item {
                             IconImage {
                                 id: appIcon
                                 anchors.centerIn: parent
-                                width: 17
-                                height: 17
+                                width: appButton.windowData.is_focused ? 19 : 16
+                                height: width
+                                opacity: appButton.windowData.is_focused ? 1 : 0.62
                                 source: "image://icon/" + appButton.iconName
                                 asynchronous: true
 
@@ -129,6 +137,17 @@ Item {
                                     if (status === Image.Error && appButton.iconName !== "image-missing")
                                         source = "image://icon/image-missing";
                                 }
+                            }
+
+                            Rectangle {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.bottom: parent.bottom
+                                anchors.bottomMargin: 1
+                                width: 10
+                                height: 2
+                                radius: 1
+                                color: Colors.primaryFixed
+                                visible: appButton.windowData.is_focused
                             }
 
                             MouseArea {

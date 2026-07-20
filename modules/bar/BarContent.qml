@@ -188,7 +188,9 @@ Item {
         ((root.barPosition === "bottom" || root.orientation === "vertical") ? (root.frameOffset + root.bottomOuterMargin) : 0)
 
     // Base outer margin for reservation logic (4px + border when !containBar)
-    readonly property int baseOuterMargin: barBg.outerMargin
+    // Keep one floating gap at the screen edge and another below/inside the
+    // bar so tiled windows do not touch the pills.
+    readonly property int baseOuterMargin: barBg.outerMargin * 2
 
     // Shadow logic for bar components
     readonly property bool shadowsEnabled: Config.showBackground && (!actualContainBar || (Config.bar && Config.bar.keepBarShadow !== undefined ? Config.bar.keepBarShadow : false))

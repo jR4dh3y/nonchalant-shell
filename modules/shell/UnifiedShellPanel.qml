@@ -5,7 +5,6 @@ import Quickshell.Wayland
 import qs.modules.bar
 import qs.modules.bar.workspaces
 import qs.modules.notch
-import qs.modules.dock
 import qs.modules.frame
 import qs.modules.services
 import qs.modules.globals
@@ -53,13 +52,7 @@ PanelWindow {
         return (!list || list.length === 0 || list.indexOf(targetScreen.name) !== -1);
     }
 
-    readonly property bool dockEnabled: {
-        if (!Config.dockReady) return false;
-        if (!(Config.dock.enabled ?? false) || (Config.dock.theme ?? "default") === "integrated")
-            return false;
-        const list = Config.dock.screenList;
-        return (!list || list.length === 0 || list.indexOf(targetScreen.name) !== -1);
-    }
+    readonly property bool dockEnabled: false
 
     readonly property alias barPosition: barContent.barPosition
     readonly property alias barPinned: barContent.pinned
@@ -70,11 +63,11 @@ PanelWindow {
     readonly property alias barTargetHeight: barContent.barTargetHeight
     readonly property alias barOuterMargin: barContent.baseOuterMargin
 
-    readonly property alias dockPosition: dockContent.position
-    readonly property alias dockPinned: dockContent.pinned
-    readonly property bool dockReveal: dockEnabled && dockContent.reveal
-    readonly property alias dockFullscreen: dockContent.activeWindowFullscreen
-    readonly property int dockHeight: dockContent.dockSize + dockContent.totalMargin
+    readonly property string dockPosition: "bottom"
+    readonly property bool dockPinned: false
+    readonly property bool dockReveal: false
+    readonly property bool dockFullscreen: false
+    readonly property int dockHeight: 0
 
     readonly property alias notchHoverActive: notchContent.hoverActive
     readonly property alias notchOpen: notchContent.screenNotchOpen
@@ -123,19 +116,15 @@ PanelWindow {
     Component.onCompleted: {
         Visibilities.registerBarPanel(screen.name, unifiedPanel);
         Visibilities.registerNotchPanel(screen.name, unifiedPanel);
-        Visibilities.registerDockPanel(screen.name, dockContent);
         Visibilities.registerBar(screen.name, barContent);
         Visibilities.registerNotch(screen.name, notchContent.notchContainerRef);
-        Visibilities.registerDock(screen.name, dockContent);
     }
 
     Component.onDestruction: {
         Visibilities.unregisterBarPanel(screen.name);
         Visibilities.unregisterNotchPanel(screen.name);
-        Visibilities.unregisterDockPanel(screen.name);
         Visibilities.unregisterBar(screen.name);
         Visibilities.unregisterNotch(screen.name);
-        Visibilities.unregisterDock(screen.name);
     }
 
     // Full-screen mask item (used when modules/popups are open)
@@ -156,10 +145,6 @@ PanelWindow {
             },
             Region {
                 item: notchContent.notchHitbox
-            },
-            Region {
-                // Only include the dock hitbox if the dock is actually enabled and visible on this screen.
-                item: dockContent.visible ? dockContent.dockHitbox : null
             },
             Region {
                 item: (assistantSidebar.active || assistantSidebar.hitbox.visible) ? assistantSidebar.hitbox : null
@@ -225,15 +210,6 @@ PanelWindow {
             visible: unifiedPanel.barEnabled
         }
 
-        DockContent {
-            id: dockContent
-            unifiedEffectActive: unifiedPanel.unifiedEffectActive
-            anchors.fill: parent
-            screen: unifiedPanel.targetScreen
-            z: 3
-            visible: unifiedPanel.dockEnabled
-        }
-
         NotchContent {
             id: notchContent
             unifiedEffectActive: unifiedPanel.unifiedEffectActive
@@ -264,8 +240,6 @@ PanelWindow {
                 let margin = (frameOn && !frameWrapped) ? (Config.bar?.frameThickness ?? 6) : 0;
                 if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "bottom" && unifiedPanel.barPinned) {
                     margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
-                } else if (unifiedPanel.dockEnabled && dockContent.dockPosition === "bottom" && dockContent.pinned) {
-                    margin += dockContent.dockHeight;
                 }
                 return margin;
             }

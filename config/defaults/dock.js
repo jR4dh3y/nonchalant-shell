@@ -1,7 +1,7 @@
 .pragma library
 
 var data = {
-    "enabled": true,
+    "enabled": false,
     "theme": "default",
     "position": "bottom",
     "height": 48,

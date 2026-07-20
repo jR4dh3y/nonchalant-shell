@@ -221,8 +221,10 @@ Item {
             width: notchContainer.width
             height: notchContainer.height + (root.notchPosition === "top" ? notchContainer.anchors.topMargin : notchContainer.anchors.bottomMargin)
 
-            // Opacity animation
-            opacity: root.reveal ? 1 : 0
+            // The inherited notch body is only for real center modules. Popup
+            // notifications render independently below the permanent pill.
+            visible: root.screenNotchOpen
+            opacity: root.screenNotchOpen ? 1 : 0
             Behavior on opacity {
                 enabled: Config.animDuration > 0
                 NumberAnimation {
@@ -234,7 +236,7 @@ Item {
             // Slide animation (slide up when hidden)
             transform: Translate {
                 y: {
-                    if (root.reveal) return 0;
+                    if (root.screenNotchOpen) return 0;
                     if (root.notchPosition === "top")
                         return -(Math.max(notchContainer.height, 50) + 16);
                     else
@@ -333,19 +335,7 @@ Item {
 
             property bool popupHovered: false
 
-            readonly property bool shouldShowNotificationPopup: {
-                // Mostrar solo si hay notificaciones y el notch esta expandido
-                if (!root.hasActiveNotifications || !root.screenNotchOpen)
-                    return false;
-
-                // NO mostrar si estamos en el launcher (widgets tab con currentTab === 0)
-                if (screenVisibilities.dashboard) {
-                    // Solo ocultar si estamos en el widgets tab (dashboard tab 0) Y mostrando el launcher (widgetsTab index 0)
-                    return !(GlobalStates.dashboardCurrentTab === 0 && GlobalStates.widgetsTabCurrentIndex === 0);
-                }
-
-                return true;
-            }
+            readonly property bool shouldShowNotificationPopup: root.hasActiveNotifications && !root.screenNotchOpen
 
             Behavior on width {
                 enabled: Config.animDuration > 0

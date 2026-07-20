@@ -38,7 +38,6 @@ var ACTION_CATALOG = [
     { id: "nonchalant.tmux", label: "Open Tmux", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run tmux" },
     { id: "nonchalant.wallpapers", label: "Open Wallpapers", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run wallpapers" },
     { id: "nonchalant.config", label: "Open Settings", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run config" },
-    { id: "nonchalant.overview", label: "Open Overview", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run overview" },
     { id: "nonchalant.powermenu", label: "Open Power Menu", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run powermenu" },
     { id: "nonchalant.tools", label: "Open Tools", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run tools" },
     { id: "nonchalant.screenshot", label: "Take Screenshot", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run screenshot" },

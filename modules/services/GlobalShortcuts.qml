@@ -50,7 +50,7 @@ QtObject {
             case "dashboard-controls": toggleSettings(); break;
 
             // System
-            case "overview": toggleSimpleModule("overview"); break;
+            case "overview": console.warn("Overview has been removed from Nonchalant Shell"); break;
             case "powermenu": toggleSimpleModule("powermenu"); break;
             case "tools": toggleSimpleModule("tools"); break;
             case "config": toggleSettings(); break;

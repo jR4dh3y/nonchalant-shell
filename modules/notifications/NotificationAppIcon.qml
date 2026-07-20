@@ -21,6 +21,20 @@ Item {
     property real appIconSize: size * appIconScale
     property real smallAppIconSize: size * smallAppIconScale
     property bool usingAppIconFallback: false
+    property bool notificationImageFailed: false
+
+    onImageChanged: notificationImageFailed = false
+
+    function resolveIconSource(icon) {
+        if (!icon)
+            return "";
+        const value = String(icon);
+        if (value.startsWith("file://") || value.startsWith("data:") || value.startsWith("image://"))
+            return value;
+        if (value.startsWith("/"))
+            return "file://" + value;
+        return "image://icon/" + value;
+    }
 
     implicitWidth: size
     implicitHeight: size
@@ -38,7 +52,8 @@ Item {
             border.width: root.urgency == NotificationUrgency.Critical ? 2 : 0
             border.color: root.urgency == NotificationUrgency.Critical ? Colors.criticalRed : "transparent"
             radius: root.radius
-            visible: (root.image == "" && root.appIcon == "") || (appIconLoader.active && appIconLoader.item && appIconLoader.item.status === Image.Error)
+            visible: ((root.image == "" || root.notificationImageFailed) && root.appIcon == "")
+                || (appIconLoader.active && appIconLoader.item && appIconLoader.item.status === Image.Error)
 
             Text {
                 anchors.centerIn: parent
@@ -72,14 +87,14 @@ Item {
 
         Loader {
             id: appIconLoader
-            active: root.image == "" && root.appIcon != ""
+            active: (root.image == "" || root.notificationImageFailed) && root.appIcon != ""
             anchors.fill: parent
             visible: item && item.status !== Image.Error
             sourceComponent: Image {
                 mipmap: true
                 id: appIconImage
                 anchors.fill: parent
-                source: root.appIcon ? "image://icon/" + root.appIcon : ""
+                source: root.resolveIconSource(root.appIcon)
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
             }
@@ -88,7 +103,7 @@ Item {
         // Mostrar imagen de notificación si existe
         Loader {
             id: notifImageLoader
-            active: root.image != ""
+            active: root.image != "" && !root.notificationImageFailed
             anchors.fill: parent
             sourceComponent: Item {
                 anchors.fill: parent
@@ -103,14 +118,12 @@ Item {
                         mipmap: true
                         id: notifImage
                         anchors.fill: parent
-                        source: status === Image.Error && root.appIcon ? "image://icon/" + root.appIcon : root.image
+                        source: root.image
                         fillMode: Image.PreserveAspectCrop
                         smooth: true
                         onStatusChanged: {
-                            if (status === Image.Error && root.appIcon) {
-                                source = "image://icon/" + root.appIcon;
-                                root.usingAppIconFallback = true;
-                            }
+                            if (status === Image.Error)
+                                root.notificationImageFailed = true;
                         }
                     }
                 }
@@ -121,7 +134,7 @@ Item {
     // App icon pequeño superpuesto si hay imagen
     Loader {
         id: notifImageAppIconLoader
-        active: root.image != "" && root.appIcon != "" && !root.usingAppIconFallback
+        active: root.image != "" && !root.notificationImageFailed && root.appIcon != "" && !root.usingAppIconFallback
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         width: root.smallAppIconSize
@@ -131,7 +144,7 @@ Item {
             Image {
                 mipmap: true
                 anchors.fill: parent
-                source: root.appIcon ? "image://icon/" + root.appIcon : ""
+                source: root.resolveIconSource(root.appIcon)
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
             }
