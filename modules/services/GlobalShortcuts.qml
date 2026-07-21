@@ -32,8 +32,13 @@ QtObject {
         switch (command) {
             case "launcher": toggleLauncher(); break;
             case "system-monitor": Visibilities.toggleSystemMonitorForActive(); break;
-            case "powermenu": Visibilities.setActiveModule("powermenu"); break;
+            case "powermenu": Visibilities.togglePowerMenuForActive(); break;
             case "lockscreen": LockscreenService.lock(); break;
+            case "config":
+            case "settings":
+            case "dashboard-controls":
+                toggleSettings();
+                break;
             default: console.warn("Unknown IPC command:", command);
         }
     }
@@ -54,5 +59,25 @@ QtObject {
             GlobalStates.clearLauncherState();
             Visibilities.setActiveModule("launcher");
         }
+    }
+
+    function toggleSettings(screenName) {
+        const willOpen = !GlobalStates.settingsWindowVisible;
+        if (willOpen) {
+            const targetMonitor = screenName
+                ? NiriService.monitorFor(screenName)
+                : NiriService.focusedMonitor;
+            GlobalStates.settingsTargetWorkspaceId =
+                targetMonitor?.activeWorkspace?.id
+                || NiriService.focusedMonitor?.activeWorkspace?.id
+                || NiriService.focusedWorkspace?.id
+                || 0;
+            GlobalStates.settingsTargetScreenName =
+                targetMonitor?.name || NiriService.focusedMonitor?.name || "";
+            // Close bar popups / run menu under the settings window.
+            Visibilities.closeActiveBarPopup();
+            Visibilities.setActiveModule("");
+        }
+        GlobalStates.settingsWindowVisible = willOpen;
     }
 }

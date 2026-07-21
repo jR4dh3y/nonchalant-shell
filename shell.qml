@@ -12,6 +12,7 @@ import qs.modules.globals
 import qs.modules.shell
 import qs.modules.shell.osd
 import qs.modules.widgets.dashboard.wallpapers
+import qs.modules.widgets.config
 import qs.config
 
 ShellRoot {
@@ -50,11 +51,9 @@ ShellRoot {
             ReservationWindows {
                 screen: screenShellContainer.modelData
 
-                // Bar status for reservations. Drop the exclusive zone while
-                // niri overview is open so the bar leaves the desktop only.
+                // Keep exclusive zone even during niri overview so tiled
+                // windows do not reflow. Bar is only hidden visually.
                 barEnabled: {
-                    if (NiriService.overviewOpen)
-                        return false;
                     const list = (Config.bar && Config.bar.screenList !== undefined ? Config.bar.screenList : []);
                     return (!list || list.length === 0 || list.indexOf(screen.name) !== -1);
                 }
@@ -94,6 +93,13 @@ ShellRoot {
 
     // Toasts are hosted inside UnifiedShellPanel (NotificationToastStack) so
     // they receive clicks. NotificationServer still loads via service init.
+
+    // Settings floating window (lazy — only while open).
+    Loader {
+        id: settingsWindowLoader
+        active: GlobalStates.settingsWindowVisible
+        sourceComponent: SettingsWindow {}
+    }
 
     // Initialize only the services needed by the bar, run menu, and lockscreen.
     QtObject {

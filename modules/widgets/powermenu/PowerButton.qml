@@ -1,5 +1,4 @@
 import QtQuick
-import qs.config
 import qs.modules.components
 import qs.modules.theme
 import qs.modules.services
@@ -23,49 +22,31 @@ ToggleButton {
         }
     }
 
-    // Soft open-state wash on the bar pill.
-    Rectangle {
-        anchors.fill: parent
-        z: 1
-        radius: parent.height / 2
-        color: Styling.srItem("overprimary")
-        opacity: powerButton.popupOpen ? 0.22 : 0
-        enabled: false
-        Behavior on opacity {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration / 2
-            }
-        }
-    }
-
     BarPopup {
         id: powerPopup
         anchorItem: powerButton
         bar: powerButton.bar
         variant: "transparent"
         popupPadding: 0
-        shadowMargin: 8
-        visualMargin: 10
+        visualMargin: 8
 
-        anchor.rect.x: {
-            if (powerPopup.barVertical) {
-                if (powerPopup.barAtLeft)
-                    return powerButton.width + powerPopup.visualMargin + powerPopup.effectiveFrameOffset;
-                return -powerPopup.totalWidth - powerPopup.visualMargin - powerPopup.effectiveFrameOffset;
+        contentWidth: powerWrapper.width
+        contentHeight: powerWrapper.height
+
+        StyledRect {
+            id: powerWrapper
+            variant: "popup"
+            radius: Styling.radius(8)
+            enableShadow: false
+            width: powerMenuView.implicitWidth + 12
+            height: powerMenuView.implicitHeight + 12
+
+            PowerMenuView {
+                id: powerMenuView
+                anchors.centerIn: parent
+                popupMode: true
+                onCloseRequested: powerPopup.close()
             }
-            return (powerButton.width - powerPopup.totalWidth) / 2;
-        }
-
-        contentWidth: powerMenuView.implicitWidth
-        contentHeight: powerMenuView.implicitHeight
-
-        PowerMenuView {
-            id: powerMenuView
-            anchors.fill: parent
-            popupMode: true
-            expanded: powerPopup.isOpen
-            onCloseRequested: powerPopup.close()
         }
     }
 

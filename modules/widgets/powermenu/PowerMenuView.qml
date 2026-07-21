@@ -13,28 +13,26 @@ Item {
 
     signal closeRequested()
 
-    // Height tracks action count; keep transitions short so open feels instant.
     Behavior on implicitWidth {
         enabled: Config.animDuration > 0
         NumberAnimation {
-            duration: Config.animDuration / 2
-            easing.type: Easing.OutCubic
+            duration: Config.animDuration
+            easing.type: Easing.OutQuart
         }
     }
 
     Behavior on implicitHeight {
         enabled: Config.animDuration > 0
         NumberAnimation {
-            duration: Config.animDuration / 2
-            easing.type: Easing.OutCubic
+            duration: Config.animDuration
+            easing.type: Easing.OutQuart
         }
     }
 
     PowerMenu {
         id: powerMenu
         anchors.fill: parent
-        expanded: root.expanded
-        
+
         onItemSelected: {
             if (root.popupMode)
                 root.closeRequested();
@@ -49,21 +47,14 @@ Item {
             event.accepted = true;
         }
     }
-    
-    // Forzar foco cuando aparece la vista en el StackView
+
     onVisibleChanged: {
-        if (visible) {
-            Qt.callLater(() => {
-                powerMenu.forceActiveFocus();
-            });
-        }
+        if (visible)
+            Qt.callLater(() => powerMenu.forceActiveFocus());
     }
-    
+
     Component.onCompleted: {
-        if (visible) {
-            Qt.callLater(() => {
-                powerMenu.forceActiveFocus();
-            });
-        }
+        if (visible)
+            Qt.callLater(() => powerMenu.forceActiveFocus());
     }
 }
