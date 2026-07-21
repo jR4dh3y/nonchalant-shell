@@ -1,16 +1,9 @@
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Effects
-import QtQuick.Layouts
-import qs.modules.theme
-import qs.modules.components
 import qs.modules.globals
 import qs.modules.services
 import qs.modules.notch
 import qs.modules.widgets.dashboard.widgets
-import qs.modules.widgets.dashboard.controls
 import qs.modules.widgets.dashboard.wallpapers
-import qs.modules.widgets.dashboard.metrics
 import qs.config
 
 NotchAnimationBehavior {
@@ -23,12 +16,8 @@ NotchAnimationBehavior {
         property int currentTab: GlobalStates.dashboardCurrentTab
     }
 
-    readonly property var tabModel: [Icons.widgets, Icons.wallpapers, Icons.heartbeat]
-    readonly property int tabCount: tabModel.length
-    readonly property int tabSpacing: 8
-
-    readonly property int tabWidth: 48
-    readonly property real nonAnimWidth: (state.currentTab === 0 ? 600 : 400) + tabWidth + 16 // unified launcher tab is wider
+    readonly property int tabCount: 2
+    readonly property real nonAnimWidth: state.currentTab === 0 ? 600 : 400
 
     implicitWidth: nonAnimWidth
     implicitHeight: 430
@@ -93,7 +82,8 @@ NotchAnimationBehavior {
 
     // Navegar a la pestaña seleccionada cuando se abre el dashboard
     Component.onCompleted: {
-        root.state.currentTab = GlobalStates.dashboardCurrentTab;
+        root.state.currentTab = Math.max(0, Math.min(GlobalStates.dashboardCurrentTab, root.tabCount - 1));
+        GlobalStates.dashboardCurrentTab = root.state.currentTab;
     }
 
     // Focus search input when dashboard opens to different tabs
@@ -141,215 +131,16 @@ NotchAnimationBehavior {
         }
     }
 
-    Row {
+    Item {
         id: mainLayout
         anchors.fill: parent
-        spacing: 8
 
-        // Tab buttons
-        Item {
-            id: tabsContainer
-            width: root.tabWidth
-            height: parent.height
-
-            // Manejo del scroll con rueda del mouse
-            WheelHandler {
-                id: wheelHandler
-                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-
-                onWheel: event => {
-                    // Determinar dirección del scroll
-                    let scrollUp = event.angleDelta.y > 0;
-                    let newIndex = root.state.currentTab;
-
-                    if (scrollUp && newIndex > 0) {
-                        // Scroll hacia arriba = pestaña anterior
-                        newIndex = newIndex - 1;
-                    } else if (!scrollUp && newIndex < root.tabCount - 1) {
-                        // Scroll hacia abajo = pestaña siguiente
-                        newIndex = newIndex + 1;
-                    }
-
-                    // Navegar solo si cambió el índice
-                    if (newIndex !== root.state.currentTab) {
-                        stack.navigateToTab(newIndex);
-                    }
-                }
-            }
-
-            // Background highlight que se desplaza verticalmente con efecto elástico
-            StyledRect {
-                id: tabHighlight
-                variant: "primary"
-                width: parent.width
-                radius: Styling.radius(4)
-                z: 0
-
-                property real idx1: root.state.currentTab
-                property real idx2: root.state.currentTab
-
-                // Calcular posición Y para un índice dado
-                function getYForIndex(idx) {
-                    if (idx <= 2) {
-                        return idx * (width + root.tabSpacing);
-                    } else {
-                        // Controls button at the bottom
-                        return controlsButtonContainer.y;
-                    }
-                }
-
-                property real targetY1: getYForIndex(idx1)
-                property real targetY2: getYForIndex(idx2)
-
-                property real animatedY1: targetY1
-                property real animatedY2: targetY2
-
-                x: 0
-                y: Math.min(animatedY1, animatedY2)
-                height: Math.abs(animatedY2 - animatedY1) + width
-
-                Behavior on animatedY1 {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration / 3
-                        easing.type: Easing.OutSine
-                    }
-                }
-                Behavior on animatedY2 {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutSine
-                    }
-                }
-
-                onTargetY1Changed: animatedY1 = targetY1
-                onTargetY2Changed: animatedY2 = targetY2
-            }
-
-            Column {
-                id: tabs
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                spacing: root.tabSpacing
-
-                Repeater {
-                    model: root.tabModel
-
-                    Button {
-                        required property int index
-                        required property string modelData
-
-                        text: modelData
-                        flat: true
-                        width: tabsContainer.width
-                        height: width
-                        // implicitHeight: (tabsContainer.height - root.tabSpacing * (root.tabCount - 1)) / root.tabCount
-
-                        background: Rectangle {
-                            color: "transparent"
-                            radius: Styling.radius(4)
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            textFormat: Text.RichText
-                            color: root.state.currentTab === index ? Styling.srItem("primary") : Colors.overBackground
-                            // font.family: Config.theme.font
-                            font.family: Icons.font
-                            // font.pixelSize: Config.theme.fontSize
-                            font.pixelSize: 20
-                            font.weight: Font.Medium
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-
-                            Behavior on color {
-                                enabled: Config.animDuration > 0
-                                ColorAnimation {
-                                    duration: Config.animDuration
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-                        }
-
-                        onClicked: stack.navigateToTab(index)
-                    }
-                }
-            }
-
-            // Controls button (separate at bottom)
-            StyledRect {
-                id: controlsButtonContainer
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: width
-                radius: Styling.radius(4)
-                variant: controlsButton.hovered ? "focus" : "common"
-                z: -1
-
-                opacity: GlobalStates.settingsWindowVisible ? 0 : 1
-
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutCubic
-                    }
-                }
-            }
-
-            Button {
-                id: controlsButton
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: width
-                flat: true
-                hoverEnabled: true
-                z: 1
-
-                background: Rectangle {
-                    color: "transparent"
-                }
-
-                contentItem: Text {
-                    text: Icons.gear
-                    font.family: Icons.font
-                    font.pixelSize: 20
-                    font.weight: Font.Medium
-                    color: GlobalStates.settingsWindowVisible ? Styling.srItem("primary") : Colors.overBackground
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-
-                    Behavior on color {
-                        enabled: Config.animDuration > 0
-                        ColorAnimation {
-                            duration: Config.animDuration
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                }
-
-                onClicked: GlobalShortcuts.toggleSettings()
-            }
-        }
-
-        Separator {
-            width: 2
-            height: parent.height
-            vert: true
-        }
-
-            // Content area
+        // Content area
         Rectangle {
             id: viewWrapper
 
             color: "transparent"
-
-            width: parent.width - root.tabWidth - 2 - 16 // Ancho total menos tabs, separador y spacings
-            height: parent.height
+            anchors.fill: parent
 
             clip: true
 
@@ -442,19 +233,11 @@ NotchAnimationBehavior {
                     z: visible ? 1 : 0
                 }
 
-                // Tab 2: Metrics
-                TabLoader {
-                    property int index: 2
-                    sourceComponent: metricsComponent
-                    z: visible ? 1 : 0
-                }
-                
                 // Helper to access current item for focus
                 property var currentItem: {
                     switch(root.state.currentTab) {
                         case 0: return children[0].item;
                         case 1: return children[1].item;
-                        case 2: return children[2].item;
                         default: return null;
                     }
                 }
@@ -569,11 +352,6 @@ NotchAnimationBehavior {
         WidgetsTab {
             leftPanelWidth: root.leftPanelWidth
         }
-    }
-
-    Component {
-        id: metricsComponent
-        MetricsTab {}
     }
 
     Component {

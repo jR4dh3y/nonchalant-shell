@@ -55,11 +55,11 @@ Singleton {
     property int updateInterval: 2000
 
     // Unified monitor process.
-    // Resource-efficient: only runs when dashboard is open.
+    // Resource-efficient: only runs while the bar monitor popup is open.
     // Optimized GPU polling avoids waking dGPUs.
     property Process monitorProcess: Process {
         id: monitorProcess
-        running: GlobalStates.dashboardOpen && GlobalStates.dashboardCurrentTab === 2 && root.validDisks.length > 0
+        running: GlobalStates.systemMonitorOpen && root.validDisks.length > 0
         
         command: {
             let cmd = ["python3", Quickshell.shellDir + "/scripts/system_monitor.py", root.updateInterval.toString()];

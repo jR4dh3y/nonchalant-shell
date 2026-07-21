@@ -6,7 +6,6 @@ import Quickshell.Wayland
 import qs.modules.globals
 import qs.modules.theme
 import qs.modules.widgets.dashboard
-import qs.modules.widgets.powermenu
 import qs.modules.widgets.tools
 import qs.modules.services
 import qs.modules.components
@@ -87,7 +86,7 @@ Item {
     readonly property bool isBarVertical: barPosition === "left" || barPosition === "right"
 
     // Notch state properties
-    readonly property bool screenNotchOpen: screenVisibilities ? (screenVisibilities.launcher || screenVisibilities.dashboard || screenVisibilities.powermenu || screenVisibilities.tools) : false
+    readonly property bool screenNotchOpen: screenVisibilities ? (screenVisibilities.launcher || screenVisibilities.dashboard || screenVisibilities.tools) : false
     readonly property bool hasActiveNotifications: Notifications.popupList.length > 0
 
     // Hover state with delay to prevent flickering
@@ -148,13 +147,6 @@ Item {
         id: persistentDashboardViewLoader
         active: false
         sourceComponent: Component { DashboardView { visible: false; screenName: root.screen.name } }
-    }
-
-    // Persistent power menu view
-    Loader {
-        id: persistentPowerMenuViewLoader
-        active: false
-        sourceComponent: Component { PowerMenuView { visible: false } }
     }
 
     // Persistent tools menu view
@@ -271,7 +263,6 @@ Item {
                 defaultViewComponent: defaultViewComponent
                 launcherViewComponent: null
                 dashboardViewComponent: null
-                powermenuViewComponent: null
                 toolsMenuViewComponent: null
                 notificationViewComponent: notificationViewComponent
                 visibilities: root.screenVisibilities
@@ -382,7 +373,7 @@ Item {
         }
     }
 
-    // Listen for dashboard and powermenu state changes
+    // Listen for dashboard and tools state changes
     Connections {
         target: screenVisibilities
 
@@ -414,28 +405,6 @@ Item {
                 Qt.callLater(() => {
                     if (persistentDashboardViewLoader.item) {
                         notchContainer.stackView.push(persistentDashboardViewLoader.item);
-                        Qt.callLater(() => {
-                            if (notchContainer.stackView.currentItem) {
-                                notchContainer.stackView.currentItem.forceActiveFocus();
-                            }
-                        });
-                    }
-                });
-            } else {
-                if (notchContainer.stackView.depth > 1) {
-                    notchContainer.stackView.pop();
-                    notchContainer.isShowingDefault = true;
-                    notchContainer.isShowingNotifications = false;
-                }
-            }
-        }
-
-        function onPowermenuChanged() {
-            if (screenVisibilities.powermenu) {
-                persistentPowerMenuViewLoader.active = true;
-                Qt.callLater(() => {
-                    if (persistentPowerMenuViewLoader.item) {
-                        notchContainer.stackView.push(persistentPowerMenuViewLoader.item);
                         Qt.callLater(() => {
                             if (notchContainer.stackView.currentItem) {
                                 notchContainer.stackView.currentItem.forceActiveFocus();

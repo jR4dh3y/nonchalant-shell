@@ -17,7 +17,6 @@ Item {
     property Component defaultViewComponent
     property Component launcherViewComponent
     property Component dashboardViewComponent
-    property Component powermenuViewComponent
     property Component toolsMenuViewComponent
     property Component notificationViewComponent
     property var stackView: stackViewInternal
@@ -42,7 +41,7 @@ Item {
 
     // Screen-specific visibility properties passed from parent
     property var visibilities
-    readonly property bool screenNotchOpen: visibilities ? (visibilities.launcher || visibilities.dashboard || visibilities.powermenu || visibilities.tools) : false
+    readonly property bool screenNotchOpen: visibilities ? (visibilities.launcher || visibilities.dashboard || visibilities.tools) : false
     readonly property bool hasActiveNotifications: Notifications.popupList.length > 0
 
     property int defaultHeight: Config.showBackground ? (screenNotchOpen || hasActiveNotifications ? Math.max(stackContainer.height, 44) : 44) : (screenNotchOpen || hasActiveNotifications ? Math.max(stackContainer.height, 40) : 40)

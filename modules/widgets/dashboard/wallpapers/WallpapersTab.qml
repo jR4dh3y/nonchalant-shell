@@ -252,6 +252,31 @@ FocusScope {
             spacing: 8
             z: 1000 // Asegurar que el menú desplegable se dibuje por encima del resto del contenido
 
+            StyledRect {
+                id: backButton
+                Layout.preferredWidth: 48
+                Layout.preferredHeight: 48
+                Layout.alignment: Qt.AlignVCenter
+                variant: backMouseArea.containsMouse ? "focus" : "common"
+                radius: Styling.radius(4)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: Icons.arrowLeft
+                    color: backButton.item
+                    font.family: Icons.font
+                    font.pixelSize: 18
+                }
+
+                MouseArea {
+                    id: backMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: GlobalStates.dashboardCurrentTab = 0
+                }
+            }
+
             // Barra de búsqueda centrada
             SearchInput {
                 id: wallpaperSearchInput
@@ -276,7 +301,7 @@ FocusScope {
                 }
 
                 onEscapePressed: {
-                    Visibilities.setActiveModule("");
+                    GlobalStates.dashboardCurrentTab = 0;
                 }
 
                 onTabPressed: {

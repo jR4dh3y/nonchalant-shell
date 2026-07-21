@@ -15,11 +15,13 @@ Singleton {
     property var notchPanels: ({})
     property var docks: ({})
     property var dockPanels: ({})
+    property var powerMenuButtons: ({})
+    property var systemMonitorButtons: ({})
     property string currentActiveModule: ""
     property string lastFocusedScreen: ""
     property var contextMenu: null
     property bool playerMenuOpen: false
-    readonly property var moduleNames: ["launcher", "dashboard", "overview", "powermenu", "tools", "presets"]
+    readonly property var moduleNames: ["launcher", "dashboard", "overview", "tools", "presets"]
 
     function setContextMenu(menu) {
         contextMenu = menu;
@@ -135,7 +137,62 @@ Singleton {
         return dockPanels[screenName] || null;
     }
 
+    function registerPowerMenuButton(screenName, button) {
+        powerMenuButtons = _updateMap(powerMenuButtons, screenName, button);
+    }
+
+    function unregisterPowerMenuButton(screenName, button) {
+        if (powerMenuButtons[screenName] === button)
+            powerMenuButtons = _updateMap(powerMenuButtons, screenName, null);
+    }
+
+    function togglePowerMenuForActive() {
+        const focusedMonitor = NiriService.focusedMonitor;
+        if (!focusedMonitor)
+            return;
+
+        const button = powerMenuButtons[focusedMonitor.name] || null;
+        if (!button) {
+            console.warn("Visibilities: no power menu button registered for", focusedMonitor.name);
+            return;
+        }
+
+        clearAll();
+        currentActiveModule = "";
+        button.togglePopup();
+    }
+
+    function registerSystemMonitorButton(screenName, button) {
+        systemMonitorButtons = _updateMap(systemMonitorButtons, screenName, button);
+    }
+
+    function unregisterSystemMonitorButton(screenName, button) {
+        if (systemMonitorButtons[screenName] === button)
+            systemMonitorButtons = _updateMap(systemMonitorButtons, screenName, null);
+    }
+
+    function toggleSystemMonitorForActive() {
+        const focusedMonitor = NiriService.focusedMonitor;
+        if (!focusedMonitor)
+            return;
+
+        const button = systemMonitorButtons[focusedMonitor.name] || null;
+        if (!button) {
+            console.warn("Visibilities: no system monitor button registered for", focusedMonitor.name);
+            return;
+        }
+
+        clearAll();
+        currentActiveModule = "";
+        button.togglePopup();
+    }
+
     function setActiveModule(moduleName) {
+        if (moduleName === "powermenu") {
+            togglePowerMenuForActive();
+            return;
+        }
+
         const focusedMonitor = NiriService.focusedMonitor;
         if (!focusedMonitor)
             return;
@@ -175,7 +232,6 @@ Singleton {
             property bool launcher: false
             property bool dashboard: false
             property bool overview: false
-            property bool powermenu: false
             property bool tools: false
             property bool presets: false
         }

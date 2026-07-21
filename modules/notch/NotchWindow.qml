@@ -31,7 +31,7 @@ PanelWindow {
         windows: {
             let windowList = [notchPanel];
             // Agregar la barra de esta pantalla al focus grab cuando el notch este abierto
-            if (notchContent.barPanelRef && (screenVisibilities.launcher || screenVisibilities.dashboard || screenVisibilities.powermenu || screenVisibilities.tools)) {
+            if (notchContent.barPanelRef && (screenVisibilities.launcher || screenVisibilities.dashboard || screenVisibilities.tools)) {
                 windowList.push(notchContent.barPanelRef);
             }
             return windowList;

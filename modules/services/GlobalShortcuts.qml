@@ -45,9 +45,10 @@ QtObject {
             case "assistant": toggleAssistant(); break;
             case "dashboard-widgets": toggleDashboardTab(0); break;
             case "dashboard-wallpapers": toggleDashboardTab(1); break;
-            case "dashboard-kanban": toggleDashboardTab(2); break;
+            case "dashboard-kanban": Visibilities.toggleSystemMonitorForActive(); break;
             case "dashboard-assistant": toggleAssistant(); break;
             case "dashboard-controls": toggleSettings(); break;
+            case "system-monitor": Visibilities.toggleSystemMonitorForActive(); break;
 
             // System
             case "overview": console.warn("Overview has been removed from Nonchalant Shell"); break;

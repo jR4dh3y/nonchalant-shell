@@ -92,6 +92,7 @@ Singleton {
     // Name of the screen whose bar-anchored dashboard popup is open.
     // Empty when the dashboard is being shown through the notch or is closed.
     property string dashboardPopupScreen: ""
+    property string systemMonitorPopupScreen: ""
     
     // Widgets tab internal state (for prefix-based tabs)
     // 0=launcher, 1=clipboard, 2=emoji, 3=tmux, 4=wallpapers
@@ -140,6 +141,7 @@ Singleton {
     readonly property bool presetsOpen: getActivePresets()
     readonly property bool launcherOpen: getActiveLauncher()
     readonly property bool dashboardOpen: getActiveDashboard() || dashboardPopupScreen !== ""
+    readonly property bool systemMonitorOpen: systemMonitorPopupScreen !== ""
 
     // Lockscreen state
     property bool lockscreenVisible: false

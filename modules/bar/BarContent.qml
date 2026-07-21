@@ -88,9 +88,9 @@ Item {
         return false;
     }
 
-    // Check if notch is open (dashboard, powermenu, etc.)
+    // Check if a center notch module is open.
     readonly property var screenVisibilities: Visibilities.getForScreen(screen.name)
-    readonly property bool notchOpen: screenVisibilities ? (screenVisibilities.launcher || screenVisibilities.dashboard || screenVisibilities.powermenu || screenVisibilities.tools) : false
+    readonly property bool notchOpen: screenVisibilities ? (screenVisibilities.launcher || screenVisibilities.dashboard || screenVisibilities.tools) : false
 
     // Radius logic for "Squished" style
     readonly property real outerRadius: Styling.radius(0)
@@ -385,6 +385,13 @@ Item {
                             endRadius: root.innerRadius
                         }
 
+                        Bar.SystemMonitorButton {
+                            bar: root
+                            startRadius: root.outerRadius
+                            endRadius: root.outerRadius
+                            enableShadow: root.shadowsEnabled
+                        }
+
                         LayoutSelectorButton {
                             id: layoutSelectorButton
                             bar: root
@@ -545,6 +552,7 @@ Item {
 
                         PowerButton {
                             id: powerButton
+                            bar: root
                             startRadius: root.innerRadius
                             endRadius: root.outerRadius
                             enableShadow: root.shadowsEnabled
@@ -553,11 +561,22 @@ Item {
                         }
 
                         NonchalantTaskbar {
+                            id: nonchalantTaskbar
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             width: implicitWidth
                             height: implicitHeight
                             bar: root
+                        }
+
+                        Bar.SystemMonitorButton {
+                            anchors.left: nonchalantTaskbar.right
+                            anchors.leftMargin: 4
+                            anchors.verticalCenter: parent.verticalCenter
+                            bar: root
+                            startRadius: root.outerRadius
+                            endRadius: root.outerRadius
+                            enableShadow: root.shadowsEnabled
                         }
 
                         Clock {
@@ -612,6 +631,7 @@ Item {
                             }
 
                             PowerButton {
+                                bar: root
                                 startRadius: root.innerRadius
                                 endRadius: root.outerRadius
                                 enableShadow: root.shadowsEnabled
@@ -705,6 +725,15 @@ Item {
                                     Layout.alignment: Qt.AlignHCenter
                                     startRadius: root.innerRadius
                                     endRadius: root.innerRadius
+                                }
+
+                                Bar.SystemMonitorButton {
+                                    bar: root
+                                    Layout.alignment: Qt.AlignHCenter
+                                    startRadius: root.outerRadius
+                                    endRadius: root.outerRadius
+                                    vertical: true
+                                    enableShadow: root.shadowsEnabled
                                 }
 
                                 // Pin button (vertical)
@@ -812,6 +841,7 @@ Item {
 
                         PowerButton {
                             id: powerButtonVert
+                            bar: root
                             Layout.preferredHeight: 36
                             startRadius: root.innerRadius
                             endRadius: root.outerRadius
