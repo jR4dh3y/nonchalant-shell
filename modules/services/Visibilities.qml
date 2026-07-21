@@ -28,7 +28,11 @@ Singleton {
             return;
         if (activeBarPopup && activeBarPopup !== popup) {
             try {
-                if (activeBarPopup.isOpen)
+                // Prefer quick close so weather→dashboard (and similar) crossfades
+                // instead of waiting on a full exit animation.
+                if (typeof activeBarPopup.closeQuick === "function")
+                    activeBarPopup.closeQuick();
+                else if (activeBarPopup.isOpen)
                     activeBarPopup.close();
             } catch (e) {
                 // Previous popup may already be destroyed.

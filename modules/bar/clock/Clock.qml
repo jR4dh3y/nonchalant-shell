@@ -37,19 +37,12 @@ Item {
             return;
         }
 
-        // Preload dashboard content before opening so the first frame has size
-        // and notifications are already in the tree (no empty flash).
+        // Warm the dashboard so the open frame already has real size.
         GlobalStates.dashboardCurrentTab = 0;
         dashboardLoader.active = true;
-        // Cross-switch: claimBarPopup closes weather while dashboard opens.
-        // Do not pre-close weather here or we double-trigger and skip the
-        // overlapping open animation.
-        if (clockPopup.isOpen)
-            clockPopup.close();
-        Qt.callLater(() => {
-            if (!dashboardPopup.isOpen)
-                dashboardPopup.open();
-        });
+        // Single open path: claimBarPopup quick-closes weather and opens
+        // dashboard in the same turn (no double-close / callLater hitch).
+        dashboardPopup.open();
     }
 
     readonly property bool weatherAvailable: WeatherService.dataAvailable
@@ -117,8 +110,12 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    // claimBarPopup closes the dashboard if it was open.
-                    onClicked: clockPopup.toggle()
+                    // claimBarPopup quick-closes dashboard if it was open.
+                    onClicked: {
+                        if (dashboardPopup.isOpen)
+                            dashboardPopup.closeQuick();
+                        clockPopup.toggle();
+                    }
                 }
             }
 
@@ -578,10 +575,13 @@ Item {
 
             Loader {
                 id: dashboardLoader
-                // Keep warm after first open so weather→dashboard is instant.
-                active: dashboardPopup.isOpen || item !== null
+                // Always warm: weather→dashboard must not hitch on first create.
+                active: true
                 anchors.fill: parent
                 anchors.margins: 8
+                // Avoid painting a heavy tree while closed.
+                opacity: dashboardPopup.isOpen || dashboardPopup.visible ? 1 : 0
+                enabled: dashboardPopup.isOpen || dashboardPopup.visible
 
                 sourceComponent: Component {
                     DashboardView {

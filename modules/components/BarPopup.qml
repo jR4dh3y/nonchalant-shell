@@ -39,7 +39,9 @@ PopupWindow {
 
     // Animation state
     property real popupOpacity: 0
-    property real popupScale: 0.9
+    property real popupScale: 0.96
+    // Mutable duration so sibling switches can use a snappier close/open.
+    property int transitionMs: Config.animDuration > 0 ? Config.animDuration : 0
 
     // Bar position detection
     readonly property string barPosition: bar?.barPosition ?? "top"
@@ -58,6 +60,22 @@ PopupWindow {
     implicitWidth: totalWidth
     implicitHeight: totalHeight
 
+    // Smooth size changes when content (e.g. dashboard) finishes loading.
+    Behavior on contentWidth {
+        enabled: root.transitionMs > 0 && root.visible
+        NumberAnimation {
+            duration: Math.max(root.transitionMs / 2, 80)
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on contentHeight {
+        enabled: root.transitionMs > 0 && root.visible
+        NumberAnimation {
+            duration: Math.max(root.transitionMs / 2, 80)
+            easing.type: Easing.OutCubic
+        }
+    }
+
     // Frame detection
     readonly property bool frameEnabled: Config.bar?.frameEnabled ?? false
     readonly property bool containBar: Config.bar?.containBar ?? false
@@ -66,29 +84,21 @@ PopupWindow {
     readonly property int effectiveFrameOffset: (frameEnabled && containBar) ? frameOffset : 0
 
     // Anchor positioning
-    // The anchor.rect defines where the popup window's top-left corner will be placed
-    // relative to the anchorItem's top-left corner
     anchor.item: anchorItem
     anchor.rect.x: {
         if (barVertical) {
-            // Left bar: popup appears to the right of the button
             if (barAtLeft)
                 return anchorItem.width + visualMargin + effectiveFrameOffset - shadowMargin;
-            // Right bar: popup appears to the left of the button
             return -totalWidth + shadowMargin - visualMargin - effectiveFrameOffset;
         }
-        // Top/Bottom bar: center horizontally relative to button
         return (anchorItem.width - totalWidth) / 2;
     }
     anchor.rect.y: {
         if (barVertical) {
-            // Left/Right bar: center vertically relative to button
             return (anchorItem.height - totalHeight) / 2;
         }
-        // Top bar: popup appears below the button
         if (barAtTop)
             return anchorItem.height + visualMargin + effectiveFrameOffset - shadowMargin;
-        // Bottom bar: popup appears above the button
         return -totalHeight + shadowMargin - visualMargin - effectiveFrameOffset;
     }
     anchor.rect.width: 0
@@ -97,7 +107,6 @@ PopupWindow {
     color: "transparent"
     visible: false
 
-    // Focus grab for click-outside-to-close behavior
     property bool focusActive: false
 
     FocusGrab {
@@ -114,24 +123,22 @@ PopupWindow {
         }
     }
 
-    // Animation behaviors
     Behavior on popupOpacity {
-        enabled: Config.animDuration > 0
+        enabled: root.transitionMs > 0
         NumberAnimation {
-            duration: Config.animDuration
+            duration: root.transitionMs
             easing.type: Easing.OutCubic
         }
     }
 
     Behavior on popupScale {
-        enabled: Config.animDuration > 0
+        enabled: root.transitionMs > 0
         NumberAnimation {
-            duration: Config.animDuration
+            duration: root.transitionMs
             easing.type: Easing.OutCubic
         }
     }
 
-    // Main content wrapper
     Item {
         id: popupContainer
         anchors.fill: parent
@@ -166,66 +173,91 @@ PopupWindow {
     }
 
     function open() {
-        // Already fully open
-        if (visible && isOpen && popupOpacity >= 1)
+        if (visible && isOpen && popupOpacity >= 0.99)
             return;
 
-        // Cancel a mid-close so reopen is smooth.
         closeTimer.stop();
+        resetTransitionTimer.stop();
 
-        // One bar popup at a time — close any sibling (clock, controls, power…).
+        // Snappy full-duration open for a clean settle.
+        transitionMs = Config.animDuration > 0 ? Config.animDuration : 0;
+
+        // One bar popup at a time — sibling gets a quick fade, not a long exit.
         Visibilities.claimBarPopup(root);
 
-        // Set logical state immediately
         isOpen = true;
 
-        // If we were mid-close, animate from current values instead of resetting hard.
+        // Mid-close reopen: keep current opacity/scale and animate back up.
         if (!visible) {
+            // Start slightly present so weather→dashboard doesn't flash empty.
             popupOpacity = 0;
-            popupScale = 0.9;
+            popupScale = 0.96;
             visible = true;
         }
 
-        // Start animation after a frame so the surface is mapped.
+        // Grab focus immediately so we don't thrash focus between the two popups.
+        focusActive = true;
+
         Qt.callLater(() => {
             if (!root.isOpen)
                 return;
             popupOpacity = 1;
             popupScale = 1;
-            focusActive = true;
         });
     }
 
+    // Faster exit used when another popup is replacing this one.
+    function closeQuick() {
+        _closeInternal(true);
+    }
+
     function close() {
+        _closeInternal(false);
+    }
+
+    function _closeInternal(quick) {
         if (!visible && !isOpen)
             return;
 
-        // Set logical state immediately
         isOpen = false;
         focusActive = false;
         Visibilities.releaseBarPopup(root);
 
-        // Animate out
-        popupOpacity = 0;
-        popupScale = 0.9;
+        const base = Config.animDuration > 0 ? Config.animDuration : 0;
+        transitionMs = quick ? Math.max(Math.round(base / 2), 80) : base;
 
-        // Hide after animation
+        popupOpacity = 0;
+        popupScale = quick ? 0.98 : 0.96;
+
+        closeTimer.interval = transitionMs > 0 ? transitionMs + 30 : 20;
         closeTimer.restart();
+
+        // Restore default transition length after the close finishes.
+        resetTransitionTimer.interval = closeTimer.interval + 10;
+        resetTransitionTimer.restart();
     }
 
     function toggle() {
-        if (visible) {
+        if (isOpen || (visible && popupOpacity > 0.5))
             close();
-        } else {
+        else
             open();
-        }
     }
 
     Timer {
         id: closeTimer
-        interval: Config.animDuration > 0 ? Config.animDuration + 50 : 50
+        interval: 50
         onTriggered: {
-            root.visible = false;
+            if (!root.isOpen)
+                root.visible = false;
+        }
+    }
+
+    Timer {
+        id: resetTransitionTimer
+        interval: 50
+        onTriggered: {
+            root.transitionMs = Config.animDuration > 0 ? Config.animDuration : 0;
         }
     }
 }
