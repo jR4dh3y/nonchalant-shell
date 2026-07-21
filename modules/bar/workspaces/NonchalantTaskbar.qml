@@ -208,7 +208,7 @@ Item {
 
                             Rectangle {
                                 anchors.fill: parent
-                                radius: Styling.radius(4)
+                                radius: width / 2
                                 color: appButton.windowData.is_focused ? Colors.primary : Styling.srItem("overprimary")
                                 opacity: appButton.windowData.is_focused ? 1 : (appMouse.containsMouse ? 0.18 : 0)
                                 border.width: appButton.windowData.is_focused ? 1 : 0
@@ -219,18 +219,47 @@ Item {
                                 }
                             }
 
-                            IconImage {
-                                id: appIcon
+                            // Keep icon artwork inside the circular app badge.
+                            ClippingRectangle {
+                                id: appIconClip
                                 anchors.centerIn: parent
-                                width: appButton.windowData.is_focused ? 19 : 16
+                                width: appButton.width - 2
                                 height: width
-                                opacity: appButton.windowData.is_focused ? 1 : 0.62
-                                source: "image://icon/" + appButton.iconName
-                                asynchronous: true
+                                radius: width / 2
+                                color: "transparent"
+                                clip: true
 
-                                onStatusChanged: {
-                                    if (status === Image.Error && appButton.iconName !== "image-missing")
-                                        source = "image://icon/image-missing";
+                                IconImage {
+                                    id: appIcon
+                                    anchors.centerIn: parent
+                                    // Keep even dimensions inside the even-sized
+                                    // badge so centerIn does not round to one side.
+                                    width: appButton.windowData.is_focused ? 16 : 14
+                                    height: width
+                                    opacity: appButton.windowData.is_focused ? 1 : 0.62
+                                    source: "image://icon/" + appButton.iconName
+                                    asynchronous: true
+
+                                    Behavior on width {
+                                        enabled: Config.animDuration > 0
+                                        NumberAnimation {
+                                            duration: Math.min(Config.animDuration, 150)
+                                            easing.type: Easing.OutQuad
+                                        }
+                                    }
+
+                                    Behavior on opacity {
+                                        enabled: Config.animDuration > 0
+                                        NumberAnimation {
+                                            duration: Math.min(Config.animDuration, 150)
+                                            easing.type: Easing.OutQuad
+                                        }
+                                    }
+
+                                    onStatusChanged: {
+                                        if (status === Image.Error && appButton.iconName !== "image-missing")
+                                            source = "image://icon/image-missing";
+                                    }
                                 }
                             }
 
