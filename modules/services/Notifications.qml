@@ -474,57 +474,83 @@ Singleton {
         clearPopupById(id);
     }
 
-    function clearPopupById(id) {
-        const index = root.list.findIndex(notif => notif && notif.id === id);
-        if (index === -1)
+    function stopNotifTimer(notif) {
+        if (!notif || !notif.timer)
             return;
-        const notif = root.list[index];
-        if (notif.timer) {
+        try {
             notif.timer.stop();
             notif.timer.destroy();
-            notif.timer = null;
-        }
-        notif.popup = false;
-        root.timeout(id);
-        triggerListChange();
+        } catch (e) {}
+        notif.timer = null;
     }
 
+    function clearPopupById(id) {
+        const targetId = Number(id);
+        let changed = false;
+        for (let i = 0; i < root.list.length; i++) {
+            const notif = root.list[i];
+            if (!notif || Number(notif.id) !== targetId)
+                continue;
+            stopNotifTimer(notif);
+            if (notif.popup) {
+                notif.popup = false;
+                changed = true;
+            }
+            root.timeout(notif.id);
+            break;
+        }
+        if (changed)
+            forcePopupRefresh();
+    }
+
+    // Drop every live toast for an app name (X on a grouped toast).
     function dismissPopupApp(appName) {
-        if (!appName)
+        const name = String(appName || "");
+        if (!name)
             return;
         let changed = false;
-        root.list.forEach(notif => {
-            if (!notif || notif.appName !== appName || !notif.popup)
-                return;
-            if (notif.timer) {
-                notif.timer.stop();
-                notif.timer.destroy();
-                notif.timer = null;
-            }
+        for (let i = 0; i < root.list.length; i++) {
+            const notif = root.list[i];
+            if (!notif || !notif.popup)
+                continue;
+            if (String(notif.appName) !== name)
+                continue;
+            stopNotifTimer(notif);
             notif.popup = false;
             root.timeout(notif.id);
             changed = true;
-        });
+        }
         if (changed)
-            triggerListChange();
+            forcePopupRefresh();
+    }
+
+    // Hide every live toast regardless of app.
+    function dismissAllPopups() {
+        let changed = false;
+        for (let i = 0; i < root.list.length; i++) {
+            const notif = root.list[i];
+            if (!notif || !notif.popup)
+                continue;
+            stopNotifTimer(notif);
+            notif.popup = false;
+            root.timeout(notif.id);
+            changed = true;
+        }
+        if (changed)
+            forcePopupRefresh();
     }
 
     function timeoutAll() {
-        let changed = false;
-        root.list.forEach(notif => {
-            if (!notif || !notif.popup)
-                return;
-            if (notif.timer) {
-                notif.timer.stop();
-                notif.timer.destroy();
-                notif.timer = null;
-            }
-            notif.popup = false;
-            root.timeout(notif.id);
-            changed = true;
-        });
-        if (changed)
-            triggerListChange();
+        dismissAllPopups();
+    }
+
+    // Always rebuild popup arrays from scratch and reassign so QML bindings fire.
+    function forcePopupRefresh() {
+        const next = [];
+        for (let i = 0; i < root.list.length; i++)
+            next.push(root.list[i]);
+        root.list = next;
+        rebuildGroups();
     }
 
     function attemptInvokeAction(id, notifIdentifier, autoDiscard = true) {
@@ -583,20 +609,19 @@ Singleton {
     }
 
     function hideAllPopups() {
-        let changed = false;
-        root.list.forEach(notif => {
-            if (!notif || !notif.popup)
-                return;
-            notif.popup = false;
-            if (notif.timer) {
-                notif.timer.stop();
-                notif.timer.destroy();
-                notif.timer = null;
-            }
-            changed = true;
-        });
-        if (changed)
-            triggerListChange();
+        dismissAllPopups();
+    }
+
+    IpcHandler {
+        target: "notifications"
+
+        function dismissAll() {
+            root.dismissAllPopups();
+        }
+
+        function dismissApp(appName: string) {
+            root.dismissPopupApp(appName);
+        }
     }
 
     function triggerListChange() {

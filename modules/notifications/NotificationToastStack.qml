@@ -6,20 +6,18 @@ import qs.modules.theme
 import qs.modules.components
 import qs.config
 
-// In-panel toast stack (not a separate layer-shell window).
-// Lives inside UnifiedShellPanel so clicks are not stolen by the full-screen
-// bar surface's input region.
+// In-panel toast stack. Visual card is non-interactive; a full-card MouseArea
+// sits on top and dismisses by Notif id (app-name matching was unreliable).
 Item {
     id: root
 
-    readonly property bool hasPopups: Notifications.popupAppNameList.length > 0
-    // Expose for the panel mask so the bar surface accepts clicks on toasts.
+    readonly property int popupCount: Notifications.popupList ? Notifications.popupList.length : 0
+    readonly property bool hasPopups: popupCount > 0
     readonly property Item hitbox: hasPopups ? toastColumn : null
 
     visible: hasPopups
     width: 360
-    height: toastColumn.implicitHeight
-    // Sit under the bar pills; panel is full-screen so use absolute coords.
+    height: Math.max(toastColumn.implicitHeight, 1)
     anchors.top: parent.top
     anchors.right: parent.right
     anchors.topMargin: 56
@@ -32,40 +30,40 @@ Item {
         spacing: 8
 
         Repeater {
-            model: Notifications.popupAppNameList
+            model: root.popupCount
 
             delegate: Item {
                 id: toastRoot
                 required property int index
-                required property var modelData
 
-                readonly property string appName: String(modelData || "")
-                readonly property var group: Notifications.popupGroupsByAppName[appName] || null
-                readonly property var latest: {
-                    const list = group && group.notifications ? group.notifications : [];
-                    if (!list.length)
+                readonly property var notif: {
+                    const list = Notifications.popupList;
+                    if (!list || toastRoot.index < 0 || toastRoot.index >= list.length)
                         return null;
-                    let best = list[0];
-                    for (let i = 1; i < list.length; i++) {
-                        if ((list[i].time || 0) > (best.time || 0))
-                            best = list[i];
-                    }
-                    return best;
+                    return list[toastRoot.index];
                 }
+                readonly property int notifId: notif && notif.id !== undefined ? Number(notif.id) : NaN
+                readonly property string appName: notif ? String(notif.appName || "") : ""
+                readonly property string summary: notif ? String(notif.summary || "") : ""
+                readonly property string body: notif ? String(notif.body || "") : ""
                 readonly property bool isCritical: {
-                    const u = latest?.urgency;
+                    if (!notif)
+                        return false;
+                    const u = notif.urgency;
                     return u === 2 || u === "critical" || String(u).toLowerCase() === "critical";
                 }
 
                 width: toastColumn.width
                 height: Math.max(bodyCol.implicitHeight + 24, 72)
-                visible: latest !== null
+                visible: notif !== null
 
+                // Visual only — must not steal mouse.
                 StyledRect {
                     anchors.fill: parent
                     variant: "popup"
                     radius: Styling.radius(8)
                     enableShadow: false
+                    enabled: false
 
                     Rectangle {
                         anchors.fill: parent
@@ -114,7 +112,7 @@ Item {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: width / 2
-                                    color: dismissMa.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                                    color: cardMa.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
                                 }
 
                                 Text {
@@ -122,27 +120,15 @@ Item {
                                     text: Icons.cancel
                                     font.family: Icons.font
                                     font.pixelSize: 16
-                                    color: dismissMa.containsMouse ? Colors.overBackground : Colors.outline
-                                }
-
-                                MouseArea {
-                                    id: dismissMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    // Prefer press so it wins over HoverHandlers/Flickables.
-                                    onPressed: mouse => {
-                                        mouse.accepted = true;
-                                        Notifications.dismissPopupApp(toastRoot.appName);
-                                    }
+                                    color: cardMa.containsMouse ? Colors.overBackground : Colors.outline
                                 }
                             }
                         }
 
                         Text {
                             Layout.fillWidth: true
-                            visible: !!(toastRoot.latest?.summary)
-                            text: toastRoot.latest?.summary || ""
+                            visible: toastRoot.summary.length > 0
+                            text: toastRoot.summary
                             font.family: Config.theme.font
                             font.pixelSize: Config.theme.fontSize
                             font.weight: Font.Medium
@@ -152,8 +138,8 @@ Item {
 
                         Text {
                             Layout.fillWidth: true
-                            visible: !!(toastRoot.latest?.body)
-                            text: toastRoot.latest?.body || ""
+                            visible: toastRoot.body.length > 0
+                            text: toastRoot.body
                             textFormat: Text.StyledText
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
@@ -162,6 +148,20 @@ Item {
                             maximumLineCount: 6
                             elide: Text.ElideRight
                         }
+                    }
+                }
+
+                // Full-card click target ON TOP of the visual card.
+                MouseArea {
+                    id: cardMa
+                    anchors.fill: parent
+                    z: 100
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                    onClicked: {
+                        console.log("Toast dismiss click id=", toastRoot.notifId, "app=", toastRoot.appName);
+                        root.dismissToast(toastRoot.notifId, toastRoot.appName);
                     }
                 }
 
@@ -177,5 +177,25 @@ Item {
                 }
             }
         }
+    }
+
+    function dismissToast(notifId, appName) {
+        console.log("NotificationToastStack.dismissToast", notifId, appName, "popupCount=", root.popupCount);
+        if (!isNaN(Number(notifId)))
+            Notifications.clearPopupById(notifId);
+        if (appName)
+            Notifications.dismissPopupApp(appName);
+
+        // If that id is still showing, clear everything rather than leave a stuck toast.
+        Qt.callLater(() => {
+            const list = Notifications.popupList || [];
+            for (let i = 0; i < list.length; i++) {
+                if (!isNaN(Number(notifId)) && Number(list[i].id) === Number(notifId)) {
+                    console.warn("Toast still present after dismiss; clearing all popups");
+                    Notifications.dismissAllPopups();
+                    return;
+                }
+            }
+        });
     }
 }
