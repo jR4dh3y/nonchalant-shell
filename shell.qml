@@ -11,7 +11,6 @@ import qs.modules.lockscreen
 import qs.modules.globals
 import qs.modules.shell
 import qs.modules.shell.osd
-import qs.modules.notifications
 import qs.modules.widgets.dashboard.wallpapers
 import qs.config
 
@@ -93,8 +92,8 @@ ShellRoot {
         UnlockHandoff {}
     }
 
-    // Transient notification toasts (history lives in the dashboard popup).
-    NotificationPopup {}
+    // Toasts are hosted inside UnifiedShellPanel (NotificationToastStack) so
+    // they receive clicks. NotificationServer still loads via service init.
 
     // Initialize only the services needed by the bar, run menu, and lockscreen.
     QtObject {

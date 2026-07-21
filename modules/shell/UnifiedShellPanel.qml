@@ -5,6 +5,7 @@ import qs.modules.bar
 import qs.modules.services
 import qs.modules.components
 import qs.modules.widgets.launcher
+import qs.modules.notifications
 import qs.config
 
 PanelWindow {
@@ -71,6 +72,8 @@ PanelWindow {
     }
 
     // Capture the full screen only while the run menu or a bar popup is open.
+    // Toast stack must be in the mask or the full-screen transparent panel
+    // swallows clicks meant for the X / dismiss controls.
     mask: Region {
         // Full-screen capture when any module/popup is open
         item: unifiedPanel.needsFullScreenInput ? fullScreenMask : null
@@ -80,6 +83,9 @@ PanelWindow {
             },
             Region {
                 item: runMenu.hitbox
+            },
+            Region {
+                item: toastStack.hitbox
             }
         ]
     }
@@ -114,6 +120,12 @@ PanelWindow {
             screen: unifiedPanel.targetScreen
             z: 1
             visible: unifiedPanel.barEnabled
+        }
+
+        // Notification toasts live on this panel so they share the bar's
+        // input surface (separate layer windows were unclickable under niri).
+        NotificationToastStack {
+            id: toastStack
         }
 
         // Detached popup; it never joins the screen edge or reserves space.
