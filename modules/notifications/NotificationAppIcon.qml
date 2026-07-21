@@ -37,12 +37,19 @@ Item {
         // fallback instead.
         if (value.startsWith("image://qsimage/") || value.startsWith("image://qsimagetheme/"))
             return "";
+        // Chromium/browser scoped temp icons die after the notification
+        // process cleans up; skip them so Image does not spam Cannot open.
+        if (value.includes("/tmp/org.chromium.") || value.includes("/tmp/.org.chromium.") || value.includes("scoped_dir"))
+            return "";
         if (value.startsWith("file://") || value.startsWith("data:") || value.startsWith("image://"))
             return value;
         if (value.startsWith("/"))
             return "file://" + value;
         return "image://icon/" + value;
     }
+
+    readonly property string resolvedImage: resolveIconSource(root.image)
+    readonly property string resolvedAppIcon: resolveIconSource(root.appIcon)
 
     implicitWidth: size
     implicitHeight: size
@@ -60,7 +67,7 @@ Item {
             border.width: root.urgency == NotificationUrgency.Critical ? 2 : 0
             border.color: root.urgency == NotificationUrgency.Critical ? Colors.criticalRed : "transparent"
             radius: root.radius
-            visible: ((root.image == "" || root.notificationImageFailed) && (root.appIcon == "" || root.appIconFailed))
+            visible: ((root.resolvedImage == "" || root.notificationImageFailed) && (root.resolvedAppIcon == "" || root.appIconFailed))
                 || (appIconLoader.active && root.appIconFailed)
 
             Text {
@@ -95,14 +102,14 @@ Item {
 
         Loader {
             id: appIconLoader
-            active: (root.image == "" || root.notificationImageFailed) && root.appIcon != "" && !root.appIconFailed
+            active: (root.resolvedImage == "" || root.notificationImageFailed) && root.resolvedAppIcon != "" && !root.appIconFailed
             anchors.fill: parent
             visible: item && item.status === Image.Ready
             sourceComponent: Image {
                 mipmap: true
                 id: appIconImage
                 anchors.fill: parent
-                source: root.resolveIconSource(root.appIcon)
+                source: root.resolvedAppIcon
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
                 onStatusChanged: {
@@ -115,7 +122,7 @@ Item {
         // Mostrar imagen de notificación si existe
         Loader {
             id: notifImageLoader
-            active: root.image != "" && !root.notificationImageFailed
+            active: root.resolvedImage != "" && !root.notificationImageFailed
             anchors.fill: parent
             sourceComponent: Item {
                 anchors.fill: parent
@@ -130,7 +137,7 @@ Item {
                         mipmap: true
                         id: notifImage
                         anchors.fill: parent
-                        source: root.image
+                        source: root.resolvedImage
                         fillMode: Image.PreserveAspectCrop
                         smooth: true
                         onStatusChanged: {
@@ -146,7 +153,7 @@ Item {
     // App icon pequeño superpuesto si hay imagen
     Loader {
         id: notifImageAppIconLoader
-        active: root.image != "" && !root.notificationImageFailed && root.appIcon != "" && !root.usingAppIconFallback
+        active: root.resolvedImage != "" && !root.notificationImageFailed && root.resolvedAppIcon != "" && !root.usingAppIconFallback
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         width: root.smallAppIconSize
@@ -156,9 +163,13 @@ Item {
             Image {
                 mipmap: true
                 anchors.fill: parent
-                source: root.resolveIconSource(root.appIcon)
+                source: root.resolvedAppIcon
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
+                onStatusChanged: {
+                    if (status === Image.Error)
+                        root.appIconFailed = true;
+                }
             }
         }
     }

@@ -234,12 +234,6 @@ Singleton {
         rebuildGroups();
     }
 
-    Component.onCompleted: {
-        // Ensure history groups exist even before the first FileView load.
-        rebuildGroups();
-        notifFileView.reload();
-    }
-
     onListChanged: {
         // Update latest time for each app
         root.list.forEach(notif => {
@@ -636,6 +630,8 @@ Singleton {
     }
 
     Component.onCompleted: {
+        // History groups must exist before FileView finishes; then load disk cache.
+        rebuildGroups();
         notifFileView.reload();
         root.initDone();
     }

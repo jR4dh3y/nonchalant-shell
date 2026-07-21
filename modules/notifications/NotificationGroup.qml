@@ -26,6 +26,8 @@ Item {
         const value = String(icon);
         if (value.startsWith("image://qsimage/") || value.startsWith("image://qsimagetheme/"))
             return "";
+        if (value.includes("/tmp/org.chromium.") || value.includes("scoped_dir"))
+            return "";
         if (value.startsWith("file://") || value.startsWith("data:") || value.startsWith("image://"))
             return value;
         if (value.startsWith("/"))
