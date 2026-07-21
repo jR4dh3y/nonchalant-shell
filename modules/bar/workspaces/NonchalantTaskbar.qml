@@ -21,6 +21,13 @@ Item {
             return workspace.isNamed || workspace.active || root.windowsForWorkspace(workspace.id).length > 0;
         })
         .sort((left, right) => left.idx - right.idx)
+    readonly property int activeWorkspaceIndex: visibleWorkspaces.findIndex(workspace => workspace.active)
+    readonly property Item activeWorkspaceButton: {
+        const count = workspaceRepeater.count;
+        return activeWorkspaceIndex >= 0 && activeWorkspaceIndex < count
+            ? workspaceRepeater.itemAt(activeWorkspaceIndex)
+            : null;
+    }
 
     function windowsForWorkspace(workspaceId) {
         return NiriService.clients.values.filter(window => window.workspace.id === workspaceId);
@@ -41,13 +48,52 @@ Item {
         enableShadow: false
     }
 
+    StyledRect {
+        id: activeIndicator
+        variant: "focus"
+        z: 1
+        x: root.activeWorkspaceButton ? workspaceRow.x + root.activeWorkspaceButton.x : workspaceRow.x
+        y: workspaceRow.y
+        width: root.activeWorkspaceButton ? root.activeWorkspaceButton.width : 0
+        height: workspaceRow.height
+        radius: Styling.radius(5)
+        opacity: root.activeWorkspaceButton ? 1 : 0
+        enableShadow: false
+
+        Behavior on x {
+            enabled: Config.animDuration > 0
+            NumberAnimation {
+                duration: Config.animDuration
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on width {
+            enabled: Config.animDuration > 0
+            NumberAnimation {
+                duration: Config.animDuration
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on opacity {
+            enabled: Config.animDuration > 0
+            NumberAnimation {
+                duration: Config.animDuration / 2
+                easing.type: Easing.OutQuad
+            }
+        }
+    }
+
     RowLayout {
         id: workspaceRow
+        z: 2
         anchors.fill: parent
         anchors.margins: 4
         spacing: 2
 
         Repeater {
+            id: workspaceRepeater
             model: root.visibleWorkspaces
 
             Item {
@@ -59,13 +105,22 @@ Item {
                 readonly property var windows: root.windowsForWorkspace(workspace.id)
                 readonly property bool occupied: windows.length > 0
                 readonly property string displayName: workspace.isNamed ? workspace.name : String(workspace.idx)
+                readonly property bool showLabel: !active || !occupied
 
-                Layout.preferredWidth: active ? Math.max(32, appsRow.implicitWidth + 10) : workspaceName.implicitWidth + 16
+                Layout.preferredWidth: showLabel ? workspaceName.implicitWidth + 16 : Math.max(32, appsRow.implicitWidth + 10)
                 Layout.preferredHeight: 28
+
+                Behavior on Layout.preferredWidth {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: Config.animDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 StyledRect {
                     anchors.fill: parent
-                    variant: "bg"
+                    variant: "transparent"
                     radius: Styling.radius(5)
                     enableShadow: false
 
@@ -81,22 +136,62 @@ Item {
                     id: workspaceName
                     z: 1
                     anchors.centerIn: parent
-                    visible: !workspaceButton.active
+                    visible: opacity > 0
+                    opacity: workspaceButton.showLabel ? 1 : 0
+                    scale: workspaceButton.showLabel ? 1 : 0.85
                     text: workspaceButton.displayName
                     color: workspaceButton.workspace.is_urgent
                         ? Colors.red
-                        : (workspaceButton.occupied ? Styling.srItem("overprimary") : Colors.overBackground)
+                        : (workspaceButton.active
+                            ? activeIndicator.item
+                            : (workspaceButton.occupied ? Styling.srItem("overprimary") : Colors.overBackground))
                     font.family: Config.theme.font
                     font.pixelSize: Config.theme.fontSize
                     font.weight: workspaceButton.occupied ? Font.DemiBold : Font.Medium
+
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: Config.animDuration / 2
+                            easing.type: Easing.OutQuad
+                        }
+                    }
+
+                    Behavior on scale {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: Config.animDuration
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 1.1
+                        }
+                    }
                 }
 
                 Row {
                     id: appsRow
                     z: 2
                     anchors.centerIn: parent
-                    visible: workspaceButton.active
+                    visible: opacity > 0
+                    opacity: workspaceButton.active && workspaceButton.occupied ? 1 : 0
+                    scale: workspaceButton.active && workspaceButton.occupied ? 1 : 0.85
                     spacing: 3
+
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: Config.animDuration / 2
+                            easing.type: Easing.OutQuad
+                        }
+                    }
+
+                    Behavior on scale {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: Config.animDuration
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 1.1
+                        }
+                    }
 
                     Repeater {
                         model: workspaceButton.windows
