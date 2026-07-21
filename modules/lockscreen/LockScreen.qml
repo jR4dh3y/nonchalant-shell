@@ -11,6 +11,7 @@ import qs.modules.components
 import qs.modules.corners
 import qs.modules.theme
 import qs.modules.globals
+import qs.modules.services
 import qs.modules.widgets.dashboard.widgets
 import qs.config
 
@@ -23,10 +24,48 @@ WlSessionLockSurface {
     property string errorMessage: ""
     property int failLockSecondsLeft: 0
 
-    // Always transparent - blur background handles the visuals
-    color: "transparent"
+    readonly property string freezeSource: LockscreenService.freezeSourceFor(root.screen ? root.screen.name : "")
+    readonly property bool freezeReady: freezeBackground.status === Image.Ready
 
-    // Wallpaper background con Blur integrado
+    // Opaque fallback only. The freeze frame (pre-lock desktop) sits on top of
+    // this so unlock never reveals a solid Colors.background / black slab.
+    color: "black"
+
+    // Pre-lock desktop freeze. Captured with grim *before* WlSessionLock is
+    // raised (see LockscreenService). Post-lock ScreencopyView only sees lock
+    // surfaces, which is why the first unlock used to flash black.
+    Image {
+        id: freezeBackground
+        anchors.fill: parent
+        z: 0
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: false
+        cache: false
+        smooth: true
+        visible: true
+        source: root.freezeSource
+
+        property real zoomScale: startAnim ? 1.25 : 1.0
+
+        transform: Scale {
+            origin.x: freezeBackground.width / 2
+            origin.y: freezeBackground.height / 2
+            xScale: freezeBackground.zoomScale
+            yScale: freezeBackground.zoomScale
+        }
+
+        Behavior on zoomScale {
+            enabled: Config.animDuration > 0
+            NumberAnimation {
+                duration: Config.animDuration * 2
+                easing.type: Easing.OutExpo
+            }
+        }
+    }
+
+    // Wallpaper + blur over the freeze. Fades in on lock, out on unlock so the
+    // last lock frame is the real desktop again — not wallpaper, not black.
+    // If freeze failed, keep this fully opaque through unlock.
     TintedWallpaper {
         id: wallpaperBackground
         anchors.fill: parent
@@ -42,8 +81,7 @@ WlSessionLockSurface {
 
         source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
 
-        // Animación de opacidad (visibilidad)
-        opacity: startAnim ? 1 : 0
+        opacity: (startAnim || !root.freezeReady) ? 1 : 0
         visible: true
 
         Behavior on opacity {
@@ -54,7 +92,6 @@ WlSessionLockSurface {
             }
         }
 
-        // Efecto de Blur y Zoom mediante capa
         layer.enabled: true
         layer.effect: MultiEffect {
             blurEnabled: true
@@ -62,7 +99,6 @@ WlSessionLockSurface {
             blurMax: 64
         }
 
-        // Zoom animation
         property real zoomScale: startAnim ? 1.25 : 1.0
         transform: Scale {
             origin.x: wallpaperBackground.width / 2
@@ -80,31 +116,14 @@ WlSessionLockSurface {
         }
     }
 
-    // Screen capture background (fondo absoluto con zoom sincronizado)
-    ScreencopyView {
-        id: screencopyBackground
-        anchors.fill: parent
-        captureSource: root.screen
-        live: false
-        paintCursor: false
-        visible: startAnim  // Visible solo cuando startAnim es true
-        z: 0  // Capa más baja - fondo absoluto
+    // Authentication happens on one lock surface, but every monitor needs to
+    // animate back to its captured workspace before the shared session unlocks.
+    Connections {
+        target: GlobalStates
 
-        property real zoomScale: startAnim ? 1.25 : 1.0
-
-        transform: Scale {
-            origin.x: screencopyBackground.width / 2
-            origin.y: screencopyBackground.height / 2
-            xScale: screencopyBackground.zoomScale
-            yScale: screencopyBackground.zoomScale
-        }
-
-        Behavior on zoomScale {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration * 2
-                easing.type: Easing.OutExpo
-            }
+        function onLockscreenUnlockingChanged() {
+            if (GlobalStates.lockscreenUnlocking)
+                root.startAnim = false;
         }
     }
 
@@ -238,7 +257,7 @@ WlSessionLockSurface {
                 color: hoursText.color
                 antialiasing: true
                 anchors.top: hoursText.top
-                anchors.topMargin: hoursText.height * 0.35 
+                anchors.topMargin: hoursText.height * 0.35
                 visible: Config.bar.use12hFormat
                 opacity: startAnim ? 1 : 0
 
@@ -277,7 +296,6 @@ WlSessionLockSurface {
         }
     }
 
-    // Music player (slides from left)
     Item {
         id: playerContainer
         z: 10
@@ -319,7 +337,6 @@ WlSessionLockSurface {
         }
     }
 
-    // Password input container (slides from top or bottom)
     Item {
         id: passwordContainer
         z: 10
@@ -394,53 +411,9 @@ WlSessionLockSurface {
                 anchors.rightMargin: 24
                 spacing: 12
 
-                // Avatar (64x64)
-                Rectangle {
-                    id: avatarContainer
-                    width: 64
-                    height: 64
-                    radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
-                    color: "transparent"
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    Image {
-                        mipmap: true
-                        id: userAvatar
-                        anchors.fill: parent
-                        source: `file://${Quickshell.env("HOME")}/.face.icon`
-                        fillMode: Image.PreserveAspectCrop
-                        smooth: true
-                        asynchronous: true
-                        visible: status === Image.Ready
-
-                        layer.enabled: true
-                        layer.effect: MultiEffect {
-                            maskEnabled: true
-                            maskThresholdMin: 0.5
-                            maskSpreadAtMin: 1.0
-                            maskSource: ShaderEffectSource {
-                                sourceItem: Rectangle {
-                                    width: userAvatar.width
-                                    height: userAvatar.height
-                                    radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
-                                }
-                            }
-                        }
-                    }
-
-                    // Fallback icon if image not found
-                    Text {
-                        anchors.centerIn: parent
-                        text: "👤"
-                        font.pixelSize: 32
-                        visible: userAvatar.status !== Image.Ready
-                    }
-                }
-
-                // Password field
                 StyledRect {
                     id: passwordFieldBg
-                    width: parent.width - avatarContainer.width - parent.spacing
+                    width: parent.width - parent.spacing
                     height: 48
                     anchors.verticalCenter: parent.verticalCenter
                     variant: passwordInputBox.showError ? "error" : "common"
@@ -524,8 +497,6 @@ WlSessionLockSurface {
                             onAccepted: {
                                 if (passwordInput.text.trim() === "")
                                     return;
-
-                                // Guardar contraseña y limpiar campo inmediatamente
                                 authPasswordHolder.password = passwordInput.text;
                                 passwordInput.text = "";
 
@@ -584,12 +555,13 @@ WlSessionLockSurface {
         }
     }
 
-    // Timer to unlock after exit animation
+    // Timer to unlock after exit animation. Handoff overlay bridges the
+    // compositor gap between lock-surface destruction and live desktop.
     Timer {
         id: unlockTimer
-        interval: Config.animDuration * 2  // Wait for zoom out (1x) + fade out (1x)
+        interval: Math.max(Config.animDuration * 2, 1)
         onTriggered: {
-            GlobalStates.lockscreenVisible = false;
+            LockscreenService.beginUnlockHandoff();
         }
     }
 
@@ -683,7 +655,8 @@ WlSessionLockSurface {
 
             if (result === PamResult.Success) {
                 // Autenticación exitosa - trigger exit animation
-                startAnim = false;
+                GlobalStates.lockscreenUnlocking = true;
+                root.startAnim = false;
 
                 // Wait for exit animation, then unlock
                 unlockTimer.start();
@@ -691,7 +664,6 @@ WlSessionLockSurface {
                 errorMessage = "";
                 authenticating = false;
             } else {
-                // Error de autenticación
                 errorMessage = "Authentication failed";
                 console.warn("PAM auth failed with result:", result);
                 if (Config.animDuration > 0) {
@@ -701,49 +673,9 @@ WlSessionLockSurface {
         }
     }
 
-    // Screen corners
-    RoundCorner {
-        id: topLeft
-        size: Styling.radius(4)
-        anchors.left: parent.left
-        anchors.top: parent.top
-        corner: RoundCorner.CornerEnum.TopLeft
-        z: 100
-    }
-
-    RoundCorner {
-        id: topRight
-        size: Styling.radius(4)
-        anchors.right: parent.right
-        anchors.top: parent.top
-        corner: RoundCorner.CornerEnum.TopRight
-        z: 100
-    }
-
-    RoundCorner {
-        id: bottomLeft
-        size: Styling.radius(4)
-        anchors.left: parent.left
-        anchors.bottom: parent.bottom
-        corner: RoundCorner.CornerEnum.BottomLeft
-        z: 100
-    }
-
-    RoundCorner {
-        id: bottomRight
-        size: Styling.radius(4)
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        corner: RoundCorner.CornerEnum.BottomRight
-        z: 100
-    }
-
-    // Initialize when component is created (when lock becomes active)
+    // Initialize when component is created (when lock becomes active).
+    // Freeze was already captured pre-lock; just start the entry animation.
     Component.onCompleted: {
-        // Capture screen immediately
-        screencopyBackground.captureFrame();
-
-        // Start animations
         startAnim = true;
         passwordInput.forceActiveFocus();
     }

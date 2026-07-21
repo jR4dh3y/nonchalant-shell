@@ -9,6 +9,7 @@ Item {
     implicitWidth: powerMenu.implicitWidth
     implicitHeight: powerMenu.implicitHeight
     property bool popupMode: false
+    property bool expanded: true
 
     signal closeRequested()
 
@@ -31,6 +32,7 @@ Item {
     PowerMenu {
         id: powerMenu
         anchors.fill: parent
+        expanded: root.expanded
         
         onItemSelected: {
             if (root.popupMode)

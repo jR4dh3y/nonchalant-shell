@@ -75,6 +75,14 @@ ShellRoot {
         LockScreen {}
     }
 
+    // Post-unlock freeze bridge (one per screen). Covers the black flash
+    // between session-lock teardown and the live desktop redraw.
+    Variants {
+        model: Quickshell.screens
+
+        UnlockHandoff {}
+    }
+
     // Initialize only the services needed by the bar, run menu, and lockscreen.
     QtObject {
         id: serviceInitializer
@@ -83,6 +91,7 @@ ShellRoot {
             Qt.callLater(() => {
                 let _ = IdleService.lockCmd;
                 _ = GlobalShortcuts.appId;
+                _ = LockscreenService.freezePathBase;
             });
         }
     }

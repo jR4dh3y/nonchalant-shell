@@ -5,6 +5,8 @@ import qs.config
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
+import qs.modules.globals
+import qs.modules.widgets.dashboard
 import "../../widgets/dashboard/widgets"
 
 Item {
@@ -27,9 +29,18 @@ Item {
 
     // Popup visibility state
     property bool popupOpen: clockPopup.isOpen
+    readonly property bool menuOpen: dashboardPopup.isOpen
 
     function toggleCenterMenu() {
-        clockPopup.toggle();
+        clockPopup.close();
+        if (dashboardPopup.isOpen) {
+            dashboardPopup.close();
+        } else {
+            Visibilities.setActiveModule("");
+            GlobalStates.dashboardCurrentTab = 0;
+            dashboardLoader.active = true;
+            Qt.callLater(() => dashboardPopup.open());
+        }
     }
 
     readonly property bool weatherAvailable: WeatherService.dataAvailable
@@ -46,7 +57,7 @@ Item {
     // Main button
     StyledRect {
         id: buttonBg
-        variant: root.popupOpen ? "primary" : "bg"
+        variant: root.popupOpen || root.menuOpen ? "primary" : "bg"
         anchors.fill: parent
         enableShadow: root.layerEnabled
 
@@ -61,7 +72,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
-            opacity: root.popupOpen ? 0 : (root.isHovered ? 0.25 : 0)
+            opacity: root.popupOpen || root.menuOpen ? 0 : (root.isHovered ? 0.25 : 0)
             radius: parent.radius ?? 0
 
             Behavior on opacity {
@@ -88,7 +99,7 @@ Item {
                     text: root.weatherAvailable
                         ? WeatherService.weatherSymbol + " " + Math.round(WeatherService.currentTemp) + "°"
                         : root.currentDayAbbrev
-                    color: root.popupOpen ? buttonBg.item : Colors.overBackground
+                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -98,6 +109,8 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
+                        if (root.menuOpen)
+                            dashboardPopup.close();
                         clockPopup.toggle();
                     }
                 }
@@ -116,7 +129,7 @@ Item {
                     id: dateDisplay
                     anchors.centerIn: parent
                     text: root.currentFullDate
-                    color: root.popupOpen ? buttonBg.item : Colors.overBackground
+                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.weight: Font.Medium
@@ -146,6 +159,12 @@ Item {
                     font.family: Config.theme.font
                     font.bold: true
                 }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.toggleCenterMenu()
+                }
             }
         }
 
@@ -159,7 +178,7 @@ Item {
             Text {
                 id: dayDisplayV
                 text: root.weatherAvailable ? WeatherService.weatherSymbol : root.currentDayAbbrev
-                color: root.popupOpen ? buttonBg.item : Colors.overBackground
+                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
                 font.pixelSize: root.weatherAvailable ? 16 : Config.theme.fontSize
                 font.family: Config.theme.font
                 font.bold: !root.weatherAvailable
@@ -177,7 +196,7 @@ Item {
             Text {
                 id: hoursDisplayV
                 text: root.currentHours
-                color: root.popupOpen ? buttonBg.item : Colors.overBackground
+                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
                 font.pixelSize: Config.theme.fontSize
                 font.family: Config.theme.font
                 font.bold: true
@@ -189,7 +208,7 @@ Item {
             Text {
                 id: minutesDisplayV
                 text: root.currentMinutes
-                color: root.popupOpen ? buttonBg.item : Colors.overBackground
+                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
                 font.pixelSize: Config.theme.fontSize
                 font.family: Config.theme.font
                 font.bold: true
@@ -199,6 +218,12 @@ Item {
             }
         }
 
+        MouseArea {
+            anchors.fill: parent
+            enabled: root.vertical
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.toggleCenterMenu()
+        }
     }
 
     // Clock & Weather popup
@@ -213,8 +238,11 @@ Item {
         contentHeight: popupColumn.height
 
         onIsOpenChanged: {
-            if (isOpen && !WeatherService.dataAvailable)
-                WeatherService.updateWeather();
+            if (isOpen) {
+                dashboardPopup.close();
+                if (!WeatherService.dataAvailable)
+                    WeatherService.updateWeather();
+            }
         }
 
         // Main popup column
@@ -513,6 +541,52 @@ Item {
         }
     }
 
+    // Dashboard popup: same bar-relative placement and open animation as weather.
+    BarPopup {
+        id: dashboardPopup
+        anchorItem: buttonBg
+        bar: root.bar
+        variant: "transparent"
+        popupPadding: 0
+
+        contentWidth: dashboardWrapper.width
+        contentHeight: dashboardWrapper.height
+
+        onIsOpenChanged: {
+            const screenName = root.bar?.screen?.name ?? "";
+            if (isOpen) {
+                clockPopup.close();
+                GlobalStates.dashboardPopupScreen = screenName;
+            } else if (GlobalStates.dashboardPopupScreen === screenName) {
+                GlobalStates.dashboardPopupScreen = "";
+            }
+        }
+
+        StyledRect {
+            id: dashboardWrapper
+            variant: "popup"
+            radius: Styling.radius(8)
+            enableShadow: false
+            width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + 16 : 0
+            height: dashboardLoader.item ? dashboardLoader.item.implicitHeight + 16 : 0
+
+            Loader {
+                id: dashboardLoader
+                active: false
+                anchors.fill: parent
+                anchors.margins: 8
+
+                sourceComponent: Component {
+                    DashboardView {
+                        screenName: root.bar?.screen?.name ?? ""
+                        popupMode: true
+                        onCloseRequested: dashboardPopup.close()
+                    }
+                }
+            }
+        }
+    }
+
     function scheduleNextDayUpdate() {
         var now = new Date();
         var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
@@ -549,6 +623,12 @@ Item {
         repeat: false
         running: false
         onTriggered: updateDay()
+    }
+
+    Component.onDestruction: {
+        const screenName = root.bar?.screen?.name ?? "";
+        if (GlobalStates.dashboardPopupScreen === screenName)
+            GlobalStates.dashboardPopupScreen = "";
     }
 
     Component.onCompleted: {

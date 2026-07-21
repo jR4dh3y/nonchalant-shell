@@ -254,56 +254,56 @@ Rectangle {
                     }
                 }
 
-                Column {
+                // Network: icon + speeds only (no progress bar).
+                RowLayout {
                     width: parent.width
-                    spacing: 4
+                    spacing: 8
 
-                    ResourceItem {
-                        width: parent.width
-                        icon: Icons.ethernet
-                        label: "Network"
-                        statusText: "Network"
-                        barColor: Colors.blue
+                    Text {
+                        text: Icons.ethernet
+                        font.family: Icons.font
+                        font.pixelSize: 18
+                        color: Colors.overBackground
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredWidth: 20
                     }
 
-                    RowLayout {
-                        width: parent.width
-                        spacing: 4
+                    Text {
+                        text: Icons.arrowDown
+                        font.family: Icons.font
+                        font.pixelSize: Styling.fontSize(-2)
+                        color: Colors.cyan
+                        Layout.alignment: Qt.AlignVCenter
+                    }
 
-                        Text {
-                            text: Icons.arrowDown
-                            font.family: Icons.font
-                            font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.cyan
-                        }
+                    Text {
+                        text: root.formatSpeed(SystemResources.networkDownloadSpeed)
+                        font.family: Config.theme.font
+                        font.pixelSize: Styling.fontSize(-2)
+                        font.weight: Font.Medium
+                        color: Colors.overBackground
+                        Layout.alignment: Qt.AlignVCenter
+                    }
 
-                        Text {
-                            text: root.formatSpeed(SystemResources.networkDownloadSpeed)
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
-                            font.weight: Font.Medium
-                            color: Colors.overBackground
-                        }
+                    Item {
+                        Layout.fillWidth: true
+                    }
 
-                        Separator {
-                            Layout.preferredHeight: 2
-                            Layout.fillWidth: true
-                        }
+                    Text {
+                        text: Icons.arrowUp
+                        font.family: Icons.font
+                        font.pixelSize: Styling.fontSize(-2)
+                        color: Colors.red
+                        Layout.alignment: Qt.AlignVCenter
+                    }
 
-                        Text {
-                            text: Icons.arrowUp
-                            font.family: Icons.font
-                            font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.red
-                        }
-
-                        Text {
-                            text: root.formatSpeed(SystemResources.networkUploadSpeed)
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
-                            font.weight: Font.Medium
-                            color: Colors.overBackground
-                        }
+                    Text {
+                        text: root.formatSpeed(SystemResources.networkUploadSpeed)
+                        font.family: Config.theme.font
+                        font.pixelSize: Styling.fontSize(-2)
+                        font.weight: Font.Medium
+                        color: Colors.overBackground
+                        Layout.alignment: Qt.AlignVCenter
                     }
                 }
             }

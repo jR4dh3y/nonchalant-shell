@@ -35,28 +35,18 @@ ToggleButton {
                     return powerButton.width + powerPopup.visualMargin + powerPopup.effectiveFrameOffset;
                 return -powerPopup.totalWidth - powerPopup.visualMargin - powerPopup.effectiveFrameOffset;
             }
-            // Align the menu grid, not its padded frame, with the bar button.
-            const gridInset = Math.max(0, (powerMenuWrapper.width - powerMenuView.implicitWidth) / 2);
-            return powerButton.width - powerPopup.totalWidth + gridInset;
+            return (powerButton.width - powerPopup.totalWidth) / 2;
         }
 
-        contentWidth: powerMenuWrapper.width
-        contentHeight: powerMenuWrapper.height
+        contentWidth: powerMenuView.implicitWidth
+        contentHeight: powerMenuView.implicitHeight
 
-        StyledRect {
-            id: powerMenuWrapper
-            variant: "popup"
-            radius: Styling.radius(8)
-            enableShadow: false
-            width: powerMenuView.implicitWidth + 12
-            height: powerMenuView.implicitHeight + 12
-
-            PowerMenuView {
-                id: powerMenuView
-                anchors.centerIn: parent
-                popupMode: true
-                onCloseRequested: powerPopup.close()
-            }
+        PowerMenuView {
+            id: powerMenuView
+            anchors.fill: parent
+            popupMode: true
+            expanded: powerPopup.isOpen
+            onCloseRequested: powerPopup.close()
         }
     }
 

@@ -38,7 +38,7 @@ Item {
         variant: "popup"
         enableShadow: true
         radius: Styling.radius(8)
-        visible: root.open && launcherLoader.item !== null
+        visible: root.open
         opacity: visible ? 1 : 0
         scale: visible ? 1 : 0.96
         width: launcherLoader.item ? launcherLoader.item.implicitWidth + root.contentPadding * 2 : 0
@@ -78,7 +78,7 @@ Item {
             id: launcherLoader
             anchors.fill: parent
             anchors.margins: root.contentPadding
-            active: root.open
+            active: true
             sourceComponent: Component {
                 LauncherView {}
             }

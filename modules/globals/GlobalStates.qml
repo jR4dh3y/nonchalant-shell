@@ -132,6 +132,10 @@ Singleton {
 
     // Lockscreen state
     property bool lockscreenVisible: false
+    property bool lockscreenUnlocking: false
+    // Post-unlock freeze overlay: covers the compositor handoff black flash.
+    property bool lockscreenHandoff: false
+    property real lockscreenHandoffOpacity: 1
 
     // OSD state
     property bool osdVisible: false
