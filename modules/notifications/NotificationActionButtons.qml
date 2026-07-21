@@ -15,7 +15,8 @@ Item {
     property int urgency: NotificationUrgency.Normal
 
     Layout.fillWidth: true
-    implicitHeight: showWhen && actions.length > 0 ? 32 : 0
+    readonly property var validActions: actions.filter(action => action && String(action.text || "").trim() !== "")
+    implicitHeight: showWhen && validActions.length > 0 ? 32 : 0
     height: implicitHeight
     clip: true
 
@@ -24,7 +25,7 @@ Item {
         spacing: 4
 
         Repeater {
-            model: actions
+            model: root.validActions
 
             Button {
                 Layout.fillWidth: true

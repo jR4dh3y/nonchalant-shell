@@ -680,7 +680,7 @@ Item {
                             Item {
                                 id: actionButtonsRow
                                 width: parent.width
-                                implicitHeight: (hovered && notification && notification.actions.length > 0 && !notification.isCached) ? 32 : 0
+                                implicitHeight: (hovered && notification && notification.actions && notification.actions.filter(action => action && String(action.text || "").trim() !== "").length > 0 && !notification.isCached) ? 32 : 0
                                 height: implicitHeight
                                 visible: implicitHeight > 0
                                 clip: true
@@ -691,7 +691,7 @@ Item {
                                     spacing: 4
 
                                     Repeater {
-                                        model: notification ? notification.actions : []
+                                        model: notification && notification.actions ? notification.actions.filter(action => action && String(action.text || "").trim() !== "") : []
 
                                         Button {
                                             Layout.fillWidth: true

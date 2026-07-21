@@ -24,6 +24,9 @@ Item {
     property real padding: onlyNotification || expanded ? 8 : 0
     property bool onlyNotification: false
     property bool appNameAlreadyShown: false
+    readonly property var validActions: latestNotification && latestNotification.actions
+        ? latestNotification.actions.filter(action => action && String(action.text || "").trim() !== "")
+        : []
 
     // Computed properties
     property var sortedNotifications: notifications.slice().sort((a, b) => a.time - b.time) // antiguo a reciente
@@ -399,7 +402,7 @@ Item {
         Item {
             id: actionButtonsContainer
             width: parent.width
-            implicitHeight: (onlyNotification || expanded) && latestNotification && latestNotification.actions.length > 0 && !latestNotification.isCached ? 32 : 0
+            implicitHeight: (onlyNotification || expanded) && root.validActions.length > 0 && !latestNotification.isCached ? 32 : 0
             height: implicitHeight
             clip: true
 
@@ -408,7 +411,7 @@ Item {
                 spacing: 4
 
                 Repeater {
-                    model: latestNotification && latestNotification.actions ? latestNotification.actions : []
+                    model: root.validActions
 
                     Button {
                         Layout.fillWidth: true

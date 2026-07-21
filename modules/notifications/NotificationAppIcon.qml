@@ -22,13 +22,21 @@ Item {
     property real smallAppIconSize: size * smallAppIconScale
     property bool usingAppIconFallback: false
     property bool notificationImageFailed: false
+    property bool appIconFailed: false
 
     onImageChanged: notificationImageFailed = false
+    onAppIconChanged: appIconFailed = false
 
     function resolveIconSource(icon) {
         if (!icon)
             return "";
         const value = String(icon);
+        // Quickshell's transient qsimage provider points at an object owned
+        // by another shell instance.  Once that instance exits it renders as
+        // a magenta/missing texture, so treat it as absent and use our icon
+        // fallback instead.
+        if (value.startsWith("image://qsimage/") || value.startsWith("image://qsimagetheme/"))
+            return "";
         if (value.startsWith("file://") || value.startsWith("data:") || value.startsWith("image://"))
             return value;
         if (value.startsWith("/"))
@@ -52,8 +60,8 @@ Item {
             border.width: root.urgency == NotificationUrgency.Critical ? 2 : 0
             border.color: root.urgency == NotificationUrgency.Critical ? Colors.criticalRed : "transparent"
             radius: root.radius
-            visible: ((root.image == "" || root.notificationImageFailed) && root.appIcon == "")
-                || (appIconLoader.active && appIconLoader.item && appIconLoader.item.status === Image.Error)
+            visible: ((root.image == "" || root.notificationImageFailed) && (root.appIcon == "" || root.appIconFailed))
+                || (appIconLoader.active && root.appIconFailed)
 
             Text {
                 anchors.centerIn: parent
@@ -87,9 +95,9 @@ Item {
 
         Loader {
             id: appIconLoader
-            active: (root.image == "" || root.notificationImageFailed) && root.appIcon != ""
+            active: (root.image == "" || root.notificationImageFailed) && root.appIcon != "" && !root.appIconFailed
             anchors.fill: parent
-            visible: item && item.status !== Image.Error
+            visible: item && item.status === Image.Ready
             sourceComponent: Image {
                 mipmap: true
                 id: appIconImage
@@ -97,6 +105,10 @@ Item {
                 source: root.resolveIconSource(root.appIcon)
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
+                onStatusChanged: {
+                    if (status === Image.Error)
+                        root.appIconFailed = true;
+                }
             }
         }
 

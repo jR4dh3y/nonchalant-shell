@@ -20,6 +20,19 @@ Item {
     property bool multipleNotifications: notificationCount > 1
     property var validNotifications: notifications.filter(n => n != null && n.summary != null)
 
+    function resolveGroupIcon(icon) {
+        if (!icon)
+            return "";
+        const value = String(icon);
+        if (value.startsWith("image://qsimage/") || value.startsWith("image://qsimagetheme/"))
+            return "";
+        if (value.startsWith("file://") || value.startsWith("data:") || value.startsWith("image://"))
+            return value;
+        if (value.startsWith("/"))
+            return "file://" + value;
+        return "image://icon/" + value;
+    }
+
     property var groupedNotifications: {
         // Ordenar notificaciones por tiempo descendente (más recientes primero)
         const sortedNotifications = root.validNotifications.slice().sort((a, b) => b.time - a.time);
@@ -205,12 +218,15 @@ Item {
                         Image {
                             mipmap: true
                             id: groupSmallAppIcon
+                            property bool loaded: false
                             Layout.preferredWidth: 16
                             Layout.preferredHeight: 16
-                            source: (notificationGroup && notificationGroup.appIcon !== "") ? "image://icon/" + notificationGroup.appIcon : ""
+                            source: root.resolveGroupIcon(notificationGroup ? notificationGroup.appIcon : "")
                             fillMode: Image.PreserveAspectFit
                             smooth: true
-                            visible: notificationGroup && notificationGroup.appIcon !== "" && root.validNotifications.some(n => n.image !== "")
+                            visible: loaded && root.validNotifications.some(n => n.image !== "")
+                            onSourceChanged: loaded = false
+                            onStatusChanged: loaded = status === Image.Ready
                         }
                         Text {
                             text: Icons.info
