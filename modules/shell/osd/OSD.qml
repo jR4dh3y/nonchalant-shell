@@ -24,7 +24,8 @@ PanelWindow {
     anchors.left: true
     anchors.right: true
 
-    WlrLayershell.margins.bottom: 100
+    // Shared bottom offset with the keyboard power menu.
+    WlrLayershell.margins.bottom: 48
 
     color: "transparent"
 
