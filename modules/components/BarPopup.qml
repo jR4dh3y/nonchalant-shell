@@ -166,8 +166,12 @@ PopupWindow {
     }
 
     function open() {
-        if (visible)
+        // Already fully open
+        if (visible && isOpen && popupOpacity >= 1)
             return;
+
+        // Cancel a mid-close so reopen is smooth.
+        closeTimer.stop();
 
         // One bar popup at a time — close any sibling (clock, controls, power…).
         Visibilities.claimBarPopup(root);
@@ -175,14 +179,14 @@ PopupWindow {
         // Set logical state immediately
         isOpen = true;
 
-        // Reset animation state
-        popupOpacity = 0;
-        popupScale = 0.9;
+        // If we were mid-close, animate from current values instead of resetting hard.
+        if (!visible) {
+            popupOpacity = 0;
+            popupScale = 0.9;
+            visible = true;
+        }
 
-        // Show popup
-        visible = true;
-
-        // Start animation after a frame
+        // Start animation after a frame so the surface is mapped.
         Qt.callLater(() => {
             if (!root.isOpen)
                 return;

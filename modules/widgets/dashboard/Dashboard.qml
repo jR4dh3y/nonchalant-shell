@@ -8,11 +8,15 @@ import qs.config
 Item {
     id: root
 
-    property bool isVisible: GlobalStates.dashboardOpen
+    // When hosted inside the bar dashboard popup, the BarPopup owns the open/
+    // close animation. Keep content fully visible so notifications and tabs
+    // are not double-hidden behind GlobalStates.dashboardOpen.
+    property bool forceVisible: false
+    property bool isVisible: forceVisible || GlobalStates.dashboardOpen
 
     scale: isVisible ? 1 : 0.96
     opacity: isVisible ? 1 : 0
-    visible: opacity > 0
+    visible: forceVisible || opacity > 0
 
     Behavior on scale {
         enabled: Config.animDuration > 0

@@ -231,6 +231,13 @@ Singleton {
             root.list = [];
             root.idOffset = 0;
         }
+        rebuildGroups();
+    }
+
+    Component.onCompleted: {
+        // Ensure history groups exist even before the first FileView load.
+        rebuildGroups();
+        notifFileView.reload();
     }
 
     onListChanged: {
@@ -246,6 +253,7 @@ Singleton {
                 delete root.latestTimeForApp[appName];
             }
         });
+        rebuildGroups();
     }
 
     function appNameListForGroups(groups) {
@@ -285,10 +293,18 @@ Singleton {
         return groups;
     }
 
-    property var groupsByAppName: groupsForList(root.list)
-    property var popupGroupsByAppName: groupsForList(root.popupList)
-    property var appNameList: appNameListForGroups(root.groupsByAppName)
-    property var popupAppNameList: appNameListForGroups(root.popupGroupsByAppName)
+    // Explicit props so ListViews rebind reliably when the history list mutates.
+    property var groupsByAppName: ({})
+    property var popupGroupsByAppName: ({})
+    property var appNameList: []
+    property var popupAppNameList: []
+
+    function rebuildGroups() {
+        groupsByAppName = groupsForList(root.list);
+        popupGroupsByAppName = groupsForList(root.popupList);
+        appNameList = appNameListForGroups(groupsByAppName);
+        popupAppNameList = appNameListForGroups(popupGroupsByAppName);
+    }
 
     // Quickshell's notification IDs starts at 1 on each run, while saved notifications
     // can already contain higher IDs. This is for avoiding id collisions
@@ -449,6 +465,8 @@ Singleton {
             const index = root.list.findIndex(notif => notif.id === notificationId);
             if (index !== -1 && root.list[index] != null)
                 root.list[index].popup = false;
+            // Re-emit list so popupList / toast window rebind.
+            triggerListChange();
             root.timeout(notificationId);
         }
     }
@@ -462,10 +480,9 @@ Singleton {
     function timeoutAll() {
         root.popupList.forEach(notif => {
             root.timeout(notif.id);
-        });
-        root.popupList.forEach(notif => {
             notif.popup = false;
         });
+        triggerListChange();
     }
 
     function attemptInvokeAction(id, notifIdentifier, autoDiscard = true) {

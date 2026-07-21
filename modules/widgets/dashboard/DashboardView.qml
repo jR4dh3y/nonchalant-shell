@@ -19,6 +19,7 @@ Item {
         anchors.fill: parent
         leftPanelWidth: root.leftPanelWidth
         screenName: root.screenName
+        forceVisible: root.popupMode
 
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {

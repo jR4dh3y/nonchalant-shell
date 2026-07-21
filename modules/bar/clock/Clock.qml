@@ -32,15 +32,24 @@ Item {
     readonly property bool menuOpen: dashboardPopup.isOpen
 
     function toggleCenterMenu() {
-        clockPopup.close();
         if (dashboardPopup.isOpen) {
             dashboardPopup.close();
-        } else {
-            Visibilities.setActiveModule("");
-            GlobalStates.dashboardCurrentTab = 0;
-            dashboardLoader.active = true;
-            Qt.callLater(() => dashboardPopup.open());
+            return;
         }
+
+        // Preload dashboard content before opening so the first frame has size
+        // and notifications are already in the tree (no empty flash).
+        GlobalStates.dashboardCurrentTab = 0;
+        dashboardLoader.active = true;
+        // Cross-switch: claimBarPopup closes weather while dashboard opens.
+        // Do not pre-close weather here or we double-trigger and skip the
+        // overlapping open animation.
+        if (clockPopup.isOpen)
+            clockPopup.close();
+        Qt.callLater(() => {
+            if (!dashboardPopup.isOpen)
+                dashboardPopup.open();
+        });
     }
 
     readonly property bool weatherAvailable: WeatherService.dataAvailable
@@ -108,11 +117,8 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (root.menuOpen)
-                            dashboardPopup.close();
-                        clockPopup.toggle();
-                    }
+                    // claimBarPopup closes the dashboard if it was open.
+                    onClicked: clockPopup.toggle()
                 }
             }
 
@@ -239,7 +245,7 @@ Item {
 
         onIsOpenChanged: {
             if (isOpen) {
-                dashboardPopup.close();
+                // claimBarPopup already closes siblings; only refresh weather.
                 if (!WeatherService.dataAvailable)
                     WeatherService.updateWeather();
             }
@@ -555,7 +561,6 @@ Item {
         onIsOpenChanged: {
             const screenName = root.bar?.screen?.name ?? "";
             if (isOpen) {
-                clockPopup.close();
                 GlobalStates.dashboardPopupScreen = screenName;
             } else if (GlobalStates.dashboardPopupScreen === screenName) {
                 GlobalStates.dashboardPopupScreen = "";
@@ -567,12 +572,14 @@ Item {
             variant: "popup"
             radius: Styling.radius(8)
             enableShadow: false
-            width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + 16 : 0
-            height: dashboardLoader.item ? dashboardLoader.item.implicitHeight + 16 : 0
+            // Stable size so open animation is not a 0→full expand hitch.
+            width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + 16 : 916
+            height: dashboardLoader.item ? dashboardLoader.item.implicitHeight + 16 : 446
 
             Loader {
                 id: dashboardLoader
-                active: false
+                // Keep warm after first open so weather→dashboard is instant.
+                active: dashboardPopup.isOpen || item !== null
                 anchors.fill: parent
                 anchors.margins: 8
 

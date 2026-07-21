@@ -11,6 +11,7 @@ import qs.modules.lockscreen
 import qs.modules.globals
 import qs.modules.shell
 import qs.modules.shell.osd
+import qs.modules.notifications
 import qs.modules.widgets.dashboard.wallpapers
 import qs.config
 
@@ -92,6 +93,9 @@ ShellRoot {
         UnlockHandoff {}
     }
 
+    // Transient notification toasts (history lives in the dashboard popup).
+    NotificationPopup {}
+
     // Initialize only the services needed by the bar, run menu, and lockscreen.
     QtObject {
         id: serviceInitializer
@@ -105,6 +109,8 @@ ShellRoot {
                 _ = NiriService.overviewOpen;
                 _ = Audio.value;
                 _ = Brightness.monitors;
+                // Own org.freedesktop.Notifications and load history early.
+                _ = Notifications.appNameList;
             });
         }
     }
