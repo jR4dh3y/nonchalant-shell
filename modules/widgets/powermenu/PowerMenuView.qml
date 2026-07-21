@@ -13,19 +13,20 @@ Item {
 
     signal closeRequested()
 
+    // Height tracks action count; keep transitions short so open feels instant.
     Behavior on implicitWidth {
         enabled: Config.animDuration > 0
         NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutQuart
+            duration: Config.animDuration / 2
+            easing.type: Easing.OutCubic
         }
     }
 
     Behavior on implicitHeight {
         enabled: Config.animDuration > 0
         NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutQuart
+            duration: Config.animDuration / 2
+            easing.type: Easing.OutCubic
         }
     }
 

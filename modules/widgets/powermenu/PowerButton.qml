@@ -1,4 +1,5 @@
 import QtQuick
+import qs.config
 import qs.modules.components
 import qs.modules.theme
 import qs.modules.services
@@ -22,13 +23,31 @@ ToggleButton {
         }
     }
 
+    // Soft open-state wash on the bar pill.
+    Rectangle {
+        anchors.fill: parent
+        z: 1
+        radius: parent.height / 2
+        color: Styling.srItem("overprimary")
+        opacity: powerButton.popupOpen ? 0.22 : 0
+        enabled: false
+        Behavior on opacity {
+            enabled: Config.animDuration > 0
+            NumberAnimation {
+                duration: Config.animDuration / 2
+            }
+        }
+    }
+
     BarPopup {
         id: powerPopup
         anchorItem: powerButton
         bar: powerButton.bar
         variant: "transparent"
         popupPadding: 0
-        shadowMargin: 0
+        shadowMargin: 8
+        visualMargin: 10
+
         anchor.rect.x: {
             if (powerPopup.barVertical) {
                 if (powerPopup.barAtLeft)
