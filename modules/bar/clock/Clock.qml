@@ -6,6 +6,7 @@ import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
 import qs.modules.globals
+import qs.modules.widgets.dashboard
 import "../../widgets/dashboard/widgets"
 
 Item {
@@ -28,15 +29,19 @@ Item {
 
     // Popup visibility state
     property bool popupOpen: clockPopup.isOpen
-    readonly property bool menuOpen: Visibilities.currentActiveModule === "dashboard"
+    readonly property bool menuOpen: dashboardPopup.isOpen || Visibilities.currentActiveModule === "dashboard"
 
     function toggleCenterMenu() {
         clockPopup.close();
-        if (root.menuOpen) {
-            Visibilities.setActiveModule("");
+        if (dashboardPopup.isOpen) {
+            dashboardPopup.close();
         } else {
+            // Close any notch module before showing the bar-anchored view.
+            Visibilities.setActiveModule("");
+
             GlobalStates.dashboardCurrentTab = 0;
-            Visibilities.setActiveModule("dashboard");
+            dashboardLoader.active = true;
+            Qt.callLater(() => dashboardPopup.open());
         }
     }
 
@@ -223,8 +228,10 @@ Item {
         contentHeight: popupColumn.height
 
         onIsOpenChanged: {
-            if (isOpen && !WeatherService.dataAvailable) {
-                WeatherService.updateWeather();
+            if (isOpen) {
+                dashboardPopup.close();
+                if (!WeatherService.dataAvailable)
+                    WeatherService.updateWeather();
             }
         }
 
@@ -524,6 +531,53 @@ Item {
         }
     }
 
+    // Dashboard popup: uses the same bar-relative placement and opening
+    // animation as the weather popup above.
+    BarPopup {
+        id: dashboardPopup
+        anchorItem: buttonBg
+        bar: root.bar
+        variant: "transparent"
+        popupPadding: 0
+
+        contentWidth: dashboardWrapper.width
+        contentHeight: dashboardWrapper.height
+
+        onIsOpenChanged: {
+            const screenName = root.bar?.screen?.name ?? "";
+            if (isOpen) {
+                clockPopup.close();
+                GlobalStates.dashboardPopupScreen = screenName;
+            } else if (GlobalStates.dashboardPopupScreen === screenName) {
+                GlobalStates.dashboardPopupScreen = "";
+            }
+        }
+
+        StyledRect {
+            id: dashboardWrapper
+            variant: "popup"
+            radius: Styling.radius(8)
+            enableShadow: false
+            width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + 16 : 0
+            height: dashboardLoader.item ? dashboardLoader.item.implicitHeight + 16 : 0
+
+            Loader {
+                id: dashboardLoader
+                active: false
+                anchors.fill: parent
+                anchors.margins: 8
+
+                sourceComponent: Component {
+                    DashboardView {
+                        screenName: root.bar?.screen?.name ?? ""
+                        popupMode: true
+                        onCloseRequested: dashboardPopup.close()
+                    }
+                }
+            }
+        }
+    }
+
     function scheduleNextDayUpdate() {
         var now = new Date();
         var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
@@ -560,6 +614,12 @@ Item {
         repeat: false
         running: false
         onTriggered: updateDay()
+    }
+
+    Component.onDestruction: {
+        const screenName = root.bar?.screen?.name ?? "";
+        if (GlobalStates.dashboardPopupScreen === screenName)
+            GlobalStates.dashboardPopupScreen = "";
     }
 
     Component.onCompleted: {
