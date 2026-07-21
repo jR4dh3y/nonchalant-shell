@@ -6,33 +6,18 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.modules.bar
-import qs.modules.bar.workspaces
-import qs.modules.notifications
-import qs.modules.widgets.dashboard.wallpapers
-
-import qs.modules.notch
-import qs.modules.widgets.presets
 import qs.modules.services
-import qs.modules.corners
-import qs.modules.frame
-import qs.modules.components
-import qs.modules.desktop
 import qs.modules.lockscreen
 import qs.modules.globals
 import qs.modules.shell
+import qs.modules.widgets.dashboard.wallpapers
 import qs.config
-import "modules/tools"
 
 ShellRoot {
     id: root
 
-    ContextMenu {
-        id: contextMenu
-        screen: Quickshell.screens[0]
-        Component.onCompleted: Visibilities.setContextMenu(contextMenu)
-    }
-
+    // Keep the inherited wallpaper owner: it also provides the wallpaper
+    // manager used by the lockscreen.
     Variants {
         model: Quickshell.screens
 
@@ -46,20 +31,8 @@ ShellRoot {
         }
     }
 
-    Variants {
-        model: Quickshell.screens
-
-        Loader {
-            id: desktopLoader
-            active: Config.desktop.enabled && SuspendManager.wakeReady
-            required property ShellScreen modelData
-            sourceComponent: Desktop {
-                screen: desktopLoader.modelData
-            }
-        }
-    }
-
-    // Visual panel & reservations
+    // The shell owns one panel per configured screen. Transient UI such as the
+    // run menu is rendered inside this same panel instead of separate windows.
     Variants {
         model: Quickshell.screens
 
@@ -67,7 +40,6 @@ ShellRoot {
             id: screenShellContainer
             required property ShellScreen modelData
 
-            // Panel components (Bar, Notch, Dock, Frame, Corners)
             UnifiedShellPanel {
                 id: unifiedPanel
                 targetScreen: screenShellContainer.modelData
@@ -87,41 +59,9 @@ ShellRoot {
                 barSize: (unifiedPanel.barPosition === "left" || unifiedPanel.barPosition === "right") ? unifiedPanel.barTargetWidth : unifiedPanel.barTargetHeight
                 barOuterMargin: unifiedPanel.barOuterMargin
 
-                // Dock status for reservations
                 dockEnabled: false
-                dockPosition: unifiedPanel.dockPosition
-                dockPinned: unifiedPanel.dockPinned
-                dockHeight: unifiedPanel.dockHeight
-                containBar: unifiedPanel.containBar
-
-                frameEnabled: (Config.bar && Config.bar.frameEnabled !== undefined ? Config.bar.frameEnabled : false)
-                frameThickness: (Config.bar && Config.bar.frameThickness !== undefined ? Config.bar.frameThickness : 6)
-
-                // Sidebar status for reservations
-                sidebarEnabled: GlobalStates.assistantVisible && screenShellContainer.modelData.name === GlobalStates.assistantScreenName
-                sidebarPinned: GlobalStates.assistantPinned
-                sidebarWidth: GlobalStates.assistantWidth
-                sidebarPosition: GlobalStates.assistantPosition
-            }
-        }
-    }
-
-    // Presets popup
-    Variants {
-        model: {
-            const screens = Quickshell.screens;
-            const list = (Config.bar && Config.bar.screenList !== undefined ? Config.bar.screenList : []);
-            if (!list || list.length === 0)
-                return screens;
-            return screens.filter(screen => list.indexOf(screen.name) !== -1);
-        }
-
-        Loader {
-            id: presetsLoader
-            active: SuspendManager.wakeReady && (Visibilities.getForScreen(modelData.name) ? Visibilities.getForScreen(modelData.name).presets : false)
-            required property ShellScreen modelData
-            sourceComponent: PresetsPopup {
-                screen: presetsLoader.modelData
+                frameEnabled: false
+                sidebarEnabled: false
             }
         }
     }
@@ -135,111 +75,15 @@ ShellRoot {
         LockScreen {}
     }
 
-    // Screenshot tool
-    Variants {
-        model: Quickshell.screens
-
-        Loader {
-            id: screenshotLoader
-            active: GlobalStates.screenshotToolVisible
-            required property ShellScreen modelData
-            sourceComponent: ScreenshotTool {
-                targetScreen: screenshotLoader.modelData
-            }
-        }
-    }
-
-    // Screenshot preview overlay
-    Variants {
-        model: Quickshell.screens
-
-        Loader {
-            id: screenshotOverlayLoader
-            active: SuspendManager.wakeReady
-            required property ShellScreen modelData
-            sourceComponent: ScreenshotOverlay {
-                targetScreen: screenshotOverlayLoader.modelData
-            }
-        }
-    }
-
-    // Screen recording tool
-    Loader {
-        id: screenRecordLoader
-        active: SuspendManager.wakeReady && GlobalStates.screenRecordToolVisible
-        source: "modules/tools/ScreenrecordTool.qml"
-
-        onLoaded: {
-            if (GlobalStates.screenRecordToolVisible && item) {
-                item.open();
-            }
-        }
-
-        Connections {
-            target: GlobalStates
-            function onScreenRecordToolVisibleChanged() {
-                if (screenRecordLoader.status === Loader.Ready) {
-                    if (GlobalStates.screenRecordToolVisible) {
-                        screenRecordLoader.item.open();
-                    } else {
-                        screenRecordLoader.item.close();
-                    }
-                }
-            }
-        }
-
-        Connections {
-            target: screenRecordLoader.item
-            ignoreUnknownSignals: true
-            function onVisibleChanged() {
-                if (!screenRecordLoader.item.visible && GlobalStates.screenRecordToolVisible) {
-                    GlobalStates.screenRecordToolVisible = false;
-                }
-            }
-        }
-    }
-
-    // Mirror tool
-    Loader {
-        id: mirrorLoader
-        active: SuspendManager.wakeReady && GlobalStates.mirrorWindowVisible
-        source: "modules/tools/MirrorWindow.qml"
-    }
-
-    // Settings
-    Loader {
-        id: settingsWindowLoader
-        active: SuspendManager.wakeReady && GlobalStates.settingsWindowVisible
-        source: "modules/widgets/config/SettingsWindow.qml"
-    }
-
-    // Init clipboard service
-    Connections {
-        target: ClipboardService
-        function onListCompleted() {
-        // Service initialized and ready
-        }
-    }
-
-    // Force service init at startup but defer it slightly so it doesn't block the UI
+    // Initialize only the services needed by the bar, run menu, and lockscreen.
     QtObject {
         id: serviceInitializer
 
         Component.onCompleted: {
-            // Critical services — init immediately (next tick)
             Qt.callLater(() => {
-                let _ = IdleService.lockCmd; // Native Wayland idle + lock handling
-                _ = GlobalShortcuts.appId; // Force init (IPC pipe listener)
+                let _ = IdleService.lockCmd;
+                _ = GlobalShortcuts.appId;
             });
-        }
-    }
-
-    // Non-critical services — defer 2s after startup
-    Timer {
-        interval: 2000
-        running: true
-        onTriggered: {
-            let _ = NightLightService.active;
         }
     }
 }

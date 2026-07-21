@@ -11,8 +11,6 @@ Singleton {
     property var panels: ({})
     property var bars: ({})
     property var barPanels: ({})
-    property var notches: ({})
-    property var notchPanels: ({})
     property var docks: ({})
     property var dockPanels: ({})
     property var powerMenuButtons: ({})
@@ -21,7 +19,7 @@ Singleton {
     property string lastFocusedScreen: ""
     property var contextMenu: null
     property bool playerMenuOpen: false
-    readonly property var moduleNames: ["launcher", "dashboard", "overview", "tools", "presets"]
+    readonly property var moduleNames: ["launcher"]
 
     function setContextMenu(menu) {
         contextMenu = menu;
@@ -87,30 +85,6 @@ Singleton {
 
     function getBarPanelForScreen(screenName) {
         return barPanels[screenName] || null;
-    }
-
-    function registerNotch(screenName, notchContainer) {
-        notches = _updateMap(notches, screenName, notchContainer);
-    }
-
-    function unregisterNotch(screenName) {
-        notches = _updateMap(notches, screenName, null);
-    }
-
-    function getNotchForScreen(screenName) {
-        return notches[screenName] || null;
-    }
-
-    function registerNotchPanel(screenName, notchPanel) {
-        notchPanels = _updateMap(notchPanels, screenName, notchPanel);
-    }
-
-    function unregisterNotchPanel(screenName) {
-        notchPanels = _updateMap(notchPanels, screenName, null);
-    }
-
-    function getNotchPanelForScreen(screenName) {
-        return notchPanels[screenName] || null;
     }
 
     function registerDock(screenName, dockContainer) {
@@ -230,10 +204,6 @@ Singleton {
         QtObject {
             property string screenName
             property bool launcher: false
-            property bool dashboard: false
-            property bool overview: false
-            property bool tools: false
-            property bool presets: false
         }
     }
 

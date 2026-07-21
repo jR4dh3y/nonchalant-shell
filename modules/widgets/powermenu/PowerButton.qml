@@ -35,7 +35,9 @@ ToggleButton {
                     return powerButton.width + powerPopup.visualMargin + powerPopup.effectiveFrameOffset;
                 return -powerPopup.totalWidth - powerPopup.visualMargin - powerPopup.effectiveFrameOffset;
             }
-            return powerButton.width - powerPopup.totalWidth;
+            // Align the menu grid, not its padded frame, with the bar button.
+            const gridInset = Math.max(0, (powerMenuWrapper.width - powerMenuView.implicitWidth) / 2);
+            return powerButton.width - powerPopup.totalWidth + gridInset;
         }
 
         contentWidth: powerMenuWrapper.width

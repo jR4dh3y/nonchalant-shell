@@ -10,7 +10,6 @@ import "defaults/theme.js" as ThemeDefaults
 import "defaults/bar.js" as BarDefaults
 import "defaults/workspaces.js" as WorkspacesDefaults
 import "defaults/overview.js" as OverviewDefaults
-import "defaults/notch.js" as NotchDefaults
 import "defaults/compositor.js" as CompositorDefaults
 import "KeybindActions.js" as KeybindActions
 import "defaults/performance.js" as PerformanceDefaults
@@ -45,7 +44,6 @@ Singleton {
     property bool barReady: false
     property bool workspacesReady: false
     property bool overviewReady: false
-    property bool notchReady: false
     property bool compositorReady: false
     property bool performanceReady: false
     property bool weatherReady: false
@@ -57,7 +55,7 @@ Singleton {
     property bool aiReady: false
     property bool keybindsInitialLoadComplete: false
 
-    property bool initialLoadComplete: themeReady && barReady && workspacesReady && overviewReady && notchReady && compositorReady && performanceReady && weatherReady && desktopReady && lockscreenReady && prefixReady && systemReady && dockReady && aiReady
+    property bool initialLoadComplete: themeReady && barReady && workspacesReady && overviewReady && compositorReady && performanceReady && weatherReady && desktopReady && lockscreenReady && prefixReady && systemReady && dockReady && aiReady
 
     // Compatibility aliases
     property alias loader: themeLoader
@@ -77,7 +75,6 @@ Singleton {
             "cp -n '" + root.presetDir + "/bar.json' '" + root.configDir + "/bar.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/workspaces.json' '" + root.configDir + "/workspaces.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/overview.json' '" + root.configDir + "/overview.json' 2>/dev/null || true; " +
-            "cp -n '" + root.presetDir + "/notch.json' '" + root.configDir + "/notch.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/compositor.json' '" + root.configDir + "/compositor.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/performance.json' '" + root.configDir + "/performance.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/desktop.json' '" + root.configDir + "/desktop.json' 2>/dev/null || true; " +
@@ -632,51 +629,6 @@ Singleton {
             property int columns: 5
             property real scale: 0.1
             property real workspaceSpacing: 4
-        }
-    }
-
-    // ============================================
-    // NOTCH MODULE
-    // ============================================
-    FileView {
-        id: notchLoader
-        path: root.configDir + "/notch.json"
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: {
-            if (!root.notchReady) {
-                validateModule("notch", notchLoader, NotchDefaults.data, () => {
-                    root.notchReady = true;
-                });
-            }
-        }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.notchReady) {
-                handleMissingConfig("notch", notchLoader, NotchDefaults.data, () => {
-                    root.notchReady = true;
-                });
-            }
-        }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
-        onAdapterUpdated: {
-            if (root.notchReady && !root.pauseAutoSave) {
-                notchLoader.writeAdapter();
-            }
-        }
-
-        adapter: JsonAdapter {
-            property string theme: "default"
-            property string position: "top"
-            property int hoverRegionHeight: 8
-            property bool keepHidden: false
-            property string noMediaDisplay: "userHost"
-            property string customText: "Nonchalant"
-            property bool disableHoverExpansion: true
         }
     }
 
@@ -3394,40 +3346,6 @@ Singleton {
     // Overview configuration
     property QtObject overview: overviewLoader.adapter
 
-    // Notch configuration
-    property QtObject notch: notchLoader.adapter
-    property string notchTheme: notch.theme
-    property string notchPosition: notch.position
-
-    onNotchPositionChanged: {
-        if (!initialLoadComplete || !dockReady) return;
-
-        // If notch moves bottom
-        if (notchPosition === "bottom") {
-            // Conflict with Dock?
-            if (dock.position === "bottom") {
-                console.log("Notch moved to bottom, adjusting Dock position...");
-                // Offset Dock to avoid notch
-                if (bar.position === "left") {
-                    dock.position = "right";
-                } else {
-                    dock.position = "left";
-                }
-                // Trigger save
-                GlobalStates.markShellChanged();
-            }
-        } 
-        // If notch moves top
-        else if (notchPosition === "top") {
-            // Restore Dock if displaced
-            if (dock.position === "left" || dock.position === "right") {
-                console.log("Notch moved to top, restoring Dock to bottom...");
-                dock.position = "bottom";
-                GlobalStates.markShellChanged();
-            }
-        }
-    }
-
     // Compositor configuration
     property QtObject compositor: compositorLoader.adapter
     property int compositorRounding: compositor.syncRoundness ? roundness : compositor.rounding
@@ -3473,9 +3391,6 @@ Singleton {
     }
     function saveOverview() {
         overviewLoader.writeAdapter();
-    }
-    function saveNotch() {
-        notchLoader.writeAdapter();
     }
     function saveCompositor() {
         compositorLoader.writeAdapter();

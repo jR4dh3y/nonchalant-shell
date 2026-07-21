@@ -26,7 +26,7 @@ Atomic design library for the Nonchalant shell. 26 QML components + 29 GLSL shad
 | Component | Role |
 |-----------|------|
 | `StyledToolTip.qml` | Themed tooltip |
-| `BarPopup.qml` | Base for all bar/notch flyout popups. Requires `anchorItem` + `bar` ref |
+| `BarPopup.qml` | Base for bar flyout popups. Requires `anchorItem` + `bar` ref |
 | `ContextMenu.qml` | Right-click context menu |
 | `OptionsMenu.qml` | Dropdown option selector |
 

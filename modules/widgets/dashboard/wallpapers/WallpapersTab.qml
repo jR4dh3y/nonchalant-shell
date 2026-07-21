@@ -44,8 +44,6 @@ FocusScope {
         }
     }
 
-    property var activeFilters: []  // Lista de tipos de archivo seleccionados para filtrar
-
     // Configuración interna del grid
     readonly property int gridColumns: 7
     readonly property int wallpaperMargin: 4
@@ -78,12 +76,6 @@ FocusScope {
             focusFunc: function () {
                 schemeSelector.openAndFocus();
             }
-        },
-        {
-            id: "filters",
-            focusFunc: function () {
-                wallpapersFilterBar.focusFilters();
-            }
         }
     ]
 
@@ -104,12 +96,6 @@ FocusScope {
     // Alias para compatibilidad con Dashboard
     function focusSearchInput() {
         focusSearch();
-    }
-
-    // Función para enfocar los filtros
-    function focusFilters() {
-        currentFocusIndex = 2;
-        focusableElements[2].focusFunc();
     }
 
     // Función para navegar hacia adelante (Tab)
@@ -203,7 +189,7 @@ FocusScope {
         }
     }
 
-    // Propiedad calculada que filtra los fondos de pantalla según el texto de búsqueda y tipos activos.
+    // Propiedad calculada que filtra los fondos de pantalla según el texto de búsqueda.
     property var filteredWallpapers: {
         if (!GlobalStates.wallpaperManager)
             return [];
@@ -215,26 +201,6 @@ FocusScope {
             wallpapers = wallpapers.filter(function (path) {
                 const fileName = path.split('/').pop().toLowerCase();
                 return fileName.includes(searchText.toLowerCase());
-            });
-        }
-
-        // Filtrar por tipos activos si hay filtros seleccionados
-        if (activeFilters.length > 0) {
-            wallpapers = wallpapers.filter(function (path) {
-                const fileType = GlobalStates.wallpaperManager.getFileType(path);
-                const subfolder = GlobalStates.wallpaperManager.getSubfolderFromPath(path);
-
-                // Verificar si coincide con algún filtro activo
-                for (var i = 0; i < activeFilters.length; i++) {
-                    var filter = activeFilters[i];
-                    if (filter === fileType) {
-                        return true;
-                    }
-                    if (filter.startsWith("subfolder_") && subfolder === filter.replace("subfolder_", "")) {
-                        return true;
-                    }
-                }
-                return false;
             });
         }
 
@@ -824,35 +790,6 @@ FocusScope {
                     onShiftTabPressed: {
                         wallpapersTabRoot.focusPreviousElement();
                     }
-                }
-            }
-        }
-
-        // FilterBar centrada
-        Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: wallpapersFilterBar.height
-
-            FilterBar {
-                id: wallpapersFilterBar
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(implicitWidth, parent.width)
-                activeFilters: wallpapersTabRoot.activeFilters
-
-                onActiveFiltersChanged: {
-                    wallpapersTabRoot.activeFilters = activeFilters;
-                }
-
-                onEscapePressedOnFilters: {
-                    wallpapersTabRoot.focusSearch();
-                }
-
-                onTabPressed: {
-                    wallpapersTabRoot.focusNextElement();
-                }
-
-                onShiftTabPressed: {
-                    wallpapersTabRoot.focusPreviousElement();
                 }
             }
         }

@@ -11,7 +11,7 @@ Rectangle {
 
     color: "transparent"
     implicitWidth: 250
-    implicitHeight: 400
+    implicitHeight: Math.min(400, systemHeader.implicitHeight + resourcesColumn.implicitHeight + 2)
 
     function formatSpeed(bytesPerSecond) {
         const value = Math.max(0, bytesPerSecond || 0);
@@ -105,6 +105,8 @@ Rectangle {
         spacing: 2
 
         RowLayout {
+            id: systemHeader
+
             Layout.fillWidth: true
             Layout.leftMargin: 16
             Layout.rightMargin: 16

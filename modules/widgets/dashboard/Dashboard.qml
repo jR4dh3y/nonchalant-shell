@@ -1,13 +1,34 @@
 import QtQuick
 import qs.modules.globals
 import qs.modules.services
-import qs.modules.notch
 import qs.modules.widgets.dashboard.widgets
 import qs.modules.widgets.dashboard.wallpapers
 import qs.config
 
-NotchAnimationBehavior {
+Item {
     id: root
+
+    property bool isVisible: GlobalStates.dashboardOpen
+
+    scale: isVisible ? 1 : 0.96
+    opacity: isVisible ? 1 : 0
+    visible: opacity > 0
+
+    Behavior on scale {
+        enabled: Config.animDuration > 0
+        NumberAnimation {
+            duration: Config.animDuration / 2
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on opacity {
+        enabled: Config.animDuration > 0
+        NumberAnimation {
+            duration: Config.animDuration / 2
+            easing.type: Easing.OutQuad
+        }
+    }
 
     property int leftPanelWidth
     property string screenName: ""
@@ -76,9 +97,6 @@ NotchAnimationBehavior {
     }
 
     focus: true
-
-    // Usar el comportamiento estándar de animaciones del notch
-    isVisible: GlobalStates.dashboardOpen
 
     // Navegar a la pestaña seleccionada cuando se abre el dashboard
     Component.onCompleted: {

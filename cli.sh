@@ -29,7 +29,7 @@ ensure_config_files() {
 	mkdir -p "$config_dir"
 
 	# Copy preset files if they don't exist (cp -n = no-clobber)
-	for file in theme bar workspaces overview notch compositor performance desktop lockscreen dock ai; do
+	for file in theme bar workspaces overview compositor performance desktop lockscreen dock ai; do
 		cp -n "${preset_dir}/${file}.json" "${config_dir}/${file}.json" 2>/dev/null || true
 	done
 }

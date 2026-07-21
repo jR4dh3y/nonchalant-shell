@@ -1,7 +1,7 @@
 # DASHBOARD KNOWLEDGE BASE
 
 ## OVERVIEW
-Central interactive hub of Nonchalant. Tabbed interface with LRU-based lazy-loading for widgets, system controls, media, AI tools, clipboard, notes, and tmux management. Opened via the Notch overlay.
+Legacy tabbed hub with LRU-based lazy-loading for widgets, system controls, media, AI tools, clipboard, notes, and tmux management. It is not part of the lean shell startup path.
 
 ## STRUCTURE
 - **Root**: `Dashboard.qml` — Orchestrates LRU logic, tab layout, and open/close animations.
@@ -22,7 +22,7 @@ Central interactive hub of Nonchalant. Tabbed interface with LRU-based lazy-load
 | Task | Location | Notes |
 |------|----------|-------|
 | **Tab loading** | `Dashboard.qml` | `TabLoader` + `shouldTabBeLoaded(index)` LRU logic |
-| **System settings** | `controls/ShellPanel.qml` | Bar, dock, notch configuration UI |
+| **System settings** | `controls/ShellPanel.qml` | Shell configuration UI |
 | **Theme settings** | `controls/ThemePanel.qml` | Colors, gradients, fonts, opacity |
 | **Keybindings** | `controls/BindsPanel.qml` | Compositor keybind editor |
 | **AI chat** | `assistant/AssistantTab.qml` | Multi-provider chat with streaming |

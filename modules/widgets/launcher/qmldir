@@ -1,2 +1,3 @@
 module qs.modules.widgets.launcher
 LauncherView 1.0 LauncherView.qml
+RunMenuHost 1.0 RunMenuHost.qml

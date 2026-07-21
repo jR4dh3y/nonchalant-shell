@@ -80,7 +80,6 @@ Singleton {
     // Persistent launcher state across monitors
     property string launcherSearchText: ""
     property int launcherSelectedIndex: -1
-    property int launcherCurrentTab: 0
 
     function clearLauncherState() {
         launcherSearchText = "";
@@ -90,7 +89,6 @@ Singleton {
     // Persistent dashboard state across monitors  
     property int dashboardCurrentTab: 0
     // Name of the screen whose bar-anchored dashboard popup is open.
-    // Empty when the dashboard is being shown through the notch or is closed.
     property string dashboardPopupScreen: ""
     property string systemMonitorPopupScreen: ""
     
@@ -105,11 +103,6 @@ Singleton {
         wallpaperSelectedIndex = -1;
     }
 
-    function getNotchOpen(screenName) {
-        let visibilities = Visibilities.getForScreen(screenName);
-        return visibilities.launcher || visibilities.dashboard || visibilities.overview || visibilities.presets;
-    }
-
     function getActiveLauncher() {
         let active = Visibilities.getForActive();
         return active ? active.launcher : false;
@@ -117,26 +110,20 @@ Singleton {
 
     function getActiveDashboard() {
         let active = Visibilities.getForActive();
-        return active ? active.dashboard : false;
+        return active ? active.dashboard === true : false;
     }
 
     function getActiveOverview() {
         let active = Visibilities.getForActive();
-        return active ? active.overview : false;
+        return active ? active.overview === true : false;
     }
 
     function getActivePresets() {
         let active = Visibilities.getForActive();
-        return active ? active.presets : false;
-    }
-
-    function getActiveNotchOpen() {
-        let active = Visibilities.getForActive();
-        return active ? (active.launcher || active.dashboard || active.overview) : false;
+        return active ? active.presets === true : false;
     }
 
     // Legacy properties for backward compatibility - use active screen
-    readonly property bool notchOpen: getActiveNotchOpen()
     readonly property bool overviewOpen: getActiveOverview()
     readonly property bool presetsOpen: getActivePresets()
     readonly property bool launcherOpen: getActiveLauncher()
@@ -326,7 +313,6 @@ Singleton {
     // Shell config sections and their properties
     readonly property var _shellSections: {
         "bar": ["position", "launcherIcon", "launcherIconTint", "launcherIconFullTint", "launcherIconSize", "enableFirefoxPlayer", "screenList", "frameEnabled", "frameThickness", "pinnedOnStartup", "hoverToReveal", "hoverRegionHeight", "showPinButton", "availableOnFullscreen", "pillStyle", "use12hFormat", "containBar", "keepBarShadow", "keepBarBorder"],
-        "notch": ["theme", "position", "hoverRegionHeight", "keepHidden"],
         "workspaces": ["shown", "showAppIcons", "alwaysShowNumbers", "showNumbers", "dynamic"],
         "overview": ["rows", "columns", "scale", "workspaceSpacing"],
         "dock": ["enabled", "theme", "position", "height", "iconSize", "spacing", "margin", "hoverRegionHeight", "pinnedOnStartup", "hoverToReveal", "availableOnFullscreen", "showRunningIndicators", "showPinButton", "showOverviewButton", "screenList", "keepHidden"],
@@ -413,7 +399,6 @@ Singleton {
     function applyShellChanges() {
         if (shellHasChanges) {
             Config.saveBar();
-            Config.saveNotch();
             Config.saveWorkspaces();
             Config.saveOverview();
             Config.saveDock();

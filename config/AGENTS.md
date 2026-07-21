@@ -5,7 +5,7 @@ Reactive, file-backed configuration system built on `Quickshell.Io`. Source of t
 
 ## STRUCTURE
 - **Config.qml**: Core singleton (>3100 lines). `FileView` monitors disk; `JsonAdapter` creates bidirectional QML bindings. Each module domain (bar, theme, ai, dock, etc.) has its own `FileView`/`JsonAdapter` pair.
-- **defaults/*.js**: JavaScript modules exporting a `data` object — the blueprint for initial file generation and validation baseline. Files: `bar.js`, `theme.js`, `ai.js`, `compositor.js`, `dock.js`, `notch.js`, `desktop.js`, `overview.js`, `notifications.js`, `tools.js`, `lockscreen.js`, `system.js`, `weather.js`.
+- **defaults/*.js**: JavaScript modules exporting a `data` object — the blueprint for initial file generation and validation baseline. Files include `bar.js`, `theme.js`, `ai.js`, `compositor.js`, `dock.js`, `desktop.js`, `overview.js`, `lockscreen.js`, `system.js`, and `weather.js`.
 - **ConfigValidator.js**: Recursive `validate()` function for deep-merging user settings with defaults. Handles type coercion and constraint enforcement (e.g., `gradientType` must be `"linear"`, `"radial"`, or `"halftone"`).
 - **pam/**: PAM configuration for lockscreen authentication.
 

@@ -1,16 +1,11 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.modules.bar
-import qs.modules.bar.workspaces
-import qs.modules.notch
-import qs.modules.frame
 import qs.modules.services
-import qs.modules.globals
 import qs.modules.components
+import qs.modules.widgets.launcher
 import qs.config
-import qs.modules.sidebar
 
 PanelWindow {
     id: unifiedPanel
@@ -27,32 +22,22 @@ PanelWindow {
 
     color: "transparent"
 
-    // Dynamic keyboard focus: Exclusive when a notch module is open (so text fields work),
-    // None otherwise (so compositor receives normal input).
     WlrLayershell.keyboardFocus: {
-        if (notchContent.screenNotchOpen) {
+        if (runMenu.open)
             return WlrKeyboardFocus.Exclusive;
-        }
-        if (assistantSidebar.active && assistantSidebar.wantsFocus) {
-            return WlrKeyboardFocus.Exclusive;
-        }
         return WlrKeyboardFocus.None;
     }
     WlrLayershell.namespace: "nonchalant"
     WlrLayershell.layer: WlrLayer.Overlay
     exclusionMode: ExclusionMode.Ignore
 
-    // Whether we need to capture full-screen input for click-outside detection.
-    // True when notch modules are open OR any FocusGrab is active (e.g., BarPopups).
-    readonly property bool needsFullScreenInput: notchContent.screenNotchOpen || FocusGrabManager.hasActiveGrab || (assistantSidebar.active && assistantSidebar.wantsFocus)
+    readonly property bool needsFullScreenInput: runMenu.open || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
         const list = Config.bar.screenList;
         return (!list || list.length === 0 || list.indexOf(targetScreen.name) !== -1);
     }
-
-    readonly property bool dockEnabled: false
 
     readonly property alias barPosition: barContent.barPosition
     readonly property alias barPinned: barContent.pinned
@@ -63,68 +48,20 @@ PanelWindow {
     readonly property alias barTargetHeight: barContent.barTargetHeight
     readonly property alias barOuterMargin: barContent.baseOuterMargin
 
-    readonly property string dockPosition: "bottom"
-    readonly property bool dockPinned: false
-    readonly property bool dockReveal: false
-    readonly property bool dockFullscreen: false
-    readonly property int dockHeight: 0
-
-    readonly property alias notchHoverActive: notchContent.hoverActive
-    readonly property alias notchOpen: notchContent.screenNotchOpen
-    readonly property alias notchReveal: notchContent.reveal
-
     // Generic names for external compatibility (Visibilities expects these on the panel object)
     readonly property alias pinned: barContent.pinned
     readonly property bool reveal: barEnabled ? barContent.reveal : false
     readonly property alias hoverActive: barContent.hoverActive // Default hoverActive points to bar
-    readonly property alias notch_hoverActive: notchContent.hoverActive // Used by bar to check notch
-
-    readonly property bool unifiedEffectActive: false // Flag to notify children to disable internal borders
-
-    readonly property var compositorMonitor: NiriService.monitorFor(targetScreen)
-    readonly property bool hasFullscreenWindow: {
-        if (!compositorMonitor || !compositorMonitor.activeWorkspace)
-            return false;
-
-        const activeWorkspaceId = compositorMonitor.activeWorkspace.id;
-        const monId = compositorMonitor.id;
-
-        // Check active toplevel first (fast path)
-        const toplevel = ToplevelManager.activeToplevel;
-        if (toplevel && toplevel.fullscreen && NiriService.focusedMonitor?.id === monId) {
-            return true;
-        }
-
-        // Check all windows on this monitor (robust path)
-        const wins = CompositorData.windowList;
-        for (let i = 0; i < wins.length; i++) {
-            if (wins[i].monitor === monId && wins[i].fullscreen && wins[i].workspace.id === activeWorkspaceId) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Proxy properties for Bar/Notch synchronization
-    // Note: BarContent and NotchContent already handle their internal sync using Visibilities.
-
-    // Helper properties for shadow logic
-    readonly property bool keepBarShadow: Config.bar.keepBarShadow ?? false
-    readonly property bool keepBarBorder: Config.bar.keepBarBorder ?? false
-    readonly property bool containBar: Config.bar.containBar && (Config.bar.frameEnabled ?? false)
+    readonly property bool hasFullscreenWindow: barContent.activeWindowFullscreen
 
     Component.onCompleted: {
         Visibilities.registerBarPanel(screen.name, unifiedPanel);
-        Visibilities.registerNotchPanel(screen.name, unifiedPanel);
         Visibilities.registerBar(screen.name, barContent);
-        Visibilities.registerNotch(screen.name, notchContent.notchContainerRef);
     }
 
     Component.onDestruction: {
         Visibilities.unregisterBarPanel(screen.name);
-        Visibilities.unregisterNotchPanel(screen.name);
         Visibilities.unregisterBar(screen.name);
-        Visibilities.unregisterNotch(screen.name);
     }
 
     // Full-screen mask item (used when modules/popups are open)
@@ -133,9 +70,7 @@ PanelWindow {
         anchors.fill: parent
     }
 
-    // Mask Region Logic
-    // When a module or popup is open, expand to full-screen to capture click-outside.
-    // Otherwise, restrict input to Bar, Notch, and Dock hitboxes only.
+    // Capture the full screen only while the run menu or a bar popup is open.
     mask: Region {
         // Full-screen capture when any module/popup is open
         item: unifiedPanel.needsFullScreenInput ? fullScreenMask : null
@@ -144,129 +79,49 @@ PanelWindow {
                 item: barContent.visible ? barContent.barHitbox : null
             },
             Region {
-                item: notchContent.notchHitbox
-            },
-            Region {
-                item: (assistantSidebar.active || assistantSidebar.hitbox.visible) ? assistantSidebar.hitbox : null
+                item: runMenu.hitbox
             }
         ]
     }
 
-    // Focus Grab for Notch — registers with FocusGrabManager for click-outside coordination
+    // Close the run menu when its focus grab is cleared.
     FocusGrab {
         id: focusGrab
         windows: [unifiedPanel]
-        active: notchContent.screenNotchOpen
+        active: runMenu.open
 
         onCleared: {
             Visibilities.setActiveModule("");
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // CLICK-OUTSIDE BACKDROP
-    // ═══════════════════════════════════════════════════════════════
-
-    // Transparent backdrop that captures clicks on empty areas when modules/popups are open.
-    // z: -1 ensures it's below all visual content (bar, notch, dock).
     MouseArea {
         id: backdropArea
         anchors.fill: parent
         visible: unifiedPanel.needsFullScreenInput
         z: -1
 
-        onClicked: {
-            FocusGrabManager.clearTopGrab();
-            if (assistantSidebar.active && assistantSidebar.wantsFocus) {
-                assistantSidebar.wantsFocus = false;
-            }
-        }
+        onClicked: FocusGrabManager.clearTopGrab()
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // VISUAL CONTENT
-    // ═══════════════════════════════════════════════════════════════
 
     Item {
         id: visualContent
         anchors.fill: parent
 
-        layer.enabled: true
-        layer.effect: Shadow {}
-
-        ScreenFrameContent {
-            id: frameContent
-            anchors.fill: parent
-            targetScreen: unifiedPanel.targetScreen
-            hasFullscreenWindow: unifiedPanel.hasFullscreenWindow
-            z: 1
-        }
-
         BarContent {
             id: barContent
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
-            z: 2
+            z: 1
             visible: unifiedPanel.barEnabled
         }
 
-        NotchContent {
-            id: notchContent
-            unifiedEffectActive: unifiedPanel.unifiedEffectActive
+        // Detached popup; it never joins the screen edge or reserves space.
+        RunMenuHost {
+            id: runMenu
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
-            z: 4
-        }
-
-        AssistantSidebar {
-            id: assistantSidebar
-            targetScreen: unifiedPanel.targetScreen
-            z: 1
-            
-            // Respect top/bottom bar reservations so the sidebar doesn't overlap them
-            anchors.topMargin: {
-                let frameOn = (Config.bar?.frameEnabled ?? false);
-                let frameWrapped = frameOn && GlobalStates.assistantPinned;
-                let margin = (frameOn && !frameWrapped) ? (Config.bar?.frameThickness ?? 6) : 0;
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "top" && unifiedPanel.barPinned) {
-                    margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
-                }
-                return margin;
-            }
-            
-            anchors.bottomMargin: {
-                let frameOn = (Config.bar?.frameEnabled ?? false);
-                let frameWrapped = frameOn && GlobalStates.assistantPinned;
-                let margin = (frameOn && !frameWrapped) ? (Config.bar?.frameThickness ?? 6) : 0;
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "bottom" && unifiedPanel.barPinned) {
-                    margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
-                }
-                return margin;
-            }
-
-            anchors.leftMargin: {
-                let sidebarPos = GlobalStates.assistantPosition;
-                let frameOn = (Config.bar?.frameEnabled ?? false);
-                let frameWrapped = frameOn && GlobalStates.assistantPinned;
-                let margin = 0;
-                if (sidebarPos === "left" && frameOn && !frameWrapped)
-                    margin += (Config.bar?.frameThickness ?? 6);
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "left" && unifiedPanel.barPinned)
-                    margin += unifiedPanel.barTargetWidth + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
-                return margin;
-            }
-
-            anchors.rightMargin: {
-                let sidebarPos = GlobalStates.assistantPosition;
-                let frameOn = (Config.bar?.frameEnabled ?? false);
-                let frameWrapped = frameOn && GlobalStates.assistantPinned;
-                let margin = 0;
-                if (sidebarPos === "right" && frameOn && !frameWrapped)
-                    margin += (Config.bar?.frameThickness ?? 6);
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "right" && unifiedPanel.barPinned)
-                    margin += unifiedPanel.barTargetWidth + unifiedPanel.barOuterMargin + (unifiedPanel.containBar ? Config.bar.frameThickness : 0);
-                return margin;
-            }
+            z: 2
         }
     }
 }

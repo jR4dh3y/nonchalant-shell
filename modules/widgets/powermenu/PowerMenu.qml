@@ -1,5 +1,6 @@
 import QtQuick
 import qs.modules.components
+import qs.modules.services
 import qs.modules.theme
 
 ActionGrid {
@@ -19,9 +20,9 @@ ActionGrid {
 
     actions: [
         {
+            id: "lock",
             icon: Icons.lock,
-            tooltip: "Lock Session",
-            command: "loginctl lock-session"
+            tooltip: "Lock Session"
         },
         {
             icon: Icons.suspend,
@@ -50,5 +51,9 @@ ActionGrid {
         }
     ]
 
-    onActionTriggered: root.itemSelected()
+    onActionTriggered: action => {
+        if (action.id === "lock")
+            LockscreenService.lock();
+        root.itemSelected();
+    }
 }

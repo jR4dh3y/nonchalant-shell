@@ -18,7 +18,7 @@ Item {
     signal colorSelected(string color)
     signal closed
 
-    // Handle Escape key to close (without closing notch)
+    // Handle Escape key locally.
     Keys.onEscapePressed: event => {
         root.closed();
         event.accepted = true;

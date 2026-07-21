@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Widgets
-import qs.config
+import Quickshell.Io
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.globals
@@ -17,46 +17,8 @@ Rectangle {
 
     property int leftPanelWidth: 0
 
-    component LaunchTile: StyledRect {
-        id: tile
-
-        required property string iconName
-        required property string label
-
-        signal clicked()
-
-        variant: tileMouse.containsMouse ? "focus" : "internalbg"
-        radius: Styling.radius(4)
-
-        Column {
-            anchors.centerIn: parent
-            spacing: 8
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: tile.iconName
-                color: tile.item
-                font.family: Icons.font
-                font.pixelSize: 24
-            }
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: tile.label
-                color: tile.item
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(0)
-                font.weight: Font.DemiBold
-            }
-        }
-
-        MouseArea {
-            id: tileMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: tile.clicked()
-        }
+    Process {
+        id: colorPickerProcess
     }
 
     RowLayout {
@@ -98,27 +60,76 @@ Rectangle {
                     StyledRect {
                         variant: "pane"
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 150
+                        Layout.preferredHeight: 64
 
-                        RowLayout {
+                        StyledRect {
                             anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 8
+                            anchors.margins: 4
+                            variant: "internalbg"
+                            radius: Styling.radius(0)
 
-                            LaunchTile {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                iconName: Icons.wallpapers
-                                label: "Wallpapers"
-                                onClicked: GlobalStates.dashboardCurrentTab = 1
-                            }
+                            RowLayout {
+                                anchors.centerIn: parent
+                                spacing: 4
 
-                            LaunchTile {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                iconName: Icons.gear
-                                label: "Settings"
-                                onClicked: GlobalShortcuts.toggleSettings()
+                                ControlButton {
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 48
+                                    iconName: Icons.wallpapers
+                                    isActive: GlobalStates.dashboardCurrentTab === 1
+                                    tooltipText: "Wallpapers"
+                                    onClicked: GlobalStates.dashboardCurrentTab = 1
+                                }
+
+                                ControlButton {
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 48
+                                    iconName: Icons.gear
+                                    isActive: GlobalStates.settingsWindowVisible
+                                    tooltipText: "Settings"
+                                    onClicked: GlobalShortcuts.toggleSettings()
+                                }
+
+                                ControlButton {
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 48
+                                    iconName: Icons.camera
+                                    isActive: GlobalStates.screenshotToolVisible
+                                    tooltipText: "Screenshot"
+                                    onClicked: {
+                                        Screenshot.initialize();
+                                        GlobalStates.screenshotToolVisible = true;
+                                    }
+                                }
+
+                                ControlButton {
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 48
+                                    iconName: ScreenRecorder.isRecording ? Icons.stop : Icons.recordScreen
+                                    isActive: ScreenRecorder.isRecording || GlobalStates.screenRecordToolVisible
+                                    tooltipText: ScreenRecorder.isRecording ? "Stop Recording" : "Screen Recorder"
+                                    onClicked: {
+                                        if (ScreenRecorder.isRecording) {
+                                            ScreenRecorder.toggleRecording();
+                                        } else {
+                                            ScreenRecorder.initialize();
+                                            GlobalStates.screenRecordToolVisible = true;
+                                        }
+                                    }
+                                }
+
+                                ControlButton {
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 48
+                                    iconName: Icons.picker
+                                    isActive: colorPickerProcess.running
+                                    tooltipText: "Color Picker"
+                                    onClicked: {
+                                        const scriptPath = Qt.resolvedUrl("../../../../scripts/colorpicker.py").toString().replace("file://", "");
+                                        colorPickerProcess.command = ["bash", "-c", "nohup python3 \"" + scriptPath + "\" > /dev/null 2>&1 &"];
+                                        colorPickerProcess.running = true;
+                                    }
+                                }
                             }
                         }
                     }

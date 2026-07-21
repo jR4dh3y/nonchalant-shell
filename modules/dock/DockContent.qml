@@ -31,21 +31,14 @@ Item {
     // Position configuration with fallback logic to avoid bar collision
     readonly property string userPosition: Config.dock?.position ?? "bottom"
     readonly property string barPosition: Config.bar?.position ?? "top"
-    readonly property string notchPosition: Config.notchPosition ?? "top"
 
     // Effective position
     readonly property string position: {
-        if (notchPosition === "bottom" && userPosition === "bottom") {
-            return (barPosition === "left") ? "right" : "left";
-        }
         if (userPosition !== barPosition) {
             return userPosition;
         }
         switch (userPosition) {
         case "bottom":
-            if (notchPosition === "bottom" || barPosition === "bottom") {
-                 return (barPosition === "left") ? "right" : "left";
-            }
             return "left";
         case "left":
             return "right";

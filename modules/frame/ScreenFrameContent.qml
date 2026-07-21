@@ -19,7 +19,6 @@ Item {
     readonly property bool frameEnabled: Config.bar?.frameEnabled ?? false
     readonly property bool configContainBar: Config.bar?.containBar ?? false
     readonly property string barPos: Config.bar?.position ?? "top"
-    readonly property string notchPos: Config.notchPosition ?? "top"
     
     readonly property var barPanel: Visibilities.barPanels[targetScreen.name]
     readonly property var dockPanel: Visibilities.dockPanels[targetScreen.name]
@@ -27,10 +26,9 @@ Item {
     // Effective Reveal States
     readonly property bool barReveal: barPanel ? barPanel.reveal : true
     readonly property bool dockReveal: dockPanel ? dockPanel.reveal : true
-    readonly property bool notchReveal: barPanel ? barPanel.notchReveal : true
 
     // Hover States for Restoration Logic
-    readonly property bool barHovered: barPanel ? (barPanel.barHoverActive || barPanel.notchHoverActive || barPanel.notchOpen) : false
+    readonly property bool barHovered: barPanel ? barPanel.barHoverActive : false
     readonly property bool dockHovered: dockPanel ? (dockPanel.reveal && (dockPanel.activeWindowFullscreen || dockPanel.keepHidden || !dockPanel.pinned)) : false
 
     // Sidebar State
@@ -65,12 +63,6 @@ Item {
         NumberAnimation { duration: Config.animDuration / 2; easing.type: Easing.OutCubic }
     }
 
-    property real _notchAnimProgress: notchReveal ? 1.0 : 0.0
-    Behavior on _notchAnimProgress {
-        enabled: Config.animDuration > 0
-        NumberAnimation { duration: Config.animDuration / 2; easing.type: Easing.OutCubic }
-    }
-
     // Bar expansion logic (synchronized with bar reveal)
     // Only expand if frame is enabled and bar is being contained
     readonly property int barExpansion: (frameEnabled && configContainBar) ? Math.round((barSize + baseThickness) * _barAnimProgress) : 0
@@ -98,7 +90,6 @@ Item {
             let progress = 0.0;
 
             if (barPos === side && barHovered) { restore = true; progress = Math.max(progress, _barAnimProgress); }
-            if (notchPos === side && barHovered) { restore = true; progress = Math.max(progress, _notchAnimProgress); }
             if (dockPanel && dockPanel.position === side && dockHovered) { restore = true; progress = Math.max(progress, _dockAnimProgress); }
             
             t = restore ? (baseThickness * progress) : 0;
@@ -115,7 +106,7 @@ Item {
         if (!root.hasFullscreenWindow) return Styling.radius(4);
         if (!barHovered && !dockHovered) return 0;
         
-        let progress = Math.max(_barAnimProgress, _dockAnimProgress, _notchAnimProgress);
+        let progress = Math.max(_barAnimProgress, _dockAnimProgress);
         return Styling.radius(4) * progress;
     }
     

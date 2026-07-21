@@ -9,30 +9,15 @@ import qs.modules.components
 import qs.modules.globals
 import qs.modules.services
 import qs.config
-import "../dashboard/clipboard"
-import "../dashboard/emoji"
-import "../dashboard/tmux"
-import "../dashboard/notes"
 
 Rectangle {
     id: root
     color: "transparent"
     
-    readonly property bool isCompact: currentTab === 0 || currentTab === 2
-    implicitWidth: isCompact ? 464 : 900
-    implicitHeight: isCompact ? 296 : 392
+    implicitWidth: 464
+    implicitHeight: 296
     
     focus: true
-
-    property int leftPanelWidth: isCompact ? 464 : 300
-    property int currentTab: GlobalStates.widgetsTabCurrentIndex  // 0=launcher, 1=clip, 2=emoji, 3=tmux, 4=notes
-    property bool prefixDisabled: false  // Flag to prevent re-activation after backspace
-
-    // Sync with GlobalStates
-    onCurrentTabChanged: {
-        GlobalStates.widgetsTabCurrentIndex = currentTab;
-        focusSearchInput();
-    }
 
     onActiveFocusChanged: {
         if (activeFocus) {
@@ -40,7 +25,7 @@ Rectangle {
         }
     }
 
-    // Force focus on start and tab change
+    // Retry briefly because the view is pushed into a StackView asynchronously.
     Timer {
         id: focusRetryTimer
         interval: 50
@@ -53,21 +38,8 @@ Rectangle {
                 return;
             }
             
-            let focused = false;
-            if (currentTab === 0) {
-                appLauncher.focusSearchInput();
-                focused = true; // Apps launcher is usually always ready
-            } else {
-                let loader = internalStack.itemAt(currentTab - 1);
-                if (loader && loader.item && loader.item.focusSearchInput) {
-                    loader.item.focusSearchInput();
-                    focused = true;
-                }
-            }
-            
-            if (focused) {
-                running = false;
-            }
+            appLauncher.focusSearchInput();
+            running = false;
             retries++;
         }
     }
@@ -81,47 +53,10 @@ Rectangle {
         focusSearchInput();
     }
 
-    // Handle prefix detection in launcher
-    function detectPrefix(text) {
-        let clipPrefix = Config.prefix.clipboard + " ";
-        let emojiPrefix = Config.prefix.emoji + " ";
-        let tmuxPrefix = Config.prefix.tmux + " ";
-        let notesPrefix = Config.prefix.notes + " ";
-
-        // If prefix was manually disabled, don't re-enable until conditions are met
-        if (prefixDisabled) {
-            // Only re-enable prefix if user deletes the prefix text or adds valid content
-            if (text === clipPrefix || text === emojiPrefix || text === tmuxPrefix || text === notesPrefix) {
-                // Still at exact prefix - keep disabled
-                return 0;
-            } else if (!text.startsWith(clipPrefix) && !text.startsWith(emojiPrefix) && !text.startsWith(tmuxPrefix) && !text.startsWith(notesPrefix)) {
-                // User deleted the prefix - re-enable detection
-                prefixDisabled = false;
-                return 0;
-            } else {
-                // User typed something after the prefix but it's still disabled
-                return 0;
-            }
-        }
-
-        // Normal prefix detection - only activate if exactly "prefix " (nothing after)
-        if (text === clipPrefix) {
-            return 1;
-        } else if (text === emojiPrefix) {
-            return 2;
-        } else if (text === tmuxPrefix) {
-            return 3;
-        } else if (text === notesPrefix) {
-            return 4;
-        }
-        return 0;
-    }
-
-    // App Launcher - shown only when currentTab === 0
+    // App launcher / run menu.
     Rectangle {
         id: appLauncher
         anchors.fill: parent
-        visible: currentTab === 0
         color: "transparent"
 
         property string searchText: GlobalStates.launcherSearchText
@@ -258,70 +193,12 @@ Rectangle {
             onTriggered: {
                 appLauncher.updateFilteredApps();
                 appLauncher.updateAppsModel();
-                if (currentTab === 0) {
-                    appLauncher.focusSearchInput();
-                }
+                appLauncher.focusSearchInput();
             }
         }
 
         onSearchTextChanged: {
             updateFilteredApps();
-            // Detect prefix and switch tab if needed
-            let detectedTab = detectPrefix(searchText);
-            if (detectedTab !== currentTab) {
-                if (detectedTab === 0) {
-                    // Return to launcher
-                    currentTab = 0;
-                    prefixDisabled = false;
-                    Qt.callLater(() => {
-                        appLauncher.focusSearchInput();
-                    });
-                } else {
-                    // Switch to prefix tab
-                    currentTab = detectedTab;
-
-                    // Extract the text after the prefix
-                    let prefixLength = 0;
-                    if (searchText.startsWith(Config.prefix.clipboard + " "))
-                        prefixLength = Config.prefix.clipboard.length + 1;
-                    else if (searchText.startsWith(Config.prefix.emoji + " "))
-                        prefixLength = Config.prefix.emoji.length + 1;
-                    else if (searchText.startsWith(Config.prefix.tmux + " "))
-                        prefixLength = Config.prefix.tmux.length + 1;
-                    else if (searchText.startsWith(Config.prefix.notes + " "))
-                        prefixLength = Config.prefix.notes.length + 1;
-
-                    let remainingText = searchText.substring(prefixLength);
-
-                    // Wait for loader to be ready and then focus
-                    Qt.callLater(() => {
-                        let targetItem = null;
-                        let targetLoader = null;
-
-                        if (detectedTab === 1) {
-                            targetLoader = clipboardLoader;
-                        } else if (detectedTab === 2) {
-                            targetLoader = emojiLoader;
-                        } else if (detectedTab === 3) {
-                            targetLoader = tmuxLoader;
-                        } else if (detectedTab === 4) {
-                            targetLoader = notesLoader;
-                        }
-
-                        // If loader is ready, use it immediately
-                        if (targetLoader && targetLoader.item) {
-                            targetItem = targetLoader.item;
-                            // Set the search text in the new tab
-                            if (targetItem.searchText !== undefined) {
-                                targetItem.searchText = remainingText;
-                            }
-                            // Focus the search input
-                            root.focusSearchInput();
-                        }
-                    // Otherwise, the onLoaded handler will take care of focusing
-                    });
-                }
-            }
         }
 
         onSelectedIndexChanged: {
@@ -1079,165 +956,4 @@ Rectangle {
         }
     }
 
-    // StackLayout for other tabs (clipboard, emoji, tmux, notes)
-    StackLayout {
-        id: internalStack
-        anchors.fill: parent
-        visible: currentTab !== 0
-        currentIndex: currentTab - 1
-
-        // Tab 1: Clipboard
-        Loader {
-            id: clipboardLoader
-            active: currentTab === 1 || item !== null
-            sourceComponent: Component {
-                ClipboardTab {
-                    leftPanelWidth: root.leftPanelWidth
-                    prefixIcon: Icons.clipboard
-                    onBackspaceOnEmpty: {
-                        prefixDisabled = true;
-                        currentTab = 0;
-                        GlobalStates.launcherSearchText = Config.prefix.clipboard + " ";
-                        root.focusSearchInput();
-                    }
-                    onRequestOpenItem: (itemId, items, currentContent, filePathGetter, urlChecker) => {
-                        console.log("DEBUG: Received requestOpenItem signal for:", itemId);
-                        openItemInternal(itemId, items, currentContent, filePathGetter, urlChecker);
-                    }
-                }
-            }
-            onLoaded: {
-                if (currentTab === 1 && item && item.focusSearchInput) {
-                    root.focusSearchInput();
-                }
-            }
-        }
-
-        // Tab 2: Emoji
-        Loader {
-            id: emojiLoader
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            active: currentTab === 2 || item !== null
-            sourceComponent: Component {
-                EmojiTab {
-                    anchors.fill: parent
-                    leftPanelWidth: root.width
-                    prefixIcon: Icons.emoji
-                    onBackspaceOnEmpty: {
-                        prefixDisabled = true;
-                        currentTab = 0;
-                        GlobalStates.launcherSearchText = Config.prefix.emoji + " ";
-                        root.focusSearchInput();
-                    }
-                }
-            }
-            onLoaded: {
-                if (currentTab === 2 && item && item.focusSearchInput) {
-                    root.focusSearchInput();
-                }
-            }
-        }
-
-        // Tab 3: Tmux
-        Loader {
-            id: tmuxLoader
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            active: currentTab === 3 || item !== null
-            sourceComponent: Component {
-                TmuxTab {
-                    leftPanelWidth: root.leftPanelWidth
-                    prefixIcon: Icons.terminal
-                    onBackspaceOnEmpty: {
-                        prefixDisabled = true;
-                        currentTab = 0;
-                        GlobalStates.launcherSearchText = Config.prefix.tmux + " ";
-                        root.focusSearchInput();
-                    }
-                }
-            }
-            onLoaded: {
-                if (currentTab === 3 && item && item.focusSearchInput) {
-                    root.focusSearchInput();
-                }
-            }
-        }
-
-        // Tab 4: Notes
-        Loader {
-            id: notesLoader
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            active: currentTab === 4 || item !== null
-            sourceComponent: Component {
-                NotesTab {
-                    anchors.fill: parent
-                    leftPanelWidth: root.leftPanelWidth
-                    prefixIcon: Icons.note
-                    onBackspaceOnEmpty: {
-                        prefixDisabled = true;
-                        currentTab = 0;
-                        GlobalStates.launcherSearchText = Config.prefix.notes + " ";
-                        root.focusSearchInput();
-                    }
-                }
-            }
-            onLoaded: {
-                if (currentTab === 4 && item && item.focusSearchInput) {
-                    root.focusSearchInput();
-                }
-            }
-        }
-    }
-
-    // Process for opening items from clipboard
-    Process {
-        id: globalOpenProcess
-        running: false
-
-        onStarted: function () {
-            console.log("DEBUG: globalOpenProcess started with command:", globalOpenProcess.command);
-        }
-
-        onExited: function (code, status) {
-            if (code === 0) {
-                console.log("DEBUG: globalOpenProcess completed successfully");
-            } else {
-                console.warn("DEBUG: globalOpenProcess failed with exit code:", code, "status:", status);
-            }
-        }
-    }
-
-    // Internal function to open items - called by signal handlers
-    function openItemInternal(itemId, items, currentContent, getFilePathFromUri, isUrl) {
-        console.log("DEBUG: LauncherView.openItemInternal called for itemId:", itemId);
-        for (var i = 0; i < items.length; i++) {
-            if (items[i].id === itemId) {
-                var item = items[i];
-                var content = currentContent || item.preview;
-                console.log("DEBUG: item found - isFile:", item.isFile, "isImage:", item.isImage, "content:", content);
-
-                if (item.isFile) {
-                    var filePath = getFilePathFromUri(content);
-                    console.log("DEBUG: Opening file with path:", filePath);
-                    if (filePath) {
-                        globalOpenProcess.command = ["xdg-open", filePath];
-                        globalOpenProcess.running = true;
-                    }
-                } else if (item.isImage && item.binaryPath) {
-                    console.log("DEBUG: Opening image with binaryPath:", item.binaryPath);
-                    globalOpenProcess.command = ["xdg-open", item.binaryPath];
-                    globalOpenProcess.running = true;
-                } else if (isUrl(content)) {
-                    console.log("DEBUG: Opening URL:", content.trim());
-                    globalOpenProcess.command = ["xdg-open", content.trim()];
-                    globalOpenProcess.running = true;
-                } else {
-                    console.warn("DEBUG: Item does not match any openable type");
-                }
-                break;
-            }
-        }
-    }
 }

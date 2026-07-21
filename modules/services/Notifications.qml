@@ -330,12 +330,12 @@ Singleton {
                 saveNotifications();
             });
 
-            // Popup - ahora se muestra en el notch en lugar de popup window
+            // Queue transient notification data for interested views.
             if (!root.popupInhibited) {
                 newNotifObject.popup = true;
                 newNotifObject.timer = notifTimerComponent.createObject(root, {
                     "id": newNotifObject.id,
-                    "interval": notification.expireTimeout < 0 ? 5000 : notification.expireTimeout // Aumentado para notch
+                    "interval": notification.expireTimeout < 0 ? 5000 : notification.expireTimeout
                 });
             }
 

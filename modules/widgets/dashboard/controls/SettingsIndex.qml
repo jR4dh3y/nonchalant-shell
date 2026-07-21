@@ -166,9 +166,6 @@ QtObject {
         { label: "Show Overview Button", keywords: "workspace switcher", section: 8, subSection: "bar", subLabel: "Nonchalant > Bar", icon: Icons.layout, isIcon: true },
         { label: "Bar Screens", keywords: "monitor display eDP", section: 8, subSection: "bar", subLabel: "Nonchalant > Bar", icon: Icons.layout, isIcon: true },
 
-        // Nonchalant > Notch
-        { label: "Notch", keywords: "island dynamic island center", section: 8, subSection: "notch", subLabel: "Nonchalant > Notch", icon: Icons.layout, isIcon: true },
-
         // Nonchalant > Workspaces
         { label: "Workspaces", keywords: "virtual desktop spaces", section: 8, subSection: "workspaces", subLabel: "Nonchalant > Workspaces", icon: Icons.squaresFour, isIcon: true },
         { label: "Workspaces Shown", keywords: "number count visible", section: 8, subSection: "workspaces", subLabel: "Nonchalant > Workspaces", icon: Icons.squaresFour, isIcon: true },

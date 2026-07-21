@@ -5,7 +5,7 @@
 **Language:** QML / JavaScript
 
 ## OVERVIEW
-Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built with Quickshell. It provides a unified panel (bar, dock, notch), dashboard, lockscreen, desktop widgets, and notification system, driven by a reactive JSON configuration system. Multi-monitor support uses `Variants` on `Quickshell.screens`.
+Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built with Quickshell. The lean runtime provides a wallpaper, one unified bar, a floating run menu, and a lockscreen, driven by a reactive JSON configuration system. Multi-monitor support uses `Variants` on `Quickshell.screens`.
 
 ## STRUCTURE
 ```
@@ -21,7 +21,6 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 │   ├── frame/            # Screen border/glow effect
 │   ├── globals/          # GlobalStates.qml — transient runtime state
 │   ├── lockscreen/       # WlSessionLock + PAM authentication
-│   ├── notch/            # Dynamic island UI (launcher, dashboard, notifications)
 │   ├── notifications/    # Notification popup system + history
 │   ├── services/         # Backend singletons (30+): Battery, AI, Network, etc.
 │   ├── shell/            # UnifiedShellPanel + ReservationWindows + OSD
@@ -30,7 +29,6 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 │   └── widgets/          # Complex overlays: dashboard, launcher, overview, etc.
 │       ├── config/       # Standalone settings window
 │       ├── dashboard/    # Main hub: controls, metrics, assistant, clipboard, notes
-│       ├── defaultview/  # Notch idle content (compact player, notification indicator)
 │       ├── launcher/     # App search + multi-tab launcher
 │       ├── overview/     # Mission Control workspace overview
 │       ├── powermenu/    # Lock, logout, shutdown actions
@@ -56,7 +54,7 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 | **Dashboard** | `modules/widgets/dashboard/` | Tabbed hub with LRU lazy-loading |
 | **Launcher** | `modules/widgets/launcher/LauncherView.qml` | Unified search: apps, clipboard, emoji |
 | **Bar Layout** | `modules/bar/BarContent.qml` | Auto-hide, horizontal/vertical, widget groups |
-| **Notch** | `modules/notch/Notch.qml` | Dynamic island with StackView navigation |
+| **Run Menu** | `modules/widgets/launcher/RunMenuHost.qml` | Floating launcher host inside the unified panel |
 | **Overview** | `modules/widgets/overview/` | Mission Control workspace view |
 | **Lockscreen** | `modules/lockscreen/LockScreen.qml` | PAM auth + `WlSessionLockSurface` |
 | **Notifications** | `modules/notifications/` | Popup system + delegate + history |
@@ -74,7 +72,7 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 | `Icons` | Singleton | `modules/theme/Icons.qml` | Phosphor-Bold icon font character map |
 | `StyledRect` | Component | `modules/components/StyledRect.qml` | Base themed container (300+ usages) |
 | `GradientCache` | Singleton | `modules/components/GradientCache.qml` | GPU texture sharing optimization |
-| `UnifiedShellPanel` | Component | `modules/shell/UnifiedShellPanel.qml` | Full-screen `PanelWindow` for Bar + Notch + Dock |
+| `UnifiedShellPanel` | Component | `modules/shell/UnifiedShellPanel.qml` | Full-screen input surface for the bar and floating run menu |
 | `ShellRoot` | Component | `shell.qml` | Root window. `Variants` per screen |
 | `NiriService` | Singleton | `modules/services/NiriService.qml` | Compositor abstraction (focus, dispatch) |
 | `StateService` | Singleton | `modules/services/StateService.qml` | JSON persistence for session state |
