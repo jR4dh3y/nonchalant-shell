@@ -28,6 +28,8 @@ StyledRect {
     property real handleSize: 8
     property real lineWidth: 4
     property real gapAngle: 45
+    property bool showMeter: true
+    property string tooltipText: ""
 
     radius: Styling.radius(4)
     width: 48
@@ -93,6 +95,11 @@ StyledRect {
                 root.controlValueChanged(newValue);
             }
         }
+
+        StyledToolTip {
+            visible: mouseArea.containsMouse && root.tooltipText !== ""
+            tooltipText: root.tooltipText
+        }
     }
 
     Item {
@@ -100,6 +107,7 @@ StyledRect {
         anchors.centerIn: parent
         width: 48
         height: 48
+        visible: root.showMeter
 
         property real angle: root.value * (360 - 2 * root.gapAngle)
         property real radius: 16
@@ -178,6 +186,9 @@ StyledRect {
             Connections {
                 target: root
                 function onAccentColorChanged() {
+                    canvas.requestPaint();
+                }
+                function onShowMeterChanged() {
                     canvas.requestPaint();
                 }
             }

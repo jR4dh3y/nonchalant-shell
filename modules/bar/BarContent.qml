@@ -527,14 +527,6 @@ Item {
                             endRadius: root.innerRadius
                         }
 
-                        ControlsButton {
-                            id: controlsButton
-                            bar: root
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
                         Bar.BatteryIndicator {
                             id: batteryIndicator
                             bar: root
@@ -588,6 +580,27 @@ Item {
                                 bar: root
                                 enableShadow: root.shadowsEnabled
                                 startRadius: root.outerRadius
+                                endRadius: root.innerRadius
+                            }
+
+                            VolumeSlider {
+                                bar: root
+                                layerEnabled: root.shadowsEnabled
+                                startRadius: root.innerRadius
+                                endRadius: root.innerRadius
+                            }
+
+                            MicSlider {
+                                bar: root
+                                layerEnabled: root.shadowsEnabled
+                                startRadius: root.innerRadius
+                                endRadius: root.innerRadius
+                            }
+
+                            BrightnessSlider {
+                                bar: root
+                                layerEnabled: root.shadowsEnabled
+                                startRadius: root.innerRadius
                                 endRadius: root.innerRadius
                             }
 
@@ -779,14 +792,6 @@ Item {
                                 startRadius: root.innerRadius
                                 endRadius: root.outerRadius
                             }
-                        }
-
-                        ControlsButton {
-                            id: controlsButtonVert
-                            bar: root
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.outerRadius
-                            endRadius: root.innerRadius
                         }
 
                         Bar.BatteryIndicator {

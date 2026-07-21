@@ -98,13 +98,20 @@ StyledRect {
                     onLongPressed: root.togglePanel(1)
                 }
 
-                ControlButton {
+                CircularControl {
                     Layout.preferredWidth: 48
                     Layout.preferredHeight: 48
-                    iconName: Icons.nightLight
-                    isActive: NightLightService.active
-                    tooltipText: NightLightService.active ? "Night Light: On" : "Night Light: Off"
-                    onClicked: NightLightService.toggle()
+                    icon: Icons.nightLight
+                    value: NightLightService.normalizedTemperature
+                    accentColor: Styling.srItem("overprimary")
+                    isToggleable: true
+                    isToggled: NightLightService.active
+                    showMeter: NightLightService.active
+                    tooltipText: NightLightService.active
+                        ? "Night Light: " + NightLightService.temperature + " K · Scroll to adjust"
+                        : "Night Light: Off"
+                    onControlValueChanged: newValue => NightLightService.setTemperatureFromNormalized(newValue)
+                    onToggled: NightLightService.toggle()
                 }
 
                 ControlButton {
@@ -119,10 +126,10 @@ StyledRect {
                 ControlButton {
                     Layout.preferredWidth: 48
                     Layout.preferredHeight: 48
-                    iconName: Icons.gameMode
-                    isActive: GameModeService.toggled
-                    tooltipText: GameModeService.toggled ? "Game Mode: On" : "Game Mode: Off"
-                    onClicked: GameModeService.toggle()
+                    iconName: Icons.gpu
+                    isActive: GpuService.nvidiaActive
+                    tooltipText: "GPU: " + GpuService.modeLabel + " · Click to switch"
+                    onClicked: GpuService.toggle()
                 }
             }
         }

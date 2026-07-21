@@ -42,10 +42,12 @@ Singleton {
     property int retryCount: 0
     readonly property int maxRetries: 3
     property bool wasCancelled: false
+    property bool refreshPending: false
 
     property var suspendConnections: Connections {
         target: SuspendManager
         function onPreparingForSleep() {
+            root.refreshPending = false;
             if (weatherProcess.running) {
                 root.wasCancelled = true;
                 weatherProcess.running = false;
@@ -477,14 +479,23 @@ Singleton {
         }
 
         onExited: function (code) {
+            if (root.wasCancelled) {
+                root.wasCancelled = false;
+                return;
+            }
+
+            if (root.refreshPending) {
+                root.refreshPending = false;
+                Qt.callLater(() => root.updateWeather());
+                return;
+            }
+
             // SIGTERM (15) = intentional cancellation
             if (code !== 0 && code !== 15) {
                 console.warn("WeatherService: Script exited with code", code);
                 root.dataAvailable = false;
                 root.handleError();
             }
-            // Reset cancelled flag after process fully exits
-            root.wasCancelled = false;
         }
     }
 
@@ -506,10 +517,12 @@ Singleton {
     }
 
     function updateWeather() {
-        // Cancel existing process if running
+        // Coalesce overlapping startup/config refreshes. Cancelling and
+        // immediately restarting a Quickshell Process can attach the old
+        // cancellation state to the replacement and discard valid output.
         if (weatherProcess.running) {
-            root.wasCancelled = true;
-            weatherProcess.running = false;
+            root.refreshPending = true;
+            return;
         }
 
         // Safety check for config

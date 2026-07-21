@@ -7,64 +7,82 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    property bool active: StateService.get("nightLight", false)
-    
-    property Process wlsunsetProcess: Process {
-        command: ["wlsunset", "-t", "4499", "-T", "4500"]
-        running: false
-        stdout: SplitParser {
-            onRead: (data) => {
-                // wlsunset output cuando está corriendo
-                if (data) {
-                    root.active = true
-                }
-            }
-        }
-        onStarted: {
-            root.active = true
-        }
-        onExited: (code) => {
-            root.active = false
-        }
+    // wl-gammarelay-rs is already part of this system and works with Niri's
+    // Wayland session. wlsunset cannot acquire gamma-control here.
+    readonly property int minTemperature: 2500
+    readonly property int maxTemperature: 6500
+    property int temperature: 4500
+    property int currentTemperature: maxTemperature
+    property bool active: false
+    property int pendingTemperature: -1
+    readonly property real normalizedTemperature: (temperature - minTemperature) / (maxTemperature - minTemperature)
+
+    function setTemperature(value) {
+        const next = Math.max(minTemperature, Math.min(maxTemperature, Math.round(value / 100) * 100));
+        root.temperature = next;
+        if (StateService.initialized)
+            StateService.set("nightLightTemperature", next);
+        if (root.active)
+            applyTemperature(next);
     }
-    
-    property Process killProcess: Process {
-        command: ["pkill", "wlsunset"]
-        running: false
-        onExited: (code) => {
-            root.active = false
-        }
+
+    function setTemperatureFromNormalized(value) {
+        setTemperature(minTemperature + Math.max(0, Math.min(1, value)) * (maxTemperature - minTemperature));
     }
-    
-    property Process checkRunningProcess: Process {
-        command: ["pgrep", "wlsunset"]
-        running: false
-        onExited: (code) => {
-            const isRunning = code === 0
-            
-            // If state says active but not running, start it
-            if (root.active && !isRunning) {
-                console.log("NightLightService: Starting wlsunset (state was active but not running)")
-                wlsunsetProcess.running = true
-            } 
-            // If state says inactive but running, kill it
-            else if (!root.active && isRunning) {
-                console.log("NightLightService: Stopping wlsunset (state was inactive but running)")
-                killProcess.running = true
+
+    function applyTemperature(value) {
+        const next = Math.max(minTemperature, Math.min(maxTemperature, Math.round(value / 100) * 100));
+        if (setTemperatureProcess.running) {
+            root.pendingTemperature = next;
+            return;
+        }
+        root.pendingTemperature = -1;
+        setTemperatureProcess.command = ["busctl", "--user", "set-property", "rs.wl-gammarelay", "/", "rs.wl.gammarelay", "Temperature", "q", String(next)];
+        setTemperatureProcess.running = true;
+        root.currentTemperature = next;
+    }
+
+    function toggle() {
+        root.active = !root.active;
+        if (root.active)
+            applyTemperature(root.temperature);
+        else
+            applyTemperature(maxTemperature);
+        if (StateService.initialized)
+            StateService.set("nightLight", root.active);
+    }
+
+    function syncState() {
+        if (!queryTemperatureProcess.running)
+            queryTemperatureProcess.running = true;
+    }
+
+    Process {
+        id: queryTemperatureProcess
+        command: ["busctl", "--user", "get-property", "rs.wl-gammarelay", "/", "rs.wl.gammarelay", "Temperature"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const match = text.match(/(\d+)\s*$/);
+                if (!match)
+                    return;
+                root.currentTemperature = Number(match[1]);
+                root.active = root.currentTemperature < root.maxTemperature - 50;
             }
         }
     }
 
-    function toggle() {
-        if (active) {
-            killProcess.running = true
-        } else {
-            wlsunsetProcess.running = true
+    Process {
+        id: setTemperatureProcess
+        command: []
+        onExited: {
+            if (root.pendingTemperature >= 0) {
+                const next = root.pendingTemperature;
+                root.pendingTemperature = -1;
+                Qt.callLater(() => root.applyTemperature(next));
+            } else {
+                root.syncState();
+            }
         }
-    }
-    
-    function syncState() {
-        checkRunningProcess.running = true
     }
 
     onActiveChanged: {
@@ -77,6 +95,7 @@ Singleton {
         target: StateService
         function onStateLoaded() {
             root.active = StateService.get("nightLight", false);
+            root.temperature = StateService.get("nightLightTemperature", root.temperature);
             root.syncState();
         }
     }
@@ -88,6 +107,7 @@ Singleton {
         repeat: false
         onTriggered: {
             if (StateService.initialized) {
+                root.temperature = StateService.get("nightLightTemperature", root.temperature);
                 root.active = StateService.get("nightLight", false);
                 root.syncState();
             }

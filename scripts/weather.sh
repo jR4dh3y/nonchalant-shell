@@ -12,11 +12,14 @@ RETRY_DELAY=2
 # Function to make HTTP request with retries
 http_get() {
 	local url="$1"
+	local max_attempts="${2:-$MAX_RETRIES}"
 	local attempt=1
 	local response=""
 
-	while [[ $attempt -le $MAX_RETRIES ]]; do
-		response=$(curl -s --max-time 15 --retry 2 --retry-delay 1 "$url" 2>/dev/null)
+	while [[ $attempt -le $max_attempts ]]; do
+		# -f rejects HTTP errors such as the 429 response that ipapi.co
+		# previously passed to jq as if it were valid JSON.
+		response=$(curl -fsS --max-time 15 --retry 1 --retry-delay 1 "$url" 2>/dev/null)
 		if [[ -n "$response" && "$response" != "null" ]]; then
 			echo "$response"
 			return 0
@@ -30,24 +33,41 @@ http_get() {
 
 # Function to get coordinates from GeoIP
 get_geoip_coords() {
-	local response
-	response=$(http_get "https://ipapi.co/json/")
+	local response lat lon loc
 
-	if [[ -z "$response" ]]; then
-		echo '{"error": "GeoIP request failed"}'
-		return 1
+	# GeoIP services occasionally rate-limit public traffic, so validate each
+	# response and fall through instead of making weather depend on one host.
+	response=$(http_get "https://ipwho.is/" 1) || response=""
+	if [[ -n "$response" ]]; then
+		lat=$(jq -r 'if .success == true then .latitude // empty else empty end' <<<"$response" 2>/dev/null)
+		lon=$(jq -r 'if .success == true then .longitude // empty else empty end' <<<"$response" 2>/dev/null)
+		if [[ -n "$lat" && -n "$lon" ]]; then
+			echo "$lat,$lon"
+			return 0
+		fi
 	fi
 
-	local lat lon
-	lat=$(echo "$response" | jq -r '.latitude // empty')
-	lon=$(echo "$response" | jq -r '.longitude // empty')
-
-	if [[ -z "$lat" || -z "$lon" ]]; then
-		echo '{"error": "Could not determine location from GeoIP"}'
-		return 1
+	response=$(http_get "https://ipinfo.io/json" 1) || response=""
+	if [[ -n "$response" ]]; then
+		loc=$(jq -r '.loc // empty' <<<"$response" 2>/dev/null)
+		if [[ "$loc" =~ ^-?[0-9]+\.?[0-9]*,-?[0-9]+\.?[0-9]*$ ]]; then
+			echo "$loc"
+			return 0
+		fi
 	fi
 
-	echo "$lat,$lon"
+	response=$(http_get "https://api.ipapi.is/" 1) || response=""
+	if [[ -n "$response" ]]; then
+		lat=$(jq -r '.location.latitude // empty' <<<"$response" 2>/dev/null)
+		lon=$(jq -r '.location.longitude // empty' <<<"$response" 2>/dev/null)
+		if [[ -n "$lat" && -n "$lon" ]]; then
+			echo "$lat,$lon"
+			return 0
+		fi
+	fi
+
+	echo '{"error": "Could not determine location from GeoIP providers"}'
+	return 1
 }
 
 # Function to geocode a city name

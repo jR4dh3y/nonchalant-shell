@@ -22,7 +22,6 @@ import qs.modules.lockscreen
 import qs.modules.globals
 import qs.modules.shell
 import qs.config
-import qs.modules.shell.osd
 import "modules/tools"
 
 ShellRoot {
@@ -212,20 +211,6 @@ ShellRoot {
         id: settingsWindowLoader
         active: SuspendManager.wakeReady && GlobalStates.settingsWindowVisible
         source: "modules/widgets/config/SettingsWindow.qml"
-    }
-
-    // On-screen display
-    Variants {
-        model: Quickshell.screens
-
-        Loader {
-            id: osdLoader
-            active: SuspendManager.wakeReady
-            required property ShellScreen modelData
-            sourceComponent: OSD {
-                targetScreen: osdLoader.modelData
-            }
-        }
     }
 
     // Init clipboard service
