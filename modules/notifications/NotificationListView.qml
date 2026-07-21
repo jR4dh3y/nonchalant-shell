@@ -1,30 +1,27 @@
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
 import Quickshell
 import qs.modules.services
-import "./NotificationDelegate.qml"
 
+// History / popup list of app groups. Popup toasts use NotificationPopup's
+// own Repeater over popupList; this view still powers any external consumers.
 ListView {
     id: root
     property bool popup: false
 
     spacing: 8
+    clip: true
 
-    // Mostrar todas las notificaciones individuales en lugar de grupos
-    model: root.popup ? Notifications.popupNotifications : Notifications.notifications
+    model: root.popup ? Notifications.popupAppNameList : Notifications.appNameList
 
-    delegate: NotificationDelegate {
+    delegate: NotificationGroup {
         required property int index
         required property var modelData
-        anchors.left: parent?.left
-        anchors.right: parent?.right
-        notificationObject: modelData
-        expanded: true // Siempre expandidas para mostrar toda la información
-        onlyNotification: true // Mostrar como notificación individual con header
 
-        onDestroyRequested:
-        // No necesitamos lógica especial aquí
-        {}
+        width: root.width
+        popup: root.popup
+        expanded: root.popup
+        notificationGroup: root.popup
+            ? Notifications.popupGroupsByAppName[modelData]
+            : Notifications.groupsByAppName[modelData]
     }
 }

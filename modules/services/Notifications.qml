@@ -138,7 +138,8 @@ Singleton {
 
     property bool silent: false
     property list<Notif> list: []
-    property var popupList: list.filter(notif => notif.popup)
+    // Explicit list reassigned in rebuildGroups so toast ListViews rebind.
+    property var popupList: []
     property bool popupInhibited: silent
     property var latestTimeForApp: ({})
     property var totalCounts: ({})  // Conteo total independiente del almacenamiento: {appName: {summary: count}}
@@ -294,8 +295,10 @@ Singleton {
     property var popupAppNameList: []
 
     function rebuildGroups() {
+        // Fresh array each time so QML property notifiers fire for toast windows.
+        popupList = root.list.filter(notif => notif && notif.popup === true);
         groupsByAppName = groupsForList(root.list);
-        popupGroupsByAppName = groupsForList(root.popupList);
+        popupGroupsByAppName = groupsForList(popupList);
         appNameList = appNameListForGroups(groupsByAppName);
         popupAppNameList = appNameListForGroups(popupGroupsByAppName);
     }
