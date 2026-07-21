@@ -6,7 +6,9 @@ import qs.modules.theme
 import qs.modules.components
 import qs.config
 
-// In-panel toast stack with enter/exit motion matching shell timing.
+// In-panel toast stack. Enter: fade + light drop. Exit: fade + slight up.
+// Avoid sliding on +x while the host is right-anchored (that looked like
+// toasts "spawning away" off the right edge).
 Item {
     id: root
 
@@ -24,33 +26,12 @@ Item {
     anchors.rightMargin: 12
     z: 200
 
-    // Track exit animations so the host stays up until they finish.
     property int exitingCount: 0
 
     Column {
         id: toastColumn
         width: parent.width
         spacing: 8
-
-        // Smooth reflow when a toast leaves the stack.
-        move: Transition {
-            enabled: root.animMs > 0
-            NumberAnimation {
-                properties: "y"
-                duration: root.animMs / 2
-                easing.type: Easing.OutCubic
-            }
-        }
-
-        add: Transition {
-            enabled: root.animMs > 0
-            NumberAnimation {
-                properties: "opacity"
-                from: 0
-                to: 1
-                duration: 1
-            }
-        }
 
         Repeater {
             model: root.popupCount
@@ -77,105 +58,116 @@ Item {
                 }
 
                 property bool closing: false
-                property real slideX: 48
+                property bool entered: false
                 property real toastOpacity: 0
-                property real toastScale: 0.92
+                property real toastScale: 0.96
+                property real slideY: -12
 
                 width: toastColumn.width
                 height: Math.max(bodyCol.implicitHeight + 24, 72)
                 visible: notif !== null || closing
                 opacity: toastOpacity
                 scale: toastScale
-                transformOrigin: Item.Right
-                x: slideX
-                clip: false
-
-                Behavior on toastOpacity {
-                    enabled: root.animMs > 0 && !closing
-                    NumberAnimation {
-                        duration: root.animMs / 2
-                        easing.type: Easing.OutQuad
-                    }
-                }
-                Behavior on slideX {
-                    enabled: root.animMs > 0 && !closing
-                    NumberAnimation {
-                        duration: root.animMs
-                        easing.type: Easing.OutCubic
-                    }
-                }
-                Behavior on toastScale {
-                    enabled: root.animMs > 0 && !closing
-                    NumberAnimation {
-                        duration: root.animMs
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 1.1
-                    }
+                transformOrigin: Item.Top
+                transform: Translate {
+                    y: toastRoot.slideY
                 }
 
-                // Enter
-                Component.onCompleted: {
+                Component.onCompleted: playEnter()
+
+                function playEnter() {
+                    if (closing || entered)
+                        return;
                     if (root.animMs <= 0) {
                         toastOpacity = 1;
-                        slideX = 0;
                         toastScale = 1;
+                        slideY = 0;
+                        entered = true;
                         return;
                     }
-                    // Next frame so Behaviors attach before values change.
-                    Qt.callLater(() => {
-                        if (closing)
-                            return;
-                        toastOpacity = 1;
-                        slideX = 0;
-                        toastScale = 1;
-                    });
+                    enterAnim.start();
                 }
 
                 function playExit(thenClear) {
                     if (closing)
                         return;
                     closing = true;
+                    entered = true;
                     root.exitingCount += 1;
                     cardMa.enabled = false;
+                    enterAnim.stop();
 
-                    // Disable enter Behaviors path; drive exit with explicit anim.
                     if (root.animMs <= 0) {
                         finishExit(thenClear);
                         return;
                     }
 
-                    exitAnim.notifId = toastRoot.notifId
-                    exitAnim.appName = toastRoot.appName
-                    exitAnim.thenClear = thenClear
-                    exitAnim.start()
+                    exitAnim.thenClear = thenClear;
+                    exitAnim.start();
+                }
+
+                ParallelAnimation {
+                    id: enterAnim
+                    running: false
+
+                    NumberAnimation {
+                        target: toastRoot
+                        property: "toastOpacity"
+                        from: 0
+                        to: 1
+                        duration: Math.max(root.animMs / 2, 80)
+                        easing.type: Easing.OutQuad
+                    }
+                    NumberAnimation {
+                        target: toastRoot
+                        property: "toastScale"
+                        from: 0.96
+                        to: 1
+                        duration: root.animMs
+                        easing.type: Easing.OutCubic
+                    }
+                    NumberAnimation {
+                        target: toastRoot
+                        property: "slideY"
+                        from: -12
+                        to: 0
+                        duration: root.animMs
+                        easing.type: Easing.OutCubic
+                    }
+
+                    onStarted: {
+                        toastRoot.toastOpacity = 0;
+                        toastRoot.toastScale = 0.96;
+                        toastRoot.slideY = -12;
+                    }
+                    onFinished: toastRoot.entered = true
                 }
 
                 ParallelAnimation {
                     id: exitAnim
-                    property real notifId: NaN
-                    property string appName: ""
                     property bool thenClear: true
+                    running: false
 
                     NumberAnimation {
                         target: toastRoot
                         property: "toastOpacity"
                         to: 0
-                        duration: root.animMs / 2
+                        duration: Math.max(root.animMs / 2, 80)
                         easing.type: Easing.InQuad
-                    }
-                    NumberAnimation {
-                        target: toastRoot
-                        property: "slideX"
-                        to: 56
-                        duration: root.animMs
-                        easing.type: Easing.InCubic
                     }
                     NumberAnimation {
                         target: toastRoot
                         property: "toastScale"
-                        to: 0.94
-                        duration: root.animMs / 2
+                        to: 0.96
+                        duration: Math.max(root.animMs / 2, 80)
                         easing.type: Easing.InQuad
+                    }
+                    NumberAnimation {
+                        target: toastRoot
+                        property: "slideY"
+                        to: -10
+                        duration: root.animMs
+                        easing.type: Easing.InCubic
                     }
 
                     onFinished: toastRoot.finishExit(exitAnim.thenClear)
@@ -187,12 +179,11 @@ Item {
                     root.exitingCount = Math.max(0, root.exitingCount - 1);
                 }
 
-                // Auto-expire from the service: animate out before the list drops us.
                 Connections {
                     target: Notifications
                     function onTimeoutWithAnimation(id) {
                         if (!isNaN(toastRoot.notifId) && Number(id) === toastRoot.notifId)
-                            toastRoot.playExit(false); // service clears after its own delay
+                            toastRoot.playExit(false);
                     }
                 }
 
@@ -251,10 +242,6 @@ Item {
                                     anchors.fill: parent
                                     radius: width / 2
                                     color: cardMa.containsMouse && !toastRoot.closing ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-                                    Behavior on color {
-                                        enabled: root.animMs > 0
-                                        ColorAnimation { duration: root.animMs / 3 }
-                                    }
                                 }
 
                                 Text {

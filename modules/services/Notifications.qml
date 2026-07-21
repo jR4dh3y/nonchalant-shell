@@ -347,9 +347,13 @@ Singleton {
             // Queue transient notification data for interested views.
             if (!root.popupInhibited) {
                 newNotifObject.popup = true;
+                // expireTimeout <= 0 means "default", not "instant" (0ms fires immediately).
+                const expireMs = (notification.expireTimeout && notification.expireTimeout > 0)
+                    ? notification.expireTimeout
+                    : 5000;
                 newNotifObject.timer = notifTimerComponent.createObject(root, {
                     "id": newNotifObject.id,
-                    "interval": notification.expireTimeout < 0 ? 5000 : notification.expireTimeout
+                    "interval": expireMs
                 });
             }
 
