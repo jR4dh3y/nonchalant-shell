@@ -6,16 +6,16 @@ import qs.modules.theme
 import qs.modules.components
 import qs.config
 
-// In-panel toast stack. Visual card is non-interactive; a full-card MouseArea
-// sits on top and dismisses by Notif id (app-name matching was unreliable).
+// In-panel toast stack with enter/exit motion matching shell timing.
 Item {
     id: root
 
     readonly property int popupCount: Notifications.popupList ? Notifications.popupList.length : 0
     readonly property bool hasPopups: popupCount > 0
     readonly property Item hitbox: hasPopups ? toastColumn : null
+    readonly property int animMs: Config.animDuration > 0 ? Config.animDuration : 0
 
-    visible: hasPopups
+    visible: hasPopups || exitingCount > 0
     width: 360
     height: Math.max(toastColumn.implicitHeight, 1)
     anchors.top: parent.top
@@ -24,10 +24,33 @@ Item {
     anchors.rightMargin: 12
     z: 200
 
+    // Track exit animations so the host stays up until they finish.
+    property int exitingCount: 0
+
     Column {
         id: toastColumn
         width: parent.width
         spacing: 8
+
+        // Smooth reflow when a toast leaves the stack.
+        move: Transition {
+            enabled: root.animMs > 0
+            NumberAnimation {
+                properties: "y"
+                duration: root.animMs / 2
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        add: Transition {
+            enabled: root.animMs > 0
+            NumberAnimation {
+                properties: "opacity"
+                from: 0
+                to: 1
+                duration: 1
+            }
+        }
 
         Repeater {
             model: root.popupCount
@@ -53,11 +76,126 @@ Item {
                     return u === 2 || u === "critical" || String(u).toLowerCase() === "critical";
                 }
 
+                property bool closing: false
+                property real slideX: 48
+                property real toastOpacity: 0
+                property real toastScale: 0.92
+
                 width: toastColumn.width
                 height: Math.max(bodyCol.implicitHeight + 24, 72)
-                visible: notif !== null
+                visible: notif !== null || closing
+                opacity: toastOpacity
+                scale: toastScale
+                transformOrigin: Item.Right
+                x: slideX
+                clip: false
 
-                // Visual only — must not steal mouse.
+                Behavior on toastOpacity {
+                    enabled: root.animMs > 0 && !closing
+                    NumberAnimation {
+                        duration: root.animMs / 2
+                        easing.type: Easing.OutQuad
+                    }
+                }
+                Behavior on slideX {
+                    enabled: root.animMs > 0 && !closing
+                    NumberAnimation {
+                        duration: root.animMs
+                        easing.type: Easing.OutCubic
+                    }
+                }
+                Behavior on toastScale {
+                    enabled: root.animMs > 0 && !closing
+                    NumberAnimation {
+                        duration: root.animMs
+                        easing.type: Easing.OutBack
+                        easing.overshoot: 1.1
+                    }
+                }
+
+                // Enter
+                Component.onCompleted: {
+                    if (root.animMs <= 0) {
+                        toastOpacity = 1;
+                        slideX = 0;
+                        toastScale = 1;
+                        return;
+                    }
+                    // Next frame so Behaviors attach before values change.
+                    Qt.callLater(() => {
+                        if (closing)
+                            return;
+                        toastOpacity = 1;
+                        slideX = 0;
+                        toastScale = 1;
+                    });
+                }
+
+                function playExit(thenClear) {
+                    if (closing)
+                        return;
+                    closing = true;
+                    root.exitingCount += 1;
+                    cardMa.enabled = false;
+
+                    // Disable enter Behaviors path; drive exit with explicit anim.
+                    if (root.animMs <= 0) {
+                        finishExit(thenClear);
+                        return;
+                    }
+
+                    exitAnim.notifId = toastRoot.notifId
+                    exitAnim.appName = toastRoot.appName
+                    exitAnim.thenClear = thenClear
+                    exitAnim.start()
+                }
+
+                ParallelAnimation {
+                    id: exitAnim
+                    property real notifId: NaN
+                    property string appName: ""
+                    property bool thenClear: true
+
+                    NumberAnimation {
+                        target: toastRoot
+                        property: "toastOpacity"
+                        to: 0
+                        duration: root.animMs / 2
+                        easing.type: Easing.InQuad
+                    }
+                    NumberAnimation {
+                        target: toastRoot
+                        property: "slideX"
+                        to: 56
+                        duration: root.animMs
+                        easing.type: Easing.InCubic
+                    }
+                    NumberAnimation {
+                        target: toastRoot
+                        property: "toastScale"
+                        to: 0.94
+                        duration: root.animMs / 2
+                        easing.type: Easing.InQuad
+                    }
+
+                    onFinished: toastRoot.finishExit(exitAnim.thenClear)
+                }
+
+                function finishExit(thenClear) {
+                    if (thenClear)
+                        root.commitDismiss(toastRoot.notifId, toastRoot.appName);
+                    root.exitingCount = Math.max(0, root.exitingCount - 1);
+                }
+
+                // Auto-expire from the service: animate out before the list drops us.
+                Connections {
+                    target: Notifications
+                    function onTimeoutWithAnimation(id) {
+                        if (!isNaN(toastRoot.notifId) && Number(id) === toastRoot.notifId)
+                            toastRoot.playExit(false); // service clears after its own delay
+                    }
+                }
+
                 StyledRect {
                     anchors.fill: parent
                     variant: "popup"
@@ -112,7 +250,11 @@ Item {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: width / 2
-                                    color: cardMa.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                                    color: cardMa.containsMouse && !toastRoot.closing ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                                    Behavior on color {
+                                        enabled: root.animMs > 0
+                                        ColorAnimation { duration: root.animMs / 3 }
+                                    }
                                 }
 
                                 Text {
@@ -120,7 +262,7 @@ Item {
                                     text: Icons.cancel
                                     font.family: Icons.font
                                     font.pixelSize: 16
-                                    color: cardMa.containsMouse ? Colors.overBackground : Colors.outline
+                                    color: cardMa.containsMouse && !toastRoot.closing ? Colors.overBackground : Colors.outline
                                 }
                             }
                         }
@@ -151,21 +293,19 @@ Item {
                     }
                 }
 
-                // Full-card click target ON TOP of the visual card.
                 MouseArea {
                     id: cardMa
                     anchors.fill: parent
                     z: 100
                     hoverEnabled: true
+                    enabled: !toastRoot.closing
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-                    onClicked: {
-                        console.log("Toast dismiss click id=", toastRoot.notifId, "app=", toastRoot.appName);
-                        root.dismissToast(toastRoot.notifId, toastRoot.appName);
-                    }
+                    onClicked: toastRoot.playExit(true)
                 }
 
                 HoverHandler {
+                    enabled: !toastRoot.closing
                     onHoveredChanged: {
                         if (!toastRoot.appName)
                             return;
@@ -179,23 +319,10 @@ Item {
         }
     }
 
-    function dismissToast(notifId, appName) {
-        console.log("NotificationToastStack.dismissToast", notifId, appName, "popupCount=", root.popupCount);
+    function commitDismiss(notifId, appName) {
         if (!isNaN(Number(notifId)))
             Notifications.clearPopupById(notifId);
         if (appName)
             Notifications.dismissPopupApp(appName);
-
-        // If that id is still showing, clear everything rather than leave a stuck toast.
-        Qt.callLater(() => {
-            const list = Notifications.popupList || [];
-            for (let i = 0; i < list.length; i++) {
-                if (!isNaN(Number(notifId)) && Number(list[i].id) === Number(notifId)) {
-                    console.warn("Toast still present after dismiss; clearing all popups");
-                    Notifications.dismissAllPopups();
-                    return;
-                }
-            }
-        });
     }
 }

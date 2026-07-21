@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
+import qs.config
 
 Singleton {
     id: root
@@ -459,19 +460,17 @@ Singleton {
         repeat: false
         property int notificationId: -1
         onTriggered: {
-            const index = root.list.findIndex(notif => notif.id === notificationId);
-            if (index !== -1 && root.list[index] != null)
-                root.list[index].popup = false;
-            // Re-emit list so popupList / toast window rebind.
-            triggerListChange();
-            root.timeout(notificationId);
+            // UI should already be mid-exit via timeoutWithAnimation.
+            root.clearPopupById(notificationId);
         }
     }
 
     function timeoutNotification(id) {
-        // Immediate dismiss for this id (X button / expire). Avoid the single
-        // shared animation timer which could only clear one id at a time.
-        clearPopupById(id);
+        // Tell toast UI to play exit, then clear after the shell anim window.
+        root.timeoutWithAnimation(id);
+        timeoutAnimationTimer.notificationId = id;
+        timeoutAnimationTimer.interval = Math.max(Config.animDuration || 300, 120);
+        timeoutAnimationTimer.restart();
     }
 
     function stopNotifTimer(notif) {
