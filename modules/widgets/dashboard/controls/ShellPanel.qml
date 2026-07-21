@@ -636,29 +636,15 @@ Item {
                             text: "Sidebar"
                             sectionId: "sidebar"
                         }
-                        SectionButton {
-                            text: "Frame"
-                            sectionId: "frame"
-                        }
+                        // Frame / Overview / Dock / Desktop removed from the lean
+                        // bar runtime; keep config loaders for compatibility only.
                         SectionButton {
                             text: "Workspaces"
                             sectionId: "workspaces"
                         }
                         SectionButton {
-                            text: "Overview"
-                            sectionId: "overview"
-                        }
-                        SectionButton {
-                            text: "Dock"
-                            sectionId: "dock"
-                        }
-                        SectionButton {
                             text: "Lockscreen"
                             sectionId: "lockscreen"
-                        }
-                        SectionButton {
-                            text: "Desktop"
-                            sectionId: "desktop"
                         }
                         SectionButton {
                             text: "System"

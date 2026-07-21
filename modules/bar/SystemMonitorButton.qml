@@ -12,7 +12,7 @@ ToggleButton {
     required property var bar
     readonly property bool popupOpen: monitorPopup.isOpen
 
-    buttonIcon: Icons.heartbeat
+    buttonIcon: Icons.circuitry
     tooltipText: "System Monitor"
     onToggle: function () { root.togglePopup(); }
 

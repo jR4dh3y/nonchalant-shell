@@ -11,7 +11,8 @@ Rectangle {
 
     color: "transparent"
     implicitWidth: 250
-    implicitHeight: Math.min(400, systemHeader.implicitHeight + resourcesColumn.implicitHeight + 2)
+    // Header + body + outer vertical padding so the last row is not flush with the popup edge.
+    implicitHeight: Math.min(400, systemHeader.implicitHeight + resourcesColumn.implicitHeight + 20)
 
     function formatSpeed(bytesPerSecond) {
         const value = Math.max(0, bytesPerSecond || 0);
@@ -135,6 +136,7 @@ Rectangle {
             Layout.fillHeight: true
             Layout.leftMargin: 16
             Layout.rightMargin: 16
+            Layout.bottomMargin: 8
             contentWidth: width
             contentHeight: resourcesColumn.implicitHeight
             clip: true
@@ -254,57 +256,70 @@ Rectangle {
                     }
                 }
 
-                // Network: icon + speeds only (no progress bar).
-                RowLayout {
+                // Network: icon + speeds only (no progress bar). Match the
+                // vertical rhythm of other ResourceItem rows.
+                Column {
                     width: parent.width
-                    spacing: 8
+                    spacing: 4
 
-                    Text {
-                        text: Icons.ethernet
-                        font.family: Icons.font
-                        font.pixelSize: 18
-                        color: Colors.overBackground
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredWidth: 20
-                    }
+                    RowLayout {
+                        width: parent.width
+                        height: 24
+                        spacing: 8
 
-                    Text {
-                        text: Icons.arrowDown
-                        font.family: Icons.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.cyan
-                        Layout.alignment: Qt.AlignVCenter
-                    }
+                        Text {
+                            text: Icons.ethernet
+                            font.family: Icons.font
+                            font.pixelSize: 18
+                            color: Colors.overBackground
+                            Layout.alignment: Qt.AlignVCenter
+                            Layout.preferredWidth: 20
+                        }
 
-                    Text {
-                        text: root.formatSpeed(SystemResources.networkDownloadSpeed)
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        font.weight: Font.Medium
-                        color: Colors.overBackground
-                        Layout.alignment: Qt.AlignVCenter
-                    }
+                        Text {
+                            text: Icons.arrowDown
+                            font.family: Icons.font
+                            font.pixelSize: Styling.fontSize(-2)
+                            color: Colors.cyan
+                            Layout.alignment: Qt.AlignVCenter
+                        }
 
-                    Item {
-                        Layout.fillWidth: true
-                    }
+                        Text {
+                            text: root.formatSpeed(SystemResources.networkDownloadSpeed)
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-2)
+                            font.weight: Font.Medium
+                            color: Colors.overBackground
+                            Layout.alignment: Qt.AlignVCenter
+                        }
 
-                    Text {
-                        text: Icons.arrowUp
-                        font.family: Icons.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.red
-                        Layout.alignment: Qt.AlignVCenter
-                    }
+                        Item {
+                            Layout.fillWidth: true
+                        }
 
-                    Text {
-                        text: root.formatSpeed(SystemResources.networkUploadSpeed)
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        font.weight: Font.Medium
-                        color: Colors.overBackground
-                        Layout.alignment: Qt.AlignVCenter
+                        Text {
+                            text: Icons.arrowUp
+                            font.family: Icons.font
+                            font.pixelSize: Styling.fontSize(-2)
+                            color: Colors.red
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+
+                        Text {
+                            text: root.formatSpeed(SystemResources.networkUploadSpeed)
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-2)
+                            font.weight: Font.Medium
+                            color: Colors.overBackground
+                            Layout.alignment: Qt.AlignVCenter
+                        }
                     }
+                }
+
+                // Bottom spacer so the last row is not flush with the popup edge.
+                Item {
+                    width: 1
+                    height: 4
                 }
             }
         }

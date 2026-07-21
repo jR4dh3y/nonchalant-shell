@@ -70,16 +70,14 @@ QtObject {
         { label: "Wallpapers Keybind", keywords: "background shortcut super comma", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.keyboard, isIcon: true },
         { label: "Assistant Keybind", keywords: "ai help shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.keyboard, isIcon: true },
         { label: "Notes Keybind", keywords: "note shortcut super n", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.keyboard, isIcon: true },
-        { label: "Overview Keybind", keywords: "workspace shortcut super tab", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.keyboard, isIcon: true },
-        { label: "Powermenu Keybind", keywords: "logout shutdown shortcut super escape", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.power, isIcon: true },
+        { label: "Powermenu Keybind", keywords: "logout shutdown shortcut super escape", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.shutdown, isIcon: true },
         { label: "Settings Keybind", keywords: "config preferences shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.gear, isIcon: true },
         { label: "Lockscreen Keybind", keywords: "lock security shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.lock, isIcon: true },
-        { label: "Tools Keybind", keywords: "utilities tools shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.wrench, isIcon: true },
         { label: "Screenshot Keybind", keywords: "capture screen shortcut print", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.camera, isIcon: true },
-        { label: "Screenrecord Keybind", keywords: "record video shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.videoCamera, isIcon: true },
-        { label: "Lens Keybind", keywords: "magnifier zoom shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.magnifyingGlass, isIcon: true },
+        { label: "Screenrecord Keybind", keywords: "record video shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.recordScreen, isIcon: true },
+        { label: "Lens Keybind", keywords: "magnifier zoom shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.google, isIcon: true },
         { label: "Reload Keybind", keywords: "refresh restart shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.arrowCounterClockwise, isIcon: true },
-        { label: "Quit Keybind", keywords: "exit close shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.signOut, isIcon: true },
+        { label: "Quit Keybind", keywords: "exit close shortcut", section: 5, subSection: "", subLabel: "Binds > Nonchalant", icon: Icons.logout, isIcon: true },
 
         // --- System ---
         { label: "System", keywords: "hardware info resources cpu ram", section: 6, subSection: "", subLabel: "System", icon: Icons.circuitry, isIcon: true },
@@ -163,7 +161,6 @@ QtObject {
         { label: "Show Pin Button", keywords: "toggle pin unpin", section: 8, subSection: "bar", subLabel: "Nonchalant > Bar", icon: Icons.layout, isIcon: true },
         { label: "Available on Fullscreen", keywords: "overlay game video", section: 8, subSection: "bar", subLabel: "Nonchalant > Bar", icon: Icons.layout, isIcon: true },
         { label: "Show Running Indicators", keywords: "dots active apps", section: 8, subSection: "bar", subLabel: "Nonchalant > Bar", icon: Icons.layout, isIcon: true },
-        { label: "Show Overview Button", keywords: "workspace switcher", section: 8, subSection: "bar", subLabel: "Nonchalant > Bar", icon: Icons.layout, isIcon: true },
         { label: "Bar Screens", keywords: "monitor display eDP", section: 8, subSection: "bar", subLabel: "Nonchalant > Bar", icon: Icons.layout, isIcon: true },
 
         // Nonchalant > Workspaces
@@ -174,34 +171,8 @@ QtObject {
         { label: "Show Numbers", keywords: "workspace label index", section: 8, subSection: "workspaces", subLabel: "Nonchalant > Workspaces", icon: Icons.squaresFour, isIcon: true },
         { label: "Dynamic Workspaces", keywords: "auto add remove flexible", section: 8, subSection: "workspaces", subLabel: "Nonchalant > Workspaces", icon: Icons.squaresFour, isIcon: true },
 
-        // Nonchalant > Overview
-        { label: "Overview", keywords: "expose mission control windows", section: 8, subSection: "overview", subLabel: "Nonchalant > Overview", icon: Icons.squaresFour, isIcon: true },
-        { label: "Overview Rows", keywords: "grid layout vertical", section: 8, subSection: "overview", subLabel: "Nonchalant > Overview", icon: Icons.squaresFour, isIcon: true },
-        { label: "Overview Columns", keywords: "grid layout horizontal", section: 8, subSection: "overview", subLabel: "Nonchalant > Overview", icon: Icons.squaresFour, isIcon: true },
-        { label: "Overview Scale", keywords: "zoom size preview", section: 8, subSection: "overview", subLabel: "Nonchalant > Overview", icon: Icons.squaresFour, isIcon: true },
-        { label: "Overview Workspace Spacing", keywords: "gap margin distance", section: 8, subSection: "overview", subLabel: "Nonchalant > Overview", icon: Icons.squaresFour, isIcon: true },
-
-        // Nonchalant > Dock
-        { label: "Dock", keywords: "taskbar launcher apps favorites", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Enabled", keywords: "show hide toggle", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Mode", keywords: "default floating integrated style", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Position", keywords: "left bottom right edge", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Height", keywords: "size thickness pixels", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Icon Size", keywords: "width height pixels apps", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Spacing", keywords: "gap between icons", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Margin", keywords: "edge distance offset", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Hover Region Height", keywords: "trigger area pixels", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-        { label: "Dock Pinned on Startup", keywords: "show visible default", section: 8, subSection: "dock", subLabel: "Nonchalant > Dock", icon: Icons.layout, isIcon: true },
-
         // Nonchalant > Lockscreen
         { label: "Lockscreen", keywords: "lock screen password login", section: 8, subSection: "lockscreen", subLabel: "Nonchalant > Lockscreen", icon: Icons.lock, isIcon: true },
-
-        // Nonchalant > Desktop
-        { label: "Desktop", keywords: "icons wallpaper home", section: 8, subSection: "desktop", subLabel: "Nonchalant > Desktop", icon: Icons.layout, isIcon: true },
-        { label: "Desktop Enabled", keywords: "show hide icons toggle", section: 8, subSection: "desktop", subLabel: "Nonchalant > Desktop", icon: Icons.layout, isIcon: true },
-        { label: "Desktop Icon Size", keywords: "width height pixels", section: 8, subSection: "desktop", subLabel: "Nonchalant > Desktop", icon: Icons.layout, isIcon: true },
-        { label: "Desktop Vertical Spacing", keywords: "gap margin", section: 8, subSection: "desktop", subLabel: "Nonchalant > Desktop", icon: Icons.layout, isIcon: true },
-        { label: "Desktop Text Color", keywords: "label font", section: 8, subSection: "desktop", subLabel: "Nonchalant > Desktop", icon: Icons.palette, isIcon: true },
 
         // Nonchalant > System
         { label: "Shell System", keywords: "config settings nonchalant", section: 8, subSection: "system", subLabel: "Nonchalant > System", icon: Icons.circuitry, isIcon: true }
