@@ -422,21 +422,20 @@ PanelWindow {
                 matugenProcessNormal.running = false;
             }
 
-            // Ejecutar matugen con configuración específica
-            var commandWithConfig = ["matugen", "image", matugenSource, "--source-color-index", "0", "-c", decodeURIComponent(Qt.resolvedUrl("../../../../assets/matugen/config.toml").toString().replace("file://", "")), "-t", wallpaperConfig.adapter.matugenScheme];
-            if (Config.theme.lightMode) {
-                commandWithConfig.push("-m", "light");
-            }
+            // Prefer Matugen, with Wallust as a local fallback.  This keeps
+            // wallpaper-derived colors working on systems where Matugen was
+            // not installed by the original shell setup.
+            var commandWithConfig = [
+                "bash",
+                decodeURIComponent(Qt.resolvedUrl("../../../../scripts/generate_wallpaper_colors.sh").toString().replace("file://", "")),
+                matugenSource,
+                wallpaperConfig.adapter.matugenScheme,
+                Config.theme.lightMode ? "light" : "dark",
+                decodeURIComponent(Qt.resolvedUrl("../../../../assets/matugen/config.toml").toString().replace("file://", "")),
+                Quickshell.env("HOME") + "/.cache/nonchalant/colors.json"
+            ];
             matugenProcessWithConfig.command = commandWithConfig;
             matugenProcessWithConfig.running = true;
-
-            // Ejecutar matugen normal en paralelo
-            var commandNormal = ["matugen", "image", matugenSource, "--source-color-index", "0", "-t", wallpaperConfig.adapter.matugenScheme];
-            if (Config.theme.lightMode) {
-                commandNormal.push("-m", "light");
-            }
-            matugenProcessNormal.command = commandNormal;
-            matugenProcessNormal.running = true;
         }
     }
 
