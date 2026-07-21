@@ -3,7 +3,7 @@ import qs.modules.components
 import qs.modules.services
 import qs.modules.theme
 
-// Ambxst-style horizontal ActionGrid power menu.
+// Ambxst-style horizontal ActionGrid. ←/→ or ↑/↓ move, Enter activates.
 ActionGrid {
     id: root
 
@@ -13,6 +13,7 @@ ActionGrid {
     buttonSize: 48
     iconSize: 20
     spacing: 8
+    focus: true
 
     Component.onCompleted: {
         root.forceActiveFocus();
@@ -52,7 +53,6 @@ ActionGrid {
     ]
 
     onActionTriggered: action => {
-        // Lock is handled by the shell, not a shell-out.
         if (action.tooltip === "Lock Session")
             LockscreenService.lock();
         root.itemSelected();

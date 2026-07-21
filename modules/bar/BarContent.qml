@@ -8,7 +8,6 @@ import qs.modules.theme
 import qs.modules.bar.clock
 import qs.modules.bar.systray
 import qs.modules.widgets.dashboard
-import qs.modules.widgets.powermenu
 import qs.modules.components
 import qs.modules.services
 import qs.modules.bar
@@ -310,19 +309,11 @@ Item {
                     sourceComponent: Item {
                         implicitHeight: 36
 
-                        LauncherButton {
-                            id: launcherButton
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            startRadius: root.outerRadius
-                            endRadius: root.outerRadius
-                            enableShadow: root.shadowsEnabled
-                        }
+                        // Launcher / power are keyboard-only (Super+A / Super+X).
 
                         NonchalantTaskbar {
                             id: nonchalantTaskbar
-                            anchors.left: launcherButton.right
-                            anchors.leftMargin: 4
+                            anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             width: implicitWidth
                             height: implicitHeight
@@ -387,14 +378,7 @@ Item {
                                 bar: root
                                 layerEnabled: root.shadowsEnabled
                                 startRadius: root.innerRadius
-                                endRadius: root.innerRadius
-                            }
-
-                            PowerButton {
-                                bar: root
-                                startRadius: root.innerRadius
                                 endRadius: root.outerRadius
-                                enableShadow: root.shadowsEnabled
                             }
                         }
                     }
@@ -407,19 +391,12 @@ Item {
                     sourceComponent: ColumnLayout {
                         spacing: 4
 
-                        LauncherButton {
-                            id: launcherButtonVert
-                            Layout.preferredHeight: 36
-                            startRadius: root.outerRadius
-                            endRadius: root.innerRadius
-                            vertical: true
-                            enableShadow: root.shadowsEnabled
-                        }
+                        // Launcher / power are keyboard-only (Super+A / Super+X).
 
                         SysTray {
                             bar: root
                             enableShadow: root.shadowsEnabled
-                            startRadius: root.innerRadius
+                            startRadius: root.outerRadius
                             endRadius: root.innerRadius
                         }
 
@@ -568,17 +545,7 @@ Item {
                             bar: root
                             layerEnabled: root.shadowsEnabled
                             startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        PowerButton {
-                            id: powerButtonVert
-                            bar: root
-                            Layout.preferredHeight: 36
-                            startRadius: root.innerRadius
                             endRadius: root.outerRadius
-                            vertical: true
-                            enableShadow: root.shadowsEnabled
                         }
                     }
                 }

@@ -10,8 +10,14 @@ Item {
     implicitHeight: powerMenu.implicitHeight
     property bool popupMode: false
     property bool expanded: true
+    focus: true
 
     signal closeRequested()
+
+    function focusMenu() {
+        powerMenu.currentIndex = 0;
+        powerMenu.forceActiveFocus();
+    }
 
     Behavior on implicitWidth {
         enabled: Config.animDuration > 0
@@ -48,13 +54,18 @@ Item {
         }
     }
 
+    onExpandedChanged: {
+        if (expanded)
+            Qt.callLater(() => root.focusMenu());
+    }
+
     onVisibleChanged: {
         if (visible)
-            Qt.callLater(() => powerMenu.forceActiveFocus());
+            Qt.callLater(() => root.focusMenu());
     }
 
     Component.onCompleted: {
         if (visible)
-            Qt.callLater(() => powerMenu.forceActiveFocus());
+            Qt.callLater(() => root.focusMenu());
     }
 }

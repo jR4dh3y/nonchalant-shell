@@ -5,6 +5,7 @@ import qs.modules.bar
 import qs.modules.services
 import qs.modules.components
 import qs.modules.widgets.launcher
+import qs.modules.widgets.powermenu
 import qs.modules.notifications
 import qs.config
 
@@ -126,6 +127,14 @@ PanelWindow {
         // input surface (separate layer windows were unclickable under niri).
         NotificationToastStack {
             id: toastStack
+        }
+
+        // Power menu host (no bar icon — Super+X / IPC only).
+        PowerMenuHost {
+            id: powerMenuHost
+            bar: barContent
+            panel: unifiedPanel
+            z: 3
         }
 
         // Detached popup; it never joins the screen edge or reserves space.
