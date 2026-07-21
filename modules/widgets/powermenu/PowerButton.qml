@@ -28,6 +28,15 @@ ToggleButton {
         bar: powerButton.bar
         variant: "transparent"
         popupPadding: 0
+        shadowMargin: 0
+        anchor.rect.x: {
+            if (powerPopup.barVertical) {
+                if (powerPopup.barAtLeft)
+                    return powerButton.width + powerPopup.visualMargin + powerPopup.effectiveFrameOffset;
+                return -powerPopup.totalWidth - powerPopup.visualMargin - powerPopup.effectiveFrameOffset;
+            }
+            return powerButton.width - powerPopup.totalWidth;
+        }
 
         contentWidth: powerMenuWrapper.width
         contentHeight: powerMenuWrapper.height
@@ -37,8 +46,8 @@ ToggleButton {
             variant: "popup"
             radius: Styling.radius(8)
             enableShadow: false
-            width: powerMenuView.implicitWidth + 16
-            height: powerMenuView.implicitHeight + 16
+            width: powerMenuView.implicitWidth + 12
+            height: powerMenuView.implicitHeight + 12
 
             PowerMenuView {
                 id: powerMenuView

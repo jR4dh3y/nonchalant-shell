@@ -7,10 +7,11 @@ ActionGrid {
 
     signal itemSelected
 
-    layout: "row"
-    buttonSize: 48
-    iconSize: 20
-    spacing: 8
+    layout: "grid"
+    columns: 2
+    buttonSize: 36
+    iconSize: 18
+    spacing: 4
 
     Component.onCompleted: {
         root.forceActiveFocus();
