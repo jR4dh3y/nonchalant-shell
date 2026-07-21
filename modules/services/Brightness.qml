@@ -273,11 +273,11 @@ Singleton {
         target: "brightness"
 
         function increment() {
-            onPressed: root.increaseBrightness();
+            root.increaseBrightness();
         }
 
         function decrement() {
-            onPressed: root.decreaseBrightness();
+            root.decreaseBrightness();
         }
 
         function set(value: real, monitorName: string) {

@@ -19,7 +19,41 @@ Singleton {
     property string lastFocusedScreen: ""
     property var contextMenu: null
     property bool playerMenuOpen: false
+    // Exclusive bar popup: only one BarPopup should be open at a time.
+    property var activeBarPopup: null
     readonly property var moduleNames: ["launcher"]
+
+    function claimBarPopup(popup) {
+        if (!popup)
+            return;
+        if (activeBarPopup && activeBarPopup !== popup) {
+            try {
+                if (activeBarPopup.isOpen)
+                    activeBarPopup.close();
+            } catch (e) {
+                // Previous popup may already be destroyed.
+            }
+        }
+        // Opening a bar popup should dismiss the run menu / modules.
+        clearAll();
+        currentActiveModule = "";
+        activeBarPopup = popup;
+    }
+
+    function releaseBarPopup(popup) {
+        if (activeBarPopup === popup)
+            activeBarPopup = null;
+    }
+
+    function closeActiveBarPopup() {
+        if (activeBarPopup) {
+            try {
+                if (activeBarPopup.isOpen)
+                    activeBarPopup.close();
+            } catch (e) {}
+            activeBarPopup = null;
+        }
+    }
 
     function setContextMenu(menu) {
         contextMenu = menu;
@@ -173,6 +207,8 @@ Singleton {
 
         const focusedScreenName = focusedMonitor.name;
 
+        // Modules and bar popups are mutually exclusive.
+        closeActiveBarPopup();
         clearAll();
 
         if (moduleName) {
@@ -231,6 +267,15 @@ Singleton {
         target: NiriService
         function onFocusedMonitorChanged() {
             moveActiveModuleToFocusedScreen();
+        }
+
+        function onOverviewOpenChanged() {
+            // Overview is a full compositor surface — dismiss shell chrome.
+            if (NiriService.overviewOpen) {
+                closeActiveBarPopup();
+                clearAll();
+                currentActiveModule = "";
+            }
         }
     }
 }

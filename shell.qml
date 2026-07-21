@@ -10,6 +10,7 @@ import qs.modules.services
 import qs.modules.lockscreen
 import qs.modules.globals
 import qs.modules.shell
+import qs.modules.shell.osd
 import qs.modules.widgets.dashboard.wallpapers
 import qs.config
 
@@ -49,8 +50,11 @@ ShellRoot {
             ReservationWindows {
                 screen: screenShellContainer.modelData
 
-                // Bar status for reservations
+                // Bar status for reservations. Drop the exclusive zone while
+                // niri overview is open so the bar leaves the desktop only.
                 barEnabled: {
+                    if (NiriService.overviewOpen)
+                        return false;
                     const list = (Config.bar && Config.bar.screenList !== undefined ? Config.bar.screenList : []);
                     return (!list || list.length === 0 || list.indexOf(screen.name) !== -1);
                 }
@@ -62,6 +66,11 @@ ShellRoot {
                 dockEnabled: false
                 frameEnabled: false
                 sidebarEnabled: false
+            }
+
+            // Volume / mic / brightness OSD for keyboard media keys
+            OSD {
+                targetScreen: screenShellContainer.modelData
             }
         }
     }
@@ -92,6 +101,10 @@ ShellRoot {
                 let _ = IdleService.lockCmd;
                 _ = GlobalShortcuts.appId;
                 _ = LockscreenService.freezePathBase;
+                // Keep compositor + OSD services hot for overview hide and media keys.
+                _ = NiriService.overviewOpen;
+                _ = Audio.value;
+                _ = Brightness.monitors;
             });
         }
     }

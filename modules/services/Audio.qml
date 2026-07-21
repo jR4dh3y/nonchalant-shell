@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.modules.services
 import qs.modules.theme
@@ -212,5 +213,42 @@ Singleton {
         if (volume <= 0) return Icons.speakerNone;
         if (volume < 0.33) return Icons.speakerLow;
         return Icons.speakerHigh;
+    }
+
+    IpcHandler {
+        target: "audio"
+
+        function increment() {
+            // Media-key step (5%); bar scroll can keep the finer helpers.
+            if (root.sink?.audio)
+                root.sink.audio.volume = Math.min(1, root.sink.audio.volume + 0.05);
+        }
+
+        function decrement() {
+            if (root.sink?.audio)
+                root.sink.audio.volume = Math.max(0, root.sink.audio.volume - 0.05);
+        }
+
+        function set(volume: real) {
+            root.setVolume(volume);
+        }
+
+        function toggleMute() {
+            root.toggleMute();
+        }
+
+        function toggleMicMute() {
+            root.toggleMicMute();
+        }
+
+        function incrementMic() {
+            if (root.source?.audio)
+                root.setMicVolume((root.source.audio.volume ?? 0) + 0.05);
+        }
+
+        function decrementMic() {
+            if (root.source?.audio)
+                root.setMicVolume((root.source.audio.volume ?? 0) - 0.05);
+        }
     }
 }

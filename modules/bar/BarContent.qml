@@ -44,6 +44,9 @@ Item {
     // Whether auto-hide should be active (not pinned, or fullscreen forces it)
     readonly property bool shouldAutoHide: !pinned || activeWindowFullscreen
 
+    // Niri overview is a compositor surface; keep the bar on the desktop only.
+    readonly property bool niriOverviewOpen: NiriService.overviewOpen
+
     onShouldAutoHideChanged: {
         if (!shouldAutoHide) {
             hoverActive = false;
@@ -65,6 +68,10 @@ Item {
     readonly property real innerRadius: (Config.bar && Config.bar.pillStyle === "squished") ? Styling.radius(0) / 2 : Styling.radius(0)
     // Reveal logic
     readonly property bool reveal: {
+        // Never show over the niri overview
+        if (niriOverviewOpen)
+            return false;
+
         // If not auto-hiding, always reveal
         if (!shouldAutoHide)
             return true;

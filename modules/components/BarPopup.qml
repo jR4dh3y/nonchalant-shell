@@ -169,8 +169,8 @@ PopupWindow {
         if (visible)
             return;
 
-        // Debug positioning
-        console.log("BarPopup OPEN - position:", barPosition, "anchorItem:", anchorItem.width, "x", anchorItem.height, "rect.x:", anchor.rect.x, "rect.y:", anchor.rect.y);
+        // One bar popup at a time — close any sibling (clock, controls, power…).
+        Visibilities.claimBarPopup(root);
 
         // Set logical state immediately
         isOpen = true;
@@ -184,6 +184,8 @@ PopupWindow {
 
         // Start animation after a frame
         Qt.callLater(() => {
+            if (!root.isOpen)
+                return;
             popupOpacity = 1;
             popupScale = 1;
             focusActive = true;
@@ -191,12 +193,13 @@ PopupWindow {
     }
 
     function close() {
-        if (!visible)
+        if (!visible && !isOpen)
             return;
 
         // Set logical state immediately
         isOpen = false;
         focusActive = false;
+        Visibilities.releaseBarPopup(root);
 
         // Animate out
         popupOpacity = 0;

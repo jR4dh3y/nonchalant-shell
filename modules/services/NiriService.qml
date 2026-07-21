@@ -12,6 +12,9 @@ Singleton {
     property var focusedWorkspace: null
     property var focusedClient: null
 
+    // Niri compositor overview (Mod+Tab). The bar should hide while this is open.
+    property bool overviewOpen: false
+
     property var rawWindows: []
     property var rawWorkspaces: []
     property var rawOutputs: ({})
@@ -305,6 +308,8 @@ Singleton {
             });
         } else if (event.ConfigLoaded) {
             outputsProcess.running = true;
+        } else if (event.OverviewOpenedOrClosed) {
+            root.overviewOpen = event.OverviewOpenedOrClosed.is_open === true;
         }
 
         rebuildState();
@@ -326,6 +331,21 @@ Singleton {
                     root.rebuildState();
                 } catch (error) {
                     console.error("NiriService: could not parse outputs:", error);
+                }
+            }
+        }
+    }
+
+    Process {
+        id: overviewStateProcess
+        command: ["niri", "msg", "--json", "overview-state"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const state = JSON.parse(text);
+                    root.overviewOpen = state.is_open === true;
+                } catch (error) {
+                    console.error("NiriService: could not parse overview state:", error);
                 }
             }
         }
@@ -356,7 +376,10 @@ Singleton {
         onTriggered: eventStream.running = true
     }
 
-    Component.onCompleted: outputsProcess.running = true
+    Component.onCompleted: {
+        outputsProcess.running = true;
+        overviewStateProcess.running = true;
+    }
 
     Component.onDestruction: {
         reconnectTimer.stop();
