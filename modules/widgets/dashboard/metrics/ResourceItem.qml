@@ -9,6 +9,7 @@ Item {
 
     property string icon: ""
     property string label: ""
+    property string statusText: ""
     property real value: 0.0
     property color barColor: Styling.srItem("overprimary")
 
@@ -39,6 +40,7 @@ Item {
             border.color: root.barColor
 
             Rectangle {
+                visible: root.statusText.length === 0
                 width: (parent.width - 8) * Math.max(0, Math.min(1, root.value))
                 height: parent.height - 8
                 radius: parent.radius
@@ -54,6 +56,16 @@ Item {
                         easing.type: Easing.OutCubic
                     }
                 }
+            }
+
+            Text {
+                visible: root.statusText.length > 0
+                anchors.centerIn: parent
+                text: root.statusText
+                font.family: Config.theme.font
+                font.pixelSize: Styling.fontSize(-2)
+                font.weight: Font.DemiBold
+                color: root.barColor
             }
         }
 

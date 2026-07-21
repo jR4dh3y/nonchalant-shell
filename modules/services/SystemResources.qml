@@ -28,6 +28,7 @@ Singleton {
     property var gpuUsages: []
     property var gpuVendors: []
     property var gpuNames: []
+    property var gpuDrivers: []
     property int gpuCount: 0
     property bool gpuDetected: false
     property var gpuTemps: []
@@ -42,14 +43,9 @@ Singleton {
     property var diskTypes: ({})
     property var validDisks: []
 
-    // History data
-    property var cpuHistory: []
-    property var ramHistory: []
-    property var gpuHistories: []
-    property var cpuTempHistory: []
-    property var gpuTempHistories: []
-    property int maxHistoryPoints: 50
-    property int totalDataPoints: 0
+    // Network throughput in bytes per second
+    property real networkDownloadSpeed: 0
+    property real networkUploadSpeed: 0
 
     // Update interval
     property int updateInterval: 2000
@@ -76,6 +72,7 @@ Singleton {
                         root.cpuModel = stats.static.cpu_model || root.cpuModel;
                         root.gpuNames = stats.static.gpu_names || [];
                         root.gpuVendors = stats.static.gpu_vendors || [];
+                        root.gpuDrivers = stats.static.gpu_drivers || [];
                         root.gpuCount = stats.static.gpu_count || 0;
                         root.gpuDetected = root.gpuCount > 0;
                         root.diskTypes = stats.static.disk_types || {};
@@ -96,13 +93,17 @@ Singleton {
                     }
                     
                     if (stats.disk) root.diskUsage = stats.disk.usage;
+
+                    if (stats.network) {
+                        root.networkDownloadSpeed = stats.network.download || 0;
+                        root.networkUploadSpeed = stats.network.upload || 0;
+                    }
                     
                     if (stats.gpu) {
                         root.gpuUsages = stats.gpu.usages;
                         root.gpuTemps = stats.gpu.temps;
+                        root.gpuDrivers = stats.gpu.drivers || root.gpuDrivers;
                     }
-                    
-                    root.updateHistory();
                 } catch (e) {
                     console.warn("SystemResources: Failed to parse monitor data: " + e);
                 }
@@ -141,35 +142,4 @@ Singleton {
         validDisks = newValidDisks;
     }
 
-    function updateHistory() {
-        totalDataPoints++;
-        
-        // Helper to update history arrays
-        const pushHistory = (arr, val) => {
-            let next = arr.slice();
-            next.push(val);
-            if (next.length > maxHistoryPoints) next.shift();
-            return next;
-        };
-
-        cpuHistory = pushHistory(cpuHistory, cpuUsage / 100);
-        cpuTempHistory = pushHistory(cpuTempHistory, cpuTemp);
-        ramHistory = pushHistory(ramHistory, ramUsage / 100);
-
-        if (gpuDetected && gpuCount > 0) {
-            let newGpuHistories = gpuHistories.slice();
-            let newGpuTempHistories = gpuTempHistories.slice();
-            
-            while (newGpuHistories.length < gpuCount) newGpuHistories.push([]);
-            while (newGpuTempHistories.length < gpuCount) newGpuTempHistories.push([]);
-            
-            for (let i = 0; i < gpuCount; i++) {
-                newGpuHistories[i] = pushHistory(newGpuHistories[i], (gpuUsages[i] || 0) / 100);
-                newGpuTempHistories[i] = pushHistory(newGpuTempHistories[i], (gpuTemps[i] ?? -1));
-            }
-            
-            gpuHistories = newGpuHistories;
-            gpuTempHistories = newGpuTempHistories;
-        }
-    }
 }
