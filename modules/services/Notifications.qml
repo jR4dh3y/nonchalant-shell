@@ -469,17 +469,62 @@ Singleton {
     }
 
     function timeoutNotification(id) {
-        root.timeoutWithAnimation(id);
-        timeoutAnimationTimer.notificationId = id;
-        timeoutAnimationTimer.restart();
+        // Immediate dismiss for this id (X button / expire). Avoid the single
+        // shared animation timer which could only clear one id at a time.
+        clearPopupById(id);
+    }
+
+    function clearPopupById(id) {
+        const index = root.list.findIndex(notif => notif && notif.id === id);
+        if (index === -1)
+            return;
+        const notif = root.list[index];
+        if (notif.timer) {
+            notif.timer.stop();
+            notif.timer.destroy();
+            notif.timer = null;
+        }
+        notif.popup = false;
+        root.timeout(id);
+        triggerListChange();
+    }
+
+    function dismissPopupApp(appName) {
+        if (!appName)
+            return;
+        let changed = false;
+        root.list.forEach(notif => {
+            if (!notif || notif.appName !== appName || !notif.popup)
+                return;
+            if (notif.timer) {
+                notif.timer.stop();
+                notif.timer.destroy();
+                notif.timer = null;
+            }
+            notif.popup = false;
+            root.timeout(notif.id);
+            changed = true;
+        });
+        if (changed)
+            triggerListChange();
     }
 
     function timeoutAll() {
-        root.popupList.forEach(notif => {
-            root.timeout(notif.id);
+        let changed = false;
+        root.list.forEach(notif => {
+            if (!notif || !notif.popup)
+                return;
+            if (notif.timer) {
+                notif.timer.stop();
+                notif.timer.destroy();
+                notif.timer = null;
+            }
             notif.popup = false;
+            root.timeout(notif.id);
+            changed = true;
         });
-        triggerListChange();
+        if (changed)
+            triggerListChange();
     }
 
     function attemptInvokeAction(id, notifIdentifier, autoDiscard = true) {
@@ -538,14 +583,20 @@ Singleton {
     }
 
     function hideAllPopups() {
-        root.popupList.forEach(notif => {
+        let changed = false;
+        root.list.forEach(notif => {
+            if (!notif || !notif.popup)
+                return;
             notif.popup = false;
             if (notif.timer) {
                 notif.timer.stop();
                 notif.timer.destroy();
                 notif.timer = null;
             }
+            changed = true;
         });
+        if (changed)
+            triggerListChange();
     }
 
     function triggerListChange() {

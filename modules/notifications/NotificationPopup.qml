@@ -107,7 +107,7 @@ Scope {
                             radius: Styling.radius(8)
                             enableShadow: false
 
-                            // Critical outline without custom border props on ClippingRectangle
+                            // Critical outline — must not steal mouse (enabled: false).
                             Rectangle {
                                 anchors.fill: parent
                                 radius: parent.radius
@@ -115,6 +115,7 @@ Scope {
                                 border.width: toastRoot.isCritical ? 2 : 0
                                 border.color: Colors.error
                                 z: 2
+                                enabled: false
                             }
 
                             ColumnLayout {
@@ -126,6 +127,7 @@ Scope {
                                     margins: 12
                                 }
                                 spacing: 4
+                                z: 3
 
                                 RowLayout {
                                     Layout.fillWidth: true
@@ -148,7 +150,7 @@ Scope {
                                         elide: Text.ElideRight
                                     }
 
-                                    // Explicit hit target for dismiss (not covered by another MouseArea)
+                                    // Explicit hit target for dismiss
                                     Item {
                                         Layout.preferredWidth: 28
                                         Layout.preferredHeight: 28
@@ -166,14 +168,7 @@ Scope {
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
-                                            z: 10
-                                            onClicked: {
-                                                const list = toastRoot.group?.notifications || [];
-                                                list.forEach(n => {
-                                                    if (n && n.id !== undefined)
-                                                        Notifications.timeoutNotification(n.id);
-                                                });
-                                            }
+                                            onClicked: Notifications.dismissPopupApp(toastRoot.appName)
                                         }
                                     }
                                 }
