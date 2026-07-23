@@ -26,6 +26,9 @@ ToggleButton {
         }
     }
 
+    // Match app launcher / project picker content inset.
+    readonly property int contentPadding: Math.max(Styling.radius(3), 12)
+
     BarPopup {
         id: monitorPopup
         anchorItem: root
@@ -50,14 +53,14 @@ ToggleButton {
             variant: "popup"
             radius: Styling.radius(8)
             enableShadow: false
-            width: metricsLoader.item ? metricsLoader.item.implicitWidth + 16 : 0
-            height: metricsLoader.item ? metricsLoader.item.implicitHeight + 16 : 0
+            width: metricsLoader.item ? metricsLoader.item.implicitWidth + root.contentPadding * 2 : 0
+            height: metricsLoader.item ? metricsLoader.item.implicitHeight + root.contentPadding * 2 : 0
 
             Loader {
                 id: metricsLoader
                 active: false
                 anchors.fill: parent
-                anchors.margins: 8
+                anchors.margins: root.contentPadding
 
                 sourceComponent: Component {
                     MetricsTab {

@@ -39,8 +39,10 @@ WlSessionLockSurface {
             return;
 
         entryStarted = true;
-        startAnim = true;
-        Qt.callLater(() => passwordInput.forceActiveFocus());
+        // Let niri present the fully-covered initial state for one frame before
+        // changing animated properties. Otherwise the first rendered frame can
+        // already be the final state and the lock-in animation is skipped.
+        entryTimer.start();
     }
 
     onLockSecureChanged: beginEntry()
@@ -92,7 +94,9 @@ WlSessionLockSurface {
 
         source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
         visible: source !== ""
-        opacity: root.revealDesktop ? 0 : 1
+        opacity: GlobalStates.lockscreenUnlocking
+            ? (root.revealDesktop ? 0 : 1)
+            : (root.startAnim ? 1 : 0)
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
@@ -110,7 +114,9 @@ WlSessionLockSurface {
         id: dimOverlay
         anchors.fill: parent
         color: Colors.background
-        opacity: root.revealDesktop ? 0 : 0.55
+        opacity: GlobalStates.lockscreenUnlocking
+            ? (root.revealDesktop ? 0 : 0.55)
+            : (root.startAnim ? 0.55 : 0)
         z: 2
 
         Behavior on opacity {
@@ -622,6 +628,18 @@ WlSessionLockSurface {
         interval: 400
         repeat: false
         onTriggered: passwordInputBox.showError = false
+    }
+
+    Timer {
+        id: entryTimer
+        interval: 16
+        repeat: false
+        onTriggered: {
+            if (!root.unlocking && root.lockSecure) {
+                root.startAnim = true;
+                passwordInput.forceActiveFocus();
+            }
+        }
     }
 
     Component.onCompleted: {

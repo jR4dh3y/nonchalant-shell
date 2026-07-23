@@ -63,8 +63,12 @@ Item {
                 property real toastScale: 0.96
                 property real slideY: -12
 
+                // Match app launcher / system monitor content inset.
+                readonly property int contentPad: Math.max(Styling.radius(3), 12)
+                readonly property int chromeSize: 20
+
                 width: toastColumn.width
-                height: Math.max(bodyCol.implicitHeight + 24, 72)
+                height: Math.max(bodyCol.implicitHeight + contentPad * 2, 72)
                 visible: notif !== null || closing
                 opacity: toastOpacity
                 scale: toastScale
@@ -205,27 +209,38 @@ Item {
 
                     ColumnLayout {
                         id: bodyCol
+                        // Content-driven height: inset on all sides via top/left/right
+                        // margins + parent height = content + pad*2 (bottom pad free).
                         anchors {
                             left: parent.left
                             right: parent.right
                             top: parent.top
-                            margins: 12
+                            margins: toastRoot.contentPad
                         }
-                        spacing: 4
+                        spacing: 6
 
+                        // Header: matching left/right chrome so edge inset stays even.
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 10
 
-                            Text {
-                                text: toastRoot.isCritical ? Icons.alert : Icons.bell
-                                font.family: Icons.font
-                                font.pixelSize: 18
-                                color: toastRoot.isCritical ? Colors.error : Styling.srItem("overprimary")
+                            Item {
+                                Layout.preferredWidth: toastRoot.chromeSize
+                                Layout.preferredHeight: toastRoot.chromeSize
+                                Layout.alignment: Qt.AlignVCenter
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: toastRoot.isCritical ? Icons.alert : Icons.bell
+                                    font.family: Icons.font
+                                    font.pixelSize: 16
+                                    color: toastRoot.isCritical ? Colors.error : Styling.srItem("overprimary")
+                                }
                             }
 
                             Text {
                                 Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
                                 text: toastRoot.appName || "Notification"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -235,11 +250,14 @@ Item {
                             }
 
                             Item {
-                                Layout.preferredWidth: 32
-                                Layout.preferredHeight: 32
+                                Layout.preferredWidth: toastRoot.chromeSize
+                                Layout.preferredHeight: toastRoot.chromeSize
+                                Layout.alignment: Qt.AlignVCenter
 
                                 Rectangle {
-                                    anchors.fill: parent
+                                    anchors.centerIn: parent
+                                    width: toastRoot.chromeSize + 8
+                                    height: toastRoot.chromeSize + 8
                                     radius: width / 2
                                     color: cardMa.containsMouse && !toastRoot.closing ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
                                 }
@@ -248,7 +266,7 @@ Item {
                                     anchors.centerIn: parent
                                     text: Icons.cancel
                                     font.family: Icons.font
-                                    font.pixelSize: 16
+                                    font.pixelSize: 14
                                     color: cardMa.containsMouse && !toastRoot.closing ? Colors.overBackground : Colors.outline
                                 }
                             }

@@ -15,7 +15,13 @@ Item {
     required property var bar
     required property var panel
 
-    readonly property bool popupOpen: powerWindow.visible
+    // Logical open state (true while open or mid-close animation).
+    property bool menuOpen: false
+    property bool menuShown: false
+    property real menuOpacity: 0
+    property real menuScale: 0.96
+
+    readonly property bool popupOpen: menuOpen
     // Keep a tiny host for Visibilities registration; real UI is powerWindow.
     width: 1
     height: 1
@@ -23,7 +29,7 @@ Item {
     anchors.horizontalCenter: parent.horizontalCenter
 
     function togglePopup() {
-        if (powerWindow.visible)
+        if (menuOpen)
             closeMenu();
         else
             openMenu();
@@ -32,15 +38,50 @@ Item {
     function openMenu() {
         Visibilities.setActiveModule("");
         Visibilities.closeActiveBarPopup();
+
+        closeTimer.stop();
+        menuOpen = true;
+        menuShown = true;
         powerWindow.visible = true;
+
+        // Start slightly present, then animate in next frame.
+        if (menuOpacity < 0.01) {
+            menuOpacity = 0;
+            menuScale = 0.96;
+        }
+
         Qt.callLater(() => {
+            if (!root.menuOpen)
+                return;
+            menuOpacity = 1;
+            menuScale = 1;
             powerMenuView.forceActiveFocus();
             powerMenuView.focusMenu();
         });
     }
 
     function closeMenu() {
-        powerWindow.visible = false;
+        if (!menuOpen && !powerWindow.visible)
+            return;
+
+        menuOpen = false;
+        menuOpacity = 0;
+        menuScale = 0.96;
+        closeTimer.interval = Config.animDuration > 0
+            ? Math.max(Config.animDuration / 2, 80) + 40
+            : 40;
+        closeTimer.restart();
+    }
+
+    Timer {
+        id: closeTimer
+        interval: 40
+        onTriggered: {
+            if (root.menuOpen)
+                return;
+            root.menuShown = false;
+            powerWindow.visible = false;
+        }
     }
 
     // Dedicated overlay so position matches OSD (bottom center, 48px up).
@@ -51,7 +92,7 @@ Item {
 
         WlrLayershell.namespace: "nonchalant:powermenu"
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: root.menuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Ignore
         exclusiveZone: 0
 
@@ -66,11 +107,12 @@ Item {
         // Click outside the pill dismisses.
         MouseArea {
             anchors.fill: parent
+            enabled: root.menuOpen
             onClicked: root.closeMenu()
         }
 
         FocusGrab {
-            active: powerWindow.visible
+            active: root.menuOpen
             windows: [powerWindow]
             onCleared: root.closeMenu()
         }
@@ -87,10 +129,31 @@ Item {
                 anchors.bottom: parent.bottom
                 width: powerMenuView.implicitWidth + 16
                 height: powerMenuView.implicitHeight + 16
+                visible: root.menuShown
+                opacity: root.menuOpacity
+                scale: root.menuScale
+                transformOrigin: Item.Bottom
+
+                Behavior on opacity {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: Config.animDuration / 2
+                        easing.type: Easing.OutQuad
+                    }
+                }
+
+                Behavior on scale {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: Config.animDuration / 2
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 // Block backdrop click-through on the pill itself.
                 MouseArea {
                     anchors.fill: parent
+                    enabled: root.menuOpen
                     onClicked: {}
                 }
 
@@ -98,7 +161,7 @@ Item {
                     id: powerMenuView
                     anchors.centerIn: parent
                     popupMode: true
-                    expanded: powerWindow.visible
+                    expanded: root.menuOpen
                     onCloseRequested: root.closeMenu()
                 }
             }
