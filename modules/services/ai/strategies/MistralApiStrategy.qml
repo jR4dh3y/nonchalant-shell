@@ -100,6 +100,8 @@ ApiStrategy {
                 let delta = json.choices[0].delta;
                 if (delta && delta.content)
                     return { content: delta.content, done: false, error: null };
+                if (delta && delta.tool_calls)
+                    return { content: "", done: false, error: null, toolCallDelta: delta.tool_calls };
                 if (json.choices[0].finish_reason)
                     return { content: "", done: true, error: null };
             }

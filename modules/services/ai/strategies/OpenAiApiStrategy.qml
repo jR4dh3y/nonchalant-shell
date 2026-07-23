@@ -22,20 +22,72 @@ ApiStrategy {
         let formatted = [];
         for (let i = 0; i < messages.length; i++) {
             let msg = messages[i];
+            let role = msg.role;
+            // Normalize stored roles for OpenAI-compatible chat completions.
+            if (role === "function")
+                role = "tool";
+
+            // Tool results
+            if (role === "tool") {
+                formatted.push({
+                    role: "tool",
+                    tool_call_id: msg.tool_call_id || msg.id || ("call_" + i),
+                    content: msg.content || ""
+                });
+                continue;
+            }
+
+            // Assistant turn that requested a tool
+            if (role === "assistant" && (msg.tool_calls || msg.functionCall)) {
+                let toolCalls = msg.tool_calls;
+                if (!toolCalls && msg.functionCall) {
+                    let args = msg.functionCall.args;
+                    toolCalls = [
+                        {
+                            id: msg.functionCall.id || ("call_" + i),
+                            type: "function",
+                            function: {
+                                name: msg.functionCall.name,
+                                arguments: typeof args === "string" ? args : JSON.stringify(args || {})
+                            }
+                        }
+                    ];
+                }
+                formatted.push({
+                    role: "assistant",
+                    content: msg.content && msg.content.length > 0 ? msg.content : null,
+                    tool_calls: toolCalls
+                });
+                continue;
+            }
+
             if (msg.attachments && msg.attachments.length > 0) {
-                let contentParts = [{type: "text", text: msg.content}];
+                let contentParts = [
+                    {
+                        type: "text",
+                        text: msg.content || ""
+                    }
+                ];
                 for (let j = 0; j < msg.attachments.length; j++) {
                     let att = msg.attachments[j];
                     if (att.type === "image") {
                         contentParts.push({
                             type: "image_url",
-                            image_url: { url: "data:" + att.mimeType + ";base64," + att.base64 }
+                            image_url: {
+                                url: "data:" + att.mimeType + ";base64," + att.base64
+                            }
                         });
                     }
                 }
-                formatted.push({ role: msg.role, content: contentParts });
+                formatted.push({
+                    role: role,
+                    content: contentParts
+                });
             } else {
-                formatted.push({ role: msg.role, content: msg.content });
+                formatted.push({
+                    role: role,
+                    content: msg.content
+                });
             }
         }
         return formatted;
@@ -72,11 +124,20 @@ ApiStrategy {
                 let msg = json.choices[0].message;
                 if (msg.tool_calls && msg.tool_calls.length > 0) {
                     let tc = msg.tool_calls[0];
+                    let parsedArgs = {};
+                    try {
+                        parsedArgs = JSON.parse(tc.function.arguments || "{}");
+                    } catch (e) {
+                        parsedArgs = {
+                            command: tc.function.arguments || ""
+                        };
+                    }
                     return {
                         content: msg.content || "",
                         functionCall: {
+                            id: tc.id || "",
                             name: tc.function.name,
-                            args: JSON.parse(tc.function.arguments)
+                            args: parsedArgs
                         }
                     };
                 }

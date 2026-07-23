@@ -21,10 +21,54 @@ ApiStrategy {
         ];
     }
 
+    function _formatMessages(messages) {
+        // Groq is OpenAI-compatible for tool calling.
+        let formatted = [];
+        for (let i = 0; i < messages.length; i++) {
+            let msg = messages[i];
+            let role = msg.role === "function" ? "tool" : msg.role;
+            if (role === "tool") {
+                formatted.push({
+                    role: "tool",
+                    tool_call_id: msg.tool_call_id || ("call_" + i),
+                    content: msg.content || ""
+                });
+                continue;
+            }
+            if (role === "assistant" && (msg.tool_calls || msg.functionCall)) {
+                let toolCalls = msg.tool_calls;
+                if (!toolCalls && msg.functionCall) {
+                    let args = msg.functionCall.args;
+                    toolCalls = [
+                        {
+                            id: msg.functionCall.id || ("call_" + i),
+                            type: "function",
+                            function: {
+                                name: msg.functionCall.name,
+                                arguments: typeof args === "string" ? args : JSON.stringify(args || {})
+                            }
+                        }
+                    ];
+                }
+                formatted.push({
+                    role: "assistant",
+                    content: msg.content && msg.content.length > 0 ? msg.content : null,
+                    tool_calls: toolCalls
+                });
+                continue;
+            }
+            formatted.push({
+                role: role,
+                content: msg.content
+            });
+        }
+        return formatted;
+    }
+
     function getBody(messages, model, tools) {
         let body = {
             model: model.model,
-            messages: messages,
+            messages: _formatMessages(messages),
             temperature: 0.7
         };
         if (tools && tools.length > 0) {
@@ -98,6 +142,8 @@ ApiStrategy {
                 let delta = json.choices[0].delta;
                 if (delta && delta.content)
                     return { content: delta.content, done: false, error: null };
+                if (delta && delta.tool_calls)
+                    return { content: "", done: false, error: null, toolCallDelta: delta.tool_calls };
                 if (json.choices[0].finish_reason)
                     return { content: "", done: true, error: null };
             }

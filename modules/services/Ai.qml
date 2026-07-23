@@ -242,8 +242,109 @@ Singleton {
                 },
                 required: ["command"]
             }
+        },
+        {
+            name: "web_search",
+            description: "Search the web for current information. Returns titles, snippets, and URLs. Use when you need facts, docs, news, or anything not available locally.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: {
+                        type: "string",
+                        description: "The search query"
+                    }
+                },
+                required: ["query"]
+            }
+        },
+        {
+            name: "fetch_url",
+            description: "Fetch the text content of a website or API URL. Use after web_search to read a specific page, or when the user provides a link.",
+            parameters: {
+                type: "object",
+                properties: {
+                    url: {
+                        type: "string",
+                        description: "Full URL to fetch (https://...)"
+                    },
+                    max_chars: {
+                        type: "integer",
+                        description: "Maximum characters of text to return (default 12000)"
+                    }
+                },
+                required: ["url"]
+            }
         }
     ]
+
+    // Streaming tool-call assembly (OpenAI-compatible deltas arrive fragmented).
+    property var pendingToolCalls: ({})
+    property bool streamHadToolCall: false
+
+    function resetToolCallBuffers() {
+        pendingToolCalls = {};
+        streamHadToolCall = false;
+    }
+
+    function accumulateToolCallDeltas(deltas) {
+        if (!deltas || deltas.length === 0)
+            return;
+        streamHadToolCall = true;
+        // Clone so QML notices the mutation.
+        let buf = Object.assign({}, pendingToolCalls);
+        for (let i = 0; i < deltas.length; i++) {
+            let d = deltas[i];
+            let idx = (d.index !== undefined && d.index !== null) ? d.index : 0;
+            let key = String(idx);
+            if (!buf[key]) {
+                buf[key] = {
+                    id: "",
+                    name: "",
+                    arguments: ""
+                };
+            }
+            let entry = Object.assign({}, buf[key]);
+            if (d.id)
+                entry.id = d.id;
+            if (d.function) {
+                if (d.function.name)
+                    entry.name = (entry.name || "") + d.function.name;
+                if (d.function.arguments)
+                    entry.arguments = (entry.arguments || "") + d.function.arguments;
+            }
+            buf[key] = entry;
+        }
+        pendingToolCalls = buf;
+    }
+
+    function finalizePendingToolCalls() {
+        let keys = Object.keys(pendingToolCalls);
+        if (keys.length === 0)
+            return null;
+
+        // Prefer the first tool call (UI currently supports one pending action).
+        keys.sort();
+        let entry = pendingToolCalls[keys[0]];
+        if (!entry || !entry.name)
+            return null;
+
+        let args = {};
+        try {
+            args = entry.arguments && entry.arguments.length > 0 ? JSON.parse(entry.arguments) : {};
+        } catch (e) {
+            args = {
+                command: entry.arguments || "",
+                _parseError: String(e)
+            };
+        }
+
+        return {
+            id: entry.id || ("call_" + Date.now()),
+            name: entry.name,
+            args: args,
+            rawArguments: entry.arguments || ""
+        };
+    }
 
     // ============================================
     // CHAT MANAGEMENT
@@ -333,6 +434,23 @@ Singleton {
     }
 
     // Function Call Handling
+    readonly property string webToolsScript: {
+        let p = Qt.resolvedUrl("../../scripts/ai_web_tools.py").toString().replace("file://", "");
+        try {
+            return decodeURIComponent(p);
+        } catch (e) {
+            return p;
+        }
+    }
+
+    function _toolFallbackContent(name) {
+        if (name === "web_search")
+            return "I'd like to search the web:";
+        if (name === "fetch_url")
+            return "I'd like to fetch a webpage:";
+        return "I'd like to run a command:";
+    }
+
     function approveCommand(index) {
         let msg = currentChat[index];
         if (!msg.functionCall)
@@ -344,12 +462,46 @@ Singleton {
         currentChat = newChat;
         saveCurrentChat();
 
-        let args = msg.functionCall.args;
-        if (msg.functionCall.name === "run_shell_command") {
-            commandExecutionProc.command = ["bash", "-c", args.command];
+        let args = msg.functionCall.args || {};
+        let name = msg.functionCall.name;
+
+        if (name === "run_shell_command") {
+            commandExecutionProc.command = ["bash", "-c", args.command || ""];
             commandExecutionProc.targetIndex = index;
             commandExecutionProc.running = true;
+            return;
         }
+
+        if (name === "web_search") {
+            commandExecutionProc.command = ["python3", webToolsScript, "search", args.query || ""];
+            commandExecutionProc.targetIndex = index;
+            commandExecutionProc.running = true;
+            return;
+        }
+
+        if (name === "fetch_url") {
+            let maxChars = parseInt(args.max_chars, 10);
+            if (!maxChars || maxChars < 500)
+                maxChars = 12000;
+            if (maxChars > 50000)
+                maxChars = 50000;
+            commandExecutionProc.command = ["python3", webToolsScript, "fetch", args.url || "", String(maxChars)];
+            commandExecutionProc.targetIndex = index;
+            commandExecutionProc.running = true;
+            return;
+        }
+
+        // Unknown tool — feed an error back into the chat loop.
+        let errChat = Array.from(currentChat);
+        errChat.push({
+            role: "function",
+            name: name,
+            tool_call_id: msg.functionCall.id || "",
+            content: "Unknown tool: " + name
+        });
+        currentChat = errChat;
+        saveCurrentChat();
+        makeRequest();
     }
 
     function rejectCommand(index) {
@@ -360,7 +512,8 @@ Singleton {
         newChat.push({
             role: "function",
             name: newChat[index].functionCall.name,
-            content: "User rejected the command execution."
+            tool_call_id: newChat[index].functionCall.id || "",
+            content: "User rejected the tool execution."
         });
 
         currentChat = newChat;
@@ -425,14 +578,42 @@ Singleton {
 
         for (let i = 0; i < currentChat.length; i++) {
             let msg = currentChat[i];
+            // Map stored tool-result role → OpenAI "tool" / legacy "function"
+            let role = msg.role;
+            if (role === "function")
+                role = "tool";
+
             let apiMsg = {
-                role: msg.role,
+                role: role,
                 content: msg.content
             };
             if (msg.attachments)
                 apiMsg.attachments = msg.attachments;
-            if (msg.functionCall)
+            if (msg.functionCall) {
                 apiMsg.functionCall = msg.functionCall;
+                // OpenAI-compatible tool_calls on the assistant turn
+                apiMsg.tool_calls = [
+                    {
+                        id: msg.functionCall.id || ("call_" + i),
+                        type: "function",
+                        function: {
+                            name: msg.functionCall.name,
+                            arguments: typeof msg.functionCall.args === "string" ? msg.functionCall.args : JSON.stringify(msg.functionCall.args || {})
+                        }
+                    }
+                ];
+            }
+            if (msg.tool_call_id)
+                apiMsg.tool_call_id = msg.tool_call_id;
+            else if (role === "tool" && msg.name) {
+                // Best-effort: recover id from the preceding assistant tool call
+                for (let j = i - 1; j >= 0; j--) {
+                    if (currentChat[j].functionCall && currentChat[j].functionCall.name === msg.name) {
+                        apiMsg.tool_call_id = currentChat[j].functionCall.id || ("call_" + j);
+                        break;
+                    }
+                }
+            }
             if (msg.geminiParts)
                 apiMsg.geminiParts = msg.geminiParts;
             if (msg.name)
@@ -443,8 +624,9 @@ Singleton {
         // Build body — always use streaming
         let body = currentStrategy.getStreamBody(messages, currentModel, systemTools);
 
-        // Reset streaming buffer
+        // Reset streaming buffers
         responseBuffer = "";
+        resetToolCallBuffers();
 
         // Add placeholder assistant message for streaming
         let streamChat = Array.from(currentChat);
@@ -552,6 +734,9 @@ Singleton {
                     return;
                 }
 
+                if (result.toolCallDelta)
+                    root.accumulateToolCallDeltas(result.toolCallDelta);
+
                 if (result.content) {
                     root.responseBuffer += result.content;
                     // Update the last message in currentChat with accumulated text
@@ -562,7 +747,7 @@ Singleton {
                     }
                 }
 
-                // Note: done is handled in onExited
+                // Note: done / tool finalization is handled in onExited
             }
         }
 
@@ -574,19 +759,46 @@ Singleton {
             root.isLoading = false;
 
             if (exitCode === 0) {
-                // Check if we got any content during streaming
-                if (root.responseBuffer === "" && root.currentChat.length > 0) {
-                    // No streaming data received — might be non-streaming response or error
-                    // The last message is our placeholder, leave as is
-                    let lastMsg = root.currentChat[root.currentChat.length - 1];
-                    if (!lastMsg.content) {
-                        let newChat = Array.from(root.currentChat);
-                        newChat[newChat.length - 1].content = "No response received from the API.";
+                let newChat = Array.from(root.currentChat);
+                let lastIdx = newChat.length - 1;
+
+                // Finalize streamed tool calls into a pending approval bubble.
+                let toolCall = root.finalizePendingToolCalls();
+                if (toolCall && lastIdx >= 0) {
+                    let last = Object.assign({}, newChat[lastIdx]);
+                    last.content = root.responseBuffer || last.content || "";
+                    last.functionCall = {
+                        id: toolCall.id,
+                        name: toolCall.name,
+                        args: toolCall.args
+                    };
+                    last.functionPending = true;
+                    last.functionApproved = undefined;
+                    if (!last.content || last.content.length === 0) {
+                        last.content = root._toolFallbackContent(toolCall.name);
+                    }
+                    newChat[lastIdx] = last;
+                    root.currentChat = newChat;
+                    root.saveCurrentChat();
+
+                    // Read-only web tools: auto-approve so the agent can research without extra clicks.
+                    // Shell commands still require explicit approval.
+                    if (toolCall.name === "web_search" || toolCall.name === "fetch_url") {
+                        Qt.callLater(() => root.approveCommand(lastIdx));
+                    }
+                } else if (root.responseBuffer === "" && lastIdx >= 0) {
+                    // No streaming data and no tool call — surface a soft error.
+                    let lastMsg = newChat[lastIdx];
+                    if (!lastMsg.content && !lastMsg.functionCall) {
+                        newChat[lastIdx] = Object.assign({}, lastMsg, {
+                            content: "No response received from the API."
+                        });
                         root.currentChat = newChat;
                     }
+                    root.saveCurrentChat();
+                } else {
+                    root.saveCurrentChat();
                 }
-
-                root.saveCurrentChat();
             } else {
                 root.lastError = "Network Request Failed: " + curlStderr.text;
 
@@ -599,6 +811,7 @@ Singleton {
             }
 
             root.responseBuffer = "";
+            root.resetToolCallBuffers();
         }
     }
 
@@ -624,6 +837,7 @@ Singleton {
             newChat.push({
                 role: "function",
                 name: msg.functionCall.name,
+                tool_call_id: msg.functionCall.id || "",
                 content: output
             });
 
