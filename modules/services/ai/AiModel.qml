@@ -6,7 +6,7 @@ QtObject {
     property string description: ""
     required property string endpoint
     required property string model
-    required property string provider // "openai", "gemini", "anthropic", "mistral", "groq", "ollama", "custom"
+    required property string provider // "openai", "gemini", "anthropic", "mistral", "groq", "ollama", "minimax", "opencode", "custom"
     property bool requires_key: false
     property string key_id: ""
     property string key_get_link: ""

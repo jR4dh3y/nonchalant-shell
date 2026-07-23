@@ -57,6 +57,8 @@ PanelWindow {
                 spacing: 14
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: iconText
                     text: {
                         if (GlobalStates.osdIndicator === "volume") {
@@ -102,6 +104,8 @@ PanelWindow {
                         spacing: 0
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: {
                                 if (GlobalStates.osdIndicator === "volume")
                                     return "Volume";
@@ -123,6 +127,8 @@ PanelWindow {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: Math.round(root.osdValue * 100)
                             font.family: Config.theme.font
                             font.pixelSize: 15

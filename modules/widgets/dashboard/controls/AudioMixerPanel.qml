@@ -81,6 +81,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Icons.speakerHigh
                                     font.family: Icons.font
                                     font.pixelSize: 14
@@ -89,6 +91,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Output"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(-1)
@@ -125,6 +129,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Icons.mic
                                     font.family: Icons.font
                                     font.pixelSize: 14
@@ -133,6 +139,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Input"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(-1)
@@ -168,6 +176,8 @@ Item {
 
                     // Section: Devices
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: root.showOutput ? "Output Device" : "Input Device"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
@@ -203,6 +213,8 @@ Item {
 
                     // Section: Volume Mixer
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: "Volume Mixer"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
@@ -232,6 +244,8 @@ Item {
 
                     // Empty state for apps
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         visible: (root.showOutput ? Audio.outputAppNodes : Audio.inputAppNodes).length === 0
                         text: "No applications using audio"
                         font.family: Config.theme.font

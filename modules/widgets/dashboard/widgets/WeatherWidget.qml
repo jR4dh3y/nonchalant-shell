@@ -872,6 +872,8 @@ ClippingRectangle {
 
         // Temperature or error icon
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             id: tempText
             visible: WeatherService.dataAvailable
             text: Math.round(WeatherService.currentTemp) + "°" + Config.weather.unit
@@ -883,6 +885,8 @@ ClippingRectangle {
 
         // Error icon when no data
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             visible: !WeatherService.dataAvailable
             text: Icons.alert
             font.family: Icons.font
@@ -902,6 +906,8 @@ ClippingRectangle {
         height: descText.height
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             id: descText
             text: WeatherService.dataAvailable ? WeatherService.effectiveWeatherDescription : "Error"
             color: Qt.rgba(1, 1, 1, 0.85)
@@ -936,6 +942,8 @@ ClippingRectangle {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             text: "D"
             font.pixelSize: 10

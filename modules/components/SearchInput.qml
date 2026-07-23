@@ -56,6 +56,8 @@ StyledRect {
         spacing: 8
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: root.iconText
             font.family: Icons.font
             font.pixelSize: 20
@@ -72,6 +74,8 @@ StyledRect {
             visible: root.prefixText.length > 0 || root.prefixIcon.length > 0
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: prefixLabel
                 anchors.centerIn: parent
                 text: root.prefixIcon.length > 0 ? root.prefixIcon : root.prefixText.trim()
@@ -88,6 +92,7 @@ StyledRect {
             placeholderTextColor: Colors.outline
             font.family: Config.theme.font
             font.pixelSize: Config.theme.fontSize
+            font.hintingPreference: Font.PreferFullHinting
             color: Colors.overBackground
             background: null
             echoMode: root.passwordMode ? TextInput.Password : TextInput.Normal

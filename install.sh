@@ -125,7 +125,7 @@ install_dependencies() {
       python3.12 libnotify flatpak
       tesseract tesseract-langpack-eng tesseract-langpack-spa tesseract-langpack-jpn
       tesseract-langpack-chi_sim tesseract-langpack-chi_tra tesseract-langpack-kor tesseract-langpack-lat
-      google-roboto-fonts google-roboto-mono-fonts dejavu-sans-fonts liberation-fonts
+      jetbrains-mono-fonts dejavu-sans-fonts liberation-fonts
       google-noto-fonts-common google-noto-cjk-fonts google-noto-emoji-fonts
       mpvpaper matugen R-CRAN-phosphoricons adw-gtk3-theme quickshell unzip curl
     )
@@ -172,7 +172,7 @@ install_dependencies() {
       python312 libnotify
       tesseract tesseract-data-eng tesseract-data-spa tesseract-data-jpn
       tesseract-data-chi_sim tesseract-data-chi_tra tesseract-data-kor tesseract-data-lat
-      ttf-roboto ttf-roboto-mono ttf-dejavu ttf-liberation noto-fonts noto-fonts-cjk noto-fonts-emoji
+      ttf-jetbrains-mono ttf-dejavu ttf-liberation noto-fonts noto-fonts-cjk noto-fonts-emoji
       ttf-nerd-fonts-symbols
       matugen gpu-screen-recorder wl-clip-persist mpvpaper gradia
       quickshell ttf-phosphor-icons ttf-league-gothic adw-gtk-theme

@@ -25,6 +25,7 @@ Atomic design library for the Nonchalant shell. 26 QML components + 29 GLSL shad
 ### Display & Feedback
 | Component | Role |
 |-----------|------|
+| `StyledText.qml` | Shared `Text` with `NativeRendering` + full hinting (avoids DF soft halo) |
 | `StyledToolTip.qml` | Themed tooltip |
 | `BarPopup.qml` | Base for bar flyout popups. Requires `anchorItem` + `bar` ref |
 | `ContextMenu.qml` | Right-click context menu |
@@ -37,8 +38,8 @@ Atomic design library for the Nonchalant shell. 26 QML components + 29 GLSL shad
 | `CircularWavyProgress.qml` | Circular animated progress indicator |
 | `CarouselProgress.qml` | Step-based progress dots |
 | `DiagonalStripePattern.qml` | Decorative pattern overlay |
-| `BgShadow.qml` / `Shadow.qml` | Drop shadow effects |
-| `Outline.qml` | Border outline effect |
+| `BgShadow.qml` / `Shadow.qml` | Intentionally inert (MultiEffect on text parents softens glyphs) |
+| `Outline.qml` | Intentionally inert outline-via-shadow path |
 | `Tinted.qml` / `TintedWallpaper.qml` | Color tint overlays |
 
 ### Utility & Core

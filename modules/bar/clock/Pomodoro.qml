@@ -239,6 +239,8 @@ Item {
                 radius: Styling.radius(-4)
                 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: root.isWorkSession ? "Work Session" : "Rest Session"
                     font.family: Config.theme.font
@@ -270,6 +272,8 @@ Item {
                 implicitWidth: 28; implicitHeight: 28
                 radius: Styling.radius(-4)
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: Icons.arrowCounterClockwise
                     font.family: Icons.font; font.pixelSize: 14
@@ -312,6 +316,8 @@ Item {
                     }
                     
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: ":"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(8)
@@ -382,6 +388,8 @@ Item {
                 radius: Styling.radius(0)
                 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: root.alarmActive ? "STOP ALARM" : (root.isRunning ? "PAUSE" : (root.isResuming ? "RESUME" : "START " + (root.isWorkSession ? "WORK" : "REST")))
                     font.family: Config.theme.font
@@ -420,6 +428,8 @@ Item {
             RowLayout {
                 spacing: 8
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: "Auto"
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-1)
@@ -450,6 +460,8 @@ Item {
             RowLayout {
                 spacing: 8
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: "Sync Spotify"
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-1)
@@ -532,6 +544,8 @@ Item {
         radius: Styling.radius(-4)
         
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             text: cBtn.text
             font.family: Config.theme.font

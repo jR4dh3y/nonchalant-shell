@@ -38,6 +38,8 @@ Item {
             spacing: 16
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: sectionBtn.text
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
@@ -47,6 +49,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: Icons.caretRight
                 font.family: Icons.font
                 font.pixelSize: 20
@@ -273,6 +277,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "General"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -287,6 +293,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Wallpapers"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -301,6 +309,8 @@ Item {
                                     radius: Styling.radius(-2)
 
                                     TextInput {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: wallPathInput
                                         anchors.fill: parent
                                         anchors.margins: 8
@@ -339,6 +349,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Tint Icons"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -408,6 +420,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Enable Corners"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -477,6 +491,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Animation"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -514,6 +530,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Config.theme.animDuration + "ms"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -528,6 +546,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Fonts"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -542,6 +562,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "UI Font"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -556,6 +578,8 @@ Item {
                                     radius: Styling.radius(-2)
 
                                     TextInput {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: fontInput
                                         anchors.fill: parent
                                         anchors.margins: 8
@@ -592,6 +616,8 @@ Item {
                                     radius: Styling.radius(-2)
 
                                     TextInput {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: fontSizeInput
                                         anchors.fill: parent
                                         anchors.margins: 8
@@ -628,6 +654,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "px"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -641,6 +669,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Mono Font"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -655,6 +685,8 @@ Item {
                                     radius: Styling.radius(-2)
 
                                     TextInput {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: monoFontInput
                                         anchors.fill: parent
                                         anchors.margins: 8
@@ -691,6 +723,8 @@ Item {
                                     radius: Styling.radius(-2)
 
                                     TextInput {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: monoFontSizeInput
                                         anchors.fill: parent
                                         anchors.margins: 8
@@ -727,6 +761,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "px"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -739,6 +775,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Roundness"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -783,6 +821,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Math.round(roundnessSlider.value * 20)
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -808,6 +848,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Shadow"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -822,6 +864,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Opacity"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -858,6 +902,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Math.round(shadowOpacitySlider.value * 100) + "%"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -873,6 +919,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Blur"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -910,6 +958,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Config.theme.shadowBlur.toFixed(1)
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -925,6 +975,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Offset X"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -962,6 +1014,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Config.theme.shadowXOffset
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -976,6 +1030,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Offset Y"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -1013,6 +1069,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Config.theme.shadowYOffset
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -1028,6 +1086,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Color"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -1060,6 +1120,8 @@ Item {
                                         }
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             Layout.fillWidth: true
                                             text: Config.theme.shadowColor
                                             font.family: Config.theme.font
@@ -1129,6 +1191,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Variant"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -1201,6 +1265,8 @@ Item {
                                                                 clip: true
 
                                                                 Text {
+                                                                    renderType: Text.NativeRendering
+                                                                    font.hintingPreference: Font.PreferFullHinting
                                                                     id: checkIconRow
                                                                     text: Icons.accept
                                                                     font.family: Icons.font
@@ -1228,6 +1294,8 @@ Item {
                                                             }
 
                                                             Text {
+                                                                renderType: Text.NativeRendering
+                                                                font.hintingPreference: Font.PreferFullHinting
                                                                 id: tagContentRow
                                                                 text: variantTagRow.modelData.label
                                                                 font.family: Config.theme.font
@@ -1357,6 +1425,8 @@ Item {
                                                         clip: true
 
                                                         Text {
+                                                            renderType: Text.NativeRendering
+                                                            font.hintingPreference: Font.PreferFullHinting
                                                             id: checkIcon
                                                             text: Icons.accept
                                                             font.family: Icons.font
@@ -1384,6 +1454,8 @@ Item {
                                                     }
 
                                                     Text {
+                                                        renderType: Text.NativeRendering
+                                                        font.hintingPreference: Font.PreferFullHinting
                                                         id: tagContent
                                                         text: variantTag.modelData.label
                                                         font.family: Config.theme.font
@@ -1444,6 +1516,8 @@ Item {
                                     property bool isHovered: false
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: variantSelectorPane.variantExpanded ? Icons.caretUp : Icons.caretDown
                                         font.family: Icons.font
@@ -1481,6 +1555,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Editor - " + root.getVariantLabel(root.selectedVariant)
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)

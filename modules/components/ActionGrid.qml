@@ -259,6 +259,8 @@ FocusScope {
 
                             // 1. Icono centrado en el área base del botón (siempre fijo a la izquierda)
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 width: root.buttonSize
                                 height: parent.height
                                 anchors.left: parent.left
@@ -281,6 +283,8 @@ FocusScope {
 
                             // 2. Texto alineado a la derecha del área base del botón
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 visible: delegateWrapper.hasText
                                 text: visible ? modelData.text : ""
                                 anchors.left: parent.left

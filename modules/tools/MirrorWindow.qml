@@ -127,6 +127,8 @@ PanelWindow {
                     color: Colors.surface
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         anchors.centerIn: parent
                         text: root.isSquare ? Icons.arrowsOut : Icons.crop
                         font.family: Icons.font
@@ -159,6 +161,8 @@ PanelWindow {
                     color: Colors.surface
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         anchors.centerIn: parent
                         text: Icons.flipX
                         font.family: Icons.font
@@ -181,6 +185,8 @@ PanelWindow {
                     variant: "error"
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         anchors.centerIn: parent
                         text: Icons.cancel
                         font.family: Icons.font
@@ -317,6 +323,8 @@ PanelWindow {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             text: mode == 0 || mode == 3 ? Icons.caretDoubleDown : Icons.caretDoubleUp
             rotation: mode == 0 ? -45 : mode == 1 ? 45 : mode == 2 ? -135 : 135

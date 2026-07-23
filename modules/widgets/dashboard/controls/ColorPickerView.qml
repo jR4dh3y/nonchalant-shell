@@ -62,6 +62,8 @@ Item {
                 enableShadow: false
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: Icons.arrowLeft
                     font.family: Icons.font
@@ -79,6 +81,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: root.dialogTitle
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(1)
@@ -110,6 +114,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: "#"
                     font.family: "monospace"
                     font.pixelSize: Styling.fontSize(0)
@@ -118,6 +124,8 @@ Item {
                 }
 
                 TextInput {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: hexInput
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -171,6 +179,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: "Custom"
                     font.family: Styling.defaultFont
                     font.pixelSize: Styling.fontSize(-1)
@@ -187,6 +197,8 @@ Item {
                     enableShadow: false
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         anchors.centerIn: parent
                         text: Icons.picker
                         font.family: Icons.font
@@ -262,6 +274,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: colorItem.modelData
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(-2)

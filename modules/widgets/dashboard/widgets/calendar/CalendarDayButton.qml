@@ -32,7 +32,12 @@ Rectangle {
             text: day
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
+            // The default distance-field renderer gives small bold glyphs a
+            // soft halo, especially against light surfaces. These labels are
+            // static, so native hinted rendering produces crisper edges.
+            renderType: Text.NativeRendering
             font.weight: Font.Bold
+            font.hintingPreference: Font.PreferFullHinting
             font.pixelSize: Styling.fontSize(-2)
             font.family: Config.defaultFont
             color: {

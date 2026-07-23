@@ -1127,6 +1127,8 @@ Item {
                                             spacing: 8
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 text: modelData && modelData.icon ? modelData.icon : ""
                                                 font.family: Icons.font
                                                 font.pixelSize: 14
@@ -1149,6 +1151,8 @@ Item {
                                             }
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 Layout.fillWidth: true
                                                 text: modelData && modelData.text ? modelData.text : ""
                                                 font.family: Config.theme.font
@@ -1298,6 +1302,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: Icons.cancel
                                     color: renameCancelButton.isHighlighted ? Colors.overSecondaryContainer : Colors.overSecondary
@@ -1336,6 +1342,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: Icons.accept
                                     color: renameConfirmButton.isHighlighted ? Colors.overSecondaryContainer : Colors.overSecondary
@@ -1393,6 +1401,8 @@ Item {
                             radius: Styling.radius(-4)
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.centerIn: parent
                                 text: {
                                     if (isInDeleteMode) {
@@ -1430,6 +1440,8 @@ Item {
                             Component {
                                 id: normalText
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: {
                                         if (isInDeleteMode && !modelData.isCreateButton && !modelData.isCreateSpecificButton) {
                                             return `Quit "${root.sessionToDelete}"?`;
@@ -1594,6 +1606,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: Icons.cancel
                                     color: cancelButton.isHighlighted ? Colors.overErrorContainer : Colors.overError
@@ -1632,6 +1646,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: Icons.accept
                                     color: confirmButton.isHighlighted ? Colors.overErrorContainer : Colors.overError
@@ -1943,6 +1959,8 @@ Item {
 
                                     // Command
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         width: parent.width
                                         text: modelData.command
                                         font.family: Config.theme.font
@@ -1964,6 +1982,8 @@ Item {
 
                                     // Dimensions info
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: modelData.width + "×" + modelData.height
                                         font.family: Config.theme.font
@@ -1991,6 +2011,8 @@ Item {
                             visible: root.sessionPanes.length === 0 && !root.loadingSessionInfo
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: Icons.terminalWindow
                                 font.family: Icons.font
                                 font.pixelSize: 32
@@ -2000,6 +2022,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "No panes to display"
                                 font.family: Config.theme.font
                                 font.pixelSize: Config.theme.fontSize
@@ -2019,6 +2043,8 @@ Item {
                                 spacing: 12
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Icons.spinnerGap
                                     font.family: Icons.font
                                     font.pixelSize: 20
@@ -2035,6 +2061,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Loading panes..."
                                     font.family: Config.theme.font
                                     font.pixelSize: Config.theme.fontSize
@@ -2127,6 +2155,8 @@ Item {
                                         spacing: 4
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             id: windowText
                                             text: modelData.index + ": " + modelData.name
                                             font.family: Config.theme.font
@@ -2165,6 +2195,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: Icons.terminalWindow
                     font.family: Icons.font
                     font.pixelSize: 48
@@ -2174,6 +2206,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: "No session selected"
                     font.family: Config.theme.font
                     font.pixelSize: Config.theme.fontSize
@@ -2183,6 +2217,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: "Select a session to preview"
                     font.family: Config.theme.font
                     font.pixelSize: Config.theme.fontSize

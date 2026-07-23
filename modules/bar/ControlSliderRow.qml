@@ -77,6 +77,8 @@ Item {
             Layout.alignment: Qt.AlignVCenter
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: iconText
                 anchors.centerIn: parent
                 text: root.icon

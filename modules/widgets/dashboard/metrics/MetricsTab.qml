@@ -81,6 +81,8 @@ Rectangle {
         spacing: 4
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             Layout.maximumWidth: Math.max(80, detail.width * 0.58)
             text: detail.primaryText
             font.family: Config.theme.font
@@ -95,6 +97,8 @@ Rectangle {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: detail.secondaryText
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-2)
@@ -103,6 +107,8 @@ Rectangle {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             visible: detail.temperature >= 0
             text: Icons.temperature
             font.family: Icons.font
@@ -111,6 +117,8 @@ Rectangle {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             visible: detail.temperature >= 0
             text: `${detail.temperature}°`
             font.family: Config.theme.font
@@ -241,6 +249,8 @@ Rectangle {
             spacing: 8
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: root.networkIcon
                 font.family: Icons.font
                 font.pixelSize: 18
@@ -250,6 +260,8 @@ Rectangle {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: root.networkLabel
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -261,6 +273,8 @@ Rectangle {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: Icons.arrowDown
                 font.family: Icons.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -269,6 +283,8 @@ Rectangle {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: root.formatSpeed(SystemResources.networkDownloadSpeed)
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -278,6 +294,8 @@ Rectangle {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: Icons.arrowUp
                 font.family: Icons.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -286,6 +304,8 @@ Rectangle {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: root.formatSpeed(SystemResources.networkUploadSpeed)
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)

@@ -634,6 +634,8 @@ Item {
                             spacing: 6
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: categoryTag.modelData.icon
                                 font.family: Icons.font
                                 font.pixelSize: 14
@@ -642,6 +644,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: categoryTag.modelData.label
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(0)
@@ -796,6 +800,8 @@ Item {
 
             // Empty state
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 20
                 visible: (root.currentCategory === "nonchalant" && nonchalantRepeater.count === 0) || (root.currentCategory === "custom" && customRepeater.count === 0)
@@ -882,6 +888,8 @@ Item {
                             radius: Styling.radius(-2)
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.centerIn: parent
                                 text: Icons.caretLeft
                                 font.family: Icons.font
@@ -900,6 +908,8 @@ Item {
 
                         // Title
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: root.isCreatingNew ? "New Keybind" : "Edit Keybind"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
@@ -918,6 +928,8 @@ Item {
                             radius: Styling.radius(-2)
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.centerIn: parent
                                 text: Icons.trash
                                 font.family: Icons.font
@@ -954,6 +966,8 @@ Item {
                                 spacing: 6
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Icons.arrowCounterClockwise
                                     font.family: Icons.font
                                     font.pixelSize: 14
@@ -962,6 +976,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Reset to default"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -1019,6 +1035,8 @@ Item {
                                 spacing: 6
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: Icons.accept
                                     font.family: Icons.font
                                     font.pixelSize: 14
@@ -1027,6 +1045,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Save"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
@@ -1065,6 +1085,8 @@ Item {
                             visible: !root.isEditingNonchalant
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Name (optional)"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -1079,6 +1101,8 @@ Item {
                                 radius: Styling.radius(-2)
 
                                 TextInput {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     id: nameInput
                                     anchors.fill: parent
                                     anchors.margins: 12
@@ -1107,6 +1131,8 @@ Item {
 
                         // Bind name/info (for nonchalant binds only)
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             visible: root.isEditingNonchalant && root.editingBind !== null
                             text: root.editingBind ? (root.editingBind.name || "") : ""
                             font.family: Config.theme.font
@@ -1123,6 +1149,8 @@ Item {
                             radius: Styling.radius(-2)
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.centerIn: parent
                                 text: {
                                     if (root.editKeys.length === 0)
@@ -1159,6 +1187,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Key Combination"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(-1)
@@ -1169,6 +1199,8 @@ Item {
 
                                 // Page indicator
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     visible: root.editKeys.length > 1
                                     text: (root.currentKeyPage + 1) + " / " + root.editKeys.length
                                     font.family: Config.theme.font
@@ -1186,6 +1218,8 @@ Item {
                                     radius: Styling.radius(-4)
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.trash
                                         font.family: Icons.font
@@ -1218,6 +1252,8 @@ Item {
                                     opacity: root.currentKeyPage > 0 ? 1 : 0.3
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.caretLeft
                                         font.family: Icons.font
@@ -1249,6 +1285,8 @@ Item {
                                     opacity: root.currentKeyPage < root.editKeys.length - 1 ? 1 : 0.3
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.caretRight
                                         font.family: Icons.font
@@ -1279,6 +1317,8 @@ Item {
                                     radius: Styling.radius(-4)
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.plus
                                         font.family: Icons.font
@@ -1323,6 +1363,8 @@ Item {
                                         radius: Styling.radius(-2)
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             id: modLabel
                                             anchors.centerIn: parent
                                             text: modTag.modelData
@@ -1352,6 +1394,8 @@ Item {
                                 radius: Styling.radius(-2)
 
                                 TextInput {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     id: keyInput
                                     anchors.fill: parent
                                     anchors.margins: 12
@@ -1396,6 +1440,8 @@ Item {
                                 spacing: 8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "Action"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(-1)
@@ -1406,6 +1452,8 @@ Item {
 
                                 // Page indicator
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     visible: root.editActions.length > 1 && !root.isEditingNonchalant
                                     text: (root.currentActionPage + 1) + " / " + root.editActions.length
                                     font.family: Config.theme.font
@@ -1423,6 +1471,8 @@ Item {
                                     radius: Styling.radius(-4)
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.trash
                                         font.family: Icons.font
@@ -1455,6 +1505,8 @@ Item {
                                     opacity: root.currentActionPage > 0 ? 1 : 0.3
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.caretLeft
                                         font.family: Icons.font
@@ -1486,6 +1538,8 @@ Item {
                                     opacity: root.currentActionPage < root.editActions.length - 1 ? 1 : 0.3
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.caretRight
                                         font.family: Icons.font
@@ -1516,6 +1570,8 @@ Item {
                                     radius: Styling.radius(-4)
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.plus
                                         font.family: Icons.font
@@ -1539,6 +1595,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Action"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -1559,6 +1617,8 @@ Item {
                                     spacing: 8
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: root.getActionLabel(root.editActionId)
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
@@ -1569,6 +1629,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: Icons.caretDown
                                         font.family: Icons.font
                                         font.pixelSize: 14
@@ -1647,6 +1709,8 @@ Item {
                                     spacing: 6
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: modelData.label
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-1)
@@ -1661,6 +1725,8 @@ Item {
                                         radius: Styling.radius(-2)
 
                                         TextInput {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             id: fieldInput
                                             anchors.fill: parent
                                             anchors.margins: 12
@@ -1690,6 +1756,8 @@ Item {
                             // LAYOUT SELECTOR (for NiriService)
                             // =====================
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Layouts (NiriService)"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -1699,6 +1767,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Leave all unselected to work in all layouts"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-2)
@@ -1744,6 +1814,8 @@ Item {
                                                 clip: true
 
                                                 Text {
+                                                    renderType: Text.NativeRendering
+                                                    font.hintingPreference: Font.PreferFullHinting
                                                     id: layoutCheckIcon
                                                     text: Icons.accept
                                                     font.family: Icons.font
@@ -1771,6 +1843,8 @@ Item {
                                             }
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 id: layoutContent
                                                 text: layoutTag.modelData.charAt(0).toUpperCase() + layoutTag.modelData.slice(1)
                                                 font.family: Config.theme.font
@@ -1817,6 +1891,8 @@ Item {
             spacing: 8
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: actionItem.actionLabel
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
@@ -1827,6 +1903,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: actionItem.actionCategory
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -1920,6 +1998,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             anchors.centerIn: parent
                             text: Icons.accept
                             color: Styling.srItem("primary")
@@ -1946,6 +2026,8 @@ Item {
                 spacing: 2
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: bindItem.displayName
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(0)
@@ -1960,6 +2042,8 @@ Item {
                     spacing: 6
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: bindItem.displaySubtitle
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-2)
@@ -1989,6 +2073,8 @@ Item {
                                 opacity: isHovered ? 1.0 : 0.8
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     id: layoutBadgeText
                                     anchors.centerIn: parent
                                     text: layoutBadge.modelData.charAt(0).toUpperCase()
@@ -2023,6 +2109,8 @@ Item {
                 radius: Styling.radius(-4)
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: keybindLabel
                     anchors.centerIn: parent
                     text: bindItem.keybindText

@@ -227,6 +227,8 @@ FocusScope {
                 radius: Styling.radius(4)
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: Icons.arrowLeft
                     color: backButton.item
@@ -366,6 +368,8 @@ FocusScope {
                             radius: Styling.radius(0)
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.fill: parent
                                 text: currentScreenName // Get the monitor name!
                                 color: Colors.overSurface
@@ -444,6 +448,8 @@ FocusScope {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.accept
                                         color: Styling.srItem("primary")
@@ -509,6 +515,8 @@ FocusScope {
                             radius: Styling.radius(0)
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.fill: parent
                                 text: "OLED"
                                 color: Colors.overSurface
@@ -597,6 +605,8 @@ FocusScope {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.accept
                                         color: Styling.srItem("primary")
@@ -656,6 +666,8 @@ FocusScope {
                             radius: Styling.radius(0)
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.fill: parent
                                 text: "Tint"
                                 color: Colors.overSurface
@@ -727,6 +739,8 @@ FocusScope {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.accept
                                         color: Styling.srItem("primary")
@@ -942,9 +956,13 @@ FocusScope {
                                             return "";
                                         }
                                         color: parent.parent.isCurrentWallpaper ? Styling.srItem("overprimary") : Colors.overBackground
+                                        // Small bold filenames are noticeably soft with Qt's
+                                        // distance-field renderer on a light background.
+                                        renderType: Text.NativeRendering
                                         font.family: Config.theme.font
                                         font.pixelSize: Config.theme.fontSize
                                         font.weight: Font.Bold
+                                        font.hintingPreference: Font.PreferFullHinting
                                         horizontalAlignment: Text.AlignHCenter
 
                                         readonly property bool needsScroll: contentWidth > parent.width - 8
@@ -1072,6 +1090,8 @@ FocusScope {
                                     visible: !parent.active || parent.status !== Loader.Ready
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.circleNotch
                                         font.family: Icons.font

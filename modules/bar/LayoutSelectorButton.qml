@@ -87,6 +87,8 @@ Item {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             text: root.getLayoutIcon(GlobalStates.compositorLayout)
             font.family: Icons.font
@@ -161,6 +163,8 @@ Item {
                         spacing: 8
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: root.getLayoutIcon(layoutButton.modelData)
                             font.family: Icons.font
                             font.pixelSize: 14
@@ -168,6 +172,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             id: layoutLabel
                             text: root.getLayoutDisplayName(layoutButton.modelData)
                             font.family: Styling.defaultFont

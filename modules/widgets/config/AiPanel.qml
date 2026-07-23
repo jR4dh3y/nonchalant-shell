@@ -28,6 +28,8 @@ Item {
             spacing: 24
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: "AI & API Keys"
                 font.family: Config.theme.font
                 font.pixelSize: 24
@@ -39,7 +41,7 @@ Item {
 
             // Providers
             Repeater {
-                model: ["gemini", "openai", "anthropic", "mistral", "groq", "ollama", "minimax"]
+                model: ["opencode", "gemini", "openai", "anthropic", "mistral", "groq", "ollama", "minimax"]
                 delegate: StyledRect {
                     required property string modelData
                     Layout.fillWidth: true
@@ -58,7 +60,13 @@ Item {
                         RowLayout {
                             Layout.fillWidth: true
                             Text {
-                                text: modelData.charAt(0).toUpperCase() + modelData.slice(1)
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: {
+                                    if (modelData === "opencode")
+                                        return "OpenCode Zen";
+                                    return modelData.charAt(0).toUpperCase() + modelData.slice(1);
+                                }
                                 font.family: Config.theme.font
                                 font.pixelSize: 16
                                 font.weight: Font.Bold
@@ -66,6 +74,8 @@ Item {
                                 Layout.fillWidth: true
                             }
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: KeyStore.hasKey(modelData) ? "Key Configured" : "Not Configured"
                                 font.family: Config.theme.font
                                 font.pixelSize: 12
@@ -81,7 +91,9 @@ Item {
                                 visible: modelData !== "ollama"
                                 id: keyInput
                                 Layout.fillWidth: true
-                                placeholderText: "Enter API Key..."
+                                placeholderText: modelData === "opencode"
+                                    ? "OpenCode Zen API key (opencode.ai/auth)..."
+                                    : "Enter API Key..."
                                 echoMode: TextInput.Password
                                 font.family: Config.theme.font
                                 color: Colors.overSurface
@@ -125,6 +137,8 @@ Item {
                                     implicitHeight: saveButtonLabel.implicitHeight + saveButton.topPadding + saveButton.bottomPadding
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: saveButtonLabel
                                         text: saveButton.text
                                         color: Colors.overPrimary
@@ -157,6 +171,8 @@ Item {
                                     implicitHeight: clearButtonLabel.implicitHeight + clearButton.topPadding + clearButton.bottomPadding
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: clearButtonLabel
                                         text: clearButton.text
                                         color: Colors.overError
@@ -178,6 +194,8 @@ Item {
             
             // Custom Provider
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: "Custom Provider"
                 font.family: Config.theme.font
                 font.pixelSize: 20
@@ -203,6 +221,8 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Custom Provider API Key"
                             font.family: Config.theme.font
                             font.pixelSize: 14
@@ -211,6 +231,8 @@ Item {
                             Layout.fillWidth: true
                         }
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: KeyStore.hasKey("custom") ? "Key Configured" : "Not Configured"
                             font.family: Config.theme.font
                             font.pixelSize: 12
@@ -266,6 +288,8 @@ Item {
                                 implicitHeight: customSaveButtonLabel.implicitHeight + customSaveButton.topPadding + customSaveButton.bottomPadding
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     id: customSaveButtonLabel
                                     text: customSaveButton.text
                                     color: Colors.overPrimary
@@ -298,6 +322,8 @@ Item {
                                 implicitHeight: customClearButtonLabel.implicitHeight + customClearButton.topPadding + customClearButton.bottomPadding
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     id: customClearButtonLabel
                                     text: customClearButton.text
                                     color: Colors.overError
@@ -324,6 +350,8 @@ Item {
                     }
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: "Custom Endpoint"
                         font.family: Config.theme.font
                         font.pixelSize: 14
@@ -359,6 +387,8 @@ Item {
                     }
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: "Custom cURL Template"
                         font.family: Config.theme.font
                         font.pixelSize: 14
@@ -367,6 +397,8 @@ Item {
                     }
                     
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: "Placeholders: {{ENDPOINT}}, {{API_KEY}}, {{BODY_PATH}}"
                         font.family: Config.theme.font
                         font.pixelSize: 12

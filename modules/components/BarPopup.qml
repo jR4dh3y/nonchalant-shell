@@ -37,9 +37,9 @@ PopupWindow {
     // Signal emitted when popup is closed externally (click outside)
     signal closedExternally
 
-    // Animation state
+    // Animation state. Do not scale this tree: a scale transform resamples all
+    // text in the popup, which makes otherwise sharp glyphs look soft.
     property real popupOpacity: 0
-    property real popupScale: 0.96
     // Mutable duration so sibling switches can use a snappier close/open.
     property int transitionMs: Config.animDuration > 0 ? Config.animDuration : 0
 
@@ -131,31 +131,11 @@ PopupWindow {
         }
     }
 
-    Behavior on popupScale {
-        enabled: root.transitionMs > 0
-        NumberAnimation {
-            duration: root.transitionMs
-            easing.type: Easing.OutCubic
-        }
-    }
-
     Item {
         id: popupContainer
         anchors.fill: parent
         anchors.margins: root.shadowMargin
         opacity: root.popupOpacity
-        scale: root.popupScale
-        transformOrigin: {
-            if (root.barAtTop)
-                return Item.Top;
-            if (root.barAtBottom)
-                return Item.Bottom;
-            if (root.barAtLeft)
-                return Item.Left;
-            if (root.barAtRight)
-                return Item.Right;
-            return Item.Center;
-        }
 
         StyledRect {
             id: background
@@ -187,11 +167,10 @@ PopupWindow {
 
         isOpen = true;
 
-        // Mid-close reopen: keep current opacity/scale and animate back up.
+        // Mid-close reopen: keep the current opacity and fade back in.
         if (!visible) {
             // Start slightly present so weather→dashboard doesn't flash empty.
             popupOpacity = 0;
-            popupScale = 0.96;
             visible = true;
         }
 
@@ -202,7 +181,6 @@ PopupWindow {
             if (!root.isOpen)
                 return;
             popupOpacity = 1;
-            popupScale = 1;
         });
     }
 
@@ -227,7 +205,6 @@ PopupWindow {
         transitionMs = quick ? Math.max(Math.round(base / 2), 80) : base;
 
         popupOpacity = 0;
-        popupScale = quick ? 0.98 : 0.96;
 
         closeTimer.interval = transitionMs > 0 ? transitionMs + 30 : 20;
         closeTimer.restart();

@@ -3,11 +3,13 @@ import Quickshell
 import Quickshell.Wayland
 import qs.modules.bar
 import qs.modules.services
+import qs.modules.globals
 import qs.modules.components
 import qs.modules.widgets.launcher
 import qs.modules.widgets.projects
 import qs.modules.widgets.powermenu
 import qs.modules.notifications
+import qs.modules.sidebar
 import qs.config
 
 PanelWindow {
@@ -28,13 +30,15 @@ PanelWindow {
     WlrLayershell.keyboardFocus: {
         if (runMenu.open || projectPicker.open)
             return WlrKeyboardFocus.Exclusive;
+        if (assistantSidebar.active && assistantSidebar.wantsFocus)
+            return WlrKeyboardFocus.Exclusive;
         return WlrKeyboardFocus.None;
     }
     WlrLayershell.namespace: "nonchalant"
     WlrLayershell.layer: WlrLayer.Overlay
     exclusionMode: ExclusionMode.Ignore
 
-    readonly property bool needsFullScreenInput: runMenu.open || projectPicker.open || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: runMenu.open || projectPicker.open || FocusGrabManager.hasActiveGrab || (assistantSidebar.active && assistantSidebar.wantsFocus)
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -91,6 +95,9 @@ PanelWindow {
             },
             Region {
                 item: toastStack.hitbox
+            },
+            Region {
+                item: (assistantSidebar.active || assistantSidebar.hitbox.visible) ? assistantSidebar.hitbox : null
             }
         ]
     }
@@ -112,7 +119,11 @@ PanelWindow {
         visible: unifiedPanel.needsFullScreenInput
         z: -1
 
-        onClicked: FocusGrabManager.clearTopGrab()
+        onClicked: {
+            FocusGrabManager.clearTopGrab();
+            if (assistantSidebar.active && assistantSidebar.wantsFocus)
+                assistantSidebar.wantsFocus = false;
+        }
     }
 
     Item {
@@ -154,6 +165,40 @@ PanelWindow {
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
             z: 2
+        }
+
+        AssistantSidebar {
+            id: assistantSidebar
+            targetScreen: unifiedPanel.targetScreen
+            z: 1
+
+            anchors.topMargin: {
+                let margin = 0;
+                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "top" && unifiedPanel.barPinned)
+                    margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin;
+                return margin;
+            }
+
+            anchors.bottomMargin: {
+                let margin = 0;
+                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "bottom" && unifiedPanel.barPinned)
+                    margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin;
+                return margin;
+            }
+
+            anchors.leftMargin: {
+                let margin = 0;
+                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "left" && unifiedPanel.barPinned)
+                    margin += unifiedPanel.barTargetWidth + unifiedPanel.barOuterMargin;
+                return margin;
+            }
+
+            anchors.rightMargin: {
+                let margin = 0;
+                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "right" && unifiedPanel.barPinned)
+                    margin += unifiedPanel.barTargetWidth + unifiedPanel.barOuterMargin;
+                return margin;
+            }
         }
     }
 }

@@ -234,6 +234,8 @@ Menu {
                         Component {
                             id: fontIconComponent
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: iconLoader.iconSource
                                 color: {
                                     if (root.hoveredIndex === menuItem.itemIndex) {
@@ -279,6 +281,8 @@ Menu {
 
                     // Texto
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: menuItem.itemData.text || ""
                         color: {
                             if (root.hoveredIndex === menuItem.itemIndex) {

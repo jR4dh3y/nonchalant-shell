@@ -22,10 +22,16 @@ if ! has_font_family "Phosphor-Bold"; then
     unzip -qjo "$phosphor_archive" '*/src/*/*.ttf' -d "$phosphor_font_dir"
 fi
 
-if ! has_font_family "Roboto Condensed"; then
+# Official JetBrains Mono (family name: "JetBrains Mono")
+if ! has_font_family "JetBrains Mono"; then
+    jb_archive="$(mktemp "${TMPDIR:-/tmp}/nonchalant-jetbrains.XXXXXX.zip")"
+    # shellcheck disable=SC2064
+    trap 'unlink "$jb_archive" 2>/dev/null || true' EXIT
+
     curl --fail --location --silent --show-error \
-        'https://raw.githubusercontent.com/google/fonts/main/ofl/robotocondensed/RobotoCondensed%5Bwght%5D.ttf' \
-        --output "$shell_font_dir/RobotoCondensed-Variable.ttf"
+        "https://download.jetbrains.com/fonts/JetBrainsMono-2.304.zip" \
+        --output "$jb_archive"
+    unzip -qjo "$jb_archive" 'fonts/ttf/*.ttf' -d "$shell_font_dir"
 fi
 
 if ! has_font_family "League Gothic"; then
@@ -38,5 +44,5 @@ fc-cache -f "$font_root"
 
 printf 'Nonchalant fonts are ready:\n'
 fc-match ':family=Phosphor-Bold'
-fc-match ':family=Roboto Condensed'
+fc-match ':family=JetBrains Mono'
 fc-match ':family=League Gothic'

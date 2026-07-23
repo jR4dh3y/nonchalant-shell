@@ -210,6 +210,8 @@ Rectangle {
                     spacing: 12
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: Icons.folder
                         font.family: Icons.font
                         font.pixelSize: 20
@@ -232,6 +234,8 @@ Rectangle {
                         spacing: 0
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             Layout.fillWidth: true
                             text: ProjectPickerService.projectName(row.modelData)
                             color: root.selectedIndex === index
@@ -252,6 +256,8 @@ Rectangle {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             Layout.fillWidth: true
                             text: ProjectPickerService.displayPath(row.modelData)
                             color: root.selectedIndex === index
@@ -272,6 +278,8 @@ Rectangle {
                     }
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         visible: root.selectedIndex === index
                         text: Icons.copy
                         font.family: Icons.font
@@ -307,6 +315,8 @@ Rectangle {
 
             // Empty / loading states
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 anchors.centerIn: parent
                 visible: resultsList.count === 0
                 text: ProjectPickerService.scanning

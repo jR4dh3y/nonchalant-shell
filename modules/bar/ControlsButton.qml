@@ -64,6 +64,8 @@ Item {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             text: Icons.faders
             font.family: Icons.font

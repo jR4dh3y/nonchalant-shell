@@ -262,6 +262,8 @@ FocusScope {
                                 clip: true
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     id: filterIcon
                                     text: Icons.accept
                                     font.family: Icons.font
@@ -289,6 +291,8 @@ FocusScope {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 id: filterText
                                 text: label
                                 font.family: Config.theme.font

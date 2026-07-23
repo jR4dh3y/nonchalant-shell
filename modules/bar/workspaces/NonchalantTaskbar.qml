@@ -133,12 +133,14 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: workspaceName
                     z: 1
                     anchors.centerIn: parent
                     visible: opacity > 0
+                    // Opacity-only show/hide — scale resamples glyphs soft.
                     opacity: workspaceButton.showLabel ? 1 : 0
-                    scale: workspaceButton.showLabel ? 1 : 0.85
                     text: workspaceButton.displayName
                     color: workspaceButton.workspace.is_urgent
                         ? Colors.red
@@ -154,15 +156,6 @@ Item {
                         NumberAnimation {
                             duration: Config.animDuration / 2
                             easing.type: Easing.OutQuad
-                        }
-                    }
-
-                    Behavior on scale {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: Config.animDuration
-                            easing.type: Easing.OutBack
-                            easing.overshoot: 1.1
                         }
                     }
                 }

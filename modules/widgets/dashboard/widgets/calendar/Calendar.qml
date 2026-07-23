@@ -69,9 +69,11 @@ Item {
                         Text {
                             anchors.centerIn: parent
                             text: viewingDate.toLocaleDateString(Qt.locale(), "MMMM yyyy")
+                            renderType: Text.NativeRendering
                             font.family: Config.defaultFont
                             font.pixelSize: Config.theme.fontSize
                             font.weight: Font.Bold
+                            font.hintingPreference: Font.PreferFullHinting
                             color: titleRect.item
                             horizontalAlignment: Text.AlignHCenter
                         }
@@ -87,6 +89,8 @@ Item {
                         readonly property color buttonItem: leftMouseArea.pressed ? itemColor : Styling.srItem("overprimary")
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             anchors.centerIn: parent
                             text: Icons.caretLeft
                             font.family: Icons.font
@@ -113,6 +117,8 @@ Item {
                         readonly property color buttonItem: rightMouseArea.pressed ? itemColor : Styling.srItem("overprimary")
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             anchors.centerIn: parent
                             text: Icons.caretRight
                             font.family: Icons.font

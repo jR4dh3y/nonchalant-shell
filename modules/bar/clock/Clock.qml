@@ -96,6 +96,8 @@ Item {
                 Layout.preferredHeight: 28
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: weatherDisplay
                     anchors.centerIn: parent
                     text: root.weatherAvailable
@@ -129,6 +131,8 @@ Item {
                 Layout.preferredHeight: 28
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: dateDisplay
                     anchors.centerIn: parent
                     text: root.currentFullDate
@@ -154,6 +158,8 @@ Item {
                 Layout.preferredHeight: 28
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: timeDisplay
                     anchors.centerIn: parent
                     text: root.currentTime
@@ -179,6 +185,8 @@ Item {
             Layout.alignment: Qt.AlignHCenter
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: dayDisplayV
                 text: root.weatherAvailable ? WeatherService.weatherSymbol : root.currentDayAbbrev
                 color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
@@ -197,6 +205,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: hoursDisplayV
                 text: root.currentHours
                 color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
@@ -209,6 +219,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: minutesDisplayV
                 text: root.currentMinutes
                 color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
@@ -313,6 +325,8 @@ Item {
 
                                             // Day name
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 anchors.horizontalCenter: parent.horizontalCenter
                                                 text: forecastDayRow.modelData.dayName
                                                 color: Colors.overBackground
@@ -323,6 +337,8 @@ Item {
 
                                             // Weather emoji
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 anchors.horizontalCenter: parent.horizontalCenter
                                                 text: forecastDayRow.modelData.emoji
                                                 font.pixelSize: Styling.fontSize(4)
@@ -330,6 +346,8 @@ Item {
 
                                             // Max temperature
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 anchors.horizontalCenter: parent.horizontalCenter
                                                 text: (Math.round(forecastDayRow.modelData.maxTemp) >= 0 ? "+" : "") + Math.round(forecastDayRow.modelData.maxTemp) + "\u00B0"
                                                 color: Colors.overBackground
@@ -340,6 +358,8 @@ Item {
 
                                             // Min temperature
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 anchors.horizontalCenter: parent.horizontalCenter
                                                 text: (Math.round(forecastDayRow.modelData.minTemp) >= 0 ? "+" : "") + Math.round(forecastDayRow.modelData.minTemp) + "\u00B0"
                                                 color: Colors.outline
@@ -514,6 +534,8 @@ Item {
                                             bottomRightRadius: isSelected ? (isLastCol && isLastRow ? defaultRadius : selectedRadius) : defaultRadius
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 anchors.centerIn: parent
                                                 text: weatherBtn.modelData.icon
                                                 font.pixelSize: 14

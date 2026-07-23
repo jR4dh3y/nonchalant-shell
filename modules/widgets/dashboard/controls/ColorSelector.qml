@@ -85,6 +85,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: root.isHexColor ? "Custom" : root.currentValueStr
                     font.family: Styling.defaultFont
                     font.pixelSize: Styling.fontSize(0)
@@ -179,6 +181,8 @@ Item {
                     }
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: delegateItem.modelData
                         font.family: Styling.defaultFont
                         font.pixelSize: Styling.fontSize(0)
@@ -208,6 +212,8 @@ Item {
                 spacing: 4
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: "#"
                     font.family: "monospace"
                     font.pixelSize: Styling.fontSize(0)
@@ -216,6 +222,8 @@ Item {
                 }
 
                 TextInput {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: hexInput
                     Layout.fillWidth: true
                     Layout.fillHeight: true

@@ -36,6 +36,10 @@ QtObject {
             case "projectpicker":
                 toggleProjects();
                 break;
+            case "assistant":
+            case "dashboard-assistant":
+                toggleAssistant();
+                break;
             case "system-monitor": Visibilities.toggleSystemMonitorForActive(); break;
             case "powermenu": Visibilities.togglePowerMenuForActive(); break;
             case "lockscreen": LockscreenService.lock(); break;
@@ -94,5 +98,9 @@ QtObject {
             Visibilities.setActiveModule("");
         }
         GlobalStates.settingsWindowVisible = willOpen;
+    }
+
+    function toggleAssistant() {
+        GlobalStates.toggleAssistant();
     }
 }

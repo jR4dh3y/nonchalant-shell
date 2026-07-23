@@ -29,6 +29,8 @@ StyledRect {
     radius: root.isActive ? Styling.radius(0) : Styling.radius(4)
 
     Text {
+        renderType: Text.NativeRendering
+        font.hintingPreference: Font.PreferFullHinting
         anchors.centerIn: parent
         text: root.iconName
         color: root.item

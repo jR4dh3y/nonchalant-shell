@@ -102,6 +102,8 @@ Item {
 
         // Empty state
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             visible: deviceList.count === 0 && !BluetoothService.discovering
             text: BluetoothService.enabled ? "No devices found" : "Bluetooth is disabled"

@@ -21,6 +21,8 @@ Item {
 
         // Icon
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: root.icon
             font.family: Icons.font
             font.pixelSize: 18
@@ -59,6 +61,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 visible: root.statusText.length > 0
                 anchors.centerIn: parent
                 text: root.statusText
@@ -71,6 +75,8 @@ Item {
 
         // Percentage text
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             visible: false
             text: `${Math.round(root.value * 100)}%`
             font.family: Config.theme.font

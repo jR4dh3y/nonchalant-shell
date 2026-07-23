@@ -144,6 +144,8 @@ WlSessionLockSurface {
             anchors.top: parent.top
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: hoursText
                 text: Config.bar.use12hFormat ? (clockContainer.currentTime.getHours() % 12 || 12).toString() : Qt.formatTime(clockContainer.currentTime, "hh")
                 font.family: "League Gothic"
@@ -176,6 +178,8 @@ WlSessionLockSurface {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: minutesText
                 text: Qt.formatTime(clockContainer.currentTime, "mm")
                 font.family: "League Gothic"
@@ -211,6 +215,8 @@ WlSessionLockSurface {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: amPmText
                 text: Config.bar.use12hFormat ? Qt.formatTime(clockContainer.currentTime, "ap").toLowerCase() : ""
                 font.family: "League Gothic"
@@ -312,7 +318,6 @@ WlSessionLockSurface {
         height: 48
 
         opacity: startAnim ? 1 : 0
-        scale: startAnim ? 1 : 0.92
 
         Behavior on anchors.topMargin {
             enabled: Config.animDuration > 0
@@ -335,15 +340,6 @@ WlSessionLockSurface {
             NumberAnimation {
                 duration: root.unlockAnimMs
                 easing.type: Easing.OutQuad
-            }
-        }
-
-        Behavior on scale {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: root.unlockAnimMs
-                easing.type: Easing.OutBack
-                easing.overshoot: 1.2
             }
         }
 
@@ -370,6 +366,8 @@ WlSessionLockSurface {
                 spacing: 8
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: userIcon
                     text: authenticating ? Icons.circleNotch : Icons.user
                     font.family: Icons.font

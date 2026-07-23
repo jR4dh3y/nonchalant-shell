@@ -64,7 +64,11 @@ ShellRoot {
 
                 dockEnabled: false
                 frameEnabled: false
-                sidebarEnabled: false
+                sidebarEnabled: GlobalStates.assistantVisible
+                    && screenShellContainer.modelData.name === GlobalStates.assistantScreenName
+                sidebarPinned: GlobalStates.assistantPinned
+                sidebarWidth: GlobalStates.assistantWidth
+                sidebarPosition: GlobalStates.assistantPosition
             }
 
             // Volume / mic / brightness OSD for keyboard media keys
@@ -111,6 +115,10 @@ ShellRoot {
                 _ = Brightness.monitors;
                 // Own org.freedesktop.Notifications and load history early.
                 _ = Notifications.appNameList;
+                // AI assistant (sidebar + OpenCode Zen provider keys/models).
+                _ = StateService.initialized;
+                _ = KeyStore.initialized;
+                _ = Ai.models;
             });
         }
     }

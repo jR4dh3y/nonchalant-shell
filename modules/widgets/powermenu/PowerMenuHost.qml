@@ -19,7 +19,6 @@ Item {
     property bool menuOpen: false
     property bool menuShown: false
     property real menuOpacity: 0
-    property real menuScale: 0.96
 
     readonly property bool popupOpen: menuOpen
     // Keep a tiny host for Visibilities registration; real UI is powerWindow.
@@ -44,17 +43,15 @@ Item {
         menuShown = true;
         powerWindow.visible = true;
 
-        // Start slightly present, then animate in next frame.
+        // Start transparent, then fade in on the next frame.
         if (menuOpacity < 0.01) {
             menuOpacity = 0;
-            menuScale = 0.96;
         }
 
         Qt.callLater(() => {
             if (!root.menuOpen)
                 return;
             menuOpacity = 1;
-            menuScale = 1;
             powerMenuView.forceActiveFocus();
             powerMenuView.focusMenu();
         });
@@ -66,7 +63,6 @@ Item {
 
         menuOpen = false;
         menuOpacity = 0;
-        menuScale = 0.96;
         closeTimer.interval = Config.animDuration > 0
             ? Math.max(Config.animDuration / 2, 80) + 40
             : 40;
@@ -131,22 +127,12 @@ Item {
                 height: powerMenuView.implicitHeight + 16
                 visible: root.menuShown
                 opacity: root.menuOpacity
-                scale: root.menuScale
-                transformOrigin: Item.Bottom
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
                         duration: Config.animDuration / 2
                         easing.type: Easing.OutQuad
-                    }
-                }
-
-                Behavior on scale {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration / 2
-                        easing.type: Easing.OutCubic
                     }
                 }
 

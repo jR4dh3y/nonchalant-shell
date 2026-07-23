@@ -511,6 +511,8 @@ Rectangle {
                     anchors.margins: 8
                     spacing: 8
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         width: 32
                         height: parent.height
                         text: root.clearButtonConfirmState ? Icons.xeyes : Icons.broom
@@ -522,6 +524,8 @@ Rectangle {
                         textFormat: Text.RichText
                     }
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: "Clear recent?"
                         height: parent.height
                         font.family: Config.theme.font
@@ -708,6 +712,8 @@ Rectangle {
                                 color: "transparent"
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: model.emojiData.emoji
                                     font.pixelSize: 24
@@ -765,6 +771,8 @@ Rectangle {
                                 radius: Styling.radius(-4)
                                 variant: isSelected && root.expandedItemIndex !== index ? "overprimary" : "common"
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: emojiData.emoji
                                     font.pixelSize: 24
@@ -772,6 +780,8 @@ Rectangle {
                                 }
                             }
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 width: parent.width - 40
                                 height: parent.height
                                 text: emojiData.search
@@ -824,10 +834,14 @@ Rectangle {
                                             anchors.margins: 8
                                             spacing: 8
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 text: emojiData.emoji + modelData.modifier
                                                 font.pixelSize: 20
                                             }
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 Layout.fillWidth: true
                                                 text: modelData.name
                                                 font.family: Config.theme.font

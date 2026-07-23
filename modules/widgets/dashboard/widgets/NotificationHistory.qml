@@ -103,6 +103,8 @@ Item {
                         radius: Styling.radius(0)
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             anchors.centerIn: parent
                             text: "Notifications"
                             font.family: Config.defaultFont
@@ -123,6 +125,8 @@ Item {
                         readonly property color dndItem: Notifications.silent ? itemColor : Styling.srItem("overprimary")
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             anchors.centerIn: parent
                             text: Notifications.silent ? Icons.bellZ : Icons.bell
                             textFormat: Text.RichText
@@ -150,6 +154,8 @@ Item {
                         readonly property color clearItem: broomHover.pressed ? itemColor : Styling.srItem("overerror")
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             anchors.centerIn: parent
                             text: Icons.broom
                             textFormat: Text.RichText

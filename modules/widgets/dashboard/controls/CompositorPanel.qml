@@ -37,6 +37,8 @@ Item {
             spacing: 16
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: sectionBtn.text
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
@@ -46,6 +48,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: Icons.caretRight
                 font.family: Icons.font
                 font.pixelSize: 20
@@ -118,6 +122,8 @@ Item {
         spacing: 8
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: toggleRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -187,6 +193,8 @@ Item {
         opacity: enabled ? 1.0 : 0.5
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: numberInputRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -201,6 +209,8 @@ Item {
             radius: Styling.radius(-2)
 
             TextInput {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: numberTextInput
                 anchors.fill: parent
                 anchors.margins: 8
@@ -236,6 +246,8 @@ Item {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: numberInputRowRoot.suffix
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -259,6 +271,8 @@ Item {
         opacity: enabled ? 1.0 : 0.5
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: decimalInputRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -273,6 +287,8 @@ Item {
             radius: Styling.radius(-2)
 
             TextInput {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: decimalTextInput
                 anchors.fill: parent
                 anchors.margins: 8
@@ -311,6 +327,8 @@ Item {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: decimalInputRowRoot.suffix
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -336,6 +354,8 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: gradientRow.label
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
@@ -343,6 +363,8 @@ Item {
                 Layout.fillWidth: true
             }
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: "Right click to remove"
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -424,6 +446,8 @@ Item {
                 border.color: Colors.outline
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: Icons.plus
                     font.family: Icons.font
@@ -493,6 +517,8 @@ Item {
 
             // Font Icon
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 visible: tabBtn.icon !== "" && tabBtn.image === ""
                 text: tabBtn.icon
                 font.family: Icons.font
@@ -502,6 +528,8 @@ Item {
 
             // Label
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: tabBtn.label
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
@@ -674,6 +702,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "General"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -787,6 +817,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Colors"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -840,6 +872,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Shadows"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -980,6 +1014,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Blur"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
@@ -1132,6 +1168,8 @@ Item {
                             spacing: 16
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: Icons.clock
                                 font.family: Icons.font
                                 font.pixelSize: 64
@@ -1140,6 +1178,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Coming Soon"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(2)
@@ -1149,6 +1189,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Support for more compositors\nis planned for future updates."
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(0)

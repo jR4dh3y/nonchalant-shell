@@ -932,6 +932,8 @@ Item {
                         spacing: 8
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             width: 32
                             height: parent.height
                             text: root.clearButtonConfirmState ? Icons.alert : Icons.trash
@@ -944,6 +946,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             width: parent.width - 32 - parent.spacing
                             height: parent.height
                             text: "Clear all?"
@@ -1445,6 +1449,8 @@ Item {
                                         }
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             anchors.centerIn: parent
                                             text: Icons.cancel
                                             color: cancelButton.isHighlighted ? Colors.overErrorContainer : Colors.overError
@@ -1483,6 +1489,8 @@ Item {
                                         }
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             anchors.centerIn: parent
                                             text: Icons.accept
                                             color: confirmButton.isHighlighted ? Colors.overErrorContainer : Colors.overError
@@ -1601,6 +1609,8 @@ Item {
                                         }
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             anchors.centerIn: parent
                                             text: Icons.cancel
                                             color: aliasCancelButton.isHighlighted ? Colors.overSecondaryContainer : Colors.overSecondary
@@ -1639,6 +1649,8 @@ Item {
                                         }
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             anchors.centerIn: parent
                                             text: Icons.accept
                                             color: aliasConfirmButton.isHighlighted ? Colors.overSecondaryContainer : Colors.overSecondary
@@ -1877,6 +1889,8 @@ Item {
                                                 spacing: 8
 
                                                 Text {
+                                                    renderType: Text.NativeRendering
+                                                    font.hintingPreference: Font.PreferFullHinting
                                                     text: modelData && modelData.icon ? modelData.icon : ""
                                                     font.family: Icons.font
                                                     font.pixelSize: 14
@@ -1899,6 +1913,8 @@ Item {
                                                 }
 
                                                 Text {
+                                                    renderType: Text.NativeRendering
+                                                    font.hintingPreference: Font.PreferFullHinting
                                                     Layout.fillWidth: true
                                                     text: modelData && modelData.text ? modelData.text : ""
                                                     font.family: Config.theme.font
@@ -2097,6 +2113,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         visible: (iconBackground.iconType !== "link") || (iconBackground.iconType === "link" && !iconBackground.faviconLoaded)
                                         text: {
@@ -2176,6 +2194,8 @@ Item {
                                     color: Styling.srItem("overprimary")
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.pin
                                         font.family: Icons.font
@@ -2204,6 +2224,8 @@ Item {
                                 Component {
                                     id: normalText
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         width: parent.width
                                         text: displayText
                                         color: textColor
@@ -2262,6 +2284,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     width: parent.width
                                     text: {
                                         if (!modelData.createdAt)
@@ -2395,6 +2419,8 @@ Item {
                     visible: ClipboardService.items.length === 0
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: Icons.clipboard
                         font.family: Icons.font
                         font.pixelSize: 48
@@ -2404,6 +2430,8 @@ Item {
                     }
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: "No clipboard history"
                         font.family: Config.theme.font
                         font.pixelSize: Config.theme.fontSize
@@ -2413,6 +2441,8 @@ Item {
                     }
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: "Copy something to get started"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-2)
@@ -2573,6 +2603,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             anchors.centerIn: parent
                             text: Icons.image
                             textFormat: Text.RichText
@@ -2709,6 +2741,8 @@ Item {
                                         }
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             text: root.linkPreviewData ? root.linkPreviewData.site_name : ""
                                             font.family: Config.theme.font
                                             font.pixelSize: Styling.fontSize(-2)
@@ -2755,6 +2789,8 @@ Item {
                                                 opacity: 0.9
 
                                                 Text {
+                                                    renderType: Text.NativeRendering
+                                                    font.hintingPreference: Font.PreferFullHinting
                                                     anchors.centerIn: parent
                                                     text: Icons.play
                                                     font.family: Icons.font
@@ -2773,6 +2809,8 @@ Item {
                                                 visible: parent.status === Image.Loading
 
                                                 Text {
+                                                    renderType: Text.NativeRendering
+                                                    font.hintingPreference: Font.PreferFullHinting
                                                     anchors.centerIn: parent
                                                     text: Icons.spinnerGap
                                                     font.family: Icons.font
@@ -2794,6 +2832,8 @@ Item {
 
                                     // Title
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         width: parent.width
                                         text: root.linkPreviewData && root.linkPreviewData.title ? root.linkPreviewData.title : ""
                                         font.family: Config.theme.font
@@ -2808,6 +2848,8 @@ Item {
 
                                     // Author/Description
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         width: parent.width
                                         text: root.linkPreviewData && root.linkPreviewData.description ? root.linkPreviewData.description : ""
                                         font.family: Config.theme.font
@@ -2883,6 +2925,8 @@ Item {
                                             }
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 text: root.linkPreviewData ? root.linkPreviewData.site_name : ""
                                                 font.family: Config.theme.font
                                                 font.pixelSize: Styling.fontSize(-2)
@@ -2895,6 +2939,8 @@ Item {
 
                                         // Title
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             width: parent.width
                                             text: root.linkPreviewData && root.linkPreviewData.title ? root.linkPreviewData.title : ""
                                             font.family: Config.theme.font
@@ -2909,6 +2955,8 @@ Item {
 
                                         // Description
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             width: parent.width
                                             text: root.linkPreviewData && root.linkPreviewData.description ? root.linkPreviewData.description : ""
                                             font.family: Config.theme.font
@@ -2947,6 +2995,8 @@ Item {
                                                 visible: parent.status === Image.Loading
 
                                                 Text {
+                                                    renderType: Text.NativeRendering
+                                                    font.hintingPreference: Font.PreferFullHinting
                                                     anchors.centerIn: parent
                                                     text: Icons.spinnerGap
                                                     font.family: Icons.font
@@ -2974,6 +3024,8 @@ Item {
                                     spacing: 12
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: Icons.spinnerGap
                                         font.family: Icons.font
                                         font.pixelSize: 20
@@ -2990,6 +3042,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: "Loading preview..."
                                         font.family: Config.theme.font
                                         font.pixelSize: Config.theme.fontSize
@@ -3084,6 +3138,8 @@ Item {
                                             }
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 anchors.centerIn: parent
                                                 visible: !previewFavicon.visible
                                                 text: Icons.globe
@@ -3100,6 +3156,8 @@ Item {
                                             spacing: 4
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 text: "Link"
                                                 font.family: Config.theme.font
                                                 font.pixelSize: Config.theme.fontSize - 1
@@ -3108,6 +3166,8 @@ Item {
                                             }
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 text: {
                                                     if (!previewPanel.currentItem)
                                                         return "";
@@ -3132,6 +3192,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 id: previewText
                                 text: root.safeCurrentContent
                                 font.family: Config.theme.font
@@ -3185,6 +3247,8 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: Icons.file
                                     textFormat: Text.RichText
@@ -3200,6 +3264,8 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: {
                                         if (!previewPanel.currentItem)
                                             return "";
@@ -3222,6 +3288,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: {
                                         if (!previewPanel.currentItem)
                                             return "";
@@ -3292,6 +3360,8 @@ Item {
                                     spacing: 2
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: "MIME Type"
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-2)
@@ -3300,6 +3370,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: previewPanel.currentItem ? previewPanel.currentItem.mime : ""
                                         font.family: Config.theme.font
                                         font.pixelSize: Config.theme.fontSize
@@ -3315,6 +3387,8 @@ Item {
                                     spacing: 2
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: "Size"
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-2)
@@ -3323,6 +3397,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: {
                                             if (!previewPanel.currentItem)
                                                 return "";
@@ -3351,6 +3427,8 @@ Item {
                                     spacing: 2
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: "Date"
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-2)
@@ -3359,6 +3437,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: {
                                             if (!previewPanel.currentItem || !previewPanel.currentItem.createdAt)
                                                 return "Unknown";
@@ -3377,6 +3457,8 @@ Item {
                                     spacing: 2
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: "Checksum"
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-2)
@@ -3385,6 +3467,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: {
                                             if (!previewPanel.currentItem || !previewPanel.currentItem.hash)
                                                 return "N/A";
@@ -3449,6 +3533,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: Icons.popOpen
                                     font.family: Icons.font
@@ -3518,6 +3604,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: Icons.handGrab
                                     font.family: Icons.font
@@ -3554,6 +3642,8 @@ Item {
                 visible: !previewPanel.currentItem
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: Icons.cactus
                     font.family: Icons.font
                     font.pixelSize: 48

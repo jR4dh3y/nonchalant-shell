@@ -56,6 +56,8 @@ Item {
 
             // Device icon
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: {
                     const icon = root.device?.icon ?? "bluetooth";
                     if (icon.includes("audio-headset") || icon.includes("headphone"))
@@ -89,6 +91,8 @@ Item {
                 spacing: 0
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     Layout.fillWidth: true
                     text: root.device?.name ?? "Unknown device"
                     font.family: Config.theme.font
@@ -99,6 +103,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     Layout.fillWidth: true
                     visible: root.device?.connected || root.device?.paired || root.expanded
                     text: {
@@ -137,6 +143,8 @@ Item {
                 spacing: 4
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     text: {
                         const battery = root.device?.battery ?? 0;
                         if (battery > 80)

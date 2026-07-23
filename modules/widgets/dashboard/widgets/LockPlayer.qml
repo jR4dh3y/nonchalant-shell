@@ -208,6 +208,8 @@ StyledRect {
 
             // Botón de play/pause superpuesto (visible solo en hover)
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 anchors.centerIn: parent
                 text: lockPlayer.isPlaying ? Icons.pause : Icons.play
                 textFormat: Text.RichText
@@ -250,6 +252,8 @@ StyledRect {
                 spacing: 0
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     Layout.fillWidth: true
                     text: MprisController.activePlayer?.trackTitle ?? "No hay reproducción activa"
                     textFormat: Text.PlainText
@@ -263,6 +267,8 @@ StyledRect {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     Layout.fillWidth: true
                     text: MprisController.activePlayer?.trackArtist ?? ""
                     textFormat: Text.PlainText
@@ -283,6 +289,8 @@ StyledRect {
                 spacing: 8
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: previousBtn
                     text: Icons.previous
                     textFormat: Text.RichText
@@ -323,6 +331,8 @@ StyledRect {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: nextBtn
                     text: Icons.next
                     textFormat: Text.RichText
@@ -352,6 +362,8 @@ StyledRect {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: modeBtn
                     text: {
                         if (MprisController.hasShuffle)
@@ -409,6 +421,8 @@ StyledRect {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     id: playerIcon
                     text: {
                         if (!MprisController.activePlayer)

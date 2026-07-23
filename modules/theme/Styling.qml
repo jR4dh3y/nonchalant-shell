@@ -5,6 +5,12 @@ import qs.config
 QtObject {
     readonly property string defaultFont: Config.defaultFont
 
+    // Pipeline defaults for crisp UI text. QtRendering (distance-field) gives
+    // small/bold glyphs a soft halo; NativeRendering + full hinting is preferred
+    // for static shell labels. See StyledText.qml.
+    readonly property int textRenderType: Text.NativeRendering
+    readonly property int textHinting: Font.PreferFullHinting
+
     function radius(offset) {
         return Config.roundness > 0 ? Math.max(Config.roundness + offset, 0) : 0;
     }

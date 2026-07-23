@@ -29,7 +29,6 @@ Item {
 
     property bool menuShown: false
     property real menuOpacity: 0
-    property real menuScale: 0.96
 
     onOpenChanged: {
         if (open) {
@@ -40,13 +39,11 @@ Item {
                 if (!root.open)
                     return;
                 menuOpacity = 1;
-                menuScale = 1;
                 if (pickerLoader.item)
                     pickerLoader.item.forceActiveFocus();
             });
         } else if (menuShown) {
             menuOpacity = 0;
-            menuScale = 0.96;
             closeTimer.restart();
         }
     }
@@ -68,7 +65,6 @@ Item {
         radius: Styling.radius(8)
         visible: root.menuShown
         opacity: root.menuOpacity
-        scale: root.menuScale
         width: pickerLoader.item ? pickerLoader.item.implicitWidth + root.contentPadding * 2 : 0
         height: pickerLoader.item ? pickerLoader.item.implicitHeight + root.contentPadding * 2 : 0
         x: {
@@ -85,31 +81,12 @@ Item {
                 return root.height - height - root.barClearance;
             return Math.round((root.height - height) / 2);
         }
-        transformOrigin: {
-            if (root.barPosition === "top")
-                return Item.Top;
-            if (root.barPosition === "bottom")
-                return Item.Bottom;
-            if (root.barPosition === "left")
-                return Item.Left;
-            if (root.barPosition === "right")
-                return Item.Right;
-            return Item.Center;
-        }
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
             NumberAnimation {
                 duration: Config.animDuration / 2
                 easing.type: Easing.OutQuad
-            }
-        }
-
-        Behavior on scale {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration / 2
-                easing.type: Easing.OutCubic
             }
         }
 

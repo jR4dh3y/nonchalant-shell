@@ -101,6 +101,8 @@ Item {
             spacing: 8
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: "Gradient Stops (" + root.stops.length + ")"
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-1)
@@ -113,6 +115,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: "Stop " + (root.selectedStopIndex + 1)
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-1)
@@ -141,6 +145,8 @@ Item {
                 property bool isEnabled: root.stops.length < 8
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: Icons.plus
                     font.family: Icons.font
@@ -384,6 +390,8 @@ Item {
                 opacity: resetMouseArea.containsMouse ? 0.8 : 1.0
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: Icons.broom
                     font.family: Icons.font
@@ -460,6 +468,8 @@ Item {
 
                     // Position label
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         text: "Position"
                         font.family: Styling.defaultFont
                         font.pixelSize: Styling.fontSize(-2)
@@ -483,6 +493,8 @@ Item {
                             radius: Styling.radius(-3)
 
                             TextInput {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 id: positionInput
                                 anchors.fill: parent
                                 anchors.margins: 4
@@ -528,6 +540,8 @@ Item {
                             property bool isEnabled: root.stops.length > 1
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.centerIn: parent
                                 text: Icons.trash
                                 font.family: Icons.font

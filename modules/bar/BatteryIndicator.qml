@@ -153,6 +153,8 @@ Item {
 
         // Central icon (Lightning/Plug for battery, PowerProfile icon otherwise)
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             id: batteryIcon
             anchors.centerIn: parent
             text: Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
@@ -225,6 +227,8 @@ Item {
                     spacing: 12
 
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         Layout.alignment: Qt.AlignVCenter
                         text: Battery.getBatteryIcon()
                         font.family: Icons.font
@@ -239,6 +243,8 @@ Item {
                         spacing: 2
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             Layout.fillWidth: true
                             text: Battery.isPluggedIn ? (Battery.isCharging ? "Charging" : "Full") : "On battery"
                             font.family: Styling.defaultFont
@@ -248,6 +254,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: Battery.isPluggedIn ? (Battery.timeToFull !== "" ? "Full in " + Battery.timeToFull : "Fully charged") : (Battery.timeToEmpty !== "" ? Battery.timeToEmpty + " remaining" : "")
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(-1)
@@ -260,6 +268,8 @@ Item {
 
                     // Battery percentage display
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         Layout.alignment: Qt.AlignVCenter
                         text: Math.round(Battery.percentage) + "%"
                         font.family: Styling.defaultFont
@@ -306,6 +316,8 @@ Item {
                         bottomRightRadius: isSelected ? (isLast ? defaultRadius : selectedRadius) : defaultRadius
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             anchors.centerIn: parent
                             text: PowerProfile.getProfileIcon(profileButton.modelData)
                             font.family: Icons.font

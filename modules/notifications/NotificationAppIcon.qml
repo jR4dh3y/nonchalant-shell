@@ -71,6 +71,8 @@ Item {
                 || (appIconLoader.active && root.appIconFailed)
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 anchors.centerIn: parent
                 text: {
                     if (root.urgency == NotificationUrgency.Critical) return Icons.alert;

@@ -303,6 +303,8 @@ Item {
     }
 
     Text {
+        renderType: Text.NativeRendering
+        font.hintingPreference: Font.PreferFullHinting
         id: iconText
         visible: root.icon !== ""
         text: root.icon

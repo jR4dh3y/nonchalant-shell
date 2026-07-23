@@ -53,6 +53,8 @@ Item {
 
                 contentItem: Item {
                     Text {
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
                         anchors.centerIn: parent
                         text: {
                             if (root.isMuted)
@@ -123,6 +125,8 @@ Item {
 
             // Source name
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: root.isMainDevice ? Audio.friendlyDeviceName(root.node) : Audio.appNodeDisplayName(root.node)
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -136,6 +140,8 @@ Item {
 
             // Protection indicator
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 visible: Audio.protectionTriggered && root.isMainDevice
                 text: Icons.shieldCheck
                 font.family: Icons.font
@@ -156,6 +162,8 @@ Item {
 
             // Percentage
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: `${Math.round(root.volume * 100)}%`
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)

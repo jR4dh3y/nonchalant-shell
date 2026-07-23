@@ -119,6 +119,8 @@ Item {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             text: root.icon
             font.family: Icons.font

@@ -14,17 +14,8 @@ Item {
     property bool forceVisible: false
     property bool isVisible: forceVisible || GlobalStates.dashboardOpen
 
-    scale: isVisible ? 1 : 0.96
     opacity: isVisible ? 1 : 0
     visible: forceVisible || opacity > 0
-
-    Behavior on scale {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration / 2
-            easing.type: Easing.OutCubic
-        }
-    }
 
     Behavior on opacity {
         enabled: Config.animDuration > 0

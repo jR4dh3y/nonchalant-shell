@@ -35,6 +35,8 @@ Item {
             spacing: 16
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: sectionBtn.text
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
@@ -44,6 +46,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: Icons.caretRight
                 font.family: Icons.font
                 font.pixelSize: 20
@@ -154,6 +158,8 @@ Item {
                         spacing: 8
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Prefixes"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
@@ -163,6 +169,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Keyboard shortcuts for quick actions in launcher"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
@@ -231,6 +239,8 @@ Item {
                         spacing: 8
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Weather"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
@@ -245,6 +255,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Location"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(0)
@@ -259,6 +271,8 @@ Item {
                                 radius: Styling.radius(-2)
 
                                 TextInput {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     id: locationInput
                                     anchors.fill: parent
                                     anchors.margins: 8
@@ -302,6 +316,8 @@ Item {
                             spacing: 8
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 text: "Unit"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(0)
@@ -338,6 +354,8 @@ Item {
                                         radius: Styling.radius(-2)
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             id: unitLabel
                                             anchors.centerIn: parent
                                             text: unitButton.modelData.label
@@ -371,6 +389,8 @@ Item {
                         spacing: 8
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Performance"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
@@ -380,6 +400,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Toggle visual effects to improve performance"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
@@ -442,6 +464,8 @@ Item {
                         spacing: 8
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "System Resources"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
@@ -451,6 +475,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Configure which disks to monitor"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
@@ -482,6 +508,8 @@ Item {
                                         radius: Styling.radius(-2)
 
                                         TextInput {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             id: diskInput
                                             anchors.fill: parent
                                             anchors.margins: 8
@@ -521,6 +549,8 @@ Item {
                                         visible: disksRepeater.count > 1
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             anchors.centerIn: parent
                                             text: Icons.trash
                                             font.family: Icons.font
@@ -562,6 +592,8 @@ Item {
                                     spacing: 6
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: Icons.plus
                                         font.family: Icons.font
                                         font.pixelSize: 14
@@ -570,6 +602,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: "Add Disk"
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
@@ -603,6 +637,8 @@ Item {
                         spacing: 8
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Idle"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
@@ -648,6 +684,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             text: "Listeners"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
@@ -676,6 +714,8 @@ Item {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         text: "Listener " + (index + 1)
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-1)
@@ -694,6 +734,8 @@ Item {
                                         radius: Styling.radius(-2)
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             anchors.centerIn: parent
                                             text: Icons.trash
                                             font.family: Icons.font
@@ -767,6 +809,8 @@ Item {
                             radius: Styling.radius(-2)
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 anchors.centerIn: parent
                                 text: "Add Listener"
                                 font.family: Config.theme.font
@@ -824,6 +868,8 @@ Item {
         spacing: 8
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: numberInputRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -838,6 +884,8 @@ Item {
             radius: Styling.radius(-2)
 
             TextInput {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: numberTextInput
                 anchors.fill: parent
                 anchors.margins: 8
@@ -873,6 +921,8 @@ Item {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: numberInputRowRoot.suffix
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -893,6 +943,8 @@ Item {
         spacing: 8
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: textInputRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -907,6 +959,8 @@ Item {
             radius: Styling.radius(-2)
 
             TextInput {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: textInputField
                 anchors.fill: parent
                 anchors.margins: 8
@@ -953,6 +1007,8 @@ Item {
         spacing: 8
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: prefixRow.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
@@ -967,6 +1023,8 @@ Item {
             radius: Styling.radius(-2)
 
             TextInput {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 id: prefixInput
                 anchors.fill: parent
                 anchors.margins: 8
@@ -1007,6 +1065,8 @@ Item {
             spacing: 2
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 text: label
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
@@ -1014,6 +1074,8 @@ Item {
             }
 
             Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
                 visible: description !== ""
                 text: description
                 font.family: Config.theme.font
@@ -1051,6 +1113,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: Icons.accept
                     color: Styling.srItem("primary")

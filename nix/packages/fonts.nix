@@ -2,8 +2,7 @@
 { pkgs, ttf-phosphor-icons }:
 
 with pkgs; [
-  roboto
-  roboto-mono
+  jetbrains-mono
   league-gothic
   terminus_font
   terminus_font_ttf

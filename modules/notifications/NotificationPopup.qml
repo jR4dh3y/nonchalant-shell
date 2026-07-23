@@ -147,6 +147,8 @@ Scope {
                                         Layout.alignment: Qt.AlignVCenter
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             anchors.centerIn: parent
                                             text: toastRoot.isCritical ? Icons.alert : Icons.bell
                                             font.family: Icons.font
@@ -156,6 +158,8 @@ Scope {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         Layout.fillWidth: true
                                         Layout.alignment: Qt.AlignVCenter
                                         text: toastRoot.appName || "Notification"
@@ -172,6 +176,8 @@ Scope {
                                         Layout.alignment: Qt.AlignVCenter
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             anchors.centerIn: parent
                                             text: Icons.cancel
                                             font.family: Icons.font
@@ -192,6 +198,8 @@ Scope {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     Layout.fillWidth: true
                                     visible: !!(toastRoot.latest?.summary)
                                     text: toastRoot.latest?.summary || ""
@@ -203,6 +211,8 @@ Scope {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     Layout.fillWidth: true
                                     visible: !!(toastRoot.latest?.body)
                                     text: toastRoot.latest?.body || ""

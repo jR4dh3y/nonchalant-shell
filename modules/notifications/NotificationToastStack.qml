@@ -60,7 +60,6 @@ Item {
                 property bool closing: false
                 property bool entered: false
                 property real toastOpacity: 0
-                property real toastScale: 0.96
                 property real slideY: -12
 
                 // Match app launcher / system monitor content inset.
@@ -71,8 +70,6 @@ Item {
                 height: Math.max(bodyCol.implicitHeight + contentPad * 2, 72)
                 visible: notif !== null || closing
                 opacity: toastOpacity
-                scale: toastScale
-                transformOrigin: Item.Top
                 transform: Translate {
                     y: toastRoot.slideY
                 }
@@ -84,7 +81,6 @@ Item {
                         return;
                     if (root.animMs <= 0) {
                         toastOpacity = 1;
-                        toastScale = 1;
                         slideY = 0;
                         entered = true;
                         return;
@@ -124,14 +120,6 @@ Item {
                     }
                     NumberAnimation {
                         target: toastRoot
-                        property: "toastScale"
-                        from: 0.96
-                        to: 1
-                        duration: root.animMs
-                        easing.type: Easing.OutCubic
-                    }
-                    NumberAnimation {
-                        target: toastRoot
                         property: "slideY"
                         from: -12
                         to: 0
@@ -141,7 +129,6 @@ Item {
 
                     onStarted: {
                         toastRoot.toastOpacity = 0;
-                        toastRoot.toastScale = 0.96;
                         toastRoot.slideY = -12;
                     }
                     onFinished: toastRoot.entered = true
@@ -156,13 +143,6 @@ Item {
                         target: toastRoot
                         property: "toastOpacity"
                         to: 0
-                        duration: Math.max(root.animMs / 2, 80)
-                        easing.type: Easing.InQuad
-                    }
-                    NumberAnimation {
-                        target: toastRoot
-                        property: "toastScale"
-                        to: 0.96
                         duration: Math.max(root.animMs / 2, 80)
                         easing.type: Easing.InQuad
                     }
@@ -230,6 +210,8 @@ Item {
                                 Layout.alignment: Qt.AlignVCenter
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: toastRoot.isCritical ? Icons.alert : Icons.bell
                                     font.family: Icons.font
@@ -239,6 +221,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 Layout.fillWidth: true
                                 Layout.alignment: Qt.AlignVCenter
                                 text: toastRoot.appName || "Notification"
@@ -263,6 +247,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     anchors.centerIn: parent
                                     text: Icons.cancel
                                     font.family: Icons.font
@@ -273,6 +259,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             Layout.fillWidth: true
                             visible: toastRoot.summary.length > 0
                             text: toastRoot.summary
@@ -284,6 +272,8 @@ Item {
                         }
 
                         Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
                             Layout.fillWidth: true
                             visible: toastRoot.body.length > 0
                             text: toastRoot.body

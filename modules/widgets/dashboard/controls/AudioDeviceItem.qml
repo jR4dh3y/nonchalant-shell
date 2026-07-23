@@ -52,6 +52,8 @@ Item {
 
         // Device icon
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: root.isOutput ? Icons.speakerHigh : Icons.mic
             font.family: Icons.font
             font.pixelSize: 18
@@ -60,6 +62,8 @@ Item {
 
         // Device name
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             Layout.fillWidth: true
             text: Audio.friendlyDeviceName(root.node)
             font.family: Config.theme.font
@@ -71,6 +75,8 @@ Item {
 
         // Selected indicator
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             visible: root.isSelected
             text: Icons.accept
             font.family: Icons.font

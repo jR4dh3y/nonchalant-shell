@@ -26,6 +26,8 @@ Button {
         anchors.centerIn: parent
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: root.count.toString()
             font.family: Config.theme.font
             font.pixelSize: Config.theme.fontSize
@@ -37,6 +39,8 @@ Button {
         }
 
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             text: root.expanded ? Icons.caretUp : Icons.caretDown
             textFormat: Text.RichText
             font.family: Icons.font

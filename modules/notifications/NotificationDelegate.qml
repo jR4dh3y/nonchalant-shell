@@ -165,6 +165,8 @@ Item {
                                     spacing: 4
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: summaryText
                                         property real combinedImplicitWidth: implicitWidth + (appNameText.visible ? appNameText.implicitWidth + parent.spacing : 0)
                                         width: {
@@ -186,6 +188,8 @@ Item {
                                     }
 
                                     Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
                                         id: appNameText
                                         property real availableWidth: leftTextsContainer.width - summaryText.implicitWidth - (visible ? parent.spacing : 0)
                                         width: {
@@ -209,6 +213,8 @@ Item {
 
                                 // Timestamp a la derecha
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     id: timestampText
                                     text: latestNotification ? NotificationUtils.getFriendlyNotifTimeString(latestNotification.time) : ""
                                     font.family: Config.theme.font
@@ -222,6 +228,8 @@ Item {
                             }
 
                             Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
                                 width: parent.width
                                 text: latestNotification ? NotificationUtils.processNotificationBody(latestNotification.body, latestNotification.appName) : ""
                                 font.family: Config.theme.font
@@ -295,6 +303,8 @@ Item {
                                         spacing: 4
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             Layout.maximumWidth: parent.width * 0.7
                                             text: root.summary || (latestNotification ? latestNotification.summary : "")
                                             font.family: Config.theme.font
@@ -306,6 +316,8 @@ Item {
                                         }
 
                                         Text {
+                                            renderType: Text.NativeRendering
+                                            font.hintingPreference: Font.PreferFullHinting
                                             text: latestNotification ? NotificationUtils.getFriendlyNotifTimeString(latestNotification.time) : ""
                                             font.family: Config.theme.font
                                             font.pixelSize: Config.theme.fontSize
@@ -325,6 +337,8 @@ Item {
                                             model: root.sortedNotifications
 
                                             Text {
+                                                renderType: Text.NativeRendering
+                                                font.hintingPreference: Font.PreferFullHinting
                                                 width: parent.width
                                                 text: NotificationUtils.processNotificationBody(modelData.body || "", modelData.appName)
                                                 font.family: Config.theme.font
@@ -348,6 +362,8 @@ Item {
                                 visible: !expanded
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     Layout.maximumWidth: parent.width * 0.4
                                     text: root.summary || (latestNotification ? latestNotification.summary : "")
                                     font.family: Config.theme.font
@@ -358,6 +374,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: "•"
                                     font.family: Config.theme.font
                                     font.pixelSize: Config.theme.fontSize
@@ -367,6 +385,8 @@ Item {
                                 }
 
                                 Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
                                     text: latestNotification ? NotificationUtils.processNotificationBody(latestNotification.body || "").replace(/\n/g, ' ') : ""
                                     font.family: Config.theme.font
                                     font.pixelSize: root.fontSize

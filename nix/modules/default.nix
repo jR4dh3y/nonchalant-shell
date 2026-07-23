@@ -24,8 +24,7 @@ in {
 
     # Register fonts with fontconfig (NixOS handles this via fonts.packages)
     fonts.packages = lib.mkIf cfg.fonts.enable (with pkgs; [
-      roboto
-      roboto-mono
+      jetbrains-mono
       league-gothic
       terminus_font
       terminus_font_ttf

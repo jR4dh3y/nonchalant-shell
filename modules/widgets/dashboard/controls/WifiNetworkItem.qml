@@ -60,6 +60,8 @@ Item {
                 height: 24
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: {
                         const strength = root.network?.strength ?? 0;
@@ -78,6 +80,8 @@ Item {
 
                 // Lock icon for secure networks
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     anchors.margins: -2
@@ -95,6 +99,8 @@ Item {
                 spacing: 0
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     Layout.fillWidth: true
                     text: root.network?.ssid ?? "Unknown"
                     font.family: Config.theme.font
@@ -105,6 +111,8 @@ Item {
                 }
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     Layout.fillWidth: true
                     visible: root.network?.active || root.expanded
                     text: {
@@ -137,6 +145,8 @@ Item {
                 radius: Styling.radius(-4)
 
                 Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: "5G"
                     font.family: Config.theme.font

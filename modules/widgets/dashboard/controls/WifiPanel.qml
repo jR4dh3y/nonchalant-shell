@@ -104,6 +104,8 @@ Item {
 
         // Empty state
         Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
             anchors.centerIn: parent
             visible: networkList.count === 0 && !NetworkService.wifiScanning
             text: NetworkService.wifiEnabled ? "No networks found" : "Wi-Fi is disabled"

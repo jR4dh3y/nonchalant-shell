@@ -32,7 +32,7 @@ Singleton {
     }
 
     function restoreModel() {
-        const lastModelId = StateService.get("lastAiModel", "gemini-2.0-flash");
+        const lastModelId = StateService.get("lastAiModel", "big-pickle");
         savedModelId = lastModelId;
         tryRestore();
         persistenceReady = true;
@@ -114,9 +114,57 @@ Singleton {
         case "groq": return groqStrategy;
         case "ollama": return ollamaStrategy;
         case "minimax": return minimaxStrategy;
+        case "opencode": return openaiStrategy; // OpenCode Zen OpenAI-compatible chat/completions
         case "custom": return openaiStrategy; // custom endpoints use OpenAI-compatible format by default
         default: return openaiStrategy;
         }
+    }
+
+    // OpenCode Zen models that use /v1/chat/completions (Bearer auth).
+    // Claude/GPT-Responses/Gemini shapes are intentionally excluded for now.
+    readonly property var opencodeChatCompletionsModels: [
+        "big-pickle",
+        "deepseek-v4-flash-free",
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+        "mimo-v2.5-free",
+        "laguna-s-2.1-free",
+        "north-mini-code-free",
+        "nemotron-3-ultra-free",
+        "glm-5.2",
+        "glm-5.1",
+        "glm-5",
+        "kimi-k2.5",
+        "kimi-k2.6",
+        "kimi-k2.7-code",
+        "minimax-m3",
+        "minimax-m2.7",
+        "minimax-m2.5",
+        "grok-4.5",
+        "grok-build-0.1"
+    ]
+
+    function isOpencodeChatCompletionsModel(id) {
+        if (!id)
+            return false;
+        for (let i = 0; i < opencodeChatCompletionsModels.length; i++) {
+            if (opencodeChatCompletionsModels[i] === id)
+                return true;
+        }
+        return false;
+    }
+
+    function createOpencodeModel(id, description) {
+        return aiModelFactory.createObject(root, {
+            name: id,
+            icon: Qt.resolvedUrl("../../../assets/aiproviders/openrouter.svg"),
+            description: description || "OpenCode Zen model",
+            endpoint: "https://opencode.ai/zen",
+            model: id,
+            provider: "opencode",
+            requires_key: true,
+            key_id: "OPENCODE_API_KEY"
+        });
     }
 
     function updateStrategy() {
@@ -778,6 +826,17 @@ for f in files:
             fetchProcessMiniMax.running = true;
         }
 
+        // OpenCode Zen (OpenAI-compatible chat/completions gateway)
+        let opencodeKey = KeyStore.getKey("opencode");
+        if (opencodeKey) {
+            pendingFetches++;
+            fetchProcessOpenCode.command = [
+                "bash", "-c",
+                "curl -sS 'https://opencode.ai/zen/v1/models' -H 'Authorization: Bearer " + opencodeKey.replace(/'/g, "'\\''") + "'"
+            ];
+            fetchProcessOpenCode.running = true;
+        }
+
         if (pendingFetches === 0) {
             fetchingModels = false;
         }
@@ -1043,6 +1102,59 @@ for f in files:
                 
                 mergeModels(newModels);
             }
+            checkFetchCompletion();
+        }
+    }
+
+    Process {
+        id: fetchProcessOpenCode
+        stdout: StdioCollector {
+            id: fetchOpenCodeOut
+        }
+        onExited: exitCode => {
+            let newModels = [];
+            let seen = {};
+
+            function pushModel(id, description) {
+                if (!id || seen[id] || !isOpencodeChatCompletionsModel(id))
+                    return;
+                seen[id] = true;
+                let m = createOpencodeModel(id, description);
+                if (m)
+                    newModels.push(m);
+            }
+
+            if (exitCode === 0) {
+                try {
+                    let data = JSON.parse(fetchOpenCodeOut.text);
+                    let list = (data && data.data) ? data.data : [];
+                    for (let i = 0; i < list.length; i++) {
+                        let item = list[i];
+                        let id = item.id || item.name || "";
+                        pushModel(id, item.description || "OpenCode Zen model");
+                    }
+                } catch (e) {
+                    console.log("OpenCode Zen fetch error: " + e);
+                }
+            } else {
+                console.log("OpenCode Zen models request failed (exit " + exitCode + ")");
+            }
+
+            // Always ensure free chat-completions models are available when key is set
+            let freeFallback = [
+                "big-pickle",
+                "deepseek-v4-flash-free",
+                "mimo-v2.5-free",
+                "laguna-s-2.1-free",
+                "north-mini-code-free",
+                "nemotron-3-ultra-free"
+            ];
+            for (let j = 0; j < freeFallback.length; j++)
+                pushModel(freeFallback[j], "OpenCode Zen free model");
+
+            if (newModels.length > 0)
+                mergeModels(newModels);
+
             checkFetchCompletion();
         }
     }

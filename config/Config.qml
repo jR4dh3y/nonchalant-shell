@@ -131,9 +131,9 @@ Singleton {
             property bool oledMode: false
             property bool lightMode: false
             property int roundness: 16
-            property string font: "Roboto Condensed"
+            property string font: "JetBrains Mono"
             property int fontSize: 14
-            property string monoFont: "Iosevka Nerd Font Mono"
+            property string monoFont: "JetBrains Mono"
             property int monoFontSize: 14
             property bool tintIcons: false
             property bool enableCorners: true
@@ -1130,7 +1130,7 @@ Singleton {
             property string systemPrompt: "You are a helpful assistant running on a Linux system. You have access to some tools to control the system."
             property string tool: "none"
             property list<var> extraModels: []
-            property string defaultModel: "gemini-2.0-flash"
+            property string defaultModel: "big-pickle"
             property int sidebarWidth: 400
             property string sidebarPosition: "right"
             property bool sidebarPinnedOnStartup: false
@@ -1370,7 +1370,7 @@ Singleton {
             }
             property JsonObject assistant: JsonObject {
                 property list<string> modifiers: ["SUPER"]
-                property string key: "A"
+                property string key: "GRAVE"
                 property var action: ({ "id": "nonchalant.assistant", "args": {} })
             }
             property JsonObject clipboard: JsonObject {
@@ -1456,7 +1456,7 @@ Singleton {
                 "nonchalant": {
                     "launcher": { "modifiers": ["SUPER"], "key": "Super_L", "action": { "id": "nonchalant.launcher", "args": {} } },
                     "dashboard": { "modifiers": ["SUPER"], "key": "D", "action": { "id": "nonchalant.dashboard", "args": {} } },
-                    "assistant": { "modifiers": ["SUPER"], "key": "A", "action": { "id": "nonchalant.assistant", "args": {} } },
+                    "assistant": { "modifiers": ["SUPER"], "key": "GRAVE", "action": { "id": "nonchalant.assistant", "args": {} } },
                     "clipboard": { "modifiers": ["SUPER"], "key": "V", "action": { "id": "nonchalant.clipboard", "args": {} } },
                     "emoji": { "modifiers": ["SUPER"], "key": "PERIOD", "action": { "id": "nonchalant.emoji", "args": {} } },
                     "notes": { "modifiers": ["SUPER"], "key": "N", "action": { "id": "nonchalant.notes", "args": {} } },
