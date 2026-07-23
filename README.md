@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="./assets/nonchalant/nonchalant-logo-color.svg" alt="Nonchalant Shell" width="420" />
-</p>
-
-# Nonchalant Shell
+# <img src="./assets/nonchalant/nonchalant-logo-color.svg" alt="" width="40" height="40"> Nonchalant Shell
 
 **Nonchalant Shell** is a Niri-first Wayland desktop shell built with
 [Quickshell](https://quickshell.org).

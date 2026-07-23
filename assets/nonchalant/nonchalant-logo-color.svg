@@ -1,16 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 64" role="img" aria-label="Nonchalant Shell">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Nonchalant Shell">
   <title>Nonchalant Shell</title>
-  <!-- Monogram N -->
   <path fill="#d8dee9" d="M14 50V14h9l18 23V14h9v36h-9L23 27v23z"/>
   <path fill="#a3be8c" d="M14 10h36v4H14z"/>
-  <!-- Wordmark -->
-  <text
-    x="72"
-    y="43"
-    fill="#d8dee9"
-    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    font-size="26"
-    font-weight="600"
-    letter-spacing="0.14em"
-  >NONCHALANT</text>
 </svg>
