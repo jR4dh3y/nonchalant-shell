@@ -2,7 +2,7 @@
 set -e
 
 # === Configuration ===
-REPO_URL="${NONCHALANT_REPO_URL:-}"
+REPO_URL="${NONCHALANT_REPO_URL:-https://github.com/jR4dh3y/nonchalant-shell.git}"
 INSTALL_PATH="$HOME/.local/src/nonchalant"
 BIN_DIR="/usr/local/bin"
 QUICKSHELL_REPO="https://git.outfoxxed.me/outfoxxed/quickshell"
@@ -95,7 +95,7 @@ filter_packages() {
 install_dependencies() {
   case "$DISTRO" in
   nixos)
-    local FLAKE_URI="${1:-github:Axenide/Nonchalant}"
+    local FLAKE_URI="${1:-github:jR4dh3y/nonchalant-shell}"
     nix profile list | grep -q "ddcutil" && nix profile remove ddcutil 2>/dev/null || true
 
     if nix profile list | grep -q "Nonchalant"; then

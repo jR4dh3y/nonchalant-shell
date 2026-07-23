@@ -4,45 +4,39 @@
 
 # Nonchalant Shell
 
-Nonchalant Shell is a Niri-first desktop shell built with Quickshell. It is a
-hard fork of [Ambxst](https://github.com/Axenide/Ambxst) and is currently in the
-early bring-up stage.
+**Nonchalant Shell** is a Niri-first Wayland desktop shell built with
+[Quickshell](https://quickshell.org). It is a hard fork of
+[Ambxst](https://github.com/Axenide/Ambxst), reworked toward a lean runtime:
+wallpaper, one unified bar, a floating run menu, and a lockscreen — driven by a
+reactive JSON configuration system.
 
-The current baseline keeps Ambxst's wallpaper and session-lock UI while the
-rest of the shell moves toward direct Quickshell, Wayland, and Niri
-integrations. Lock/login integration will eventually live in a separate
-module.
+## Features
 
-## Current state
-
-- Runs directly on Niri and follows its JSON event stream.
-- Provides normalized monitor, workspace, and window state to the inherited UI.
-- Uses Quickshell's native Wayland idle monitor instead of `axctl`.
-- Keeps the inherited wallpaper picker and secure `WlSessionLock` screen.
-- Uses isolated `nonchalant` config, state, cache, data, and IPC paths.
-
-The bar and central menu are next. The intended design is a compact segmented
-bar with the named-workspace/taskbar workflow on the left, date and menu access
-in the middle, and a small native system-status cluster on the right.
+- Runs directly on [Niri](https://github.com/YaLTeR/niri) via its JSON event stream
+- Normalized monitor, workspace, and window state for multi-monitor setups
+- Unified bar with workspaces/taskbar, clock, system status, and systray
+- Floating run menu and power menu
+- Wallpaper picker and secure `WlSessionLock` session lock
+- Isolated `nonchalant` config, state, cache, data, and IPC paths
 
 ## Run the development tree
 
-Install Quickshell and the runtime tools required by the inherited Ambxst
-features. Install the shell's icon and interface fonts once, then run:
+Install Quickshell and the runtime tools needed by the shell. Install fonts once,
+then run from a checkout:
 
 ```bash
 ./scripts/install-fonts.sh
 qs -p /path/to/nonchalant-shell
 ```
 
-The installer and Nix package are still inherited scaffolding and are not the
-supported way to run this fork yet.
+Or use the CLI wrapper:
 
-## Scope
+```bash
+./cli.sh
+```
 
-`qylock` and `skwd-wall` are design and implementation references only. They
-are not runtime dependencies. `skwd-wall` is being rewritten in Rust, so
-Nonchalant keeps the inherited wallpaper implementation for now.
+The installer and Nix package are still inherited scaffolding and may need
+adjustment for this fork.
 
 ## Attribution and license
 

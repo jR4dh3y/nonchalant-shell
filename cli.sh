@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nonchalant CLI - It was needed, so here it is. lol
+# Nonchalant Shell CLI - It was needed, so here it is. lol
 
 set -euo pipefail
 
@@ -39,13 +39,13 @@ ensure_config_files
 
 show_help() {
 	cat <<EOF
-Nonchalant CLI - Desktop Environment Control
+Nonchalant Shell CLI - Desktop Environment Control
 
 Usage: nonchalant [COMMAND]
 
 Commands:
-    (none)                            Launch Nonchalant
-    update                            Update Nonchalant
+    (none)                            Launch Nonchalant Shell
+    update                            Update Nonchalant Shell
     refresh                           Refresh local/dev profile (for developers)
     lock                              Activate lockscreen
     brightness <percent> [monitor]    Set brightness (0-100)
@@ -54,8 +54,8 @@ Commands:
     brightness -r [monitor]           Restore saved brightness
     brightness -l                     List monitors and their brightness
     help                              Show this help message
-    version, -v, --version            Show Nonchalant version
-    goodbye                           Uninstall Nonchalant :(
+    version, -v, --version            Show Nonchalant Shell version
+    goodbye                           Uninstall Nonchalant Shell :(
     install <target>                    Install compositor config (hyprland)
     remove <target>                    Remove compositor config (hyprland)
 

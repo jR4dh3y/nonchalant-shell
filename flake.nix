@@ -1,5 +1,5 @@
 {
-  description = "Nonchalant - An Axtremely customizable shell by Axenide";
+  description = "Nonchalant Shell — a Niri-first Wayland desktop shell built with Quickshell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -49,7 +49,7 @@
             shellHook = ''
               export QML2_IMPORT_PATH="${Nonchalant}/lib/qt-6/qml:$QML2_IMPORT_PATH"
               export QML_IMPORT_PATH="$QML2_IMPORT_PATH"
-              echo "Nonchalant dev environment loaded."
+              echo "Nonchalant Shell dev environment loaded."
             '';
           };
         }
