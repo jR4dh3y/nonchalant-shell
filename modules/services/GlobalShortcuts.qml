@@ -31,6 +31,11 @@ QtObject {
         console.log("IPC run command received:", command);
         switch (command) {
             case "launcher": toggleLauncher(); break;
+            case "projects":
+            case "project-picker":
+            case "projectpicker":
+                toggleProjects();
+                break;
             case "system-monitor": Visibilities.toggleSystemMonitorForActive(); break;
             case "powermenu": Visibilities.togglePowerMenuForActive(); break;
             case "lockscreen": LockscreenService.lock(); break;
@@ -58,6 +63,16 @@ QtObject {
         } else {
             GlobalStates.clearLauncherState();
             Visibilities.setActiveModule("launcher");
+        }
+    }
+
+    function toggleProjects() {
+        const isActive = Visibilities.currentActiveModule === "projects";
+        if (isActive) {
+            Visibilities.setActiveModule("");
+        } else {
+            GlobalStates.clearProjectPickerState();
+            Visibilities.setActiveModule("projects");
         }
     }
 

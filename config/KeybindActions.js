@@ -30,6 +30,7 @@ function directionToLetter(direction) {
 
 var ACTION_CATALOG = [
     { id: "nonchalant.launcher", label: "Open Launcher", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run launcher", flags: "r" },
+    { id: "nonchalant.projects", label: "Open Project Picker", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run projects", flags: "r" },
     { id: "nonchalant.dashboard", label: "Open Dashboard", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run dashboard" },
     { id: "nonchalant.assistant", label: "Open Assistant", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run assistant" },
     { id: "nonchalant.clipboard", label: "Open Clipboard", category: "Nonchalant", dispatcher: "exec", argument: "nonchalant run clipboard" },

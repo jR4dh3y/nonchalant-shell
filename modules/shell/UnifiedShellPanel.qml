@@ -5,6 +5,7 @@ import qs.modules.bar
 import qs.modules.services
 import qs.modules.components
 import qs.modules.widgets.launcher
+import qs.modules.widgets.projects
 import qs.modules.widgets.powermenu
 import qs.modules.notifications
 import qs.config
@@ -25,7 +26,7 @@ PanelWindow {
     color: "transparent"
 
     WlrLayershell.keyboardFocus: {
-        if (runMenu.open)
+        if (runMenu.open || projectPicker.open)
             return WlrKeyboardFocus.Exclusive;
         return WlrKeyboardFocus.None;
     }
@@ -33,7 +34,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     exclusionMode: ExclusionMode.Ignore
 
-    readonly property bool needsFullScreenInput: runMenu.open || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: runMenu.open || projectPicker.open || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -86,16 +87,19 @@ PanelWindow {
                 item: runMenu.hitbox
             },
             Region {
+                item: projectPicker.hitbox
+            },
+            Region {
                 item: toastStack.hitbox
             }
         ]
     }
 
-    // Close the run menu when its focus grab is cleared.
+    // Close the run menu / project picker when its focus grab is cleared.
     FocusGrab {
         id: focusGrab
         windows: [unifiedPanel]
-        active: runMenu.open
+        active: runMenu.open || projectPicker.open
 
         onCleared: {
             Visibilities.setActiveModule("");
@@ -140,6 +144,13 @@ PanelWindow {
         // Detached popup; it never joins the screen edge or reserves space.
         RunMenuHost {
             id: runMenu
+            anchors.fill: parent
+            screen: unifiedPanel.targetScreen
+            z: 2
+        }
+
+        ProjectPickerHost {
+            id: projectPicker
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
             z: 2

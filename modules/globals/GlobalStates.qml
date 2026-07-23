@@ -86,6 +86,15 @@ Singleton {
         launcherSelectedIndex = -1;
     }
 
+    // Project picker state across monitors
+    property string projectPickerSearchText: ""
+    property int projectPickerSelectedIndex: 0
+
+    function clearProjectPickerState() {
+        projectPickerSearchText = "";
+        projectPickerSelectedIndex = 0;
+    }
+
     // Persistent dashboard state across monitors  
     property int dashboardCurrentTab: 0
     // Name of the screen whose bar-anchored dashboard popup is open.
@@ -108,6 +117,11 @@ Singleton {
         return active ? active.launcher : false;
     }
 
+    function getActiveProjects() {
+        let active = Visibilities.getForActive();
+        return active ? active.projects : false;
+    }
+
     function getActiveDashboard() {
         let active = Visibilities.getForActive();
         return active ? active.dashboard === true : false;
@@ -127,13 +141,14 @@ Singleton {
     readonly property bool overviewOpen: getActiveOverview()
     readonly property bool presetsOpen: getActivePresets()
     readonly property bool launcherOpen: getActiveLauncher()
+    readonly property bool projectsOpen: getActiveProjects()
     readonly property bool dashboardOpen: getActiveDashboard() || dashboardPopupScreen !== ""
     readonly property bool systemMonitorOpen: systemMonitorPopupScreen !== ""
 
     // Lockscreen state
     property bool lockscreenVisible: false
+    // Legacy flags (unlock is immediate; kept so older bindings do not break).
     property bool lockscreenUnlocking: false
-    // Post-unlock freeze overlay: covers the compositor handoff black flash.
     property bool lockscreenHandoff: false
     property real lockscreenHandoffOpacity: 1
 

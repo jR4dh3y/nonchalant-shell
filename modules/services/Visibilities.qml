@@ -21,7 +21,7 @@ Singleton {
     property bool playerMenuOpen: false
     // Exclusive bar popup: only one BarPopup should be open at a time.
     property var activeBarPopup: null
-    readonly property var moduleNames: ["launcher"]
+    readonly property var moduleNames: ["launcher", "projects"]
 
     function claimBarPopup(popup) {
         if (!popup)
@@ -205,11 +205,15 @@ Singleton {
             return;
         }
 
-        const focusedMonitor = NiriService.focusedMonitor;
-        if (!focusedMonitor)
+        // Prefer niri's focused monitor; fall back to the first Quickshell screen
+        // so modules still open when compositor focus is unavailable.
+        let focusedScreenName = "";
+        if (NiriService.focusedMonitor && NiriService.focusedMonitor.name)
+            focusedScreenName = NiriService.focusedMonitor.name;
+        else if (Quickshell.screens.length > 0)
+            focusedScreenName = Quickshell.screens[0].name;
+        else
             return;
-
-        const focusedScreenName = focusedMonitor.name;
 
         // Modules and bar popups are mutually exclusive.
         closeActiveBarPopup();
@@ -244,6 +248,7 @@ Singleton {
         QtObject {
             property string screenName
             property bool launcher: false
+            property bool projects: false
         }
     }
 
