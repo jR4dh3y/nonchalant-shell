@@ -26,6 +26,7 @@ Item {
         anchors.left: root.left
         anchors.top: root.top
         corner: RoundCorner.CornerEnum.TopLeft
+        color: Colors.background
     }
 
     RoundCorner {
@@ -35,6 +36,7 @@ Item {
         anchors.right: root.right
         anchors.top: root.top
         corner: RoundCorner.CornerEnum.TopRight
+        color: Colors.background
     }
 
     RoundCorner {
@@ -44,6 +46,7 @@ Item {
         anchors.left: root.left
         anchors.bottom: root.bottom
         corner: RoundCorner.CornerEnum.BottomLeft
+        color: Colors.background
     }
 
     RoundCorner {
@@ -53,5 +56,6 @@ Item {
         anchors.right: root.right
         anchors.bottom: root.bottom
         corner: RoundCorner.CornerEnum.BottomRight
+        color: Colors.background
     }
 }

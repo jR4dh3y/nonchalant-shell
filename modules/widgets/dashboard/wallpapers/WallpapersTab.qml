@@ -211,12 +211,13 @@ FocusScope {
         anchors.fill: parent
         spacing: 8
 
-        // Barra superior con OLED mode, búsqueda y scheme selector
+        // Header: OLED / search / scheme. Height grows with the scheme list so
+        // expanded rows stay inside this layout (and stay clickable).
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 48
+            Layout.preferredHeight: Math.max(48, schemeSelector.implicitHeight)
             spacing: 8
-            z: 1000 // Asegurar que el menú desplegable se dibuje por encima del resto del contenido
+            z: 1000
 
             StyledRect {
                 id: backButton
@@ -777,33 +778,29 @@ FocusScope {
             // Spacer
             // Item { Layout.fillWidth: true }
 
-            // Scheme Selector a la derecha
-            Item {
-                Layout.preferredWidth: 200
-                Layout.preferredHeight: 48
+            // Scheme selector. Height follows the control so the expanded list
+            // is part of the header hit-target (not covered by the wallpaper grid).
+            SchemeSelector {
+                id: schemeSelector
+                Layout.preferredWidth: 220
+                Layout.preferredHeight: implicitHeight
+                Layout.alignment: Qt.AlignTop
+                z: 100
 
-                SchemeSelector {
-                    id: schemeSelector
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    // No height set, allows expansion based on implicitHeight
+                onSchemeSelectorClosed: {
+                    wallpapersTabRoot.focusSearch();
+                }
 
-                    onSchemeSelectorClosed: {
-                        wallpapersTabRoot.focusSearch();
-                    }
+                onEscapePressedOnScheme: {
+                    wallpapersTabRoot.focusSearch();
+                }
 
-                    onEscapePressedOnScheme: {
-                        wallpapersTabRoot.focusSearch();
-                    }
+                onTabPressed: {
+                    wallpapersTabRoot.focusNextElement();
+                }
 
-                    onTabPressed: {
-                        wallpapersTabRoot.focusNextElement();
-                    }
-
-                    onShiftTabPressed: {
-                        wallpapersTabRoot.focusPreviousElement();
-                    }
+                onShiftTabPressed: {
+                    wallpapersTabRoot.focusPreviousElement();
                 }
             }
         }

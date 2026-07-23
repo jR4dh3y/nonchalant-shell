@@ -144,15 +144,23 @@ Item {
         width: GlobalStates.assistantWidth + root.sidebarMargin
         height: parent.height
 
+        // Avoid animating the off-screen dock during first layout: parent.width
+        // resolves from 0 → screen size and would flash a left→right slide.
+        property bool slideReady: false
+        Component.onCompleted: Qt.callLater(() => {
+            slideReady = true;
+        })
+
         x: {
             if (GlobalStates.assistantPosition === "left")
                 return root.active ? 0 : -(width);
             return root.active ? parent.width - width : parent.width;
         }
 
-        visible: root.active || slideAnimation.running
+        visible: root.active || (slideReady && slideAnimation.running)
 
         Behavior on x {
+            enabled: sidebarContainer.slideReady && (Config.animDuration !== undefined ? Config.animDuration : 0) > 0
             NumberAnimation {
                 id: slideAnimation
                 duration: Config.animDuration
@@ -741,14 +749,25 @@ Item {
                                             hoverEnabled: true
                                             acceptedButtons: Qt.NoButton
 
-                                            Row {
-                                                anchors.verticalCenter: bubble.verticalCenter
+                                            // Action rail (edit / copy / regenerate):
+                                            // short bubbles → horizontal row; tall replies → vertical stack.
+                                            Grid {
+                                                id: actionRail
+                                                readonly property bool horizontal: !messageDelegate.isEditing && bubble.height < 88
+                                                columns: horizontal ? 3 : 1
+                                                rows: horizontal ? 1 : 3
+                                                anchors.top: horizontal ? undefined : bubble.top
+                                                anchors.topMargin: 4
+                                                anchors.verticalCenter: horizontal ? bubble.verticalCenter : undefined
                                                 anchors.left: isUser ? undefined : bubble.right
                                                 anchors.right: isUser ? bubble.left : undefined
                                                 anchors.leftMargin: 8
                                                 anchors.rightMargin: 8
                                                 spacing: 4
+                                                flow: horizontal ? Grid.LeftToRight : Grid.TopToBottom
+                                                layoutDirection: isUser ? Qt.RightToLeft : Qt.LeftToRight
                                                 visible: bubbleArea.containsMouse || messageDelegate.isEditing
+                                                z: 2
 
                                                 Button {
                                                     width: 24
@@ -957,6 +976,51 @@ Item {
                                                         Layout.fillWidth: true
                                                         spacing: 4
 
+                                                        readonly property string toolName: modelData.functionCall ? (modelData.functionCall.name || "") : ""
+                                                        readonly property string toolDetail: {
+                                                            if (!modelData.functionCall || !modelData.functionCall.args)
+                                                                return "";
+                                                            let a = modelData.functionCall.args;
+                                                            if (toolName === "run_shell_command")
+                                                                return a.command || "";
+                                                            if (toolName === "fetch_url")
+                                                                return a.url || "";
+                                                            if (toolName === "web_search")
+                                                                return a.query || "";
+                                                            try {
+                                                                return JSON.stringify(a);
+                                                            } catch (e) {
+                                                                return String(a);
+                                                            }
+                                                        }
+                                                        readonly property string toolTitle: {
+                                                            if (toolName === "run_shell_command")
+                                                                return "Run Command";
+                                                            if (toolName === "fetch_url")
+                                                                return "Fetch URL";
+                                                            if (toolName === "web_search")
+                                                                return "Web Search";
+                                                            return toolName || "Tool Call";
+                                                        }
+                                                        readonly property string toolApprovedLabel: {
+                                                            if (toolName === "run_shell_command")
+                                                                return "Command Approved";
+                                                            if (toolName === "fetch_url")
+                                                                return "URL Fetch Approved";
+                                                            if (toolName === "web_search")
+                                                                return "Search Approved";
+                                                            return "Tool Approved";
+                                                        }
+                                                        readonly property string toolRejectedLabel: {
+                                                            if (toolName === "run_shell_command")
+                                                                return "Command Rejected";
+                                                            if (toolName === "fetch_url")
+                                                                return "URL Fetch Rejected";
+                                                            if (toolName === "web_search")
+                                                                return "Search Rejected";
+                                                            return "Tool Rejected";
+                                                        }
+
                                                         Rectangle {
                                                             Layout.fillWidth: true
                                                             height: 1
@@ -967,7 +1031,7 @@ Item {
                                                         Text {
                                                             renderType: Text.NativeRendering
                                                             font.hintingPreference: Font.PreferFullHinting
-                                                            text: "Run Command"
+                                                            text: parent.toolTitle
                                                             color: Styling.srItem("overprimary")
                                                             font.family: Config.theme.font
                                                             font.weight: Font.Bold
@@ -985,7 +1049,7 @@ Item {
                                                                 font.hintingPreference: Font.PreferFullHinting
                                                                 padding: 8
                                                                 width: parent.width
-                                                                text: modelData.functionCall ? modelData.functionCall.args.command : ""
+                                                                text: parent.parent.toolDetail
                                                                 font.family: "Monospace"
                                                                 color: Colors.overSurface
                                                                 readOnly: true
@@ -1045,7 +1109,7 @@ Item {
                                                             renderType: Text.NativeRendering
                                                             font.hintingPreference: Font.PreferFullHinting
                                                             visible: modelData.functionApproved === true
-                                                            text: "Command Approved"
+                                                            text: parent.toolApprovedLabel
                                                             color: Colors.success
                                                             font.pixelSize: 12
                                                         }
@@ -1054,7 +1118,7 @@ Item {
                                                             renderType: Text.NativeRendering
                                                             font.hintingPreference: Font.PreferFullHinting
                                                             visible: modelData.functionApproved === false && !modelData.functionPending
-                                                            text: "Command Rejected"
+                                                            text: parent.toolRejectedLabel
                                                             color: Colors.error
                                                             font.pixelSize: 12
                                                         }

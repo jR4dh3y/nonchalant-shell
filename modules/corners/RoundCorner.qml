@@ -1,4 +1,5 @@
 import QtQuick
+import qs.modules.theme
 
 Item {
     id: root
@@ -12,7 +13,8 @@ Item {
     property var corner: RoundCorner.CornerEnum.TopLeft // Default to TopLeft
 
     property int size: 25
-    property color color: "#000000"
+    // Track wallpaper palette — pure black never followed matugen.
+    property color color: Colors.background
 
     onColorChanged: {
         canvas.requestPaint();

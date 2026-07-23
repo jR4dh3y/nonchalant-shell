@@ -385,24 +385,30 @@ PanelWindow {
         }
     }
 
-    // Función para re-ejecutar Matugen con el wallpaper actual
+    // Re-run matugen for the current wallpaper with a Material scheme type.
     function setMatugenScheme(scheme) {
         wallpaperConfig.adapter.matugenScheme = scheme;
 
+        // Always drop any active static preset so wallpaper-driven colors resume.
         if (wallpaperConfig.adapter.activeColorPreset) {
             console.log("Switching to Matugen scheme, clearing preset");
             wallpaperConfig.adapter.activeColorPreset = "";
-        } else {
-            runMatugenForCurrentWallpaper();
         }
+
+        // Run immediately (do not rely on activeColorPreset changed alone —
+        // that path can race with the still-bound previous preset value).
+        Qt.callLater(() => runMatugenForCurrentWallpaper());
     }
 
     // property string mpvSocket: "/tmp/nonchalant_mpv_socket"
     property string mpvSocket: "/tmp/nonchalant_mpv_socket_" + (currentScreenName ? currentScreenName : "ALL")
 
     function runMatugenForCurrentWallpaper() {
-        if (activeColorPreset) {
-            console.log("Skipping Matugen because color preset is active:", activeColorPreset);
+        // Prefer the adapter value — the bound property can lag one tick after
+        // clearing a preset when switching back to a matugen scheme.
+        var preset = wallpaperConfig.adapter.activeColorPreset || "";
+        if (preset && preset.length > 0) {
+            console.log("Skipping Matugen because color preset is active:", preset);
             return;
         }
 
@@ -429,11 +435,12 @@ PanelWindow {
                 "bash",
                 decodeURIComponent(Qt.resolvedUrl("../../../../scripts/generate_wallpaper_colors.sh").toString().replace("file://", "")),
                 matugenSource,
-                wallpaperConfig.adapter.matugenScheme,
+                wallpaperConfig.adapter.matugenScheme || "scheme-tonal-spot",
                 Config.theme.lightMode ? "light" : "dark",
                 decodeURIComponent(Qt.resolvedUrl("../../../../assets/matugen/config.toml").toString().replace("file://", "")),
                 Quickshell.env("HOME") + "/.cache/nonchalant/colors.json"
             ];
+            console.log("Matugen command:", commandWithConfig.join(" "));
             matugenProcessWithConfig.command = commandWithConfig;
             matugenProcessWithConfig.running = true;
         }
