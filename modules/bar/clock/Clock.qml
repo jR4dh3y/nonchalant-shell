@@ -21,7 +21,7 @@ Item {
     required property var bar
     property bool vertical: bar.orientation === "vertical"
     property bool isHovered: false
-    property bool layerEnabled: true
+    property bool layerEnabled: false
     
     property real radius: 0
     property real startRadius: radius

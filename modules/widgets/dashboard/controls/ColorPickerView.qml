@@ -59,7 +59,7 @@ Item {
                 width: 36
                 height: 36
                 radius: Styling.radius(-2)
-                enableShadow: true
+                enableShadow: false
 
                 Text {
                     anchors.centerIn: parent
@@ -184,7 +184,7 @@ Item {
                     Layout.preferredWidth: 32
                     Layout.preferredHeight: 32
                     radius: Styling.radius(-3)
-                    enableShadow: true
+                    enableShadow: false
 
                     Text {
                         anchors.centerIn: parent
@@ -245,7 +245,7 @@ Item {
                     anchors.margins: 2
                     variant: colorItem.isSelected ? "primary" : (colorItem.isHovered ? "focus" : "common")
                     radius: Styling.radius(-2)
-                    enableShadow: true
+                    enableShadow: false
 
                     RowLayout {
                         anchors.fill: parent

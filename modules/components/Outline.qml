@@ -2,8 +2,11 @@ import QtQuick
 import QtQuick.Effects
 import qs.config
 
+// Intentionally inert. Outline-via-shadow was a text Multieffect path that
+// softens glyphs the same way as Shadow.qml.
 MultiEffect {
-    shadowEnabled: true
+    shadowEnabled: false
+    blurEnabled: false
     shadowBlur: 0
     shadowOpacity: 1.0
 

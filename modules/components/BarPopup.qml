@@ -161,7 +161,7 @@ PopupWindow {
             id: background
             anchors.fill: parent
             variant: root.variant
-            enableShadow: root.variant !== "transparent"
+            enableShadow: false
             radius: Styling.radius(8)
 
             Item {

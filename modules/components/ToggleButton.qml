@@ -16,7 +16,7 @@ Button {
     property bool iconTint: false
     property bool iconFullTint: false
     property int iconSize: 18
-    property bool enableShadow: true
+    property bool enableShadow: false
     // Radius handling
     property real radius: 0
     property bool vertical: false // Set by parent if needed, or inferred? ToggleButton doesn't know orientation usually.

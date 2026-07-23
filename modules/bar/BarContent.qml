@@ -140,8 +140,8 @@ Item {
     // bar so tiled windows do not touch the pills.
     readonly property int baseOuterMargin: barBg.outerMargin * 2
 
-    // Shadow logic for bar components
-    readonly property bool shadowsEnabled: Config.showBackground && (!actualContainBar || (Config.bar && Config.bar.keepBarShadow !== undefined ? Config.bar.keepBarShadow : false))
+    // Drop shadows on bar pills re-rasterize Text (hazy bold labels). Off.
+    readonly property bool shadowsEnabled: false
 
     // The hitbox for the mask
     property alias barHitbox: barMouseArea

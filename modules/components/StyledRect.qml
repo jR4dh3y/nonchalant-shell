@@ -202,9 +202,11 @@ ClippingRectangle {
         }
     }
 
-    // Shadow effect
-    layer.enabled: enableShadow
-    layer.effect: Shadow {}
+    // enableShadow is kept for API compatibility, but we intentionally do
+    // NOT apply layer.effect/MultiEffect on this item. That path rasterizes
+    // every child (including Text) into an FBO and makes bold bar labels
+    // look soft/hazy. Widget chrome shadows live on dedicated shadow items
+    // (e.g. BarBgShadow) instead of on text-bearing containers.
 
     // Border overlay to avoid ClippingRectangle artifacts
     ClippingRectangle {

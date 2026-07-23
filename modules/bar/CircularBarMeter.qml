@@ -12,7 +12,7 @@ Item {
 
     required property var bar
     property bool vertical: bar.orientation === "vertical"
-    property bool layerEnabled: true
+    property bool layerEnabled: false
     property real startRadius: Styling.radius(0)
     property real endRadius: Styling.radius(0)
     property real value: 0

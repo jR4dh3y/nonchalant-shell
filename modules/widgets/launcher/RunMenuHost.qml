@@ -65,7 +65,7 @@ Item {
         id: menuCard
 
         variant: "popup"
-        enableShadow: true
+        enableShadow: false
         radius: Styling.radius(8)
         visible: root.menuShown
         opacity: root.menuOpacity

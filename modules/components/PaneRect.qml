@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import qs.modules.theme
 import qs.config
 
@@ -40,15 +39,5 @@ Rectangle {
             position: stopData[1]
             color: Config.resolveColor(stopData[0])
         }
-    }
-
-    layer.enabled: false
-    layer.effect: MultiEffect {
-        shadowEnabled: true
-        shadowHorizontalOffset: 0
-        shadowVerticalOffset: 0
-        shadowBlur: 1
-        shadowColor: Config.resolveColor(Config.theme.shadowColor)
-        shadowOpacity: Config.theme.shadowOpacity
     }
 }

@@ -398,7 +398,7 @@ Item {
                     property bool isHovered: false
 
                     variant: isSelected ? "primary" : (isHovered ? "focus" : "common")
-                    enableShadow: true
+                    enableShadow: false
                     Layout.fillWidth: true
                     height: 36
                     radius: isSelected ? Styling.radius(0) / 2 : Styling.radius(0)

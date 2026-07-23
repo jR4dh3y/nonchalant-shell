@@ -460,7 +460,7 @@ Item {
         Layout.preferredWidth: 140
         Layout.preferredHeight: 36
         radius: isSelected ? Styling.radius(0) / 2 : Styling.radius(0)
-        enableShadow: true
+        enableShadow: false
 
         HoverHandler {
             id: hoverHandler

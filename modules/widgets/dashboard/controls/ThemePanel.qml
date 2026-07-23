@@ -1173,7 +1173,7 @@ Item {
                                                     property bool isHovered: false
 
                                                     variant: modelData.id
-                                                    enableShadow: true
+                                                    enableShadow: false
 
                                                     width: tagContentRow.width + 24 + (isSelected ? checkIconRow.width + 4 : 0)
                                                     height: 32
@@ -1329,7 +1329,7 @@ Item {
                                             property bool isHovered: false
 
                                             variant: modelData.id
-                                            enableShadow: true
+                                            enableShadow: false
 
                                             width: tagContent.width + 24 + (isSelected ? checkIcon.width + 4 : 0)
                                             height: 32
@@ -1439,7 +1439,7 @@ Item {
                                     height: 32
                                     radius: Styling.radius(-2)
                                     Layout.alignment: Qt.AlignTop
-                                    enableShadow: true
+                                    enableShadow: false
 
                                     property bool isHovered: false
 

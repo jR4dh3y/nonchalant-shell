@@ -623,7 +623,7 @@ Item {
                         property bool isHovered: false
 
                         variant: isSelected ? "primary" : (isHovered ? "focus" : "common")
-                        enableShadow: true
+                        enableShadow: false
                         width: categoryContent.width + 32
                         height: 36
                         radius: Styling.radius(-2)
@@ -1876,7 +1876,7 @@ Item {
         variant: isHovered ? "focus" : "common"
         height: 56
         radius: Styling.radius(-2)
-        enableShadow: true
+        enableShadow: false
         opacity: isEnabled ? 1 : 0.5
 
         RowLayout {

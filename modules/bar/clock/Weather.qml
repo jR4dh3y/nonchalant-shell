@@ -44,8 +44,6 @@ StyledRect {
             font.pixelSize: 16
             font.family: Config.theme.font
             font.bold: true
-            layer.enabled: true
-            layer.effect: Shadow {}
         }
 
         Separator {

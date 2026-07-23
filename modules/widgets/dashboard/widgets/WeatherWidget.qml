@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Effects
 import Quickshell.Widgets
 import qs.modules.theme
 import qs.modules.services
@@ -891,14 +890,6 @@ ClippingRectangle {
             color: "#FFFFFF"
         }
 
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.5)
-            shadowBlur: 0.4
-            shadowHorizontalOffset: 1
-            shadowVerticalOffset: 1
-        }
     }
 
     // Weather description (top right)
@@ -917,15 +908,6 @@ ClippingRectangle {
             font.family: "Noto Sans"
             font.pixelSize: Config.theme.fontSize - 2
             font.weight: Font.Bold
-        }
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.5)
-            shadowBlur: 0.4
-            shadowHorizontalOffset: 1
-            shadowVerticalOffset: 1
         }
     }
 

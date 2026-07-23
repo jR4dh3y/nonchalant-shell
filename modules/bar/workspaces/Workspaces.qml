@@ -156,7 +156,7 @@ Item {
         id: bgRect
         variant: "bg"
         anchors.fill: parent
-        enableShadow: Config.showBackground && (!effectiveContainBar || Config.bar.keepBarShadow)
+        enableShadow: false
         
         topLeftRadius: orientation === "vertical" ? workspacesWidget.startRadius : workspacesWidget.startRadius
         topRightRadius: orientation === "vertical" ? workspacesWidget.startRadius : workspacesWidget.endRadius
