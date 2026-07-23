@@ -350,7 +350,7 @@ Singleton {
                 // expireTimeout <= 0 means "default", not "instant" (0ms fires immediately).
                 const expireMs = (notification.expireTimeout && notification.expireTimeout > 0)
                     ? notification.expireTimeout
-                    : 5000;
+                    : 4000;
                 newNotifObject.timer = notifTimerComponent.createObject(root, {
                     "id": newNotifObject.id,
                     "interval": expireMs
@@ -394,7 +394,7 @@ Singleton {
         if (newNotifObject.popup) {
             newNotifObject.timer = notifTimerComponent.createObject(root, {
                 "id": newNotifObject.id,
-                "interval": options.expireTimeout || 5000
+                "interval": options.expireTimeout || 4000
             });
         }
 
