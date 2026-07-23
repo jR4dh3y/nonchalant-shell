@@ -5,10 +5,25 @@
 # Nonchalant Shell
 
 **Nonchalant Shell** is a Niri-first Wayland desktop shell built with
-[Quickshell](https://quickshell.org). It is a hard fork of
-[Ambxst](https://github.com/Axenide/Ambxst), reworked toward a lean runtime:
-wallpaper, one unified bar, a floating run menu, and a lockscreen — driven by a
-reactive JSON configuration system.
+[Quickshell](https://quickshell.org).
+
+## Hard fork
+
+This project is a **hard fork** of
+[Ambxst](https://github.com/Axenide/Ambxst) by
+[Axenide](https://github.com/Axenide).
+
+It is not Ambxst, does not track Ambxst as an upstream merge target for
+day-to-day work, and ships under its own name, branding, config paths, and
+release process. The fork keeps a lean runtime focus:
+
+- wallpaper
+- one unified bar
+- floating run menu
+- lockscreen
+- reactive JSON configuration
+
+Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
 
 ## Features
 
@@ -40,8 +55,9 @@ adjustment for this fork.
 
 ## Attribution and license
 
-Nonchalant Shell is derived from Ambxst by Axenide and retains the upstream
-copyright and contributor history. See the Git history for the full lineage.
+Nonchalant Shell is derived from Ambxst by Axenide. Full copyright and
+contributor history from that lineage is preserved in this repository’s Git
+history.
 
 This project is licensed under the GNU Affero General Public License v3.0 or
 later. See [LICENSE](./LICENSE).
