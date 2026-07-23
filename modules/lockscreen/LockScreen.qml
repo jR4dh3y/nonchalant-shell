@@ -73,9 +73,10 @@ WlSessionLockSurface {
 
     readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && desktopFrame.hasContent
 
-    // Keep the lock backdrop stable while entering. On unlock, fade it over a
-    // single in-memory desktop frame; do not rebuild a blur or read a frame
-    // from disk during the animation.
+    // Keep the lock backdrop static while entering. Animating a full-screen
+    // asynchronously decoded image causes frame pacing jitter on lock. The
+    // foreground provides the lock-in motion; this backdrop only fades on
+    // unlock, over the captured desktop frame.
     TintedWallpaper {
         id: wallpaperBackground
         anchors.fill: parent
@@ -94,9 +95,7 @@ WlSessionLockSurface {
 
         source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
         visible: source !== ""
-        opacity: GlobalStates.lockscreenUnlocking
-            ? (root.revealDesktop ? 0 : 1)
-            : (root.startAnim ? 1 : 0)
+        opacity: GlobalStates.lockscreenUnlocking ? (root.revealDesktop ? 0 : 1) : 1
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
@@ -107,16 +106,17 @@ WlSessionLockSurface {
         }
     }
 
-    // The opaque surface color remains visible while an asynchronous wallpaper
-    // image is still decoding. Fade this with the wallpaper to expose the
-    // captured desktop rather than a transparent/undefined lock surface.
+    // The wallpaper stays static on lock, while this inexpensive themed scrim
+    // fades from opaque to dim. That provides the lock-in fade without
+    // compositing the full-screen asynchronous image every frame. On unlock it
+    // keeps the existing desktop-reveal fade.
     Rectangle {
         id: dimOverlay
         anchors.fill: parent
         color: Colors.background
         opacity: GlobalStates.lockscreenUnlocking
             ? (root.revealDesktop ? 0 : 0.55)
-            : (root.startAnim ? 0.55 : 0)
+            : (root.startAnim ? 0.55 : 1)
         z: 2
 
         Behavior on opacity {
