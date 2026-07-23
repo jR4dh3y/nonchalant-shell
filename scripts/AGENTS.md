@@ -28,5 +28,5 @@ Python and Bash backend utilities invoked by QML services via `Quickshell.Io.Pro
 ## CONVENTIONS
 - **Communication**: Scripts output to stdout; QML reads via `Process` + `SplitParser` or `StdioCollector`.
 - **Format**: Python scripts output JSON; Bash scripts output line-delimited text.
-- **Dependencies**: Scripts assume tools are installed (`wl-paste`, `wl-copy`, `hyprpicker`, `grim`, `slurp`, `tesseract`, `brightnessctl`). Nix/install.sh handles dependencies.
+- **Dependencies**: Scripts assume tools are installed (`wl-paste`, `wl-copy`, `niri`, `tesseract`, `brightnessctl`). Screen capture uses niri's built-in screenshot / pick-color. Nix/install.sh handles dependencies.
 - **Error handling**: Scripts should exit cleanly on missing tools; QML services provide fallback values.

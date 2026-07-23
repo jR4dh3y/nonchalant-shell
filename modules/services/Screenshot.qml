@@ -72,9 +72,7 @@ QtObject {
         command: ["mkdir", "-p", root.screenshotsDir]
     }
 
-    // Dynamic list of freeze processes, managed via bash for simplicity?
-    // Or we can use a single shell script that forks grim for each monitor.
-    // "grim -o name1 path1 & grim -o name2 path2 & wait"
+    // Freeze captures via niri's built-in screenshot-screen (per focused output).
     property Process freezeProcess: Process {
         id: freezeProcess
         // Command built dynamically
@@ -92,7 +90,7 @@ QtObject {
                 // Also emit generic for compatibility?
                 root.screenshotCaptured(root.tempPathBase + "_ALL.png") // Dummy path?
             } else {
-                root.errorOccurred("Failed to capture screen (grim)")
+                root.errorOccurred("Failed to capture screen (niri)")
                 root._freezing = false;
             }
         }
@@ -267,19 +265,28 @@ QtObject {
             _freezing = false;
             return;
         }
-        
-        // Build a single command string to run grim for all monitors in parallel
-        // cmd: grim -o output1 path1 & grim -o output2 path2 & wait
-        var cmd = "";
+
+        // niri can only screenshot the focused output. Walk outputs, request
+        // screenshot-screen with an absolute --path, then wait for async writes.
+        var cmd = "set -e; ";
+        cmd += 'FOCUSED=$(niri msg --json focused-output 2>/dev/null | jq -r ".name // empty" 2>/dev/null || true); ';
+        var paths = [];
         for (var i = 0; i < root.monitors.length; i++) {
             var m = root.monitors[i];
             var path = root.tempPathBase + "_" + m.name + ".png";
-            // Ensure path is quoted safely
-            cmd += `grim -o "${m.name}" "${path}" & `;
+            paths.push(path);
+            cmd += `rm -f "${path}"; `;
+            cmd += `niri msg action focus-monitor "${m.name}"; `;
+            cmd += `niri msg action screenshot-screen --path "${path}" --show-pointer false; `;
         }
-        cmd += "wait";
-        
-        console.log("Screenshot: Executing freeze batch: " + cmd);
+        for (var j = 0; j < paths.length; j++) {
+            var waitPath = paths[j];
+            cmd += `ready=0; for _ in $(seq 1 100); do if [ -s "${waitPath}" ]; then ready=1; break; fi; sleep 0.02; done; `;
+            cmd += `[ "$ready" = 1 ] || { echo "Screenshot: freeze missing ${waitPath}" >&2; exit 1; }; `;
+        }
+        cmd += 'if [ -n "$FOCUSED" ]; then niri msg action focus-monitor "$FOCUSED" || true; fi';
+
+        console.log("Screenshot: Executing freeze batch via niri");
         freezeProcess.command = ["bash", "-c", cmd];
         freezeProcess.running = true;
     }
@@ -344,8 +351,8 @@ QtObject {
         var localX = x - m.x;
         var localY = y - m.y;
         
-        // Convert to physical coordinates for cropping the PHYSICAL grim output for THIS monitor
-        // Grim output for a single monitor is just size WxH (physical).
+        // Convert to physical coordinates for cropping the PHYSICAL freeze for THIS monitor.
+        // niri screenshot-screen output for a single monitor is size WxH (physical).
         var physX = Math.round(localX * m.scale);
         var physY = Math.round(localY * m.scale);
         var physW = Math.round(w * m.scale);
@@ -391,12 +398,12 @@ QtObject {
         // Let's default to primary or first monitor for safety if no context provided.
         // Ideally, we update ScreenshotTool to pass the screen name.
         
-        // TEMPORARY: Just capture the first monitor to verify the pipeline works.
-        // Or better: Re-run grim without -o to get the full stitched image again?
-        // That duplicates work but is safest for "Full Screenshot".
-        
-        var cmd = ["grim", root.finalPath];
-        cropProcess.command = cmd;
+        // Capture the currently focused output via niri into the final path.
+        var path = root.finalPath;
+        var cmd = `rm -f "${path}"; niri msg action screenshot-screen --path "${path}" --show-pointer false; ` +
+                  `ready=0; for _ in $(seq 1 100); do if [ -s "${path}" ]; then ready=1; break; fi; sleep 0.02; done; ` +
+                  `[ "$ready" = 1 ]`;
+        cropProcess.command = ["bash", "-c", cmd];
         cropProcess.running = true;
     }
     

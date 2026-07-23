@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import colorsys
+import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -11,7 +13,7 @@ def cmd(*args, input=None):
     return subprocess.check_output(args, input=input)
 
 
-for dep in ("grim", "slurp", "magick", "wl-copy", "notify-send"):
+for dep in ("niri", "magick", "wl-copy", "notify-send"):
     if subprocess.call(["which", dep], stdout=subprocess.DEVNULL) != 0:
         subprocess.call(
             [
@@ -24,23 +26,71 @@ for dep in ("grim", "slurp", "magick", "wl-copy", "notify-send"):
         )
         sys.exit(1)
 
-coords = cmd("slurp", "-p").decode().strip()
-if not coords:
+
+def pick_rgb():
+    """Use niri's built-in color picker. Prefer JSON; fall back to text."""
+    try:
+        raw = subprocess.check_output(
+            ["niri", "msg", "--json", "pick-color"],
+            stderr=subprocess.DEVNULL,
+        ).decode()
+        data = json.loads(raw)
+        # Expected shapes vary slightly across versions:
+        #   {"rgb": [r, g, b]} with 0..1 floats, or {"rgb": {"r":..}} etc.
+        if isinstance(data, dict):
+            rgb = data.get("rgb") or data.get("color") or data
+            if isinstance(rgb, dict):
+                r = rgb.get("r", rgb.get("red"))
+                g = rgb.get("g", rgb.get("green"))
+                b = rgb.get("b", rgb.get("blue"))
+                vals = [r, g, b]
+            elif isinstance(rgb, (list, tuple)) and len(rgb) >= 3:
+                vals = list(rgb[:3])
+            else:
+                vals = None
+            if vals is not None and all(v is not None for v in vals):
+                # niri JSON often uses 0..1 floats; accept 0..255 ints too.
+                out = []
+                for v in vals:
+                    fv = float(v)
+                    out.append(int(round(fv * 255)) if fv <= 1.0 else int(round(fv)))
+                return out
+    except (subprocess.CalledProcessError, json.JSONDecodeError, TypeError, ValueError):
+        pass
+
+    try:
+        text = subprocess.check_output(
+            ["niri", "msg", "pick-color"],
+            stderr=subprocess.DEVNULL,
+        ).decode()
+    except subprocess.CalledProcessError:
+        return None
+
+    hex_match = re.search(r"#([0-9a-fA-F]{6})", text)
+    if hex_match:
+        h = hex_match.group(1)
+        return [int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)]
+
+    rgb_match = re.search(
+        r"rgb\s*\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\)",
+        text,
+        re.IGNORECASE,
+    )
+    if rgb_match:
+        vals = [float(rgb_match.group(i)) for i in (1, 2, 3)]
+        return [
+            int(round(v * 255)) if v <= 1.0 else int(round(v))
+            for v in vals
+        ]
+
+    return None
+
+
+rgb = pick_rgb()
+if not rgb:
     sys.exit(0)
 
-raw = subprocess.Popen(["grim", "-g", coords, "-t", "ppm", "-"], stdout=subprocess.PIPE)
-
-rgb_str = cmd(
-    "magick",
-    "-",
-    "-format",
-    "%[fx:int(255*r)] %[fx:int(255*g)] %[fx:int(255*b)]",
-    "info:-",
-    input=raw.stdout.read(),
-).decode()
-
-r, g, b = map(int, rgb_str.split())
-
+r, g, b = rgb
 hex_color = f"#{r:02X}{g:02X}{b:02X}"
 rgb_color = f"rgb({r}, {g}, {b})"
 
