@@ -79,16 +79,11 @@ ShellRoot {
         id: sessionLock
         locked: GlobalStates.lockscreenVisible
 
-        // Surface auto-created per screen
-        LockScreen {}
-    }
-
-    // Post-unlock freeze bridge (one per screen). Covers the black flash
-    // between session-lock teardown and the live desktop redraw.
-    Variants {
-        model: Quickshell.screens
-
-        UnlockHandoff {}
+        // Surface auto-created per screen. Defer animation until the protocol
+        // confirms niri has locked every output.
+        LockScreen {
+            lockSecure: sessionLock.secure
+        }
     }
 
     // Toasts are hosted inside UnifiedShellPanel (NotificationToastStack) so
@@ -109,7 +104,7 @@ ShellRoot {
             Qt.callLater(() => {
                 let _ = IdleService.lockCmd;
                 _ = GlobalShortcuts.appId;
-                _ = LockscreenService.freezePathBase;
+                _ = LockscreenService;
                 // Keep compositor + OSD services hot for overview hide and media keys.
                 _ = NiriService.overviewOpen;
                 _ = Audio.value;

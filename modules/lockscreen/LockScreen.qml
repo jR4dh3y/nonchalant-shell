@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pam
@@ -19,105 +18,35 @@ import qs.config
 WlSessionLockSurface {
     id: root
 
+    // WlSessionLock.secure is set only after niri has covered every output.
+    // The shell passes it in so entry animation never races surface mapping.
+    property bool lockSecure: false
     property bool startAnim: false
+    property bool entryStarted: false
+    property bool unlocking: false
     property bool authenticating: false
     property string errorMessage: ""
     property int failLockSecondsLeft: 0
 
-    readonly property string freezeSource: LockscreenService.freezeSourceFor(root.screen ? root.screen.name : "")
-    readonly property bool freezeReady: freezeBackground.status === Image.Ready
+    readonly property int unlockAnimMs: Math.max(1, (Config.animDuration !== undefined ? Config.animDuration : 0) * 2)
 
-    // Opaque fallback only. The freeze frame (pre-lock desktop) sits on top of
-    // this so unlock never reveals a solid Colors.background / black slab.
-    color: "black"
+    // An opaque surface is important here. Transparent session-lock surfaces
+    // can briefly show an undefined compositor buffer while they map.
+    color: Colors.background
 
-    // Pre-lock desktop freeze. Captured with grim *before* WlSessionLock is
-    // raised (see LockscreenService). Post-lock ScreencopyView only sees lock
-    // surfaces, which is why the first unlock used to flash black.
-    Image {
-        id: freezeBackground
-        anchors.fill: parent
-        z: 0
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: false
-        cache: false
-        smooth: true
-        visible: true
-        source: root.freezeSource
+    function beginEntry() {
+        if (entryStarted || !lockSecure || unlocking)
+            return;
 
-        property real zoomScale: startAnim ? 1.25 : 1.0
-
-        transform: Scale {
-            origin.x: freezeBackground.width / 2
-            origin.y: freezeBackground.height / 2
-            xScale: freezeBackground.zoomScale
-            yScale: freezeBackground.zoomScale
-        }
-
-        Behavior on zoomScale {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration * 2
-                easing.type: Easing.OutExpo
-            }
-        }
+        entryStarted = true;
+        startAnim = true;
+        Qt.callLater(() => passwordInput.forceActiveFocus());
     }
 
-    // Wallpaper + blur over the freeze. Fades in on lock, out on unlock so the
-    // last lock frame is the real desktop again — not wallpaper, not black.
-    // If freeze failed, keep this fully opaque through unlock.
-    TintedWallpaper {
-        id: wallpaperBackground
-        anchors.fill: parent
-        z: 1
-        radius: 0
-        tintEnabled: GlobalStates.wallpaperManager ? GlobalStates.wallpaperManager.tintEnabled : false
+    onLockSecureChanged: beginEntry()
 
-        property string lockscreenFramePath: {
-            if (!GlobalStates.wallpaperManager)
-                return "";
-            return GlobalStates.wallpaperManager.getLockscreenFramePath(GlobalStates.wallpaperManager.currentWallpaper);
-        }
-
-        source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
-
-        opacity: (startAnim || !root.freezeReady) ? 1 : 0
-        visible: true
-
-        Behavior on opacity {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration * 2
-                easing.type: Easing.OutQuint
-            }
-        }
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            blurEnabled: true
-            blur: startAnim ? 1 : 0
-            blurMax: 64
-        }
-
-        property real zoomScale: startAnim ? 1.25 : 1.0
-        transform: Scale {
-            origin.x: wallpaperBackground.width / 2
-            origin.y: wallpaperBackground.height / 2
-            xScale: wallpaperBackground.zoomScale
-            yScale: wallpaperBackground.zoomScale
-        }
-
-        Behavior on zoomScale {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration * 2
-                easing.type: Easing.OutExpo
-            }
-        }
-    }
-
-    // Authentication happens on one lock surface, but every monitor needs to
-    // animate back to its captured workspace before the shared session unlocks.
+    // PAM can complete on any output. All lock surfaces must run their
+    // foreground exit at the same time before the shared lock is released.
     Connections {
         target: GlobalStates
 
@@ -127,36 +56,68 @@ WlSessionLockSurface {
         }
     }
 
-    // Overlay for dimming
-    Rectangle {
-        id: dimOverlay
+    // Capture one native compositor frame as soon as this surface exists. It
+    // remains hidden behind the lock backdrop until PAM succeeds, when it
+    // becomes the desktop-reveal layer for the exit animation.
+    ScreencopyView {
+        id: desktopFrame
         anchors.fill: parent
-        color: "black"
-        opacity: startAnim ? 0.25 : 0
-        z: 3
+        z: 0
+        captureSource: root.screen
+        live: false
+        paintCursor: false
+        visible: true
+    }
 
-        property real zoomScale: startAnim ? 1.1 : 1.0
+    readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && desktopFrame.hasContent
 
-        transform: Scale {
-            origin.x: dimOverlay.width / 2
-            origin.y: dimOverlay.height / 2
-            xScale: dimOverlay.zoomScale
-            yScale: dimOverlay.zoomScale
+    // Keep the lock backdrop stable while entering. On unlock, fade it over a
+    // single in-memory desktop frame; do not rebuild a blur or read a frame
+    // from disk during the animation.
+    TintedWallpaper {
+        id: wallpaperBackground
+        anchors.fill: parent
+        z: 1
+        radius: 0
+        tintEnabled: GlobalStates.wallpaperManager ? GlobalStates.wallpaperManager.tintEnabled : false
+
+        property string lockscreenFramePath: {
+            const manager = GlobalStates.wallpaperManager;
+            if (!manager)
+                return "";
+            const perScreen = manager.perScreenWallpapers || {};
+            const wallpaper = perScreen[root.screen ? root.screen.name : ""] || manager.currentWallpaper;
+            return manager.getLockscreenFramePath(wallpaper);
         }
+
+        source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
+        visible: source !== ""
+        opacity: root.revealDesktop ? 0 : 1
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration * 2
+                duration: root.unlockAnimMs
                 easing.type: Easing.OutQuint
             }
         }
+    }
 
-        Behavior on zoomScale {
+    // The opaque surface color remains visible while an asynchronous wallpaper
+    // image is still decoding. Fade this with the wallpaper to expose the
+    // captured desktop rather than a transparent/undefined lock surface.
+    Rectangle {
+        id: dimOverlay
+        anchors.fill: parent
+        color: Colors.background
+        opacity: root.revealDesktop ? 0 : 0.55
+        z: 2
+
+        Behavior on opacity {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration * 2
-                easing.type: Easing.OutExpo
+                duration: root.unlockAnimMs
+                easing.type: Easing.OutQuint
             }
         }
     }
@@ -191,13 +152,10 @@ WlSessionLockSurface {
                     y: hoursText.slideOffset
                 }
 
-                layer.enabled: true
-                layer.effect: BgShadow {}
-
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: Config.animDuration * 2
+                        duration: root.unlockAnimMs
                         easing.type: Easing.OutExpo
                     }
                 }
@@ -205,7 +163,7 @@ WlSessionLockSurface {
                 Behavior on slideOffset {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: Config.animDuration * 2
+                        duration: root.unlockAnimMs
                         easing.type: Easing.OutExpo
                     }
                 }
@@ -229,13 +187,10 @@ WlSessionLockSurface {
                     y: minutesText.slideOffset
                 }
 
-                layer.enabled: true
-                layer.effect: BgShadow {}
-
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: Config.animDuration * 2
+                        duration: root.unlockAnimMs
                         easing.type: Easing.OutExpo
                     }
                 }
@@ -243,7 +198,7 @@ WlSessionLockSurface {
                 Behavior on slideOffset {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: Config.animDuration * 2
+                        duration: root.unlockAnimMs
                         easing.type: Easing.OutExpo
                     }
                 }
@@ -267,13 +222,10 @@ WlSessionLockSurface {
                     y: amPmText.slideOffset
                 }
 
-                layer.enabled: true
-                layer.effect: BgShadow {}
-
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: Config.animDuration * 2
+                        duration: root.unlockAnimMs
                         easing.type: Easing.OutExpo
                     }
                 }
@@ -281,7 +233,7 @@ WlSessionLockSurface {
                 Behavior on slideOffset {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: Config.animDuration * 2
+                        duration: root.unlockAnimMs
                         easing.type: Easing.OutExpo
                     }
                 }
@@ -318,7 +270,7 @@ WlSessionLockSurface {
         Behavior on anchors.leftMargin {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration * 2
+                duration: root.unlockAnimMs
                 easing.type: Easing.OutExpo
             }
         }
@@ -326,7 +278,7 @@ WlSessionLockSurface {
         Behavior on opacity {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration * 2
+                duration: root.unlockAnimMs
                 easing.type: Easing.OutQuad
             }
         }
@@ -351,7 +303,7 @@ WlSessionLockSurface {
             bottomMargin: !isTopPosition ? (startAnim ? 32 : -80) : 0
         }
         width: 350
-        height: 96
+        height: 48
 
         opacity: startAnim ? 1 : 0
         scale: startAnim ? 1 : 0.92
@@ -359,7 +311,7 @@ WlSessionLockSurface {
         Behavior on anchors.topMargin {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration * 2
+                duration: root.unlockAnimMs
                 easing.type: Easing.OutExpo
             }
         }
@@ -367,7 +319,7 @@ WlSessionLockSurface {
         Behavior on anchors.bottomMargin {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration * 2
+                duration: root.unlockAnimMs
                 easing.type: Easing.OutExpo
             }
         }
@@ -375,7 +327,7 @@ WlSessionLockSurface {
         Behavior on opacity {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration * 2
+                duration: root.unlockAnimMs
                 easing.type: Easing.OutQuad
             }
         }
@@ -383,19 +335,19 @@ WlSessionLockSurface {
         Behavior on scale {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: Config.animDuration * 2
+                duration: root.unlockAnimMs
                 easing.type: Easing.OutBack
                 easing.overshoot: 1.2
             }
         }
 
-        // Password input with avatar
+        // Single pill input only — no outer "bg" frame around it.
         StyledRect {
             id: passwordInputBox
-            variant: "bg"
+            variant: showError ? "error" : "common"
             anchors.centerIn: parent
             width: parent.width
-            height: 96
+            height: parent.height
             radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
 
             property real shakeOffset: 0
@@ -405,106 +357,87 @@ WlSessionLockSurface {
                 x: passwordInputBox.shakeOffset
             }
 
-            Row {
+            RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 16
-                anchors.rightMargin: 24
-                spacing: 12
+                anchors.rightMargin: 16
+                spacing: 8
 
-                StyledRect {
-                    id: passwordFieldBg
-                    width: parent.width - parent.spacing
-                    height: 48
-                    anchors.verticalCenter: parent.verticalCenter
-                    variant: passwordInputBox.showError ? "error" : "common"
-                    radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
+                Text {
+                    id: userIcon
+                    text: authenticating ? Icons.circleNotch : Icons.user
+                    font.family: Icons.font
+                    font.pixelSize: 24
+                    color: passwordInputBox.item
+                    Layout.preferredWidth: 24
+                    Layout.preferredHeight: 24
+                    Layout.alignment: Qt.AlignVCenter
+                    z: 10
+                    rotation: 0
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 32
-                        spacing: 8
-
-                        // User icon / Spinner
-                        Text {
-                            id: userIcon
-                            text: authenticating ? Icons.circleNotch : Icons.user
-                            font.family: Icons.font
-                            font.pixelSize: 24
-                            color: passwordFieldBg.item
-                            Layout.preferredWidth: 24
-                            Layout.preferredHeight: 24
-                            Layout.alignment: Qt.AlignVCenter
-                            z: 10
-                            rotation: 0
-
-                            Behavior on color {
-                                enabled: Config.animDuration > 0
-                                ColorAnimation {
-                                    duration: Config.animDuration
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            Timer {
-                                id: spinnerTimer
-                                interval: 100
-                                repeat: true
-                                running: authenticating
-                                onTriggered: {
-                                    userIcon.rotation = (userIcon.rotation + 45) % 360;
-                                }
-                            }
-
-                            onTextChanged: {
-                                if (userIcon.text === Icons.user) {
-                                    userIcon.rotation = 0;
-                                }
-                            }
+                    Behavior on color {
+                        enabled: Config.animDuration > 0
+                        ColorAnimation {
+                            duration: Config.animDuration
+                            easing.type: Easing.OutCubic
                         }
+                    }
 
-                        // Text field
-                        TextField {
-                            id: passwordInput
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            placeholderText: usernameCollector.text.trim()
-                            placeholderTextColor: Qt.rgba(passwordFieldBg.item.r, passwordFieldBg.item.g, passwordFieldBg.item.b, 0.5)
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(0)
-                            color: passwordFieldBg.item
-                            background: null
-                            echoMode: TextInput.Password
-                            verticalAlignment: TextInput.AlignVCenter
-                            enabled: !authenticating
-
-                            Behavior on color {
-                                enabled: Config.animDuration > 0
-                                ColorAnimation {
-                                    duration: Config.animDuration
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            Behavior on placeholderTextColor {
-                                enabled: Config.animDuration > 0
-                                ColorAnimation {
-                                    duration: Config.animDuration
-                                    easing.type: Easing.OutQuad
-                                }
-                            }
-
-                            onAccepted: {
-                                if (passwordInput.text.trim() === "")
-                                    return;
-                                authPasswordHolder.password = passwordInput.text;
-                                passwordInput.text = "";
-
-                                authenticating = true;
-                                errorMessage = "";
-                                pamAuth.start();
-                            }
+                    Timer {
+                        id: spinnerTimer
+                        interval: 100
+                        repeat: true
+                        running: authenticating
+                        onTriggered: {
+                            userIcon.rotation = (userIcon.rotation + 45) % 360;
                         }
+                    }
+
+                    onTextChanged: {
+                        if (userIcon.text === Icons.user)
+                            userIcon.rotation = 0;
+                    }
+                }
+
+                TextField {
+                    id: passwordInput
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    placeholderText: usernameCollector.text.trim()
+                    placeholderTextColor: Qt.rgba(passwordInputBox.item.r, passwordInputBox.item.g, passwordInputBox.item.b, 0.5)
+                    font.family: Config.theme.font
+                    font.pixelSize: Styling.fontSize(0)
+                    color: passwordInputBox.item
+                    background: null
+                    echoMode: TextInput.Password
+                    verticalAlignment: TextInput.AlignVCenter
+                    enabled: !authenticating && !root.unlocking
+
+                    Behavior on color {
+                        enabled: Config.animDuration > 0
+                        ColorAnimation {
+                            duration: Config.animDuration
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
+                    Behavior on placeholderTextColor {
+                        enabled: Config.animDuration > 0
+                        ColorAnimation {
+                            duration: Config.animDuration
+                            easing.type: Easing.OutQuad
+                        }
+                    }
+
+                    onAccepted: {
+                        if (passwordInput.text.trim() === "")
+                            return;
+                        authPasswordHolder.password = passwordInput.text;
+                        passwordInput.text = "";
+
+                        authenticating = true;
+                        errorMessage = "";
+                        pamAuth.start();
                     }
                 }
             }
@@ -552,16 +485,6 @@ WlSessionLockSurface {
                     }
                 }
             }
-        }
-    }
-
-    // Timer to unlock after exit animation. Handoff overlay bridges the
-    // compositor gap between lock-surface destruction and live desktop.
-    Timer {
-        id: unlockTimer
-        interval: Math.max(Config.animDuration * 2, 1)
-        onTriggered: {
-            LockscreenService.beginUnlockHandoff();
         }
     }
 
@@ -634,6 +557,16 @@ WlSessionLockSurface {
         }
     }
 
+    // The opaque backdrop stays in place until the lock protocol tears down;
+    // only the chrome exits. This avoids blending a stale capture into a
+    // desktop that niri is concurrently restoring.
+    Timer {
+        id: unlockTimer
+        interval: root.unlockAnimMs
+        repeat: false
+        onTriggered: LockscreenService.finishUnlock()
+    }
+
     // PAM authentication process
     PamContext {
         id: pamAuth
@@ -654,29 +587,45 @@ WlSessionLockSurface {
             authPasswordHolder.password = "";
 
             if (result === PamResult.Success) {
-                // Autenticación exitosa - trigger exit animation
-                GlobalStates.lockscreenUnlocking = true;
-                root.startAnim = false;
-
-                // Wait for exit animation, then unlock
-                unlockTimer.start();
-
+                // Exit the foreground only, then release the native session
+                // lock. This path is intentionally unavailable through IPC.
                 errorMessage = "";
                 authenticating = false;
+                if (root.unlocking)
+                    return;
+                root.unlocking = true;
+                GlobalStates.lockscreenUnlocking = true;
+                root.startAnim = false;
+                if (Config.animDuration > 0)
+                    unlockTimer.restart();
+                else
+                    LockscreenService.finishUnlock();
             } else {
                 errorMessage = "Authentication failed";
                 console.warn("PAM auth failed with result:", result);
                 if (Config.animDuration > 0) {
                     wrongPasswordAnim.start();
+                } else {
+                    // Without animations, the old flow left the input disabled
+                    // after one failed attempt.
+                    passwordInput.text = "";
+                    authenticating = false;
+                    passwordInputBox.showError = true;
+                    errorResetTimer.restart();
                 }
             }
         }
     }
 
-    // Initialize when component is created (when lock becomes active).
-    // Freeze was already captured pre-lock; just start the entry animation.
+    Timer {
+        id: errorResetTimer
+        interval: 400
+        repeat: false
+        onTriggered: passwordInputBox.showError = false
+    }
+
     Component.onCompleted: {
-        startAnim = true;
-        passwordInput.forceActiveFocus();
+        desktopFrame.captureFrame();
+        beginEntry();
     }
 }
