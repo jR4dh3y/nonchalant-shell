@@ -168,16 +168,19 @@ FileView {
         property color sourceColor: "#7f2424"
     }
 
+    // OLED only forces pure black for the deepest background. Every other role
+    // comes straight from matugen/wallust so chrome tracks the wallpaper hue
+    // instead of being crushed into a near-black tint of background.
     property color background: Config.oledMode ? "#000000" : adapter.background
 
-    property color surface: Qt.tint(background, Qt.rgba(adapter.overBackground.r, adapter.overBackground.g, adapter.overBackground.b, 0.1))
-    property color surfaceBright: Qt.tint(background, Qt.rgba(adapter.overBackground.r, adapter.overBackground.g, adapter.overBackground.b, 0.2))
+    property color surface: Config.oledMode ? Qt.rgba(0.06, 0.06, 0.06, 1) : adapter.surface
+    property color surfaceBright: adapter.surfaceBright
     property color surfaceContainer: adapter.surfaceContainer
     property color surfaceContainerHigh: adapter.surfaceContainerHigh
     property color surfaceContainerHighest: adapter.surfaceContainerHighest
     property color surfaceContainerLow: adapter.surfaceContainerLow
-    property color surfaceContainerLowest: adapter.surfaceContainerLowest
-    property color surfaceDim: adapter.surfaceDim
+    property color surfaceContainerLowest: Config.oledMode ? "#000000" : adapter.surfaceContainerLowest
+    property color surfaceDim: Config.oledMode ? "#000000" : adapter.surfaceDim
     property color surfaceTint: adapter.surfaceTint
     property color surfaceVariant: adapter.surfaceVariant
 
