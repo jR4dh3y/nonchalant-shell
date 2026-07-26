@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.modules.theme
 import qs.modules.components
+import qs.modules.globals
 import qs.modules.services
 import qs.config
 import "../controls"
@@ -13,9 +14,9 @@ StyledRect {
     implicitWidth: internalBgRect.implicitWidth + 8
     implicitHeight: columnLayout.implicitHeight + 8
     radius: Styling.radius(4)
-    
+
     property int expandedPanel: -1 // -1: none, 0: wifi, 1: bluetooth
-    
+
     onVisibleChanged: {
         if (!visible) {
             root.expandedPanel = -1;
@@ -23,7 +24,7 @@ StyledRect {
             BluetoothService.initialize();
         }
     }
-    
+
     Behavior on implicitHeight {
         enabled: Config.animDuration > 0
         NumberAnimation {
@@ -37,7 +38,7 @@ StyledRect {
         anchors.fill: parent
         anchors.margins: 4
         spacing: 0
-        
+
         StyledRect {
             id: internalBgRect
             variant: "internalbg"
@@ -108,7 +109,7 @@ StyledRect {
                     isToggled: NightLightService.active
                     showMeter: NightLightService.active
                     tooltipText: NightLightService.active
-                        ? "Night Light: " + NightLightService.temperature + " K · Scroll to adjust"
+                        ? "Night Light: " + NightLightService.temperature + " K"
                         : "Night Light: Off"
                     onControlValueChanged: newValue => NightLightService.setTemperatureFromNormalized(newValue)
                     onToggled: NightLightService.toggle()
@@ -117,10 +118,10 @@ StyledRect {
                 ControlButton {
                     Layout.preferredWidth: 48
                     Layout.preferredHeight: 48
-                    iconName: Icons.caffeine
-                    isActive: CaffeineService.inhibit
-                    tooltipText: CaffeineService.inhibit ? "Caffeine: On" : "Caffeine: Off"
-                    onClicked: CaffeineService.toggleInhibit()
+                    iconName: Icons.wallpapers
+                    isActive: GlobalStates.dashboardCurrentTab === 1
+                    tooltipText: "Wallpapers"
+                    onClicked: GlobalStates.dashboardCurrentTab = 1
                 }
 
                 ControlButton {
@@ -133,24 +134,24 @@ StyledRect {
                 }
             }
         }
-        
+
         Item {
             id: panelArea
             Layout.fillWidth: true
-            Layout.preferredHeight: root.expandedPanel !== -1 ? root.width - 8 : 0 
+            Layout.preferredHeight: root.expandedPanel !== -1 ? root.width - 8 : 0
             clip: true
             opacity: root.expandedPanel !== -1 ? 1 : 0
-            
+
             Behavior on Layout.preferredHeight {
                 enabled: Config.animDuration > 0
                 NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
             }
-            
+
             Behavior on opacity {
                 enabled: Config.animDuration > 0
                 NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
             }
-            
+
             StyledRect {
                 variant: "internalbg"
                 anchors.fill: parent
@@ -162,17 +163,17 @@ StyledRect {
                     id: panelStack
                     anchors.fill: parent
                     anchors.margins: 8 // Extra margin for content
-                    
+
                     Loader {
                         id: wifiLoader
                         anchors.fill: parent
                         active: root.expandedPanel === 0
                         source: "../controls/WifiPanel.qml"
                         asynchronous: true
-                        
+
                         opacity: root.expandedPanel === 0 ? 1 : 0
                         x: root.expandedPanel === 0 ? 0 : (root.expandedPanel === 1 ? -width : width)
-                        
+
                         onLoaded: {
                             if (item) {
                                 item.maxContentWidth = width;
@@ -189,10 +190,10 @@ StyledRect {
                         active: root.expandedPanel === 1
                         source: "../controls/BluetoothPanel.qml"
                         asynchronous: true
-                        
+
                         opacity: root.expandedPanel === 1 ? 1 : 0
                         x: root.expandedPanel === 1 ? 0 : (root.expandedPanel === 0 ? width : -width)
-                        
+
                         onLoaded: {
                             if (item) {
                                 item.maxContentWidth = width;
@@ -206,7 +207,7 @@ StyledRect {
             }
         }
     }
-    
+
     function togglePanel(index) {
         if (root.expandedPanel === index) {
             root.expandedPanel = -1;

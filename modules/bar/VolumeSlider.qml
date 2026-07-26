@@ -21,7 +21,7 @@ CircularBarMeter {
         return Icons.speakerHigh;
     }
     progressColor: audioDevice?.muted ? Colors.outline : Styling.srItem("overprimary")
-    tooltipText: (audioDevice?.muted ? "Muted · " : "Volume · ") + Math.round(value * 100) + "% · Scroll to adjust"
+    tooltipText: (audioDevice?.muted ? "Muted " : "Volume ") + Math.round(value * 100) + "%"
 
     onAdjusted: newValue => {
         if (audioDevice)

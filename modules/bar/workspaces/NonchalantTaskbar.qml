@@ -201,7 +201,7 @@ Item {
 
                             Rectangle {
                                 anchors.fill: parent
-                                radius: width / 2
+                                radius: Styling.radius(-4)
                                 color: appButton.windowData.is_focused ? Colors.primary : Styling.srItem("overprimary")
                                 opacity: appButton.windowData.is_focused ? 1 : (appMouse.containsMouse ? 0.18 : 0)
                                 border.width: appButton.windowData.is_focused ? 1 : 0
@@ -212,13 +212,13 @@ Item {
                                 }
                             }
 
-                            // Keep icon artwork inside the circular app badge.
+                            // Keep icon artwork inside the themed app badge.
                             ClippingRectangle {
                                 id: appIconClip
                                 anchors.centerIn: parent
                                 width: appButton.width - 2
                                 height: width
-                                radius: width / 2
+                                radius: Styling.radius(-5)
                                 color: "transparent"
                                 clip: true
 

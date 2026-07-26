@@ -30,7 +30,10 @@ PanelWindow {
     WlrLayershell.keyboardFocus: {
         if (runMenu.open || projectPicker.open)
             return WlrKeyboardFocus.Exclusive;
-        if (assistantSidebar.active && assistantSidebar.wantsFocus)
+        // Only take the keyboard while the assistant input is actively focused.
+        // Keeping Exclusive + full-screen grab for the whole open sidebar locked
+        // the desktop when a tool call hung (no way to click other apps).
+        if (assistantSidebar.active && assistantSidebar.wantsFocus && assistantSidebar.hasActiveFocus)
             return WlrKeyboardFocus.Exclusive;
         return WlrKeyboardFocus.None;
     }
@@ -38,7 +41,9 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     exclusionMode: ExclusionMode.Ignore
 
-    readonly property bool needsFullScreenInput: runMenu.open || projectPicker.open || FocusGrabManager.hasActiveGrab || (assistantSidebar.active && assistantSidebar.wantsFocus)
+    // Assistant stays open without eating the whole screen — only its hitbox
+    // receives clicks (see mask regions). Run menu / grabs still go full-screen.
+    readonly property bool needsFullScreenInput: runMenu.open || projectPicker.open || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -121,8 +126,12 @@ PanelWindow {
 
         onClicked: {
             FocusGrabManager.clearTopGrab();
-            if (assistantSidebar.active && assistantSidebar.wantsFocus)
+            if (assistantSidebar.active && assistantSidebar.wantsFocus) {
                 assistantSidebar.wantsFocus = false;
+                // Defocus the text field so keyboard returns to the session.
+                if (assistantSidebar.hasActiveFocus)
+                    unifiedPanel.forceActiveFocus();
+            }
         }
     }
 
