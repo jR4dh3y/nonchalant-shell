@@ -16,7 +16,7 @@ Rectangle {
     color: "transparent"
     implicitWidth: 400
     implicitHeight: 300
-    // 0: Network, 1: Bluetooth, 2: Mixer, 3: AI, 4: Effects, 5: Theme, 6: Binds, 7: System, 8: Compositor, 9: Shell
+    // 0: Network, 1: Bluetooth, 2: Mixer, 3: AI, 4: Effects, 5: Theme, 6: System, 7: Shell
 
     property int currentSection: 0
     property int selectedIndex: GlobalStates.settingsCurrentTab
@@ -125,8 +125,8 @@ Rectangle {
         if (!subSectionId || subSectionId === "")
             return;
 
-        // Panels that support subsections: Theme(5), System(7), Compositor(8), Shell(9)
-        if ([5, 7, 8, 9].includes(sectionId)) {
+        // Panels that support subsections: Theme(5), System(6), Shell(7)
+        if ([5, 6, 7].includes(sectionId)) {
             if (panelLoader.item && panelLoader.status === Loader.Ready) {
                 panelLoader.item.currentSection = subSectionId;
             } else {
@@ -237,28 +237,16 @@ Rectangle {
             isIcon: true
         },
         {
-            icon: Icons.keyboard,
-            label: "Binds",
+            icon: Icons.circuitry,
+            label: "System",
             section: 6,
             isIcon: true
         },
         {
-            icon: Icons.circuitry,
-            label: "System",
+            icon: Icons.gear,
+            label: "Shell",
             section: 7,
             isIcon: true
-        },
-        {
-            icon: Icons.compositor,
-            label: "Compositor",
-            section: 8,
-            isIcon: true
-        },
-        {
-            icon: Qt.resolvedUrl("../../../../assets/nonchalant/nonchalant-icon.svg"),
-            label: "Nonchalant",
-            section: 9,
-            isIcon: false
         }
     ]
 
@@ -587,20 +575,12 @@ Rectangle {
                     section: 5
                 },
                 {
-                    component: "BindsPanel.qml",
+                    component: "SystemPanel.qml",
                     section: 6
                 },
                 {
-                    component: "SystemPanel.qml",
-                    section: 7
-                },
-                {
-                    component: "CompositorPanel.qml",
-                    section: 8
-                },
-                {
                     component: "ShellPanel.qml",
-                    section: 9
+                    section: 7
                 }
             ]
 

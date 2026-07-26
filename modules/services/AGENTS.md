@@ -20,10 +20,9 @@ Backend singletons bridging Wayland protocols, CLI tools (nmcli, upower, wpctl, 
 | **Visibility** | `Visibilities.qml` | Per-screen UI visibility/layering orchestration |
 | **State** | `StateService.qml` | JSON persistence for session state (tab positions, etc.) |
 | **Focus** | `FocusGrabManager.qml` | Input focus coordination across overlays |
-| **Desktop** | `DesktopService.qml` | Desktop icon grid positioning and management |
 | **App Search** | `AppSearch.qml` | Application indexing for launcher |
 | **Weather** | `WeatherService.qml` | Forecast, sunrise/sunset, day/night detection |
-| **Keybinds** | `GlobalShortcuts.qml` | Compositor-level keybind management |
+| **Shell IPC** | `GlobalShortcuts.qml` | CLI/IPC command routing |
 
 ## CONVENTIONS
 - **Singleton pattern**: `pragma Singleton` + `Singleton { id: root }` root component.

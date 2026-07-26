@@ -110,7 +110,6 @@ install_dependencies() {
     log_info "Enabling COPR repositories..."
     sudo dnf install -y --best --allowerasing --setopt=install_weak_deps=False dnf-plugins-core
     yes | sudo dnf copr enable errornointernet/quickshell
-    yes | sudo dnf copr enable solopasha/hyprland
     yes | sudo dnf copr enable zirconium/packages
     yes | sudo dnf copr enable iucar/cran
 
@@ -365,17 +364,6 @@ install_quickshell() {
   log_success "Quickshell installed to ~/.local/bin/qs"
 }
 
-install_axctl() {
-  if [[ "$DISTRO" == "nixos" ]]; then
-    log_info "Skipping axctl install on NixOS (managed by flake)"
-    return
-  fi
-
-  log_info "Installing axctl..."
-  curl -L get.axeni.de/axctl | sh
-  log_success "axctl installed"
-}
-
 # === Python Tools ===
 install_python_tools() {
   [[ "$DISTRO" == "nixos" ]] && return
@@ -459,7 +447,6 @@ setup_launcher() {
 # === Main ===
 migrate_old_paths
 install_dependencies "$1"
-install_axctl
 setup_repo
 install_quickshell
 install_python_tools

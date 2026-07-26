@@ -17,7 +17,7 @@ Singleton {
     property var workspaceWindowsMap: ({})
 
     function updateWindowList() {
-        // No-op: state is now pushed inline via axctl subscribe events
+        // No-op: state is pushed by NiriService.
     }
 
     function updateMaps() {

@@ -10,7 +10,7 @@ import qs.modules.components
 import qs.config
 
 // BarPopup: A popup component that anchors to bar elements
-// Inspired by end-4/dots-hyprland BarPopup implementation
+// Shared popup surface for bar-attached controls.
 PopupWindow {
     id: root
 

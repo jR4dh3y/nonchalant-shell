@@ -5,7 +5,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import qs.modules.theme
 import qs.modules.components
-import qs.modules.globals
 import qs.config
 
 Item {
@@ -127,10 +126,6 @@ Item {
                         spacing: 8
 
                         SectionButton {
-                            text: "Prefixes"
-                            sectionId: "prefixes"
-                        }
-                        SectionButton {
                             text: "Weather"
                             sectionId: "weather"
                         }
@@ -142,92 +137,8 @@ Item {
                             text: "System Resources"
                             sectionId: "system"
                         }
-                        SectionButton {
-                            text: "Idle"
-                            sectionId: "idle"
-                        }
                     }
 
-                    // =====================
-                    // PREFIX SECTION
-                    // =====================
-                    ColumnLayout {
-                        visible: root.currentSection === "prefixes"
-                        property string settingsSection: "prefixes"
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "Prefixes"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
-                            font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
-                            Layout.bottomMargin: -4
-                        }
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "Keyboard shortcuts for quick actions in launcher"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.overSurfaceVariant
-                            opacity: 0.7
-                        }
-
-                        // Clipboard prefix
-                        PrefixRow {
-                            Layout.fillWidth: true
-                            label: "Clipboard"
-                            prefixValue: Config.prefix.clipboard
-                            onPrefixEdited: newValue => {
-                                Config.prefix.clipboard = newValue;
-                            }
-                        }
-
-                        // Emoji prefix
-                        PrefixRow {
-                            Layout.fillWidth: true
-                            label: "Emoji"
-                            prefixValue: Config.prefix.emoji
-                            onPrefixEdited: newValue => {
-                                Config.prefix.emoji = newValue;
-                            }
-                        }
-
-                        // Tmux prefix
-                        PrefixRow {
-                            Layout.fillWidth: true
-                            label: "Tmux"
-                            prefixValue: Config.prefix.tmux
-                            onPrefixEdited: newValue => {
-                                Config.prefix.tmux = newValue;
-                            }
-                        }
-
-                        // Wallpapers prefix
-                        PrefixRow {
-                            Layout.fillWidth: true
-                            label: "Wallpapers"
-                            prefixValue: Config.prefix.wallpapers
-                            onPrefixEdited: newValue => {
-                                Config.prefix.wallpapers = newValue;
-                            }
-                        }
-
-                        // Notes prefix
-                        PrefixRow {
-                            Layout.fillWidth: true
-                            label: "Notes"
-                            prefixValue: Config.prefix.notes
-                            onPrefixEdited: newValue => {
-                                Config.prefix.notes = newValue;
-                            }
-                        }
-                    }
 
                     // =====================
                     // WEATHER SECTION
@@ -627,218 +538,6 @@ Item {
                         }
                     }
 
-                    // =====================
-                    // IDLE SECTION
-                    // =====================
-                    ColumnLayout {
-                        visible: root.currentSection === "idle"
-                        property string settingsSection: "idle"
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "Idle"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
-                            font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
-                            Layout.bottomMargin: -4
-                        }
-
-                        TextInputRow {
-                            label: "Lock Cmd"
-                            value: Config.system.idle.general.lock_cmd ?? ""
-                            placeholder: "Command to lock screen"
-                            onValueEdited: newValue => {
-                                if (newValue !== Config.system.idle.general.lock_cmd) {
-                                    GlobalStates.markShellChanged();
-                                    Config.system.idle.general.lock_cmd = newValue;
-                                }
-                            }
-                        }
-
-                        TextInputRow {
-                            label: "Before Sleep"
-                            value: Config.system.idle.general.before_sleep_cmd ?? ""
-                            placeholder: "Command before sleep"
-                            onValueEdited: newValue => {
-                                if (newValue !== Config.system.idle.general.before_sleep_cmd) {
-                                    GlobalStates.markShellChanged();
-                                    Config.system.idle.general.before_sleep_cmd = newValue;
-                                }
-                            }
-                        }
-
-                        TextInputRow {
-                            label: "After Sleep"
-                            value: Config.system.idle.general.after_sleep_cmd ?? ""
-                            placeholder: "Command after sleep"
-                            onValueEdited: newValue => {
-                                if (newValue !== Config.system.idle.general.after_sleep_cmd) {
-                                    GlobalStates.markShellChanged();
-                                    Config.system.idle.general.after_sleep_cmd = newValue;
-                                }
-                            }
-                        }
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "Listeners"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(0)
-                            color: Colors.overBackground
-                            Layout.topMargin: 8
-                        }
-
-                        Repeater {
-                            model: Config.system.idle.listeners
-
-                            delegate: ColumnLayout {
-                                required property var modelData
-                                required property int index
-
-                                Layout.fillWidth: true
-                                spacing: 4
-                                Layout.bottomMargin: 8
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    height: 1
-                                    color: Colors.surfaceBright
-                                    visible: index > 0
-                                }
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: "Listener " + (index + 1)
-                                        font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(-1)
-                                        font.bold: true
-                                        color: Styling.srItem("overprimary")
-                                    }
-                                    Item {
-                                        Layout.fillWidth: true
-                                    }
-
-                                    StyledRect {
-                                        id: deleteListenerBtn
-                                        variant: "error"
-                                        Layout.preferredWidth: 24
-                                        Layout.preferredHeight: 24
-                                        radius: Styling.radius(-2)
-
-                                        Text {
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            anchors.centerIn: parent
-                                            text: Icons.trash
-                                            font.family: Icons.font
-                                            color: deleteListenerBtn.item
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: {
-                                                // Create a copy of the list to ensure change detection
-                                                var list = [];
-                                                for (var i = 0; i < Config.system.idle.listeners.length; i++)
-                                                    list.push(Config.system.idle.listeners[i]);
-                                                list.splice(index, 1);
-                                                Config.system.idle.listeners = list;
-                                                GlobalStates.markShellChanged();
-                                            }
-                                        }
-                                    }
-                                }
-
-                                NumberInputRow {
-                                    label: "Timeout (s)"
-                                    value: modelData.timeout || 0
-                                    minValue: 1
-                                    maxValue: 7200
-                                    onValueEdited: val => {
-                                        var list = [];
-                                        for (var i = 0; i < Config.system.idle.listeners.length; i++)
-                                            list.push(Config.system.idle.listeners[i]);
-                                        list[index].timeout = val;
-                                        Config.system.idle.listeners = list;
-                                        GlobalStates.markShellChanged();
-                                    }
-                                }
-
-                                TextInputRow {
-                                    label: "On Timeout"
-                                    value: modelData.onTimeout || ""
-                                    onValueEdited: val => {
-                                        var list = [];
-                                        for (var i = 0; i < Config.system.idle.listeners.length; i++)
-                                            list.push(Config.system.idle.listeners[i]);
-                                        list[index].onTimeout = val;
-                                        Config.system.idle.listeners = list;
-                                        GlobalStates.markShellChanged();
-                                    }
-                                }
-
-                                TextInputRow {
-                                    label: "On Resume"
-                                    value: modelData.onResume || ""
-                                    onValueEdited: val => {
-                                        var list = [];
-                                        for (var i = 0; i < Config.system.idle.listeners.length; i++)
-                                            list.push(Config.system.idle.listeners[i]);
-                                        list[index].onResume = val;
-                                        Config.system.idle.listeners = list;
-                                        GlobalStates.markShellChanged();
-                                    }
-                                }
-                            }
-                        }
-
-                        StyledRect {
-                            id: addListenerBtn
-                            variant: "common"
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 32
-                            radius: Styling.radius(-2)
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                anchors.centerIn: parent
-                                text: "Add Listener"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(0)
-                                font.bold: true
-                                color: addListenerBtn.item
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    var list = [];
-                                    if (Config.system.idle.listeners) {
-                                        for (var i = 0; i < Config.system.idle.listeners.length; i++)
-                                            list.push(Config.system.idle.listeners[i]);
-                                    }
-                                    list.push({
-                                        "timeout": 60,
-                                        "onTimeout": "",
-                                        "onResume": ""
-                                    });
-                                    Config.system.idle.listeners = list;
-                                    GlobalStates.markShellChanged();
-                                }
-                            }
-                        }
-                    }
 
                     // Bottom spacing
                     Item {
@@ -997,59 +696,6 @@ Item {
         }
     }
 
-    // PrefixRow component for prefix inputs
-    component PrefixRow: RowLayout {
-        id: prefixRow
-        property string label: ""
-        property string prefixValue: ""
-        signal prefixEdited(string newValue)
-
-        spacing: 8
-
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: prefixRow.label
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(0)
-            color: Colors.overBackground
-            Layout.preferredWidth: 100
-        }
-
-        StyledRect {
-            variant: "common"
-            Layout.preferredWidth: 80
-            Layout.preferredHeight: 36
-            radius: Styling.radius(-2)
-
-            TextInput {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                id: prefixInput
-                anchors.fill: parent
-                anchors.margins: 8
-                font.family: Config.theme.monoFont
-                font.pixelSize: Styling.monoFontSize(0)
-                color: Colors.overBackground
-                selectByMouse: true
-                clip: true
-                verticalAlignment: TextInput.AlignVCenter
-                horizontalAlignment: TextInput.AlignHCenter
-                text: prefixRow.prefixValue
-                maximumLength: 4
-
-                onEditingFinished: {
-                    if (text !== prefixRow.prefixValue && text.trim() !== "") {
-                        prefixRow.prefixEdited(text.trim());
-                    }
-                }
-            }
-        }
-
-        Item {
-            Layout.fillWidth: true
-        }
-    }
 
     // ToggleRow component for boolean toggles
     component ToggleRow: RowLayout {
@@ -1085,7 +731,7 @@ Item {
             }
         }
 
-        // Checkbox styled like in BindsPanel
+        // Checkbox used by toggle rows.
         Item {
             Layout.preferredWidth: 32
             Layout.preferredHeight: 32

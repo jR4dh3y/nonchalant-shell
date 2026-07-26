@@ -94,8 +94,10 @@ FloatingWindow {
             preparePlacement();
         }
 
-        if (!visible && GlobalStates.settingsWindowVisible) {
-            GlobalStates.settingsWindowVisible = false;
+        if (!visible) {
+            if (GlobalStates.settingsWindowVisible) {
+                GlobalStates.settingsWindowVisible = false;
+            }
         }
     }
 

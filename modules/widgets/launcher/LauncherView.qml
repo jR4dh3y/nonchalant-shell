@@ -313,10 +313,6 @@ Rectangle {
                                     appLauncher.executeApp(selectedApp.appId);
                                     Visibilities.setActiveModule("");
                                 }, function () {
-                                    // Pin/Unpin from dock
-                                    TaskbarApps.togglePin(selectedApp.appId);
-                                    appLauncher.expandedItemIndex = -1;
-                                }, function () {
                                     // Create shortcut
                                     let desktopDir = Quickshell.env("XDG_DESKTOP_DIR") || Quickshell.env("HOME") + "/Desktop";
                                     let timestamp = Date.now();
@@ -715,7 +711,7 @@ Rectangle {
 
                         ClippingRectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 36 * 3 // Always 3 options
+                            Layout.preferredHeight: 36 * 2
                             color: Colors.background
                             radius: Styling.radius(0)
 
@@ -734,16 +730,6 @@ Rectangle {
                                         action: function () {
                                             appLauncher.executeApp(appId);
                                             Visibilities.setActiveModule("");
-                                        }
-                                    },
-                                    {
-                                        text: TaskbarApps.isPinned(appId) ? "Unpin from Dock" : "Pin to Dock",
-                                        icon: TaskbarApps.isPinned(appId) ? Icons.unpin : Icons.pin,
-                                        highlightColor: TaskbarApps.isPinned(appId) ? Colors.error : Colors.tertiary,
-                                        textColor: TaskbarApps.isPinned(appId) ? Styling.srItem("error") : Styling.srItem("tertiary"),
-                                        action: function () {
-                                            TaskbarApps.togglePin(appId);
-                                            appLauncher.expandedItemIndex = -1;
                                         }
                                     },
                                     {

@@ -21,8 +21,6 @@ Python and Bash backend utilities invoked by QML services via `Quickshell.Io.Pro
 | `weather.sh` | Bash | `WeatherService.qml` | Weather data fetching |
 | `wf-record.sh` | Bash | Screen recording | `wf-recorder`/`gpu-screen-recorder` wrapper |
 | `link_preview.py` | Python | Clipboard | URL metadata/preview extraction |
-| `sleep_monitor.sh` | Bash | `SuspendManager` | Monitors system sleep/wake events |
-| `loginlock.sh` | Bash | `LockScreen` | Login lock coordination |
 | `daemon_priority.sh` | Bash | Shell init | Process priority adjustment |
 
 ## CONVENTIONS

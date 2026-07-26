@@ -10,9 +10,8 @@ if command -v brightnessctl &> /dev/null; then
         MAX=$(brightnessctl -d "$device" m 2>/dev/null)
         if [ -n "$CURRENT" ] && [ -n "$MAX" ] && [ "$MAX" -gt 0 ]; then
             PERCENT=$(( CURRENT * 100 / MAX ))
-            # Try to map backlight device to Hyprland monitor name
-            # Most internal displays are eDP, so we use that as fallback
-            MONITOR_NAME=$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.name | contains("eDP")) | .name' | head -1)
+            # Match the internal backlight to Niri's eDP output.
+            MONITOR_NAME=$(niri msg -j outputs 2>/dev/null | jq -r 'keys[] | select(contains("eDP"))' | head -1)
             if [ -z "$MONITOR_NAME" ]; then
                 MONITOR_NAME="eDP-1"
             fi

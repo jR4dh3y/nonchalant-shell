@@ -16,8 +16,6 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 │   ├── bar/              # Panel widgets: clock, systray, workspaces, indicators
 │   ├── components/       # Reusable UI primitives + GLSL shaders (55 files)
 │   ├── corners/          # Rounded screen corners overlay
-│   ├── desktop/          # Desktop background + icon grid
-│   ├── dock/             # App dock (standalone or integrated into bar)
 │   ├── frame/            # Screen border/glow effect
 │   ├── globals/          # GlobalStates.qml — transient runtime state
 │   ├── lockscreen/       # WlSessionLock + PAM authentication
@@ -30,9 +28,7 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 │       ├── config/       # Standalone settings window
 │       ├── dashboard/    # Main hub: controls, metrics, assistant, clipboard, notes
 │       ├── launcher/     # App search + multi-tab launcher
-│       ├── overview/     # Mission Control workspace overview
 │       ├── powermenu/    # Lock, logout, shutdown actions
-│       ├── presets/      # Theme/layout preset switcher
 │       └── tools/        # Quick utility access (OCR, recording, etc.)
 ├── assets/               # Wallpapers, color presets, AI provider configs, sounds
 ├── scripts/              # Python/Bash backends (system monitor, clipboard, OCR)
@@ -45,7 +41,7 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 | Task | Location | Notes |
 |------|----------|-------|
 | **Entry Point** | `shell.qml` | `ShellRoot` → `Variants` per screen for each layer |
-| **Config Logic** | `config/Config.qml` | >3100 lines. `FileView` + `JsonAdapter` persistence |
+| **Config Logic** | `config/Config.qml` | Per-domain `FileView` + `JsonAdapter` persistence |
 | **Transient State** | `modules/globals/GlobalStates.qml` | Window visibility, active modes, runtime flags |
 | **Services** | `modules/services/*.qml` | 30+ singletons. System integration layer |
 | **Theme/Colors** | `modules/theme/Colors.qml` | Watches `~/.cache/nonchalant/colors.json` reactively |
@@ -55,7 +51,6 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 | **Launcher** | `modules/widgets/launcher/LauncherView.qml` | Unified search: apps, clipboard, emoji |
 | **Bar Layout** | `modules/bar/BarContent.qml` | Auto-hide, horizontal/vertical, widget groups |
 | **Run Menu** | `modules/widgets/launcher/RunMenuHost.qml` | Floating launcher host inside the unified panel |
-| **Overview** | `modules/widgets/overview/` | Mission Control workspace view |
 | **Lockscreen** | `modules/lockscreen/LockScreen.qml` | PAM auth + `WlSessionLockSurface` |
 | **Notifications** | `modules/notifications/` | Popup system + delegate + history |
 | **Adding Config** | `config/defaults/*.js` + `Config.qml` | Always update both when adding keys |
@@ -88,7 +83,7 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 - **StyledRect variants**: Use `"pane"`, `"popup"`, `"common"`, `"internalbg"`, `"focus"` for containers.
 - **Null safety**: Always null-check nested properties in QML to avoid `TypeError: Value is undefined`.
 - **Bulk config**: Use `root.pauseAutoSave` when updating multiple Config properties at once.
-- **Service init**: Critical services init on next tick via `Qt.callLater`; non-critical deferred 2s (see `shell.qml:280-302`).
+- **Service init**: Critical services init on next tick via `Qt.callLater`.
 - **Async safety**: Use `Qt.callLater()` when modifying lists inside process handlers.
 
 ## ANTI-PATTERNS (THIS PROJECT)
@@ -108,8 +103,7 @@ qs -p .
 ```
 
 ## NOTES
-- `Config.qml` is >3100 lines. Modify with care; use `pauseAutoSave` for bulk edits.
-- Large files (>1000 lines): `ClipboardTab`, `NotesTab`, `TmuxTab`, `BindsPanel`, `ShellPanel`, `PresetsTab`, `ThemePanel`, `LauncherView`, `AssistantTab`, `Ai.qml`.
+- Large files (>1000 lines): `ClipboardTab`, `NotesTab`, `TmuxTab`, `ShellPanel`, `ThemePanel`, `LauncherView`, `AssistantTab`, `Ai.qml`.
 - The `qs.` import prefix is a Quickshell VFS construct, not a physical directory.
 - `screenshotToolMode` in `GlobalStates.qml` is **DEPRECATED**.
 - Gemini AI provider doesn't support the `system` role; handled in `services/ai/strategies/`.

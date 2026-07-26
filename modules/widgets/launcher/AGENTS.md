@@ -14,7 +14,6 @@ The launcher is a single-purpose application run menu. It is rendered as a detac
 |---------|------|
 | `AppSearch` | Application indexing and fuzzy search |
 | `UsageTracker` | Records launches for result ordering |
-| `TaskbarApps` | Pin/unpin action for app entries |
 | `Visibilities` | Per-screen open/close state |
 
 ## CONVENTIONS

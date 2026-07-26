@@ -3,14 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    axctl = {
-      url = "github:Axenide/axctl";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, axctl, ... }:
+  outputs = { self, nixpkgs, ... }:
     let
       nonchalantLib = import ./nix/lib.nix { inherit nixpkgs; };
       version = nixpkgs.lib.removeSuffix "\n" (builtins.readFile ./version);
@@ -31,7 +26,7 @@
           lib = nixpkgs.lib;
 
           Nonchalant = import ./nix/packages {
-            inherit pkgs lib self system axctl version;
+            inherit pkgs lib self system version;
           };
         in {
           default = Nonchalant;

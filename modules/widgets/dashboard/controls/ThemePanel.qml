@@ -5,7 +5,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import qs.modules.theme
 import qs.modules.components
-import qs.modules.globals
 import Quickshell
 import Quickshell.Io
 import qs.config
@@ -190,29 +189,8 @@ Item {
                     width: root.contentWidth
                     anchors.horizontalCenter: parent.horizontalCenter
                     title: root.currentSection === "" ? "Theme" : (root.currentSection.charAt(0).toUpperCase() + root.currentSection.slice(1))
-                    statusText: GlobalStates.themeHasChanges ? "Unsaved changes" : ""
-                    statusColor: Colors.error
 
                     actions: {
-                        let baseActions = [
-                            {
-                                icon: Icons.arrowCounterClockwise,
-                                tooltip: "Discard changes",
-                                enabled: GlobalStates.themeHasChanges,
-                                onClicked: function () {
-                                    GlobalStates.discardThemeChanges();
-                                }
-                            },
-                            {
-                                icon: Icons.disk,
-                                tooltip: "Apply changes",
-                                enabled: GlobalStates.themeHasChanges,
-                                onClicked: function () {
-                                    GlobalStates.applyThemeChanges();
-                                }
-                            }
-                        ];
-
                         if (root.currentSection !== "") {
                             return [
                                 {
@@ -222,10 +200,10 @@ Item {
                                         root.currentSection = "";
                                     }
                                 }
-                            ].concat(baseActions);
+                            ];
                         }
 
-                        return baseActions;
+                        return [];
                     }
                 }
             }
@@ -372,7 +350,6 @@ Item {
 
                                     onCheckedChanged: {
                                         if (checked !== Config.theme.tintIcons) {
-                                            GlobalStates.markThemeChanged();
                                             Config.theme.tintIcons = checked;
                                         }
                                     }
@@ -443,7 +420,6 @@ Item {
 
                                     onCheckedChanged: {
                                         if (checked !== Config.theme.enableCorners) {
-                                            GlobalStates.markThemeChanged();
                                             Config.theme.enableCorners = checked;
                                         }
                                     }
@@ -523,7 +499,6 @@ Item {
                                     onValueChanged: {
                                         let newDuration = Math.round(value * 1000);
                                         if (newDuration !== Config.theme.animDuration) {
-                                            GlobalStates.markThemeChanged();
                                             Config.theme.animDuration = newDuration;
                                         }
                                     }
@@ -602,7 +577,6 @@ Item {
 
                                         onEditingFinished: {
                                             if (text !== Config.theme.font && text.trim() !== "") {
-                                                GlobalStates.markThemeChanged();
                                                 Config.theme.font = text.trim();
                                             }
                                         }
@@ -646,7 +620,6 @@ Item {
                                         onEditingFinished: {
                                             let newSize = parseInt(text);
                                             if (!isNaN(newSize) && newSize >= 8 && newSize <= 32 && newSize !== Config.theme.fontSize) {
-                                                GlobalStates.markThemeChanged();
                                                 Config.theme.fontSize = newSize;
                                             }
                                         }
@@ -709,7 +682,6 @@ Item {
 
                                         onEditingFinished: {
                                             if (text !== Config.theme.monoFont && text.trim() !== "") {
-                                                GlobalStates.markThemeChanged();
                                                 Config.theme.monoFont = text.trim();
                                             }
                                         }
@@ -753,7 +725,6 @@ Item {
                                         onEditingFinished: {
                                             let newSize = parseInt(text);
                                             if (!isNaN(newSize) && newSize >= 8 && newSize <= 32 && newSize !== Config.theme.monoFontSize) {
-                                                GlobalStates.markThemeChanged();
                                                 Config.theme.monoFontSize = newSize;
                                             }
                                         }
@@ -814,7 +785,6 @@ Item {
                                     onValueChanged: {
                                         let newRoundness = Math.round(value * 20);
                                         if (newRoundness !== Config.theme.roundness) {
-                                            GlobalStates.markThemeChanged();
                                             Config.theme.roundness = newRoundness;
                                         }
                                     }
@@ -895,7 +865,6 @@ Item {
 
                                     onValueChanged: {
                                         if (Math.abs(value - Config.theme.shadowOpacity) > 0.001) {
-                                            GlobalStates.markThemeChanged();
                                             Config.theme.shadowOpacity = value;
                                         }
                                     }
@@ -951,7 +920,6 @@ Item {
                                     onValueChanged: {
                                         let newBlur = value * 4;
                                         if (Math.abs(newBlur - Config.theme.shadowBlur) > 0.01) {
-                                            GlobalStates.markThemeChanged();
                                             Config.theme.shadowBlur = newBlur;
                                         }
                                     }
@@ -1007,7 +975,6 @@ Item {
                                     onValueChanged: {
                                         let newOffset = Math.round((value - 0.5) * 40);
                                         if (newOffset !== Config.theme.shadowXOffset) {
-                                            GlobalStates.markThemeChanged();
                                             Config.theme.shadowXOffset = newOffset;
                                         }
                                     }
@@ -1062,7 +1029,6 @@ Item {
                                     onValueChanged: {
                                         let newOffset = Math.round((value - 0.5) * 40);
                                         if (newOffset !== Config.theme.shadowYOffset) {
-                                            GlobalStates.markThemeChanged();
                                             Config.theme.shadowYOffset = newOffset;
                                         }
                                     }
@@ -1155,7 +1121,6 @@ Item {
 
                                         onClicked: {
                                             root.openColorPicker(Colors.availableColorNames, Config.theme.shadowColor, "Select Shadow Color", function (color) {
-                                                GlobalStates.markThemeChanged();
                                                 Config.theme.shadowColor = color;
                                             });
                                         }

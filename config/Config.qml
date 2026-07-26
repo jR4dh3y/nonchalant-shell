@@ -5,20 +5,13 @@ import Quickshell
 import Quickshell.Io
 import qs.modules.globals
 import qs.modules.theme
-import qs.modules.services as Services
 import "defaults/theme.js" as ThemeDefaults
 import "defaults/bar.js" as BarDefaults
 import "defaults/workspaces.js" as WorkspacesDefaults
-import "defaults/overview.js" as OverviewDefaults
-import "defaults/compositor.js" as CompositorDefaults
-import "KeybindActions.js" as KeybindActions
 import "defaults/performance.js" as PerformanceDefaults
 import "defaults/weather.js" as WeatherDefaults
-import "defaults/desktop.js" as DesktopDefaults
 import "defaults/lockscreen.js" as LockscreenDefaults
-import "defaults/prefix.js" as PrefixDefaults
 import "defaults/system.js" as SystemDefaults
-import "defaults/dock.js" as DockDefaults
 import "defaults/ai.js" as AiDefaults
 import "ConfigValidator.js" as ConfigValidator
 
@@ -34,32 +27,23 @@ Singleton {
     }
 
     property string configDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/nonchalant/config"
-    property string keybindsPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/nonchalant/binds.json"
     property string presetDir: Qt.resolvedUrl("../assets/presets/Nonchalant Default").toString().replace("file://", "")
-
-    property bool pauseAutoSave: false
+    property bool configDirReady: false
 
     // Module init status
     property bool themeReady: false
     property bool barReady: false
     property bool workspacesReady: false
-    property bool overviewReady: false
-    property bool compositorReady: false
     property bool performanceReady: false
     property bool weatherReady: false
-    property bool desktopReady: false
     property bool lockscreenReady: false
-    property bool prefixReady: false
     property bool systemReady: false
-    property bool dockReady: false
     property bool aiReady: false
-    property bool keybindsInitialLoadComplete: false
 
-    property bool initialLoadComplete: themeReady && barReady && workspacesReady && overviewReady && compositorReady && performanceReady && weatherReady && desktopReady && lockscreenReady && prefixReady && systemReady && dockReady && aiReady
+    property bool initialLoadComplete: themeReady && barReady && workspacesReady && performanceReady && weatherReady && lockscreenReady && systemReady && aiReady
 
     // Compatibility aliases
     property alias loader: themeLoader
-    property alias keybindsLoader: keybindsLoader
 
     // ============================================
     // BATCH INITIALIZATION
@@ -74,23 +58,14 @@ Singleton {
             "cp -n '" + root.presetDir + "/theme.json' '" + root.configDir + "/theme.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/bar.json' '" + root.configDir + "/bar.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/workspaces.json' '" + root.configDir + "/workspaces.json' 2>/dev/null || true; " +
-            "cp -n '" + root.presetDir + "/overview.json' '" + root.configDir + "/overview.json' 2>/dev/null || true; " +
-            "cp -n '" + root.presetDir + "/compositor.json' '" + root.configDir + "/compositor.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/performance.json' '" + root.configDir + "/performance.json' 2>/dev/null || true; " +
-            "cp -n '" + root.presetDir + "/desktop.json' '" + root.configDir + "/desktop.json' 2>/dev/null || true; " +
+            "cp -n '" + root.presetDir + "/weather.json' '" + root.configDir + "/weather.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/lockscreen.json' '" + root.configDir + "/lockscreen.json' 2>/dev/null || true; " +
-            "cp -n '" + root.presetDir + "/dock.json' '" + root.configDir + "/dock.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/ai.json' '" + root.configDir + "/ai.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/system.json' '" + root.configDir + "/system.json' 2>/dev/null || true; " +
             "echo 'Preset files copied if missing'"
         ]
-    }
-
-    // Auto-migrate hyprland.json → compositor.json for existing users
-    Process {
-        id: migrateCompositorConfig
-        running: true
-        command: ["bash", "-c", `test -f '${root.configDir}/hyprland.json' && ! test -f '${root.configDir}/compositor.json' && mv '${root.configDir}/hyprland.json' '${root.configDir}/compositor.json' && echo 'Migrated hyprland.json to compositor.json' || true`]
+        onExited: root.configDirReady = true
     }
 
     // ============================================
@@ -98,7 +73,7 @@ Singleton {
     // ============================================
     FileView {
         id: themeLoader
-        path: root.configDir + "/theme.json"
+        path: root.configDirReady ? root.configDir + "/theme.json" : ""
         atomicWrites: true
         watchChanges: true
         onLoaded: {
@@ -108,21 +83,16 @@ Singleton {
                 });
             }
         }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.themeReady) {
+        onLoadFailed: function(error) {
+            if (!root.themeReady) {
                 handleMissingConfig("theme", themeLoader, ThemeDefaults.data, () => {
                     root.themeReady = true;
                 });
             }
         }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
+        onFileChanged: reload()
         onAdapterUpdated: {
-            if (root.themeReady && !root.pauseAutoSave) {
+            if (root.themeReady) {
                 themeLoader.writeAdapter();
             }
         }
@@ -493,7 +463,7 @@ Singleton {
     // ============================================
     FileView {
         id: barLoader
-        path: root.configDir + "/bar.json"
+        path: root.configDirReady ? root.configDir + "/bar.json" : ""
         atomicWrites: true
         watchChanges: true
         onLoaded: {
@@ -503,21 +473,16 @@ Singleton {
                 });
             }
         }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.barReady) {
+        onLoadFailed: function(error) {
+            if (!root.barReady) {
                 handleMissingConfig("bar", barLoader, BarDefaults.data, () => {
                     root.barReady = true;
                 });
             }
         }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
+        onFileChanged: reload()
         onAdapterUpdated: {
-            if (root.barReady && !root.pauseAutoSave) {
+            if (root.barReady) {
                 barLoader.writeAdapter();
             }
         }
@@ -552,7 +517,7 @@ Singleton {
     // ============================================
     FileView {
         id: workspacesLoader
-        path: root.configDir + "/workspaces.json"
+        path: root.configDirReady ? root.configDir + "/workspaces.json" : ""
         atomicWrites: true
         watchChanges: true
         onLoaded: {
@@ -562,21 +527,16 @@ Singleton {
                 });
             }
         }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.workspacesReady) {
+        onLoadFailed: function(error) {
+            if (!root.workspacesReady) {
                 handleMissingConfig("workspaces", workspacesLoader, WorkspacesDefaults.data, () => {
                     root.workspacesReady = true;
                 });
             }
         }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
+        onFileChanged: reload()
         onAdapterUpdated: {
-            if (root.workspacesReady && !root.pauseAutoSave) {
+            if (root.workspacesReady) {
                 workspacesLoader.writeAdapter();
             }
         }
@@ -590,134 +550,13 @@ Singleton {
         }
     }
 
-    // ============================================
-    // OVERVIEW MODULE
-    // ============================================
-    FileView {
-        id: overviewLoader
-        path: root.configDir + "/overview.json"
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: {
-            if (!root.overviewReady) {
-                validateModule("overview", overviewLoader, OverviewDefaults.data, () => {
-                    root.overviewReady = true;
-                });
-            }
-        }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.overviewReady) {
-                handleMissingConfig("overview", overviewLoader, OverviewDefaults.data, () => {
-                    root.overviewReady = true;
-                });
-            }
-        }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
-        onAdapterUpdated: {
-            if (root.overviewReady && !root.pauseAutoSave) {
-                overviewLoader.writeAdapter();
-            }
-        }
-
-        adapter: JsonAdapter {
-            property int rows: 2
-            property int columns: 5
-            property real scale: 0.1
-            property real workspaceSpacing: 4
-        }
-    }
-
-    // ============================================
-    // COMPOSITOR MODULE
-    // ============================================
-    FileView {
-        id: compositorLoader
-        path: root.configDir + "/compositor.json"
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: {
-            if (!root.compositorReady) {
-                validateModule("compositor", compositorLoader, CompositorDefaults.data, () => {
-                    root.compositorReady = true;
-                });
-            }
-        }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.compositorReady) {
-                handleMissingConfig("compositor", compositorLoader, CompositorDefaults.data, () => {
-                    root.compositorReady = true;
-                });
-            }
-        }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
-        onAdapterUpdated: {
-            if (root.compositorReady && !root.pauseAutoSave) {
-                compositorLoader.writeAdapter();
-            }
-        }
-
-        adapter: JsonAdapter {
-            property var activeBorderColor: ["primary"]
-            property int borderAngle: 45
-            property var inactiveBorderColor: ["surface"]
-            property int inactiveBorderAngle: 45
-            property int borderSize: 2
-            property int rounding: 16
-            property bool syncRoundness: true
-            property bool syncBorderWidth: false
-            property bool syncBorderColor: false
-            property bool syncShadowOpacity: false
-            property bool syncShadowColor: false
-            property int gapsIn: 2
-            property int gapsOut: 4
-            property string layout: "dwindle"
-            property bool shadowEnabled: true
-            property int shadowRange: 8
-            property int shadowRenderPower: 3
-            property bool shadowSharp: false
-            property bool shadowIgnoreWindow: true
-            property string shadowColor: "shadow"
-            property string shadowColorInactive: "shadow"
-            property real shadowOpacity: 0.5
-            property string shadowOffset: "0 0"
-            property real shadowScale: 1.0
-            property bool blurEnabled: true
-            property int blurSize: 4
-            property int blurPasses: 2
-            property bool blurIgnoreOpacity: true
-            property bool blurExplicitIgnoreAlpha: false
-            property real blurIgnoreAlphaValue: 0.2
-            property bool blurNewOptimizations: true
-            property bool blurXray: false
-            property real blurNoise: 0.0
-            property real blurContrast: 1.0
-            property real blurBrightness: 1.0
-            property real blurVibrancy: 0.0
-            property real blurVibrancyDarkness: 0.0
-            property bool blurSpecial: true
-            property bool blurPopups: false
-            property real blurPopupsIgnorealpha: 0.2
-            property bool blurInputMethods: false
-            property real blurInputMethodsIgnorealpha: 0.2
-        }
-    }
 
     // ============================================
     // PERFORMANCE MODULE
     // ============================================
     FileView {
         id: performanceLoader
-        path: root.configDir + "/performance.json"
+        path: root.configDirReady ? root.configDir + "/performance.json" : ""
         atomicWrites: true
         watchChanges: true
         onLoaded: {
@@ -727,21 +566,16 @@ Singleton {
                 });
             }
         }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.performanceReady) {
+        onLoadFailed: function(error) {
+            if (!root.performanceReady) {
                 handleMissingConfig("performance", performanceLoader, PerformanceDefaults.data, () => {
                     root.performanceReady = true;
                 });
             }
         }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
+        onFileChanged: reload()
         onAdapterUpdated: {
-            if (root.performanceReady && !root.pauseAutoSave) {
+            if (root.performanceReady) {
                 performanceLoader.writeAdapter();
             }
         }
@@ -761,7 +595,7 @@ Singleton {
     // ============================================
     FileView {
         id: weatherLoader
-        path: root.configDir + "/weather.json"
+        path: root.configDirReady ? root.configDir + "/weather.json" : ""
         atomicWrites: true
         watchChanges: true
         onLoaded: {
@@ -771,21 +605,16 @@ Singleton {
                 });
             }
         }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.weatherReady) {
+        onLoadFailed: function(error) {
+            if (!root.weatherReady) {
                 handleMissingConfig("weather", weatherLoader, WeatherDefaults.data, () => {
                     root.weatherReady = true;
                 });
             }
         }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
+        onFileChanged: reload()
         onAdapterUpdated: {
-            if (root.weatherReady && !root.pauseAutoSave) {
+            if (root.weatherReady) {
                 weatherLoader.writeAdapter();
             }
         }
@@ -796,54 +625,13 @@ Singleton {
         }
     }
 
-    // ============================================
-    // DESKTOP MODULE
-    // ============================================
-    FileView {
-        id: desktopLoader
-        path: root.configDir + "/desktop.json"
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: {
-            if (!root.desktopReady) {
-                validateModule("desktop", desktopLoader, DesktopDefaults.data, () => {
-                    root.desktopReady = true;
-                });
-            }
-        }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.desktopReady) {
-                handleMissingConfig("desktop", desktopLoader, DesktopDefaults.data, () => {
-                    root.desktopReady = true;
-                });
-            }
-        }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
-        onAdapterUpdated: {
-            if (root.desktopReady && !root.pauseAutoSave) {
-                desktopLoader.writeAdapter();
-            }
-        }
-
-        adapter: JsonAdapter {
-            property bool enabled: false
-            property int iconSize: 40
-            property int spacingVertical: 16
-            property string textColor: "overBackground"
-        }
-    }
 
     // ============================================
     // LOCKSCREEN MODULE
     // ============================================
     FileView {
         id: lockscreenLoader
-        path: root.configDir + "/lockscreen.json"
+        path: root.configDirReady ? root.configDir + "/lockscreen.json" : ""
         atomicWrites: true
         watchChanges: true
         onLoaded: {
@@ -853,21 +641,16 @@ Singleton {
                 });
             }
         }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.lockscreenReady) {
+        onLoadFailed: function(error) {
+            if (!root.lockscreenReady) {
                 handleMissingConfig("lockscreen", lockscreenLoader, LockscreenDefaults.data, () => {
                     root.lockscreenReady = true;
                 });
             }
         }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
+        onFileChanged: reload()
         onAdapterUpdated: {
-            if (root.lockscreenReady && !root.pauseAutoSave) {
+            if (root.lockscreenReady) {
                 lockscreenLoader.writeAdapter();
             }
         }
@@ -877,55 +660,13 @@ Singleton {
         }
     }
 
-    // ============================================
-    // PREFIX MODULE
-    // ============================================
-    FileView {
-        id: prefixLoader
-        path: root.configDir + "/prefix.json"
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: {
-            if (!root.prefixReady) {
-                validateModule("prefix", prefixLoader, PrefixDefaults.data, () => {
-                    root.prefixReady = true;
-                });
-            }
-        }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.prefixReady) {
-                handleMissingConfig("prefix", prefixLoader, PrefixDefaults.data, () => {
-                    root.prefixReady = true;
-                });
-            }
-        }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
-        onAdapterUpdated: {
-            if (root.prefixReady && !root.pauseAutoSave) {
-                prefixLoader.writeAdapter();
-            }
-        }
-
-        adapter: JsonAdapter {
-            property string clipboard: "cc"
-            property string emoji: "ee"
-            property string tmux: "tt"
-            property string wallpapers: "ww"
-            property string notes: "nn"
-        }
-    }
 
     // ============================================
     // SYSTEM MODULE
     // ============================================
     FileView {
         id: systemLoader
-        path: root.configDir + "/system.json"
+        path: root.configDirReady ? root.configDir + "/system.json" : ""
         atomicWrites: true
         watchChanges: true
         onLoaded: {
@@ -935,21 +676,16 @@ Singleton {
                 });
             }
         }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.systemReady) {
+        onLoadFailed: function(error) {
+            if (!root.systemReady) {
                 handleMissingConfig("system", systemLoader, SystemDefaults.data, () => {
                     root.systemReady = true;
                 });
             }
         }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
+        onFileChanged: reload()
         onAdapterUpdated: {
-            if (root.systemReady && !root.pauseAutoSave) {
+            if (root.systemReady) {
                 systemLoader.writeAdapter();
             }
         }
@@ -957,33 +693,6 @@ Singleton {
         adapter: JsonAdapter {
             property list<string> disks: ["/"]
             property bool updateServiceEnabled: true
-            property JsonObject idle: JsonObject {
-                property JsonObject general: JsonObject {
-                    property string lock_cmd: "nonchalant lock"
-                    property string before_sleep_cmd: "loginctl lock-session"
-                    property string after_sleep_cmd: "nonchalant screen on"
-                }
-                property list<var> listeners: [
-                    {
-                        "timeout": 150,
-                        "onTimeout": "nonchalant brightness 10 -s",
-                        "onResume": "nonchalant brightness -r"
-                    },
-                    {
-                        "timeout": 300,
-                        "onTimeout": "loginctl lock-session"
-                    },
-                    {
-                        "timeout": 330,
-                        "onTimeout": "nonchalant screen off",
-                        "onResume": "nonchalant screen on"
-                    },
-                    {
-                        "timeout": 1800,
-                        "onTimeout": "nonchalant suspend"
-                    }
-                ]
-            }
             property JsonObject ocr: JsonObject {
                 property bool eng: true
                 property bool spa: true
@@ -1002,102 +711,13 @@ Singleton {
         }
     }
 
-    // ============================================
-    // DOCK MODULE
-    // ============================================
-    FileView {
-        id: dockLoader
-        path: root.configDir + "/dock.json"
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: {
-            if (!root.dockReady) {
-                validateModule("dock", dockLoader, DockDefaults.data, () => {
-                    root.dockReady = true;
-                });
-            }
-        }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.dockReady) {
-                handleMissingConfig("dock", dockLoader, DockDefaults.data, () => {
-                    root.dockReady = true;
-                });
-            }
-        }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
-        onAdapterUpdated: {
-            if (root.dockReady && !root.pauseAutoSave) {
-                dockLoader.writeAdapter();
-            }
-        }
-
-        adapter: JsonAdapter {
-            property bool enabled: false
-            property string theme: "default"
-            property string position: "bottom"
-            property int height: 56
-            property int iconSize: 40
-            property int spacing: 4
-            property int margin: 8
-            property int hoverRegionHeight: 4
-            property bool pinnedOnStartup: false
-            property bool hoverToReveal: true
-            property bool availableOnFullscreen: false
-            property bool showRunningIndicators: true
-            property bool showPinButton: true
-            property bool showOverviewButton: true
-            property list<string> ignoredAppRegexes: ["quickshell.*", "xdg-desktop-portal.*"]
-            property list<string> screenList: []
-            property bool keepHidden: false
-        }
-    }
-
-    // Pinned apps (per-user)
-    property bool pinnedAppsReady: false
-
-    FileView {
-        id: pinnedAppsLoader
-        path: Quickshell.dataPath("pinnedapps.json")
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: {
-            if (!root.pinnedAppsReady) {
-                var raw = text();
-                if (!raw || raw.trim().length === 0) {
-                    console.log("pinnedapps.json not found, creating with default values...");
-                    pinnedAppsLoader.writeAdapter();
-                }
-                root.pinnedAppsReady = true;
-            }
-        }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
-        onAdapterUpdated: {
-            if (root.pinnedAppsReady && !root.pauseAutoSave) {
-                pinnedAppsLoader.writeAdapter();
-            }
-        }
-
-        adapter: JsonAdapter {
-            property list<string> apps: ["kitty"]
-        }
-    }
 
     // ============================================
     // AI MODULE
     // ============================================
     FileView {
         id: aiLoader
-        path: root.configDir + "/ai.json"
+        path: root.configDirReady ? root.configDir + "/ai.json" : ""
         atomicWrites: true
         watchChanges: true
         onLoaded: {
@@ -1107,2156 +727,49 @@ Singleton {
                 });
             }
         }
-        onLoadFailed: {
-            if (error.toString().includes("FileNotFound") && !root.aiReady) {
+        onLoadFailed: function(error) {
+            if (!root.aiReady) {
                 handleMissingConfig("ai", aiLoader, AiDefaults.data, () => {
                     root.aiReady = true;
                 });
             }
         }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: reload()
+        onFileChanged: reload()
         onAdapterUpdated: {
-            if (root.aiReady && !root.pauseAutoSave) {
+            if (root.aiReady) {
                 aiLoader.writeAdapter();
             }
         }
 
         adapter: JsonAdapter {
-            property string systemPrompt: "You are a helpful assistant running inside Nonchalant Shell on Linux. You can call tools when they help answer the user.\n\nTools:\n- run_shell_command — local filesystem, system info, packages, utilities (requires user approval).\n- web_search — search the web for current facts, docs, or news.\n- fetch_url — read the text of a specific webpage or API URL.\n\nPrefer web_search + fetch_url for internet questions; prefer run_shell_command for local system work. Explain briefly what you will do, then call the tool. Do not invent tool output — always use the tool and wait for the real result."
-            property string tool: "none"
-            property list<var> extraModels: []
-            property string defaultModel: "big-pickle"
+            property string defaultAgent: "opencode"
+            property string workingDirectory: ""
+            property list<var> agents: [
+                {
+                    "id": "opencode",
+                    "name": "OpenCode",
+                    "command": ["opencode", "acp", "--print-logs", "--log-level", "ERROR"],
+                    "authMethod": "opencode-login"
+                },
+                {
+                    "id": "grok",
+                    "name": "Grok Build",
+                    "command": ["grok", "agent", "stdio"],
+                    "authMethod": "cached_token"
+                },
+                {
+                    "id": "codex",
+                    "name": "Codex",
+                    "command": ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"],
+                    "authMethod": "chatgpt"
+                }
+            ]
             property int sidebarWidth: 400
             property string sidebarPosition: "right"
             property bool sidebarPinnedOnStartup: false
         }
     }
 
-    // Keybinds (binds.json)
-    // Timer to repair keybinds after initial load
-    Timer {
-        id: repairKeybindsTimer
-        interval: 500
-        repeat: false
-        onTriggered: {
-            repairKeybinds();
-        }
-    }
-
-
-    // Timer to create binds.json if missing after initial load
-    Timer {
-        id: createKeybindsTimer
-        interval: 1000
-        repeat: false
-        onTriggered: {
-            const raw = keybindsLoader.text();
-            if (!raw || raw.trim().length === 0) {
-                console.log("binds.json still missing after delay, creating...");
-                keybindsLoader.writeAdapter();
-                repairKeybindsTimer.start();
-            }
-        }
-    }
-    // Repair missing binds
-    function repairKeybinds() {
-        const raw = keybindsLoader.text();
-        if (!raw) return;
-
-        try {
-            const current = JSON.parse(raw);
-            let needsUpdate = false;
-
-            // Ensure nonchalant structure exists
-            if (!current.nonchalant) {
-                current.nonchalant = {};
-                needsUpdate = true;
-            }
-
-            // Migrate nested to flat structure
-            if (current.nonchalant.dashboard && typeof current.nonchalant.dashboard === "object" && !current.nonchalant.dashboard.modifiers) {
-                console.log("Migrating nested nonchalant binds to flat structure...");
-                const nested = current.nonchalant.dashboard;
-                
-                // Map old names to new names and update arguments
-                if (nested.widgets) {
-                    current.nonchalant.launcher = nested.widgets;
-                    current.nonchalant.launcher.argument = "nonchalant run launcher";
-                    current.nonchalant.launcher.action = createAction(current.nonchalant.launcher);
-                }
-                if (nested.dashboard) {
-                    current.nonchalant.dashboard = nested.dashboard;
-                    current.nonchalant.dashboard.argument = "nonchalant run dashboard";
-                    current.nonchalant.dashboard.action = createAction(current.nonchalant.dashboard);
-                }
-                if (nested.assistant) {
-                    current.nonchalant.assistant = nested.assistant;
-                    current.nonchalant.assistant.argument = "nonchalant run assistant";
-                    current.nonchalant.assistant.action = createAction(current.nonchalant.assistant);
-                }
-                if (nested.clipboard) {
-                    current.nonchalant.clipboard = nested.clipboard;
-                    current.nonchalant.clipboard.argument = "nonchalant run clipboard";
-                    current.nonchalant.clipboard.action = createAction(current.nonchalant.clipboard);
-                }
-                if (nested.emoji) {
-                    current.nonchalant.emoji = nested.emoji;
-                    current.nonchalant.emoji.argument = "nonchalant run emoji";
-                    current.nonchalant.emoji.action = createAction(current.nonchalant.emoji);
-                }
-                if (nested.notes) {
-                    current.nonchalant.notes = nested.notes;
-                    current.nonchalant.notes.argument = "nonchalant run notes";
-                    current.nonchalant.notes.action = createAction(current.nonchalant.notes);
-                }
-                if (nested.tmux) {
-                    current.nonchalant.tmux = nested.tmux;
-                    current.nonchalant.tmux.argument = "nonchalant run tmux";
-                    current.nonchalant.tmux.action = createAction(current.nonchalant.tmux);
-                }
-                if (nested.wallpapers) {
-                    current.nonchalant.wallpapers = nested.wallpapers;
-                    current.nonchalant.wallpapers.argument = "nonchalant run wallpapers";
-                    current.nonchalant.wallpapers.action = createAction(current.nonchalant.wallpapers);
-                }
-
-                // Remove the old nested object
-                delete current.nonchalant.dashboard;
-                needsUpdate = true;
-            }
-
-            if (!current.nonchalant.system) {
-                current.nonchalant.system = {};
-                needsUpdate = true;
-            }
-
-            // Get default binds from adapter
-            const adapter = keybindsLoader.adapter;
-            if (!adapter || !adapter.nonchalant) return;
-
-            // Helper function to create clean bind object
-            function createAction(bindObj) {
-                if (bindObj && bindObj.action) {
-                    return KeybindActions.ensureAction(bindObj.action);
-                }
-                return KeybindActions.actionFromLegacy(bindObj.dispatcher || "", bindObj.argument || "", bindObj.flags || "");
-            }
-
-            function createCleanBind(bindObj) {
-                return {
-                    "modifiers": bindObj.modifiers || [],
-                    "key": bindObj.key || "",
-                    "action": createAction(bindObj)
-                };
-            }
-
-            // Check nonchalant core binds
-            const nonchalantKeys = ["launcher", "dashboard", "assistant", "clipboard", "emoji", "notes", "tmux", "wallpapers"];
-            for (const key of nonchalantKeys) {
-                if (!current.nonchalant[key] && adapter.nonchalant[key]) {
-                    console.log("Adding missing nonchalant bind:", key);
-                    current.nonchalant[key] = createCleanBind(adapter.nonchalant[key]);
-                    needsUpdate = true;
-                } else if (current.nonchalant[key] && !current.nonchalant[key].action) {
-                    current.nonchalant[key].action = createAction(current.nonchalant[key]);
-                    delete current.nonchalant[key].dispatcher;
-                    delete current.nonchalant[key].argument;
-                    delete current.nonchalant[key].flags;
-                    needsUpdate = true;
-                }
-            }
-
-            // Check system binds
-            const systemKeys = ["overview", "powermenu", "config", "lockscreen", "tools", "screenshot", "screenrecord", "lens", "reload", "quit"];
-            for (const key of systemKeys) {
-                if (!current.nonchalant.system[key] && adapter.nonchalant.system && adapter.nonchalant.system[key]) {
-                    console.log("Adding missing system bind:", key);
-                    current.nonchalant.system[key] = createCleanBind(adapter.nonchalant.system[key]);
-                    needsUpdate = true;
-                } else if (current.nonchalant.system[key] && !current.nonchalant.system[key].action) {
-                    current.nonchalant.system[key].action = createAction(current.nonchalant.system[key]);
-                    delete current.nonchalant.system[key].dispatcher;
-                    delete current.nonchalant.system[key].argument;
-                    delete current.nonchalant.system[key].flags;
-                    needsUpdate = true;
-                }
-            }
-
-            if (current.custom && current.custom.length > 0) {
-                const normalized = KeybindActions.normalizeCustomBinds(current.custom);
-                if (normalized.changed) {
-                    current.custom = normalized.binds;
-                    needsUpdate = true;
-                }
-            }
-
-            if (needsUpdate) {
-                console.log("Auto-repairing binds.json: adding missing binds");
-                keybindsLoader.setText(JSON.stringify(current, null, 2));
-            }
-        } catch (e) {
-            console.warn("Failed to repair binds.json:", e);
-        }
-    }
-
-    FileView {
-        id: keybindsLoader
-        path: keybindsPath
-        atomicWrites: true
-        watchChanges: true
-        Component.onCompleted: {
-            // Ensure binds.json is created even if onLoaded never fires
-            createKeybindsTimer.start();
-        }
-        onLoaded: {
-            if (!root.keybindsInitialLoadComplete) {
-                var raw = text();
-                if (!raw || raw.trim().length === 0) {
-                    console.log("binds.json not found, creating with default values...");
-                    keybindsLoader.writeAdapter();
-                    repairKeybindsTimer.start();
-                } else {
-                    // File exists, check if it needs repair
-                    repairKeybindsTimer.start();
-                }
-                root.keybindsInitialLoadComplete = true;
-                createKeybindsTimer.start();
-            }
-        }
-        onFileChanged: {
-            root.pauseAutoSave = true;
-            reload();
-            normalizeCustomBinds();
-            root.pauseAutoSave = false;
-        }
-        onPathChanged: {
-            reload();
-            normalizeCustomBinds();
-        }
-        onAdapterUpdated: {
-            if (root.keybindsInitialLoadComplete) {
-                keybindsLoader.writeAdapter();
-            }
-        }
-
-        // Normalize custom binds
-        function normalizeCustomBinds() {
-            if (!adapter || !adapter.custom)
-                return;
-
-            const normalized = KeybindActions.normalizeCustomBinds(adapter.custom);
-            if (normalized.changed) {
-                console.log("Normalizing custom binds: migrating to action format");
-                adapter.custom = normalized.binds;
-            }
-        }
-
-        adapter: JsonAdapter {
-            property JsonObject nonchalant: JsonObject {
-                property JsonObject launcher: JsonObject {
-                    property list<string> modifiers: ["SUPER"]
-                    property string key: "Super_L"
-                property var action: ({ "id": "nonchalant.launcher", "args": {} })
-            }
-            property JsonObject dashboard: JsonObject {
-                property list<string> modifiers: ["SUPER"]
-                property string key: "D"
-                property var action: ({ "id": "nonchalant.dashboard", "args": {} })
-            }
-            property JsonObject assistant: JsonObject {
-                property list<string> modifiers: ["SUPER"]
-                property string key: "GRAVE"
-                property var action: ({ "id": "nonchalant.assistant", "args": {} })
-            }
-            property JsonObject clipboard: JsonObject {
-                property list<string> modifiers: ["SUPER"]
-                property string key: "V"
-                property var action: ({ "id": "nonchalant.clipboard", "args": {} })
-            }
-            property JsonObject emoji: JsonObject {
-                property list<string> modifiers: ["SUPER"]
-                property string key: "PERIOD"
-                property var action: ({ "id": "nonchalant.emoji", "args": {} })
-            }
-            property JsonObject notes: JsonObject {
-                property list<string> modifiers: ["SUPER"]
-                property string key: "N"
-                property var action: ({ "id": "nonchalant.notes", "args": {} })
-            }
-            property JsonObject tmux: JsonObject {
-                property list<string> modifiers: ["SUPER"]
-                property string key: "T"
-                property var action: ({ "id": "nonchalant.tmux", "args": {} })
-            }
-            property JsonObject wallpapers: JsonObject {
-                property list<string> modifiers: ["SUPER"]
-                property string key: "COMMA"
-                property var action: ({ "id": "nonchalant.wallpapers", "args": {} })
-            }
-            property JsonObject system: JsonObject {
-                property JsonObject config: JsonObject {
-                    property list<string> modifiers: ["SUPER", "SHIFT"]
-                    property string key: "C"
-                    property var action: ({ "id": "nonchalant.config", "args": {} })
-                }
-                property JsonObject lockscreen: JsonObject {
-                    property list<string> modifiers: ["SUPER"]
-                    property string key: "L"
-                    property var action: ({ "id": "system.lock", "args": {} })
-                }
-                property JsonObject overview: JsonObject {
-                    property list<string> modifiers: ["SUPER"]
-                    property string key: "TAB"
-                    property var action: ({ "id": "nonchalant.overview", "args": {} })
-                }
-                property JsonObject powermenu: JsonObject {
-                    property list<string> modifiers: ["SUPER"]
-                    property string key: "ESCAPE"
-                    property var action: ({ "id": "nonchalant.powermenu", "args": {} })
-                }
-                property JsonObject tools: JsonObject {
-                    property list<string> modifiers: ["SUPER"]
-                    property string key: "S"
-                    property var action: ({ "id": "nonchalant.tools", "args": {} })
-                }
-                property JsonObject screenshot: JsonObject {
-                    property list<string> modifiers: ["SUPER", "SHIFT"]
-                    property string key: "S"
-                    property var action: ({ "id": "nonchalant.screenshot", "args": {} })
-                }
-                property JsonObject screenrecord: JsonObject {
-                    property list<string> modifiers: ["SUPER", "SHIFT"]
-                    property string key: "R"
-                    property var action: ({ "id": "nonchalant.screenrecord", "args": {} })
-                }
-                property JsonObject lens: JsonObject {
-                    property list<string> modifiers: ["SUPER", "SHIFT"]
-                    property string key: "A"
-                    property var action: ({ "id": "nonchalant.lens", "args": {} })
-                }
-                property JsonObject reload: JsonObject {
-                    property list<string> modifiers: ["SUPER", "ALT"]
-                    property string key: "B"
-                    property var action: ({ "id": "nonchalant.reload", "args": {} })
-                }
-                property JsonObject quit: JsonObject {
-                    property list<string> modifiers: ["SUPER", "CTRL", "ALT"]
-                    property string key: "B"
-                    property var action: ({ "id": "nonchalant.quit", "args": {} })
-                }
-            }
-            }
-            // Default getters
-            readonly property var defaultNonchalantBinds: {
-                "nonchalant": {
-                    "launcher": { "modifiers": ["SUPER"], "key": "Super_L", "action": { "id": "nonchalant.launcher", "args": {} } },
-                    "dashboard": { "modifiers": ["SUPER"], "key": "D", "action": { "id": "nonchalant.dashboard", "args": {} } },
-                    "assistant": { "modifiers": ["SUPER"], "key": "GRAVE", "action": { "id": "nonchalant.assistant", "args": {} } },
-                    "clipboard": { "modifiers": ["SUPER"], "key": "V", "action": { "id": "nonchalant.clipboard", "args": {} } },
-                    "emoji": { "modifiers": ["SUPER"], "key": "PERIOD", "action": { "id": "nonchalant.emoji", "args": {} } },
-                    "notes": { "modifiers": ["SUPER"], "key": "N", "action": { "id": "nonchalant.notes", "args": {} } },
-                    "tmux": { "modifiers": ["SUPER"], "key": "T", "action": { "id": "nonchalant.tmux", "args": {} } },
-                    "wallpapers": { "modifiers": ["SUPER"], "key": "COMMA", "action": { "id": "nonchalant.wallpapers", "args": {} } }
-                },
-                "system": {
-                    "config": { "modifiers": ["SUPER", "SHIFT"], "key": "C", "action": { "id": "nonchalant.config", "args": {} } },
-                    "lockscreen": { "modifiers": ["SUPER"], "key": "L", "action": { "id": "system.lock", "args": {} } },
-                    "overview": { "modifiers": ["SUPER"], "key": "TAB", "action": { "id": "nonchalant.overview", "args": {} } },
-                    "powermenu": { "modifiers": ["SUPER"], "key": "ESCAPE", "action": { "id": "nonchalant.powermenu", "args": {} } },
-                    "tools": { "modifiers": ["SUPER"], "key": "S", "action": { "id": "nonchalant.tools", "args": {} } },
-                    "screenshot": { "modifiers": ["SUPER", "SHIFT"], "key": "S", "action": { "id": "nonchalant.screenshot", "args": {} } },
-                    "screenrecord": { "modifiers": ["SUPER", "SHIFT"], "key": "R", "action": { "id": "nonchalant.screenrecord", "args": {} } },
-                    "lens": { "modifiers": ["SUPER", "SHIFT"], "key": "A", "action": { "id": "nonchalant.lens", "args": {} } },
-                    "reload": { "modifiers": ["SUPER", "ALT"], "key": "B", "action": { "id": "nonchalant.reload", "args": {} } },
-                    "quit": { "modifiers": ["SUPER", "CTRL", "ALT"], "key": "B", "action": { "id": "nonchalant.quit", "args": {} } }
-                }
-            }
-
-            function getNonchalantDefault(section, key) {
-                if (defaultNonchalantBinds[section] && defaultNonchalantBinds[section][key]) {
-                    const bind = defaultNonchalantBinds[section][key];
-                    return {
-                        "modifiers": bind.modifiers || [],
-                        "key": bind.key || "",
-                        "action": KeybindActions.ensureAction(bind.action)
-                    };
-                }
-                return null;
-            }
-
-            property list<var> custom: [
-                {
-                    "name": "Close Window",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "C"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "killactive",
-                            "argument": "",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "1"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 2",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "2"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "2",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 3",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "3"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "3",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 4",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "4"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "4",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 5",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "5"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "5",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 6",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "6"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "6",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 7",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "7"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "7",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 8",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "8"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "8",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 9",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "9"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "9",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Workspace 10",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "0"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "10",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "1"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 2",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "2"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "2",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 3",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "3"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "3",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 4",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "4"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "4",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 5",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "5"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "5",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 6",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "6"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "6",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 7",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "7"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "7",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 8",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "8"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "8",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 9",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "9"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "9",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Workspace 10",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "0"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "10",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "1"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 2",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "2"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "2",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 3",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "3"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "3",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 4",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "4"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "4",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 5",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "5"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "5",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 6",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "6"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "6",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 7",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "7"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "7",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 8",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "8"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "8",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 9",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "9"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "9",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Silently to Workspace 10",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "0"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspacesilent",
-                            "argument": "10",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Switch Occupied Workspace -1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "mouse_down"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "e-1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Switch Occupied Workspace +1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "mouse_up"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "e+1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Switch Occupied Workspace -1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "Z"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "e-1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Switch Occupied Workspace +1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "X"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "e+1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Switch Relative Workspace -1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "Z"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "-1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Switch Relative Workspace +1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "X"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "workspace",
-                            "argument": "+1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Drag Window",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "mouse:272"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "",
-                            "flags": "m",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Window with Mouse",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "mouse:273"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "resizewindow",
-                            "argument": "",
-                            "flags": "m",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Media Play Pause",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86AudioPlay"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "playerctl play-pause",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Media Previous",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86AudioPrev"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "playerctl previous",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Media Next",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86AudioNext"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "playerctl next",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Media Play Pause",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86AudioMedia"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "playerctl play-pause",
-                            "flags": "l",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Media Stop",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86AudioStop"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "playerctl stop",
-                            "flags": "l",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Volume Up",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86AudioRaiseVolume"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%+",
-                            "flags": "le",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Volume Down",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86AudioLowerVolume"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%-",
-                            "flags": "le",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Mute Audio",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86AudioMute"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-                            "flags": "le",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Brightness Up",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86MonBrightnessUp"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "nonchalant brightness +5",
-                            "flags": "le",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Brightness Down",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86MonBrightnessDown"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "nonchalant brightness -5",
-                            "flags": "le",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Calculator",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "XF86Calculator"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "notify-send \"Soon\"",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Toggle Special Workspace",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "V"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "togglespecialworkspace",
-                            "argument": "",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window to Special Workspace",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "V"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movetoworkspace",
-                            "argument": "special",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Lock Session on Lid Switch",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "switch:Lid Switch"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "loginctl lock-session",
-                            "flags": "l",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Display Off on Lid Close",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "switch:on:Lid Switch"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "axctl monitor set-dpms 0 0",
-                            "flags": "l",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Display On on Lid Open",
-                    "keys": [
-                        {
-                            "modifiers": [],
-                            "key": "switch:off:Lid Switch"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "exec",
-                            "argument": "axctl monitor set-dpms 0 1",
-                            "flags": "l",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Up",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "Up"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "u",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Up",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL"],
-                            "key": "k"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "u",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Down",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "Down"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "d",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Down",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL"],
-                            "key": "j"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "d",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Left",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "Left"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "l",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Left",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL"],
-                            "key": "z"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "l",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Left",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL"],
-                            "key": "h"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "l",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Right",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER"],
-                            "key": "Right"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "r",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Right",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL"],
-                            "key": "x"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "r",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Focus Right",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL"],
-                            "key": "l"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movefocus",
-                            "argument": "r",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Left",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "Left"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "l",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Left",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "h"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "l",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Right",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "Right"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "r",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Right",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "l"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "r",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Up",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "Up"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "u",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Up",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "k"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "u",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Down",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "Down"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "d",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Window Down",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "j"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "movewindow",
-                            "argument": "d",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Column +0.1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "Right"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "colresize +0.1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Column +0.1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "l"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "colresize +0.1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Column -0.1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "Left"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "colresize -0.1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Column -0.1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "h"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "colresize -0.1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Active 0 50",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "Down"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "resizeactive",
-                            "argument": "0 50",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Active 0 50",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "j"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "resizeactive",
-                            "argument": "0 50",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Active 0 -50",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "Up"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "resizeactive",
-                            "argument": "0 -50",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Active 0 -50",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "k"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "resizeactive",
-                            "argument": "0 -50",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Promote Column",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT"],
-                            "key": "SPACE"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "promote",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Toggle Fit",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL"],
-                            "key": "SPACE"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "togglefit",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Resize Column +conf",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "SHIFT"],
-                            "key": "SPACE"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "colresize +conf",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Swap Column Left",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT", "CTRL"],
-                            "key": "Left"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "swapcol l",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Swap Column Left",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT", "CTRL"],
-                            "key": "h"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "swapcol l",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Swap Column Right",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT", "CTRL"],
-                            "key": "Right"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "swapcol r",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Swap Column Right",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "ALT", "CTRL"],
-                            "key": "l"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "swapcol r",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 1",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "1"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 1",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 2",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "2"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 2",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 3",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "3"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 3",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 4",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "4"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 4",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 5",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "5"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 5",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 6",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "6"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 6",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 7",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "7"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 7",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 8",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "8"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 8",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 9",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "9"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 9",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                },
-                {
-                    "name": "Move Column to Workspace 10",
-                    "keys": [
-                        {
-                            "modifiers": ["SUPER", "CTRL", "ALT"],
-                            "key": "0"
-                        }
-                    ],
-                    "actions": [
-                        {
-                            "dispatcher": "layoutmsg",
-                            "argument": "movecoltoworkspace 10",
-                            "flags": "",
-                            "layouts": []
-                        }
-                    ],
-                    "enabled": true
-                }
-            ]
-        }
-    }
 
     // Validation helper
     function validateModule(name, loader, defaults, onComplete) {
@@ -3286,30 +799,13 @@ Singleton {
         }
     }
 
-    // Handle missing config files - copy from preset or create with defaults
+    // Create missing files directly from the in-tree defaults. The old
+    // asynchronous preset copy raced FileView startup and left domains
+    // permanently uninitialized when a preset file did not exist.
     function handleMissingConfig(name, loader, defaults, onComplete) {
-        var presetPath = root.presetDir + "/" + name + ".json";
-        var targetPath = root.configDir + "/" + name + ".json";
-        console.log(name + ".json not found, checking preset: " + presetPath);
-
-        // Create a Process component dynamically to copy the file
-        var copyProcess = Qt.createQmlObject(
-            "import QtQuick 2.0; Process { running: true; command: ['cp', '" + presetPath + "', '" + targetPath + "']; onFinished: { console.log('Copy finished for " + name + "'); } }",
-            root,
-            "copyProcess"
-        );
-
-        // Reload the loader to pick up the copied file
-        loader.reload();
-
-        // If still not ready after reload, use defaults as fallback
-        Qt.callLater(() => {
-            if (!root[name + "Ready"]) {
-                console.log("Using defaults for " + name + ".json");
-                loader.setText(JSON.stringify(defaults, null, 2));
-            }
-            onComplete();
-        });
+        console.log(name + ".json not found, creating defaults");
+        loader.setText(JSON.stringify(defaults, null, 2));
+        onComplete();
     }
 
 
@@ -3321,7 +817,7 @@ Singleton {
 
     property int roundness: theme.roundness
     property string defaultFont: theme.font
-    property int animDuration: Services.GameModeService.toggled ? 0 : theme.animDuration
+    property int animDuration: theme.animDuration
     property bool tintIcons: theme.tintIcons
 
     // Handle lightMode changes
@@ -3343,17 +839,6 @@ Singleton {
     // Workspace configuration
     property QtObject workspaces: workspacesLoader.adapter
 
-    // Overview configuration
-    property QtObject overview: overviewLoader.adapter
-
-    // Compositor configuration
-    property QtObject compositor: compositorLoader.adapter
-    property int compositorRounding: compositor.syncRoundness ? roundness : compositor.rounding
-    property int compositorBorderSize: compositor.syncBorderWidth ? (theme.srBg.border[1] || 0) : compositor.borderSize
-    property string compositorBorderColor: compositor.syncBorderColor ? (theme.srBg.border[0] || "primary") : (compositor.activeBorderColor.length > 0 ? compositor.activeBorderColor[0] : "primary")
-    property real compositorShadowOpacity: compositor.syncShadowOpacity ? theme.shadowOpacity : compositor.shadowOpacity
-    property string compositorShadowColor: compositor.syncShadowColor ? theme.shadowColor : compositor.shadowColor
-
     // Performance configuration
     property QtObject performance: performanceLoader.adapter
     property bool blurTransition: performance.blurTransition
@@ -3361,66 +846,17 @@ Singleton {
     // Weather configuration
     property QtObject weather: weatherLoader.adapter
 
-    // Desktop configuration
-    property QtObject desktop: desktopLoader.adapter
-
     // Lockscreen configuration
     property QtObject lockscreen: lockscreenLoader.adapter
-
-    // Prefix configuration
-    property QtObject prefix: prefixLoader.adapter
 
     // System configuration
     property QtObject system: systemLoader.adapter
 
-    // Dock configuration
-    property QtObject dock: dockLoader.adapter
-
-    // Pinned apps configuration (stored in dataPath)
-    property QtObject pinnedApps: pinnedAppsLoader.adapter
-
     // AI configuration
     property QtObject ai: aiLoader.adapter
 
-    // Module save functions
-    function saveBar() {
-        barLoader.writeAdapter();
-    }
-    function saveWorkspaces() {
-        workspacesLoader.writeAdapter();
-    }
-    function saveOverview() {
-        overviewLoader.writeAdapter();
-    }
-    function saveCompositor() {
-        compositorLoader.writeAdapter();
-    }
-    function savePerformance() {
-        performanceLoader.writeAdapter();
-    }
-    function saveWeather() {
-        weatherLoader.writeAdapter();
-    }
-    function saveDesktop() {
-        desktopLoader.writeAdapter();
-    }
-    function saveLockscreen() {
-        lockscreenLoader.writeAdapter();
-    }
-    function savePrefix() {
-        prefixLoader.writeAdapter();
-    }
-    function saveSystem() {
-        systemLoader.writeAdapter();
-    }
-    function saveDock() {
-        dockLoader.writeAdapter();
-    }
-    function savePinnedApps() {
-        pinnedAppsLoader.writeAdapter();
-    }
-    function saveAi() {
-        aiLoader.writeAdapter();
+    function setAiWorkingDirectory(path) {
+        aiLoader.adapter.workingDirectory = path || "";
     }
 
     // Color helpers

@@ -427,16 +427,6 @@ Item {
                                 width: parent.width
                                 spacing: 4
 
-                                LayoutSelectorButton {
-                                    id: layoutSelectorButtonVert
-                                    bar: root
-                                    layerEnabled: root.shadowsEnabled
-                                    Layout.alignment: Qt.AlignHCenter
-                                    startRadius: root.outerRadius
-                                    endRadius: root.innerRadius
-                                    vertical: true
-                                }
-
                                 Workspaces {
                                     id: workspacesVert
                                     orientation: root.orientation

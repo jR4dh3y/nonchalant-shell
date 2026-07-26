@@ -3,33 +3,6 @@
 var data = {
     "disks": ["/"],
     "updateServiceEnabled": true,
-    "idle": {
-        "general": {
-            "lock_cmd": "nonchalant lock",
-            "before_sleep_cmd": "loginctl lock-session",
-            "after_sleep_cmd": "nonchalant screen on"
-        },
-        "listeners": [
-            {
-                "timeout": 150,
-                "onTimeout": "nonchalant brightness 10 -s",
-                "onResume": "nonchalant brightness -r"
-            },
-            {
-                "timeout": 300,
-                "onTimeout": "loginctl lock-session"
-            },
-            {
-                "timeout": 330,
-                "onTimeout": "nonchalant screen off",
-                "onResume": "nonchalant screen on"
-            },
-            {
-                "timeout": 1800,
-                "onTimeout": "nonchalant suspend"
-            }
-        ]
-    },
     "ocr": {
         "eng": true,
         "spa": true,

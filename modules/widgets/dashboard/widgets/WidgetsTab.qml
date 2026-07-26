@@ -96,15 +96,6 @@ Rectangle {
                                     ControlButton {
                                         Layout.preferredWidth: 48
                                         Layout.preferredHeight: 48
-                                        iconName: Icons.wallpapers
-                                        isActive: GlobalStates.dashboardCurrentTab === 1
-                                        tooltipText: "Wallpapers"
-                                        onClicked: GlobalStates.dashboardCurrentTab = 1
-                                    }
-
-                                    ControlButton {
-                                        Layout.preferredWidth: 48
-                                        Layout.preferredHeight: 48
                                         iconName: Icons.gear
                                         isActive: GlobalStates.settingsWindowVisible
                                         tooltipText: "Settings"
