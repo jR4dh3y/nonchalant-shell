@@ -28,8 +28,12 @@ Item {
     property real menuWidth: 250
     property var slashCommands: [
         {
+            name: "agent",
+            description: "Switch ACP agent"
+        },
+        {
             name: "model",
-            description: "Switch AI model"
+            description: "Switch the active agent model"
         },
         {
             name: "help",
@@ -37,15 +41,11 @@ Item {
         },
         {
             name: "new",
-            description: "Start new chat"
+            description: "Start a new ACP session"
         },
         {
-            name: "key",
-            description: "Set API key"
-        },
-        {
-            name: "prompt",
-            description: "Set system prompt"
+            name: "status",
+            description: "Show ACP connection status"
         }
     ]
 
@@ -727,9 +727,33 @@ Item {
                                     required property int index
 
                                     property bool isUser: modelData.role === "user"
-                                    property bool isSystem: modelData.role === "system" || modelData.role === "function"
+                                    property bool isToolResult: modelData.role === "function"
+                                    property bool isSystem: modelData.role === "system" || isToolResult
                                     property bool isEditing: false
                                     property bool retryMode: false
+                                    property bool toolExpanded: false
+
+                                    readonly property string toolResultTitle: {
+                                        if (!isToolResult)
+                                            return "";
+                                        let c = (modelData.content || "").toLowerCase();
+                                        if (c.indexOf("cancelled") === 0 || c.indexOf("superseded") === 0)
+                                            return "Cancelled";
+                                        let n = modelData.name || "";
+                                        if (n === "run_shell_command")
+                                            return "Ran command";
+                                        return n || "Tool result";
+                                    }
+                                    readonly property string toolResultDetail: {
+                                        if (!isToolResult)
+                                            return "";
+                                        let a = modelData.toolArgs || {};
+                                        if (modelData.name === "run_shell_command" && a.command)
+                                            return a.command;
+                                        let c = (modelData.content || "").trim();
+                                        let line = c.split("\n")[0] || "";
+                                        return line.length > 80 ? line.substring(0, 80) + "…" : line;
+                                    }
 
                                     width: ListView.view.width
                                     height: bubbleArea.height + 8
@@ -774,7 +798,7 @@ Item {
                                                     height: 24
                                                     flat: true
                                                     padding: 0
-                                                    visible: !isSystem
+                                                    visible: !isSystem && Ai.supportsMessageEditing
 
                                                     property bool isHovered: hovered
 
@@ -826,13 +850,17 @@ Item {
                                                     }
 
                                                     onClicked: {
-                                                        let p = Qt.createQmlObject('import Quickshell; import Quickshell.Io; Process { command: ["wl-copy", "' + modelData.content.replace(/"/g, '\\"') + '"] }', parent);
+                                                        // Avoid embedding huge tool dumps into a generated QML string.
+                                                        let text = (modelData.content || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "");
+                                                        if (text.length > 8000)
+                                                            text = text.substring(0, 8000) + "\\n…";
+                                                        let p = Qt.createQmlObject('import Quickshell; import Quickshell.Io; Process { command: ["wl-copy", "' + text + '"] }', parent);
                                                         p.running = true;
                                                     }
                                                 }
 
                                                 Button {
-                                                    visible: !isUser && !isSystem && !messageDelegate.isEditing
+                                                    visible: !isUser && !isSystem && !messageDelegate.isEditing && Ai.supportsRegeneration
                                                     width: 24
                                                     height: 24
                                                     flat: true
@@ -881,9 +909,107 @@ Item {
                                                     width: parent.width - 32
                                                     spacing: 8
 
+                                                    // ── Tool result: compact chip (expand for raw output) ──
                                                     ColumnLayout {
                                                         Layout.fillWidth: true
-                                                        visible: !messageDelegate.isEditing && !bubbleContentText.visible
+                                                        visible: messageDelegate.isToolResult
+                                                        spacing: 6
+
+                                                        MouseArea {
+                                                            Layout.fillWidth: true
+                                                            Layout.preferredHeight: toolChipRow.implicitHeight
+                                                            cursorShape: Qt.PointingHandCursor
+                                                            onClicked: messageDelegate.toolExpanded = !messageDelegate.toolExpanded
+
+                                                            RowLayout {
+                                                                id: toolChipRow
+                                                                anchors.left: parent.left
+                                                                anchors.right: parent.right
+                                                                spacing: 8
+
+                                                                Text {
+                                                                    text: Icons.terminal
+                                                                    font.family: Icons.font
+                                                                    font.pixelSize: 14
+                                                                    color: Styling.srItem("overprimary")
+                                                                }
+
+                                                                ColumnLayout {
+                                                                    Layout.fillWidth: true
+                                                                    spacing: 1
+
+                                                                    Text {
+                                                                        renderType: Text.NativeRendering
+                                                                        Layout.fillWidth: true
+                                                                        text: messageDelegate.toolResultTitle
+                                                                        color: Colors.overSurface
+                                                                        font.family: Config.theme.font
+                                                                        font.pixelSize: 13
+                                                                        font.weight: Font.Medium
+                                                                        elide: Text.ElideRight
+                                                                    }
+
+                                                                    Text {
+                                                                        renderType: Text.NativeRendering
+                                                                        Layout.fillWidth: true
+                                                                        visible: messageDelegate.toolResultDetail.length > 0
+                                                                        text: messageDelegate.toolResultDetail
+                                                                        color: Colors.outline
+                                                                        font.family: Config.theme.font
+                                                                        font.pixelSize: 11
+                                                                        elide: Text.ElideRight
+                                                                    }
+                                                                }
+
+                                                                Text {
+                                                                    text: messageDelegate.toolExpanded ? Icons.caretUp : Icons.caretDown
+                                                                    font.family: Icons.font
+                                                                    font.pixelSize: 12
+                                                                    color: Colors.outline
+                                                                }
+                                                            }
+                                                        }
+
+                                                        StyledRect {
+                                                            Layout.fillWidth: true
+                                                            visible: messageDelegate.toolExpanded
+                                                            variant: "surface"
+                                                            color: Colors.surface
+                                                            radius: Styling.radius(6)
+                                                            implicitHeight: Math.min(toolResultScroll.contentHeight + 12, 180)
+
+                                                            Flickable {
+                                                                id: toolResultScroll
+                                                                anchors.fill: parent
+                                                                anchors.margins: 6
+                                                                contentWidth: width
+                                                                contentHeight: toolResultText.implicitHeight
+                                                                clip: true
+                                                                boundsBehavior: Flickable.StopAtBounds
+                                                                flickableDirection: Flickable.VerticalFlick
+
+                                                                TextEdit {
+                                                                    id: toolResultText
+                                                                    width: toolResultScroll.width
+                                                                    renderType: Text.NativeRendering
+                                                                    font.hintingPreference: Font.PreferFullHinting
+                                                                    text: modelData.content || ""
+                                                                    textFormat: Text.PlainText
+                                                                    color: Colors.outline
+                                                                    font.family: "Monospace"
+                                                                    font.pixelSize: 11
+                                                                    wrapMode: Text.WrapAnywhere
+                                                                    readOnly: true
+                                                                    selectByMouse: true
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // ── Normal message body (not tool results) ──
+                                                    ColumnLayout {
+                                                        Layout.fillWidth: true
+                                                        visible: !messageDelegate.isToolResult && !messageDelegate.isEditing && !bubbleContentText.visible
                                                         spacing: 8
 
                                                         Repeater {
@@ -968,25 +1094,22 @@ Item {
                                                         wrapMode: Text.Wrap
                                                         readOnly: !messageDelegate.isEditing
                                                         selectByMouse: true
-                                                        visible: messageDelegate.isEditing
+                                                        visible: messageDelegate.isEditing && !messageDelegate.isToolResult
                                                     }
 
+                                                    // ── Pending / active tool call on assistant message ──
                                                     ColumnLayout {
-                                                        visible: modelData.functionCall !== undefined
+                                                        visible: modelData.functionCall !== undefined && !messageDelegate.isToolResult
                                                         Layout.fillWidth: true
-                                                        spacing: 4
+                                                        spacing: 6
 
                                                         readonly property string toolName: modelData.functionCall ? (modelData.functionCall.name || "") : ""
                                                         readonly property string toolDetail: {
                                                             if (!modelData.functionCall || !modelData.functionCall.args)
                                                                 return "";
                                                             let a = modelData.functionCall.args;
-                                                            if (toolName === "run_shell_command")
-                                                                return a.command || "";
-                                                            if (toolName === "fetch_url")
-                                                                return a.url || "";
-                                                            if (toolName === "web_search")
-                                                                return a.query || "";
+                                                            if (a.command)
+                                                                return a.command;
                                                             try {
                                                                 return JSON.stringify(a);
                                                             } catch (e) {
@@ -994,31 +1117,13 @@ Item {
                                                             }
                                                         }
                                                         readonly property string toolTitle: {
-                                                            if (toolName === "run_shell_command")
-                                                                return "Run Command";
-                                                            if (toolName === "fetch_url")
-                                                                return "Fetch URL";
-                                                            if (toolName === "web_search")
-                                                                return "Web Search";
-                                                            return toolName || "Tool Call";
-                                                        }
-                                                        readonly property string toolApprovedLabel: {
-                                                            if (toolName === "run_shell_command")
-                                                                return "Command Approved";
-                                                            if (toolName === "fetch_url")
-                                                                return "URL Fetch Approved";
-                                                            if (toolName === "web_search")
-                                                                return "Search Approved";
-                                                            return "Tool Approved";
-                                                        }
-                                                        readonly property string toolRejectedLabel: {
-                                                            if (toolName === "run_shell_command")
-                                                                return "Command Rejected";
-                                                            if (toolName === "fetch_url")
-                                                                return "URL Fetch Rejected";
-                                                            if (toolName === "web_search")
-                                                                return "Search Rejected";
-                                                            return "Tool Rejected";
+                                                            if (modelData.functionPending === true)
+                                                                return "Approve tool?";
+                                                            if (modelData.functionApproved === true)
+                                                                return modelData.toolStatus === "completed" ? "Tool completed" : "Tool approved";
+                                                            if (modelData.functionApproved === false)
+                                                                return "Tool rejected";
+                                                            return toolName || "Tool";
                                                         }
 
                                                         Rectangle {
@@ -1026,34 +1131,45 @@ Item {
                                                             height: 1
                                                             color: Colors.outline
                                                             opacity: 0.2
+                                                            visible: (modelData.content || "").length > 0
                                                         }
 
-                                                        Text {
-                                                            renderType: Text.NativeRendering
-                                                            font.hintingPreference: Font.PreferFullHinting
-                                                            text: parent.toolTitle
-                                                            color: Styling.srItem("overprimary")
-                                                            font.family: Config.theme.font
-                                                            font.weight: Font.Bold
-                                                            font.pixelSize: 12
-                                                        }
-
-                                                        StyledRect {
+                                                        RowLayout {
                                                             Layout.fillWidth: true
-                                                            variant: "surface"
-                                                            color: Colors.surface
-                                                            radius: Styling.radius(4)
+                                                            spacing: 8
 
-                                                            TextEdit {
-                                                                renderType: Text.NativeRendering
-                                                                font.hintingPreference: Font.PreferFullHinting
-                                                                padding: 8
-                                                                width: parent.width
-                                                                text: parent.parent.toolDetail
-                                                                font.family: "Monospace"
-                                                                color: Colors.overSurface
-                                                                readOnly: true
-                                                                wrapMode: Text.WrapAnywhere
+                                                            Text {
+                                                                text: Icons.terminal
+                                                                font.family: Icons.font
+                                                                font.pixelSize: 14
+                                                                color: Styling.srItem("overprimary")
+                                                            }
+
+                                                            ColumnLayout {
+                                                                Layout.fillWidth: true
+                                                                spacing: 1
+
+                                                                Text {
+                                                                    renderType: Text.NativeRendering
+                                                                    Layout.fillWidth: true
+                                                                    text: parent.parent.parent.toolTitle
+                                                                    color: Colors.overSurface
+                                                                    font.family: Config.theme.font
+                                                                    font.pixelSize: 13
+                                                                    font.weight: Font.Medium
+                                                                    elide: Text.ElideRight
+                                                                }
+
+                                                                Text {
+                                                                    renderType: Text.NativeRendering
+                                                                    Layout.fillWidth: true
+                                                                    visible: parent.parent.parent.toolDetail.length > 0
+                                                                    text: parent.parent.parent.toolDetail
+                                                                    color: Colors.outline
+                                                                    font.family: "Monospace"
+                                                                    font.pixelSize: 11
+                                                                    elide: Text.ElideRight
+                                                                }
                                                             }
                                                         }
 
@@ -1104,24 +1220,6 @@ Item {
                                                                 }
                                                             }
                                                         }
-
-                                                        Text {
-                                                            renderType: Text.NativeRendering
-                                                            font.hintingPreference: Font.PreferFullHinting
-                                                            visible: modelData.functionApproved === true
-                                                            text: parent.toolApprovedLabel
-                                                            color: Colors.success
-                                                            font.pixelSize: 12
-                                                        }
-
-                                                        Text {
-                                                            renderType: Text.NativeRendering
-                                                            font.hintingPreference: Font.PreferFullHinting
-                                                            visible: modelData.functionApproved === false && !modelData.functionPending
-                                                            text: parent.toolRejectedLabel
-                                                            color: Colors.error
-                                                            font.pixelSize: 12
-                                                        }
                                                     }
                                                 }
                                             }
@@ -1170,45 +1268,89 @@ Item {
 
                                 footer: Item {
                                     width: chatView.width
-                                    height: 40
-                                    visible: Ai.isLoading
+                                    height: Ai.isBusy ? 48 : 0
+                                    visible: Ai.isBusy
 
-                                    Row {
+                                    RowLayout {
                                         anchors.centerIn: parent
-                                        spacing: 4
+                                        spacing: 12
 
-                                        Repeater {
-                                            model: 3
+                                        Row {
+                                            spacing: 4
 
-                                            Rectangle {
-                                                width: 8
-                                                height: 8
-                                                radius: 4
-                                                color: Styling.srItem("overprimary")
-                                                opacity: 0.5
+                                            Repeater {
+                                                model: 3
 
-                                                SequentialAnimation on opacity {
-                                                    loops: Animation.Infinite
-                                                    running: Ai.isLoading
+                                                Rectangle {
+                                                    width: 7
+                                                    height: 7
+                                                    radius: 4
+                                                    color: Styling.srItem("overprimary")
+                                                    opacity: 0.5
 
-                                                    PauseAnimation {
-                                                        duration: index * 200
-                                                    }
+                                                    SequentialAnimation on opacity {
+                                                        loops: Animation.Infinite
+                                                        running: Ai.isBusy
 
-                                                    PropertyAnimation {
-                                                        to: 1
-                                                        duration: 400
-                                                    }
+                                                        PauseAnimation {
+                                                            duration: index * 200
+                                                        }
 
-                                                    PropertyAnimation {
-                                                        to: 0.5
-                                                        duration: 400
-                                                    }
+                                                        PropertyAnimation {
+                                                            to: 1
+                                                            duration: 400
+                                                        }
 
-                                                    PauseAnimation {
-                                                        duration: 400 - (index * 200)
+                                                        PropertyAnimation {
+                                                            to: 0.5
+                                                            duration: 400
+                                                        }
+
+                                                        PauseAnimation {
+                                                            duration: 400 - (index * 200)
+                                                        }
                                                     }
                                                 }
+                                            }
+                                        }
+
+                                        Text {
+                                            renderType: Text.NativeRendering
+                                            text: Ai.statusText.length > 0 ? Ai.statusText : "Thinking…"
+                                            color: Colors.outline
+                                            font.family: Config.theme.font
+                                            font.pixelSize: 12
+                                            elide: Text.ElideRight
+                                            Layout.maximumWidth: Math.max(80, chatView.width - 140)
+                                        }
+
+                                        Button {
+                                            flat: true
+                                            padding: 6
+                                            onClicked: Ai.cancelGeneration(true)
+
+                                            contentItem: Row {
+                                                spacing: 4
+                                                Text {
+                                                    text: Icons.stop
+                                                    font.family: Icons.font
+                                                    font.pixelSize: 12
+                                                    color: Colors.overError
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                }
+                                                Text {
+                                                    text: "Stop"
+                                                    font.family: Config.theme.font
+                                                    font.pixelSize: 12
+                                                    color: Colors.overError
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                }
+                                            }
+
+                                            background: StyledRect {
+                                                variant: "error"
+                                                opacity: parent.hovered ? 0.35 : 0.18
+                                                radius: Styling.radius(6)
                                             }
                                         }
                                     }
@@ -1420,7 +1562,11 @@ Item {
                                                     if (root.menuExpanded) {
                                                         root.menuExpanded = false;
                                                     } else {
+                                                        // Never cancel the agent with Escape — that left broken
+                                                        // tool_call history and "No response" on the next message.
+                                                        // Use the Stop button to abort; Escape only releases focus.
                                                         root.wantsFocus = false;
+                                                        inputField.focus = false;
                                                     }
                                                     event.accepted = true;
                                                     return;

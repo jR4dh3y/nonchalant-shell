@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
@@ -10,7 +9,7 @@ import qs.config
 Item {
     id: root
 
-    property int maxContentWidth: 480
+    property int maxContentWidth: 560
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: Math.max(0, (width - contentWidth) / 2)
 
@@ -25,412 +24,253 @@ Item {
             width: root.contentWidth
             x: root.sideMargin
             y: 20
-            spacing: 24
+            spacing: 20
 
             Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "AI & API Keys"
+                Layout.fillWidth: true
+                text: "AI Agents"
                 font.family: Config.theme.font
                 font.pixelSize: 24
                 font.weight: Font.Bold
                 color: Colors.overSurface
-                Layout.fillWidth: true
-                Layout.bottomMargin: 8
             }
 
-            // Providers
+            Text {
+                Layout.fillWidth: true
+                text: "The assistant uses Agent Client Protocol (ACP). Each local agent owns its authentication, models, tools, and billing; Nonchalant only provides the sidebar client."
+                font.family: Config.theme.font
+                font.pixelSize: 13
+                color: Colors.outline
+                wrapMode: Text.Wrap
+            }
+
+            StyledRect {
+                Layout.fillWidth: true
+                implicitHeight: workingDirectoryColumn.implicitHeight + 32
+                variant: "surface"
+                radius: Styling.radius(8)
+
+                ColumnLayout {
+                    id: workingDirectoryColumn
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 8
+
+                    Text {
+                        text: "Working directory"
+                        font.family: Config.theme.font
+                        font.pixelSize: 15
+                        font.weight: Font.Bold
+                        color: Colors.overSurface
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "New ACP sessions start here. Leave empty to use your home directory."
+                        font.family: Config.theme.font
+                        font.pixelSize: 12
+                        color: Colors.outline
+                        wrapMode: Text.Wrap
+                    }
+
+                    TextField {
+                        id: workingDirectoryInput
+                        Layout.fillWidth: true
+                        text: Config.ai && Config.ai.workingDirectory ? Config.ai.workingDirectory : ""
+                        placeholderText: "~/code/project"
+                        color: Colors.overSurface
+                        font.family: Config.theme.font
+                        onEditingFinished: {
+                            if (Config.ai && Config.ai.workingDirectory !== text)
+                                Config.setAiWorkingDirectory(text);
+                        }
+
+                        background: StyledRect {
+                            variant: "internalbg"
+                            radius: Styling.radius(4)
+                            border.width: workingDirectoryInput.activeFocus ? 2 : 0
+                            border.color: Styling.srItem("primary")
+                        }
+                    }
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "ACP agents"
+                font.family: Config.theme.font
+                font.pixelSize: 18
+                font.weight: Font.Bold
+                color: Colors.overSurface
+            }
+
             Repeater {
-                model: ["opencode", "gemini", "openai", "anthropic", "mistral", "groq", "ollama", "minimax"]
+                model: Ai.models
+
                 delegate: StyledRect {
-                    required property string modelData
+                    id: agentCard
+                    required property var modelData
                     Layout.fillWidth: true
-                    variant: "surface"
+                    implicitHeight: agentColumn.implicitHeight + 32
+                    variant: Ai.currentAgentId === modelData.id ? "focus" : "surface"
                     radius: Styling.radius(8)
-                    
-                    // We need a wrapper to give it a height based on content
-                    implicitHeight: providerCol.implicitHeight + 32
 
                     ColumnLayout {
-                        id: providerCol
+                        id: agentColumn
                         anchors.fill: parent
                         anchors.margins: 16
-                        spacing: 12
+                        spacing: 10
 
                         RowLayout {
                             Layout.fillWidth: true
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: {
-                                    if (modelData === "opencode")
-                                        return "OpenCode Zen";
-                                    return modelData.charAt(0).toUpperCase() + modelData.slice(1);
-                                }
-                                font.family: Config.theme.font
-                                font.pixelSize: 16
-                                font.weight: Font.Bold
-                                color: Colors.overSurface
-                                Layout.fillWidth: true
+                            spacing: 10
+
+                            Image {
+                                Layout.preferredWidth: 24
+                                Layout.preferredHeight: 24
+                                source: modelData.icon || ""
+                                fillMode: Image.PreserveAspectFit
+                                mipmap: true
                             }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 1
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: modelData.name
+                                    font.family: Config.theme.font
+                                    font.pixelSize: 16
+                                    font.weight: Font.Bold
+                                    color: Colors.overSurface
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: modelData.description || ""
+                                    font.family: Config.theme.font
+                                    font.pixelSize: 12
+                                    color: Colors.outline
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+
                             Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: KeyStore.hasKey(modelData) ? "Key Configured" : "Not Configured"
+                                text: Ai.currentAgentId === modelData.id
+                                    ? (Ai.sessionReady ? "Connected" : "Selected") : ""
                                 font.family: Config.theme.font
                                 font.pixelSize: 12
-                                color: KeyStore.hasKey(modelData) ? Colors.success : Colors.outline
+                                color: Ai.sessionReady && Ai.currentAgentId === modelData.id
+                                    ? Colors.success : Styling.srItem("overprimary")
                             }
                         }
 
-                        RowLayout {
+                        StyledRect {
                             Layout.fillWidth: true
-                            spacing: 12
+                            implicitHeight: commandText.implicitHeight + 16
+                            variant: "internalbg"
+                            radius: Styling.radius(4)
 
-                            TextField {
-                                visible: modelData !== "ollama"
-                                id: keyInput
-                                Layout.fillWidth: true
-                                placeholderText: modelData === "opencode"
-                                    ? "OpenCode Zen API key (opencode.ai/auth)..."
-                                    : "Enter API Key..."
-                                echoMode: TextInput.Password
-                                font.family: Config.theme.font
-                                color: Colors.overSurface
-                                padding: 6
-                                
+                            Text {
+                                id: commandText
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                text: modelData.command.join(" ")
+                                font.family: "Monospace"
+                                font.pixelSize: 12
+                                color: Colors.outline
+                                wrapMode: Text.WrapAnywhere
+                            }
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: modelData.installHint || ""
+                            font.family: Config.theme.font
+                            font.pixelSize: 12
+                            color: Colors.outline
+                            wrapMode: Text.Wrap
+                        }
+
+                        RowLayout {
+                            Layout.alignment: Qt.AlignRight
+                            spacing: 8
+
+                            Button {
+                                visible: Ai.currentAgentId === modelData.id
+                                text: "Reconnect"
+                                flat: true
+                                onClicked: Ai.reconnectAgent()
+
                                 background: StyledRect {
-                                    variant: "internalbg"
+                                    variant: parent.hovered ? "focus" : "pane"
                                     radius: Styling.radius(4)
-                                    border.width: keyInput.activeFocus ? 2 : 0
-                                    border.color: Styling.srItem("primary")
-                                    anchors.fill: parent
-                                    anchors.leftMargin: -parent.padding
-                                    anchors.rightMargin: -parent.padding
-                                    anchors.topMargin: -parent.padding
-                                    anchors.bottomMargin: -parent.padding
+                                }
+
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: Colors.overSurface
+                                    font.family: Config.theme.font
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
-                            Button {
-                                id: saveButton
-                                text: modelData === "ollama" ? (KeyStore.hasKey("ollama") ? "Configured" : "Enable") : "Save"
-                                visible: modelData === "ollama" ? !KeyStore.hasKey("ollama") : true
-                                hoverEnabled: true
-                                leftPadding: 6
-                                rightPadding: 6
-                                topPadding: 4
-                                bottomPadding: 4
-                                onClicked: {
-                                    if (modelData === "ollama") {
-                                        KeyStore.setKey("ollama", "enabled")
-                                    } else if (keyInput.text !== "") {
-                                        KeyStore.setKey(modelData, keyInput.text)
-                                        keyInput.text = ""
-                                    }
-                                }
-                                background: StyledRect {
-                                    variant: saveButton.down ? "overprimary" : (saveButton.hovered ? "primaryfocus" : "primary")
-                                    radius: Styling.radius(4)
-                                }
-                                contentItem: Item {
-                                    implicitWidth: saveButtonLabel.implicitWidth + saveButton.leftPadding + saveButton.rightPadding
-                                    implicitHeight: saveButtonLabel.implicitHeight + saveButton.topPadding + saveButton.bottomPadding
 
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        id: saveButtonLabel
-                                        text: saveButton.text
-                                        color: Colors.overPrimary
-                                        font.family: Config.theme.font
-                                        horizontalAlignment: Text.AlignHCenter
-                                        verticalAlignment: Text.AlignVCenter
-                                        anchors.fill: parent
-                                        anchors.leftMargin: saveButton.leftPadding
-                                        anchors.rightMargin: saveButton.rightPadding
-                                        anchors.topMargin: saveButton.topPadding
-                                        anchors.bottomMargin: saveButton.bottomPadding
-                                    }
-                                }
-                            }
                             Button {
-                                id: clearButton
-                                visible: KeyStore.hasKey(modelData)
-                                text: modelData === "ollama" ? "Disable" : "Clear"
-                                leftPadding: 6
-                                rightPadding: 6
-                                topPadding: 4
-                                bottomPadding: 4
-                                onClicked: KeyStore.deleteKey(modelData)
-                                background: StyledRect {
-                                    variant: "error"
-                                    radius: Styling.radius(4)
-                                }
-                                contentItem: Item {
-                                    implicitWidth: clearButtonLabel.implicitWidth + clearButton.leftPadding + clearButton.rightPadding
-                                    implicitHeight: clearButtonLabel.implicitHeight + clearButton.topPadding + clearButton.bottomPadding
+                                text: Ai.currentAgentId === modelData.id ? "Active" : "Use agent"
+                                enabled: Ai.currentAgentId !== modelData.id
+                                flat: true
+                                onClicked: Ai.setModel(modelData.id)
 
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        id: clearButtonLabel
-                                        text: clearButton.text
-                                        color: Colors.overError
-                                        font.family: Config.theme.font
-                                        horizontalAlignment: Text.AlignHCenter
-                                        verticalAlignment: Text.AlignVCenter
-                                        anchors.fill: parent
-                                        anchors.leftMargin: clearButton.leftPadding
-                                        anchors.rightMargin: clearButton.rightPadding
-                                        anchors.topMargin: clearButton.topPadding
-                                        anchors.bottomMargin: clearButton.bottomPadding
-                                    }
+                                background: StyledRect {
+                                    variant: parent.enabled ? "primary" : "pane"
+                                    radius: Styling.radius(4)
+                                    opacity: parent.enabled ? 1 : 0.6
+                                }
+
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: parent.enabled ? Colors.overPrimary : Colors.outline
+                                    font.family: Config.theme.font
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
                         }
                     }
                 }
             }
-            
-            // Custom Provider
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "Custom Provider"
-                font.family: Config.theme.font
-                font.pixelSize: 20
-                font.weight: Font.Bold
-                color: Colors.overSurface
-                Layout.fillWidth: true
-                Layout.topMargin: 16
-                Layout.bottomMargin: 8
-            }
-            
+
             StyledRect {
                 Layout.fillWidth: true
+                visible: Ai.currentSessionModelId.length > 0
+                implicitHeight: activeSessionColumn.implicitHeight + 32
                 variant: "surface"
                 radius: Styling.radius(8)
-                implicitHeight: customCol.implicitHeight + 32
 
                 ColumnLayout {
-                    id: customCol
+                    id: activeSessionColumn
                     anchors.fill: parent
                     anchors.margins: 16
-                    spacing: 12
+                    spacing: 6
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "Custom Provider API Key"
-                            font.family: Config.theme.font
-                            font.pixelSize: 14
-                            font.weight: Font.Bold
-                            color: Colors.overSurface
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: KeyStore.hasKey("custom") ? "Key Configured" : "Not Configured"
-                            font.family: Config.theme.font
-                            font.pixelSize: 12
-                            color: KeyStore.hasKey("custom") ? Colors.success : Colors.outline
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
-
-                        TextField {
-                            id: customKeyInput
-                            Layout.fillWidth: true
-                            placeholderText: "Enter API Key..."
-                            echoMode: TextInput.Password
-                            font.family: Config.theme.font
-                            color: Colors.overSurface
-                            padding: 6
-                            
-                            background: StyledRect {
-                                variant: "internalbg"
-                                radius: Styling.radius(4)
-                                border.width: customKeyInput.activeFocus ? 2 : 0
-                                border.color: Styling.srItem("primary")
-                                anchors.fill: parent
-                                anchors.leftMargin: -parent.padding
-                                anchors.rightMargin: -parent.padding
-                                anchors.topMargin: -parent.padding
-                                anchors.bottomMargin: -parent.padding
-                            }
-                        }
-                        Button {
-                            id: customSaveButton
-                            text: "Save"
-                            hoverEnabled: true
-                            leftPadding: 6
-                            rightPadding: 6
-                            topPadding: 4
-                            bottomPadding: 4
-                            onClicked: {
-                                if (customKeyInput.text !== "") {
-                                    KeyStore.setKey("custom", customKeyInput.text)
-                                    customKeyInput.text = ""
-                                }
-                            }
-                            background: StyledRect {
-                                variant: customSaveButton.down ? "overprimary" : (customSaveButton.hovered ? "primaryfocus" : "primary")
-                                radius: Styling.radius(4)
-                            }
-                            contentItem: Item {
-                                implicitWidth: customSaveButtonLabel.implicitWidth + customSaveButton.leftPadding + customSaveButton.rightPadding
-                                implicitHeight: customSaveButtonLabel.implicitHeight + customSaveButton.topPadding + customSaveButton.bottomPadding
-
-                                Text {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    id: customSaveButtonLabel
-                                    text: customSaveButton.text
-                                    color: Colors.overPrimary
-                                    font.family: Config.theme.font
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    anchors.fill: parent
-                                    anchors.leftMargin: customSaveButton.leftPadding
-                                    anchors.rightMargin: customSaveButton.rightPadding
-                                    anchors.topMargin: customSaveButton.topPadding
-                                    anchors.bottomMargin: customSaveButton.bottomPadding
-                                }
-                            }
-                        }
-                        Button {
-                            id: customClearButton
-                            visible: KeyStore.hasKey("custom")
-                            text: "Clear"
-                            leftPadding: 6
-                            rightPadding: 6
-                            topPadding: 4
-                            bottomPadding: 4
-                            onClicked: KeyStore.deleteKey("custom")
-                            background: StyledRect {
-                                variant: "error"
-                                radius: Styling.radius(4)
-                            }
-                            contentItem: Item {
-                                implicitWidth: customClearButtonLabel.implicitWidth + customClearButton.leftPadding + customClearButton.rightPadding
-                                implicitHeight: customClearButtonLabel.implicitHeight + customClearButton.topPadding + customClearButton.bottomPadding
-
-                                Text {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    id: customClearButtonLabel
-                                    text: customClearButton.text
-                                    color: Colors.overError
-                                    font.family: Config.theme.font
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    anchors.fill: parent
-                                    anchors.leftMargin: customClearButton.leftPadding
-                                    anchors.rightMargin: customClearButton.rightPadding
-                                    anchors.topMargin: customClearButton.topPadding
-                                    anchors.bottomMargin: customClearButton.bottomPadding
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 1
-                        color: Colors.outline
-                        opacity: 0.2
-                        Layout.topMargin: 8
-                        Layout.bottomMargin: 8
+                    Text {
+                        text: "Active ACP session"
+                        font.family: Config.theme.font
+                        font.pixelSize: 15
+                        font.weight: Font.Bold
+                        color: Colors.overSurface
                     }
 
                     Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Custom Endpoint"
-                        font.family: Config.theme.font
-                        font.pixelSize: 14
-                        color: Colors.overSurface
-                    }
-                    
-                    TextField {
-                        id: endpointInput
                         Layout.fillWidth: true
-                        text: Config.ai.customEndpoint !== undefined ? Config.ai.customEndpoint : ""
-                        placeholderText: "e.g. https://api.example.com/v1/chat/completions"
-                        font.family: Config.theme.font
-                        color: Colors.overSurface
-                        padding: 6
-                        
-                        onTextChanged: {
-                            if (Config.ai.customEndpoint !== undefined) {
-                                Config.ai.customEndpoint = text;
-                            }
-                        }
-                        
-                        background: StyledRect {
-                            variant: "internalbg"
-                            radius: Styling.radius(4)
-                            border.width: endpointInput.activeFocus ? 2 : 0
-                            border.color: Styling.srItem("primary")
-                            anchors.fill: parent
-                            anchors.leftMargin: -parent.padding
-                            anchors.rightMargin: -parent.padding
-                            anchors.topMargin: -parent.padding
-                            anchors.bottomMargin: -parent.padding
-                        }
-                    }
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Custom cURL Template"
-                        font.family: Config.theme.font
-                        font.pixelSize: 14
-                        color: Colors.overSurface
-                        Layout.topMargin: 8
-                    }
-                    
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Placeholders: {{ENDPOINT}}, {{API_KEY}}, {{BODY_PATH}}"
-                        font.family: Config.theme.font
+                        text: "Model: " + (Ai.currentSessionModelId || "agent default")
+                            + (Ai.currentModeId ? "\nMode: " + Ai.currentModeId : "")
+                        font.family: "Monospace"
                         font.pixelSize: 12
                         color: Colors.outline
-                    }
-                    
-                    TextField {
-                        id: curlInput
-                        Layout.fillWidth: true
-                        text: Config.ai.customCurlTemplate !== undefined ? Config.ai.customCurlTemplate : ""
-                        placeholderText: "curl -X POST {{ENDPOINT}} -H 'Authorization: Bearer {{API_KEY}}' -d @{{BODY_PATH}}"
-                        font.family: "Monospace"
-                        color: Colors.overSurface
-                        padding: 6
-                        
-                        onTextChanged: {
-                            if (Config.ai.customCurlTemplate !== undefined) {
-                                Config.ai.customCurlTemplate = text;
-                            }
-                        }
-                        
-                        background: StyledRect {
-                            variant: "internalbg"
-                            radius: Styling.radius(4)
-                            border.width: curlInput.activeFocus ? 2 : 0
-                            border.color: Styling.srItem("primary")
-                            anchors.fill: parent
-                            anchors.leftMargin: -parent.padding
-                            anchors.rightMargin: -parent.padding
-                            anchors.topMargin: -parent.padding
-                            anchors.bottomMargin: -parent.padding
-                        }
+                        wrapMode: Text.WrapAnywhere
                     }
                 }
             }

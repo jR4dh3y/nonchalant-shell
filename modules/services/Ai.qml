@@ -4,950 +4,1389 @@ import Quickshell
 import Quickshell.Io
 import qs.config
 import qs.modules.services
-import "ai"
-import "ai/strategies"
 
+// ACP client and chat-state adapter for the assistant sidebar.
+//
+// The shell deliberately does not implement an AI harness. OpenCode, Grok
+// Build, and Codex run as local ACP agents and retain ownership of auth,
+// models, tools, permissions, and conversation context.
 Singleton {
     id: root
 
     // ============================================
-    // PROPERTIES
+    // AGENTS
     // ============================================
 
-    property string chatDir: Quickshell.env("HOME") + "/.local/share/nonchalant/chats"
-    property string tmpDir: "/tmp/nonchalant-ai"
-
-    property list<AiModel> models: []
-
-    property AiModel currentModel: models.length > 0 ? models[0] : null
-    property bool persistenceReady: false
-    property string savedModelId: ""
-    property bool isRestored: false
-
-    onCurrentModelChanged: {
-        if (persistenceReady && currentModel && isRestored) {
-            StateService.set("lastAiModel", currentModel.model);
+    readonly property var builtInAgents: [
+        {
+            id: "opencode",
+            name: "OpenCode",
+            description: "OpenCode coding agent over ACP",
+            icon: Qt.resolvedUrl("../../../assets/aiproviders/openrouter.svg"),
+            command: ["opencode", "acp", "--print-logs", "--log-level", "ERROR"],
+            authMethod: "opencode-login",
+            installHint: "Install OpenCode, then run: opencode auth login",
+            provider: "acp",
+            api_format: "ACP",
+            model: "opencode"
+        },
+        {
+            id: "grok",
+            name: "Grok Build",
+            description: "xAI Grok Build coding agent over ACP",
+            icon: Qt.resolvedUrl("../../../assets/aiproviders/xai.svg"),
+            command: ["grok", "agent", "stdio"],
+            authMethod: "cached_token",
+            installHint: "Install Grok Build and complete its normal login flow",
+            provider: "acp",
+            api_format: "ACP",
+            model: "grok"
+        },
+        {
+            id: "codex",
+            name: "Codex",
+            description: "OpenAI Codex coding agent through the official ACP adapter",
+            icon: Qt.resolvedUrl("../../../assets/aiproviders/openai.svg"),
+            command: ["sh", "-lc", "CODEX_PATH=\"$(command -v codex)\" exec npx -y @agentclientprotocol/codex-acp"],
+            authMethod: "chatgpt",
+            installHint: "Install Codex and Node.js; the ACP adapter reuses your Codex login",
+            provider: "acp",
+            api_format: "ACP",
+            model: "codex"
         }
-        updateStrategy();
+    ]
+
+    property var models: builtInAgents
+    property var currentModel: models.length > 0 ? models[0] : null
+    property string currentAgentId: currentModel ? currentModel.id : "opencode"
+    property string processAgentId: ""
+    property bool fetchingModels: false
+
+    function normalizeAgent(configured, fallback) {
+        let command = configured && Array.isArray(configured.command) ? configured.command : fallback.command;
+        if (!command || command.length === 0)
+            command = fallback.command;
+        return {
+            id: configured && configured.id ? configured.id : fallback.id,
+            name: configured && configured.name ? configured.name : fallback.name,
+            description: configured && configured.description ? configured.description : fallback.description,
+            icon: fallback.icon,
+            command: command,
+            authMethod: configured && configured.authMethod ? configured.authMethod : fallback.authMethod,
+            installHint: configured && configured.installHint ? configured.installHint : fallback.installHint,
+            provider: "acp",
+            api_format: "ACP",
+            model: configured && configured.id ? configured.id : fallback.id
+        };
     }
 
-    function restoreModel() {
-        const lastModelId = StateService.get("lastAiModel", "big-pickle");
-        savedModelId = lastModelId;
-        tryRestore();
-        persistenceReady = true;
-    }
-
-    function tryRestore() {
-        if (isRestored || models.length === 0)
-            return;
-
-        let found = false;
-
-        for (let i = 0; i < models.length; i++) {
-            if (models[i].model === savedModelId) {
-                currentModel = models[i];
-                found = true;
-                break;
-            }
-        }
-
-        if (!found && savedModelId) {
-            for (let i = 0; i < models.length; i++) {
-                if (models[i].model.endsWith(savedModelId) || models[i].model.endsWith("/" + savedModelId)) {
-                    currentModel = models[i];
-                    found = true;
+    function refreshAgents() {
+        let configured = Config.ai && Array.isArray(Config.ai.agents) ? Config.ai.agents : [];
+        let next = [];
+        for (let i = 0; i < builtInAgents.length; i++) {
+            let fallback = builtInAgents[i];
+            let override = null;
+            for (let j = 0; j < configured.length; j++) {
+                if (configured[j] && configured[j].id === fallback.id) {
+                    override = configured[j];
                     break;
                 }
             }
+            next.push(normalizeAgent(override, fallback));
         }
+        models = next;
 
-        if (found)
-            isRestored = true;
-    }
-
-    Connections {
-        target: StateService
-        function onStateLoaded() {
-            restoreModel();
+        let restored = findAgent(currentAgentId);
+        if (!restored) {
+            let preferred = Config.ai && Config.ai.defaultAgent ? Config.ai.defaultAgent : "opencode";
+            restored = findAgent(preferred) || models[0];
         }
-    }
-
-    Connections {
-        target: KeyStore
-        function onKeysChanged() {
-            fetchAvailableModels();
+        if (restored) {
+            currentModel = restored;
+            currentAgentId = restored.id;
         }
     }
 
-    Component.onCompleted: {
-        if (StateService.initialized)
-            restoreModel();
+    function findAgent(value) {
+        let needle = (value || "").toLowerCase();
+        for (let i = 0; i < models.length; i++) {
+            let agent = models[i];
+            if (agent.id.toLowerCase() === needle || agent.name.toLowerCase() === needle)
+                return agent;
+        }
+        return null;
+    }
 
-        if (models.length === 0)
-            fetchAvailableModels();
+    function setModel(value) {
+        let agent = findAgent(value);
+        if (!agent) {
+            pushSystemMessage("Unknown ACP agent: " + value);
+            return;
+        }
+        if (agent.id === currentAgentId)
+            return;
 
-        reloadHistory();
+        cancelGeneration(false);
+        currentModel = agent;
+        currentAgentId = agent.id;
+        StateService.set("lastAiAgent", agent.id);
         createNewChat();
     }
 
+    function fetchAvailableModels() {
+        fetchingModels = true;
+        refreshAgents();
+        refreshTimer.restart();
+    }
+
+    function reconnectAgent() {
+        cancelGeneration(false);
+        sessionReady = false;
+        currentSessionId = "";
+        pendingSessionAction = {
+            kind: "new"
+        };
+        restartAgentProcess();
+    }
+
+    Timer {
+        id: refreshTimer
+        interval: 250
+        onTriggered: root.fetchingModels = false
+    }
+
     // ============================================
-    // STRATEGIES
+    // ACP CONNECTION
     // ============================================
 
-    property OpenAiApiStrategy openaiStrategy: OpenAiApiStrategy {}
-    property GeminiApiStrategy geminiStrategy: GeminiApiStrategy {}
-    property AnthropicApiStrategy anthropicStrategy: AnthropicApiStrategy {}
-    property MistralApiStrategy mistralStrategy: MistralApiStrategy {}
-    property GroqApiStrategy groqStrategy: GroqApiStrategy {}
-    property OllamaApiStrategy ollamaStrategy: OllamaApiStrategy {}
-    property MiniMaxApiStrategy minimaxStrategy: MiniMaxApiStrategy {}
+    readonly property int protocolVersion: 1
+    property bool initialized: false
+    property bool authenticated: false
+    property bool sessionReady: false
+    property bool expectedProcessStop: false
+    property bool restartPending: false
+    property bool suppressReplay: false
+    property var agentCapabilities: ({})
+    property var authMethods: []
+    property var pendingRpc: ({})
+    property int nextRpcId: 1
+    property int activePromptRequestId: -1
+    property var pendingSessionAction: null
+    property var queuedPrompt: null
+    property string agentStderrTail: ""
+    property bool turnFailureHandled: false
 
-    property ApiStrategy currentStrategy: openaiStrategy
+    property var sessionConfigOptions: []
+    property var sessionModels: []
+    property string currentSessionModelId: ""
+    property var availableCommands: []
+    property string currentModeId: ""
+    property int contextUsed: 0
+    property int contextSize: 0
+    property real sessionCost: 0
+    property string sessionCostCurrency: ""
 
-    function getStrategyForProvider(providerName) {
-        switch (providerName) {
-        case "openai": return openaiStrategy;
-        case "gemini": return geminiStrategy;
-        case "anthropic": return anthropicStrategy;
-        case "mistral": return mistralStrategy;
-        case "groq": return groqStrategy;
-        case "ollama": return ollamaStrategy;
-        case "minimax": return minimaxStrategy;
-        case "opencode": return openaiStrategy; // OpenCode Zen OpenAI-compatible chat/completions
-        case "custom": return openaiStrategy; // custom endpoints use OpenAI-compatible format by default
-        default: return openaiStrategy;
+    function workingDirectory() {
+        let configured = Config.ai && Config.ai.workingDirectory ? Config.ai.workingDirectory.trim() : "";
+        if (!configured)
+            return Quickshell.env("HOME");
+        if (configured === "~")
+            return Quickshell.env("HOME");
+        if (configured.startsWith("~/"))
+            return Quickshell.env("HOME") + configured.substring(1);
+        if (configured.startsWith("/"))
+            return configured;
+        return Quickshell.env("HOME") + "/" + configured;
+    }
+
+    function resetConnectionState() {
+        initialized = false;
+        authenticated = false;
+        sessionReady = false;
+        agentCapabilities = {};
+        authMethods = [];
+        pendingRpc = {};
+        activePromptRequestId = -1;
+        sessionConfigOptions = [];
+        sessionModels = [];
+        currentSessionModelId = "";
+        availableCommands = [];
+        currentModeId = "";
+        processAgentId = "";
+        agentStderrTail = "";
+    }
+
+    function startAgentProcess() {
+        if (!currentModel)
+            return;
+        resetConnectionState();
+        processAgentId = currentAgentId;
+        agentProcess.command = currentModel.command;
+        agentProcess.workingDirectory = workingDirectory();
+        expectedProcessStop = false;
+        statusText = "Starting " + currentModel.name + "…";
+        agentProcess.running = true;
+    }
+
+    function restartAgentProcess() {
+        if (agentProcess.running) {
+            restartPending = true;
+            expectedProcessStop = true;
+            agentProcess.running = false;
+            return;
+        }
+        restartPending = false;
+        startAgentProcess();
+    }
+
+    function ensureConnection(action) {
+        pendingSessionAction = action;
+        if (agentProcess.running && processAgentId === currentAgentId && authenticated) {
+            performSessionAction();
+            return;
+        }
+        if (!agentProcess.running || processAgentId !== currentAgentId) {
+            restartAgentProcess();
+            return;
+        }
+        statusText = "Connecting to " + currentModel.name + "…";
+    }
+
+    function sendEnvelope(envelope) {
+        if (!agentProcess.running)
+            return false;
+        agentProcess.write(JSON.stringify(envelope) + "\n");
+        return true;
+    }
+
+    function sendRequest(method, params, kind, context) {
+        let id = nextRpcId++;
+        let pending = Object.assign({}, pendingRpc);
+        pending[String(id)] = {
+            kind: kind || method,
+            method: method,
+            context: context || {}
+        };
+        pendingRpc = pending;
+        if (!sendEnvelope({
+            jsonrpc: "2.0",
+            id: id,
+            method: method,
+            params: params || {}
+        })) {
+            delete pending[String(id)];
+            pendingRpc = pending;
+            return -1;
+        }
+        return id;
+    }
+
+    function sendNotification(method, params) {
+        sendEnvelope({
+            jsonrpc: "2.0",
+            method: method,
+            params: params || {}
+        });
+    }
+
+    function sendResponse(id, result) {
+        sendEnvelope({
+            jsonrpc: "2.0",
+            id: id,
+            result: result
+        });
+    }
+
+    function sendErrorResponse(id, code, message) {
+        sendEnvelope({
+            jsonrpc: "2.0",
+            id: id,
+            error: {
+                code: code,
+                message: message
+            }
+        });
+    }
+
+    function startInitialization() {
+        sendRequest("initialize", {
+            protocolVersion: protocolVersion,
+            clientCapabilities: {
+                fs: {
+                    readTextFile: false,
+                    writeTextFile: false
+                },
+                terminal: false
+            },
+            clientInfo: {
+                name: "nonchalant-shell",
+                title: "Nonchalant Shell",
+                version: "1.0.0"
+            }
+        }, "initialize");
+    }
+
+    function chooseAuthMethod(result) {
+        let methods = result && Array.isArray(result.authMethods) ? result.authMethods : [];
+        if (methods.length === 0)
+            return "";
+
+        let preferred = currentModel ? currentModel.authMethod : "";
+        if (currentAgentId === "codex") {
+            if (Quickshell.env("CODEX_API_KEY"))
+                preferred = "codex-api-key";
+            else if (Quickshell.env("OPENAI_API_KEY"))
+                preferred = "openai-api-key";
+        }
+        if (result._meta && result._meta.defaultAuthMethodId && currentAgentId !== "codex")
+            preferred = result._meta.defaultAuthMethodId;
+
+        for (let i = 0; i < methods.length; i++) {
+            if (methods[i].id === preferred)
+                return preferred;
+        }
+        return methods[0].id || "";
+    }
+
+    function performSessionAction() {
+        if (!authenticated || !pendingSessionAction)
+            return;
+
+        let action = pendingSessionAction;
+        pendingSessionAction = null;
+        let params = {
+            cwd: action.cwd || workingDirectory(),
+            mcpServers: []
+        };
+
+        if (action.kind === "load" && action.sessionId) {
+            let sessionCapabilities = agentCapabilities && agentCapabilities.sessionCapabilities
+                ? agentCapabilities.sessionCapabilities : {};
+            if (sessionCapabilities.resume !== undefined && sessionCapabilities.resume !== null) {
+                params.sessionId = action.sessionId;
+                sendRequest("session/resume", params, "session_resume", action);
+                statusText = "Resuming " + currentModel.name + " session…";
+                return;
+            }
+            if (agentCapabilities && agentCapabilities.loadSession === true) {
+                params.sessionId = action.sessionId;
+                suppressReplay = true;
+                sendRequest("session/load", params, "session_load", action);
+                statusText = "Loading " + currentModel.name + " session…";
+                return;
+            }
+            pushSystemMessage(currentModel.name + " cannot restore this ACP session. A new session was started.");
+        }
+
+        sendRequest("session/new", params, "session_new", action);
+        statusText = "Opening " + currentModel.name + " session…";
+    }
+
+    function applySessionSetup(result) {
+        let setup = result || {};
+        if (setup.sessionId)
+            currentSessionId = setup.sessionId;
+        sessionReady = currentSessionId.length > 0;
+        suppressReplay = false;
+        updateSessionConfiguration(setup);
+        statusText = queuedPrompt ? "Thinking…" : "";
+        saveCurrentChat();
+        if (queuedPrompt)
+            dispatchQueuedPrompt();
+    }
+
+    function updateSessionConfiguration(payload) {
+        let data = payload || {};
+        if (Array.isArray(data.configOptions))
+            sessionConfigOptions = data.configOptions;
+
+        if (data.models) {
+            currentSessionModelId = data.models.currentModelId || currentSessionModelId;
+            sessionModels = Array.isArray(data.models.availableModels) ? data.models.availableModels : sessionModels;
+        }
+
+        let modelOption = null;
+        for (let i = 0; i < sessionConfigOptions.length; i++) {
+            let option = sessionConfigOptions[i];
+            if (option && (option.category === "model" || option.id === "model")) {
+                modelOption = option;
+                break;
+            }
+        }
+        if (modelOption) {
+            currentSessionModelId = String(modelOption.currentValue || "");
+            let mapped = [];
+            let choices = Array.isArray(modelOption.options) ? modelOption.options : [];
+            for (let i = 0; i < choices.length; i++) {
+                mapped.push({
+                    modelId: String(choices[i].value || ""),
+                    name: choices[i].name || String(choices[i].value || ""),
+                    description: choices[i].description || ""
+                });
+            }
+            sessionModels = mapped;
         }
     }
 
-    // OpenCode Zen models that use /v1/chat/completions (Bearer auth).
-    // Claude/GPT-Responses/Gemini shapes are intentionally excluded for now.
-    readonly property var opencodeChatCompletionsModels: [
-        "big-pickle",
-        "deepseek-v4-flash-free",
-        "deepseek-v4-flash",
-        "deepseek-v4-pro",
-        "mimo-v2.5-free",
-        "laguna-s-2.1-free",
-        "north-mini-code-free",
-        "nemotron-3-ultra-free",
-        "glm-5.2",
-        "glm-5.1",
-        "glm-5",
-        "kimi-k2.5",
-        "kimi-k2.6",
-        "kimi-k2.7-code",
-        "minimax-m3",
-        "minimax-m2.7",
-        "minimax-m2.5",
-        "grok-4.5",
-        "grok-build-0.1"
-    ]
+    function setSessionConfigOption(configId, value) {
+        if (!sessionReady)
+            return;
+        let params = {
+            sessionId: currentSessionId,
+            configId: configId,
+            value: value
+        };
+        if (typeof value === "boolean")
+            params.type = "boolean";
+        sendRequest("session/set_config_option", params, "set_config_option", {
+            configId: configId,
+            value: value
+        });
+    }
 
-    function isOpencodeChatCompletionsModel(id) {
-        if (!id)
+    function setSessionModel(modelId) {
+        if (!sessionReady || !modelId)
+            return;
+        for (let i = 0; i < sessionConfigOptions.length; i++) {
+            let option = sessionConfigOptions[i];
+            if (option && (option.category === "model" || option.id === "model")) {
+                setSessionConfigOption(option.id, modelId);
+                return;
+            }
+        }
+        sendRequest("session/set_model", {
+            sessionId: currentSessionId,
+            modelId: modelId
+        }, "set_model", {
+            modelId: modelId
+        });
+    }
+
+    function formatRpcError(error) {
+        if (!error)
+            return "Unknown ACP error";
+        let message = error.message || "ACP request failed";
+        if (error.data) {
+            if (typeof error.data === "string")
+                message += ": " + error.data;
+            else if (error.data.message)
+                message += ": " + error.data.message;
+            else if (error.data.detail)
+                message += ": " + error.data.detail;
+        }
+        return message;
+    }
+
+    function handleRpcError(entry, error) {
+        let message = formatRpcError(error);
+        console.warn("ACP " + (entry ? entry.method : "request") + " failed: " + message);
+        turnWatchdog.stop();
+
+        if (entry && (entry.kind === "session_load" || entry.kind === "session_resume")) {
+            suppressReplay = false;
+            pushSystemMessage("Could not restore the ACP session: " + message + ". Starting a new session.");
+            pendingSessionAction = {
+                kind: "new"
+            };
+            performSessionAction();
+            return;
+        }
+
+        lastError = message;
+        isLoading = false;
+        agentTurnActive = false;
+        toolRunning = false;
+        statusText = "";
+        let hint = currentModel && currentModel.installHint ? "\n\n" + currentModel.installHint : "";
+        pushSystemMessage(message + hint);
+    }
+
+    function handleResponse(message) {
+        let key = String(message.id);
+        let entry = pendingRpc[key];
+        let next = Object.assign({}, pendingRpc);
+        delete next[key];
+        pendingRpc = next;
+        if (!entry)
+            return;
+        if (message.error) {
+            handleRpcError(entry, message.error);
+            return;
+        }
+
+        let result = message.result || {};
+        switch (entry.kind) {
+        case "initialize": {
+            if (result.protocolVersion !== protocolVersion) {
+                handleRpcError(entry, {
+                    message: "Unsupported ACP protocol version " + result.protocolVersion
+                });
+                return;
+            }
+            initialized = true;
+            agentCapabilities = result.agentCapabilities || {};
+            authMethods = Array.isArray(result.authMethods) ? result.authMethods : [];
+            if (result._meta && result._meta.modelState) {
+                currentSessionModelId = result._meta.modelState.currentModelId || "";
+                sessionModels = result._meta.modelState.availableModels || [];
+            }
+            let authMethod = chooseAuthMethod(result);
+            if (authMethod) {
+                statusText = "Authenticating " + currentModel.name + "…";
+                sendRequest("authenticate", {
+                    methodId: authMethod
+                }, "authenticate");
+            } else {
+                authenticated = true;
+                performSessionAction();
+            }
+            break;
+        }
+        case "authenticate":
+            authenticated = true;
+            performSessionAction();
+            break;
+        case "session_new":
+        case "session_load":
+        case "session_resume":
+            applySessionSetup(result);
+            break;
+        case "prompt":
+            if (message.id === activePromptRequestId)
+                activePromptRequestId = -1;
+            turnWatchdog.stop();
+            isLoading = false;
+            agentTurnActive = false;
+            toolRunning = false;
+            statusText = "";
+            activeAssistantIndex = -1;
+            activeAssistantMessageId = "";
+            saveCurrentChat();
+            break;
+        case "set_config_option":
+            updateSessionConfiguration(result);
+            statusText = "";
+            break;
+        case "set_model":
+            currentSessionModelId = entry.context.modelId || currentSessionModelId;
+            statusText = "";
+            break;
+        }
+    }
+
+    function handleAgentRequest(message) {
+        if (message.method === "session/request_permission") {
+            handlePermissionRequest(message.id, message.params || {});
+            return;
+        }
+
+        // These capabilities are intentionally not advertised. Rejecting a
+        // non-conforming request is safer than silently touching the system.
+        if (message.id !== undefined)
+            sendErrorResponse(message.id, -32601, "ACP client method not supported: " + message.method);
+    }
+
+    function handleAcpLine(line) {
+        let trimmed = (line || "").trim();
+        if (!trimmed)
+            return;
+        let message;
+        try {
+            message = JSON.parse(trimmed);
+        } catch (e) {
+            console.warn("Ignoring non-JSON ACP stdout: " + trimmed.substring(0, 200));
+            return;
+        }
+
+        if (message.method) {
+            if (message.method === "session/update") {
+                handleSessionUpdate(message.params || {});
+            } else {
+                handleAgentRequest(message);
+            }
+            return;
+        }
+        if (message.id !== undefined)
+            handleResponse(message);
+    }
+
+    Process {
+        id: agentProcess
+        stdinEnabled: true
+
+        stdout: SplitParser {
+            onRead: data => root.handleAcpLine(data)
+        }
+
+        stderr: SplitParser {
+            onRead: data => root.handleAgentStderr(data)
+        }
+
+        onStarted: root.startInitialization()
+
+        onExited: (exitCode, exitStatus) => {
+            let wasExpected = root.expectedProcessStop;
+            let shouldRestart = root.restartPending;
+            let stderrText = root.agentStderrTail.trim();
+            root.expectedProcessStop = false;
+            root.restartPending = false;
+            turnWatchdog.stop();
+            root.resetConnectionState();
+
+            if (shouldRestart) {
+                Qt.callLater(root.startAgentProcess);
+                return;
+            }
+            if (!wasExpected) {
+                root.isLoading = false;
+                root.agentTurnActive = false;
+                root.toolRunning = false;
+                root.statusText = "";
+                let detail = stderrText.length > 0 ? stderrText.split("\n").slice(-3).join("\n")
+                    : ("Agent process exited with code " + exitCode);
+                let hint = root.currentModel && root.currentModel.installHint
+                    ? "\n\n" + root.currentModel.installHint : "";
+                root.pushSystemMessage(detail + hint);
+            }
+        }
+    }
+
+    function handleAgentStderr(data) {
+        let line = (data || "").trim();
+        if (!line)
+            return;
+        agentStderrTail = (agentStderrTail + "\n" + line).slice(-6000);
+        if (!agentTurnActive || turnFailureHandled)
+            return;
+
+        let lower = line.toLowerCase();
+        if (lower.includes("quota reached") || lower.includes("quota_exhausted")
+                || lower.includes("resource_exhausted")) {
+            failActiveTurn(
+                currentModel.name + " reported that the active model's provider quota is exhausted."
+                + "\n\nChoose another model with `/model`, or update the model in "
+                + currentModel.name + "."
+            );
+        } else if (lower.includes("rate limit") || lower.includes("status\":429")
+                || lower.includes("[429]")) {
+            failActiveTurn(
+                currentModel.name + " was rate-limited by the active model provider."
+                + "\n\nWait for the provider reset or choose another model with `/model`."
+            );
+        } else if (lower.includes("unauthorized") || lower.includes("authentication failed")
+                || lower.includes("invalid api key")) {
+            failActiveTurn(
+                currentModel.name + " could not authenticate with the active model provider."
+                + "\n\nComplete the agent's login flow, then reconnect it."
+            );
+        }
+    }
+
+    // ============================================
+    // ACP SESSION UPDATES
+    // ============================================
+
+    property string activeAssistantMessageId: ""
+    property int activeAssistantIndex: -1
+    property var pendingPermissions: ({})
+
+    function contentBlockText(content) {
+        if (!content)
+            return "";
+        if (content.type === "text")
+            return content.text || "";
+        if (content.type === "resource" && content.resource)
+            return content.resource.text || content.resource.uri || "";
+        if (content.type === "resource_link")
+            return content.name || content.uri || "";
+        if (content.type === "image")
+            return "[Image]";
+        if (content.type === "audio")
+            return "[Audio]";
+        return "";
+    }
+
+    function toolContentText(content) {
+        if (!Array.isArray(content))
+            return "";
+        let parts = [];
+        for (let i = 0; i < content.length; i++) {
+            let item = content[i];
+            if (!item)
+                continue;
+            if (item.type === "content")
+                parts.push(contentBlockText(item.content));
+            else if (item.type === "diff") {
+                let diff = "Changed " + (item.path || "file");
+                if (item.newText)
+                    diff += "\n\n" + item.newText;
+                parts.push(diff);
+            } else if (item.type === "terminal")
+                parts.push(item.output || "");
+        }
+        return parts.filter(part => part && part.length > 0).join("\n\n");
+    }
+
+    function appendAgentMessage(update) {
+        let text = contentBlockText(update.content);
+        if (!text)
+            return;
+        let messageId = update.messageId || "";
+        let shouldCreate = activeAssistantIndex < 0 || activeAssistantIndex >= currentChat.length;
+        if (!shouldCreate && messageId && activeAssistantMessageId && messageId !== activeAssistantMessageId)
+            shouldCreate = true;
+
+        let chat = Array.from(currentChat);
+        if (shouldCreate) {
+            chat.push({
+                role: "assistant",
+                content: text,
+                model: activeAgentLabel(),
+                acpMessageId: messageId
+            });
+            activeAssistantIndex = chat.length - 1;
+            activeAssistantMessageId = messageId;
+        } else {
+            let existing = chat[activeAssistantIndex] || {};
+            chat[activeAssistantIndex] = Object.assign({}, existing, {
+                content: (existing.content || "") + text,
+                model: activeAgentLabel(),
+                acpMessageId: messageId || existing.acpMessageId || ""
+            });
+        }
+        currentChat = chat;
+    }
+
+    function findToolMessageIndex(toolCallId) {
+        for (let i = currentChat.length - 1; i >= 0; i--) {
+            let msg = currentChat[i];
+            if (msg && msg.functionCall && msg.functionCall.id === toolCallId)
+                return i;
+        }
+        return -1;
+    }
+
+    function updateToolRunning() {
+        let running = false;
+        let turnStart = 0;
+        for (let i = currentChat.length - 1; i >= 0; i--) {
+            if (currentChat[i] && currentChat[i].role === "user") {
+                turnStart = i;
+                break;
+            }
+        }
+        for (let i = turnStart; i < currentChat.length; i++) {
+            let msg = currentChat[i];
+            if (msg && msg.toolStatus && (msg.toolStatus === "pending" || msg.toolStatus === "in_progress")) {
+                running = true;
+                break;
+            }
+        }
+        toolRunning = running;
+    }
+
+    function upsertToolCall(update) {
+        let toolCallId = update.toolCallId || ("tool_" + Date.now());
+        let index = findToolMessageIndex(toolCallId);
+        let chat = Array.from(currentChat);
+        let status = update.status || "pending";
+        let title = update.title || update.kind || "Tool";
+        let output = toolContentText(update.content);
+        let args = update.rawInput || {};
+
+        if (index < 0) {
+            chat.push({
+                role: "assistant",
+                content: output,
+                model: activeAgentLabel(),
+                functionCall: {
+                    id: toolCallId,
+                    name: title,
+                    args: args
+                },
+                functionPending: false,
+                functionApproved: status === "completed" ? true : undefined,
+                toolStatus: status,
+                toolKind: update.kind || "other"
+            });
+        } else {
+            let existing = chat[index];
+            let existingCall = existing.functionCall || {};
+            chat[index] = Object.assign({}, existing, {
+                content: output || existing.content || "",
+                functionCall: {
+                    id: toolCallId,
+                    name: update.title || existingCall.name || title,
+                    args: update.rawInput || existingCall.args || {}
+                },
+                functionApproved: status === "completed" ? true
+                    : (status === "failed" ? false : existing.functionApproved),
+                toolStatus: status,
+                toolKind: update.kind || existing.toolKind || "other"
+            });
+        }
+        currentChat = chat;
+        updateToolRunning();
+        if (status === "completed" || status === "failed")
+            saveCurrentChat();
+    }
+
+    function handlePermissionRequest(requestId, params) {
+        let tool = params.toolCall || {};
+        let toolCallId = tool.toolCallId || ("permission_" + requestId);
+        upsertToolCall(tool);
+        let index = findToolMessageIndex(toolCallId);
+        if (index < 0) {
+            sendResponse(requestId, {
+                outcome: {
+                    outcome: "cancelled"
+                }
+            });
+            return;
+        }
+
+        let permissions = Object.assign({}, pendingPermissions);
+        permissions[String(requestId)] = {
+            requestId: requestId,
+            toolCallId: toolCallId,
+            options: Array.isArray(params.options) ? params.options : []
+        };
+        pendingPermissions = permissions;
+
+        let chat = Array.from(currentChat);
+        chat[index] = Object.assign({}, chat[index], {
+            functionPending: true,
+            permissionRequestId: requestId
+        });
+        currentChat = chat;
+        turnWatchdog.stop();
+        statusText = "Waiting for permission…";
+    }
+
+    function choosePermissionOption(options, allow) {
+        let preferredKinds = allow ? ["allow_once", "allow_always"] : ["reject_once", "reject_always"];
+        for (let p = 0; p < preferredKinds.length; p++) {
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].kind === preferredKinds[p])
+                    return options[i].optionId;
+            }
+        }
+        return options.length > 0 ? options[0].optionId : "";
+    }
+
+    function resolvePermission(index, allow) {
+        if (index < 0 || index >= currentChat.length)
+            return;
+        let message = currentChat[index];
+        let requestId = message.permissionRequestId;
+        let permission = pendingPermissions[String(requestId)];
+        if (!permission)
+            return;
+
+        let optionId = choosePermissionOption(permission.options, allow);
+        if (optionId) {
+            sendResponse(requestId, {
+                outcome: {
+                    outcome: "selected",
+                    optionId: optionId
+                }
+            });
+        } else {
+            sendResponse(requestId, {
+                outcome: {
+                    outcome: "cancelled"
+                }
+            });
+        }
+
+        let permissions = Object.assign({}, pendingPermissions);
+        delete permissions[String(requestId)];
+        pendingPermissions = permissions;
+        let chat = Array.from(currentChat);
+        chat[index] = Object.assign({}, chat[index], {
+            functionPending: false,
+            functionApproved: allow
+        });
+        currentChat = chat;
+        statusText = allow ? "Running tool…" : "Tool rejected";
+        if (allow && agentTurnActive)
+            turnWatchdog.restart();
+        saveCurrentChat();
+    }
+
+    function approveCommand(index) {
+        resolvePermission(index, true);
+    }
+
+    function rejectCommand(index) {
+        resolvePermission(index, false);
+    }
+
+    function handleSessionUpdate(params) {
+        if (params.sessionId && currentSessionId && params.sessionId !== currentSessionId)
+            return;
+        if (suppressReplay)
+            return;
+        if (agentTurnActive)
+            turnWatchdog.restart();
+
+        let update = params.update || {};
+        switch (update.sessionUpdate) {
+        case "agent_message_chunk":
+            appendAgentMessage(update);
+            statusText = "Responding…";
+            break;
+        case "agent_thought_chunk": {
+            let thought = contentBlockText(update.content).trim();
+            statusText = thought ? thought.substring(0, 100) : "Thinking…";
+            break;
+        }
+        case "tool_call":
+        case "tool_call_update":
+            upsertToolCall(update);
+            if (update.status === "in_progress")
+                statusText = update.title || "Running tool…";
+            break;
+        case "plan":
+        case "plan_update":
+            statusText = "Planning…";
+            break;
+        case "available_commands_update":
+            availableCommands = update.availableCommands || update.commands || [];
+            break;
+        case "current_mode_update":
+            currentModeId = update.currentModeId || update.modeId || "";
+            break;
+        case "config_option_update":
+            updateSessionConfiguration(update);
+            break;
+        case "usage_update":
+            contextUsed = update.used || 0;
+            contextSize = update.size || 0;
+            if (update.cost) {
+                sessionCost = update.cost.amount || 0;
+                sessionCostCurrency = update.cost.currency || "";
+            }
+            break;
+        }
+    }
+
+    // ============================================
+    // CHAT API
+    // ============================================
+
+    property bool isLoading: false
+    property bool toolRunning: false
+    property bool agentTurnActive: false
+    readonly property bool isBusy: isLoading || toolRunning || agentTurnActive
+    readonly property bool supportsMessageEditing: false
+    readonly property bool supportsRegeneration: false
+    property string statusText: ""
+    property string lastError: ""
+
+    Timer {
+        id: turnWatchdog
+        interval: 120000
+        repeat: false
+        onTriggered: root.failActiveTurn(
+            "The ACP agent produced no updates for two minutes, so the stalled turn was cancelled."
+            + "\n\nCheck the agent's provider connection or select another agent/model."
+        )
+    }
+
+    property var currentChat: []
+    property string currentChatId: ""
+    property string currentChatAgentId: ""
+    property string currentSessionId: ""
+    property string currentChatCwd: ""
+    property var chatHistory: []
+
+    signal chatModelChanged
+    signal historyModelChanged
+
+    function activeAgentLabel() {
+        let agent = currentModel ? currentModel.name : "ACP";
+        if (currentSessionModelId)
+            return agent + " · " + currentSessionModelId;
+        return agent;
+    }
+
+    function pushSystemMessage(message) {
+        if (!message)
+            return;
+        let chat = Array.from(currentChat);
+        chat.push({
+            role: "system",
+            content: message
+        });
+        currentChat = chat;
+        saveCurrentChat();
+    }
+
+    function failActiveTurn(message) {
+        if (!agentTurnActive || turnFailureHandled)
+            return;
+        turnFailureHandled = true;
+        cancelGeneration(false);
+        lastError = message;
+        pushSystemMessage(message);
+    }
+
+    function commandHelp() {
+        let lines = [
+            "🤖 **ACP Assistant Commands**",
+            "",
+            "**`/new`** — start a fresh ACP session",
+            "**`/agent`** — list OpenCode, Grok Build, and Codex",
+            "**`/agent <name>`** — switch ACP agent",
+            "**`/model`** — list models exposed by the active agent",
+            "**`/model <id>`** — select an agent model",
+            "**`/status`** — show the active ACP connection"
+        ];
+        if (availableCommands.length > 0) {
+            lines.push("", "**Agent commands**");
+            for (let i = 0; i < availableCommands.length; i++) {
+                let command = availableCommands[i];
+                lines.push("`/" + (command.name || "") + "` — " + (command.description || ""));
+            }
+        }
+        return lines.join("\n");
+    }
+
+    function handleLocalCommand(message) {
+        if (!message.startsWith("/"))
             return false;
-        for (let i = 0; i < opencodeChatCompletionsModels.length; i++) {
-            if (opencodeChatCompletionsModels[i] === id)
-                return true;
+        let parts = message.substring(1).trim().split(/\s+/);
+        let command = (parts.shift() || "").toLowerCase();
+        let argument = parts.join(" ").trim();
+
+        if (command === "new") {
+            createNewChat();
+            return true;
+        }
+        if (command === "help") {
+            pushSystemMessage(commandHelp());
+            return true;
+        }
+        if (command === "agent") {
+            if (argument) {
+                setModel(argument);
+            } else {
+                let names = models.map(agent => "`" + agent.id + "` — " + agent.name);
+                pushSystemMessage("Available ACP agents:\n\n" + names.join("\n"));
+            }
+            return true;
+        }
+        if (command === "model") {
+            if (argument) {
+                setSessionModel(argument);
+            } else if (sessionModels.length > 0) {
+                let max = Math.min(sessionModels.length, 40);
+                let names = [];
+                for (let i = 0; i < max; i++) {
+                    let model = sessionModels[i];
+                    names.push("`" + (model.modelId || "") + "` — " + (model.name || model.modelId || ""));
+                }
+                if (sessionModels.length > max)
+                    names.push("…and " + (sessionModels.length - max) + " more");
+                pushSystemMessage("Active model: `" + currentSessionModelId + "`\n\n" + names.join("\n"));
+            } else {
+                pushSystemMessage("The active ACP agent has not exposed a model selector.");
+            }
+            return true;
+        }
+        if (command === "status") {
+            pushSystemMessage(
+                "**Agent:** " + (currentModel ? currentModel.name : "None")
+                + "\n**ACP:** " + (sessionReady ? "connected" : "disconnected")
+                + "\n**Session:** `" + (currentSessionId || "none") + "`"
+                + "\n**Model:** `" + (currentSessionModelId || "agent default") + "`"
+                + "\n**Working directory:** `" + workingDirectory() + "`"
+            );
+            return true;
         }
         return false;
     }
 
-    function createOpencodeModel(id, description) {
-        return aiModelFactory.createObject(root, {
-            name: id,
-            icon: Qt.resolvedUrl("../../../assets/aiproviders/openrouter.svg"),
-            description: description || "OpenCode Zen model",
-            endpoint: "https://opencode.ai/zen",
-            model: id,
-            provider: "opencode",
-            requires_key: true,
-            key_id: "OPENCODE_API_KEY"
+    function sendMessage(message, attachments) {
+        let text = message || "";
+        if (handleLocalCommand(text))
+            return;
+        if (!text.trim() && (!attachments || attachments.length === 0))
+            return;
+        if (isBusy) {
+            pushSystemMessage("The active ACP turn is still running. Stop it before sending another message.");
+            return;
+        }
+
+        if (!currentChatId)
+            currentChatId = String(Date.now());
+        let chat = Array.from(currentChat);
+        chat.push({
+            role: "user",
+            content: text,
+            attachments: attachments || []
+        });
+        currentChat = chat;
+        currentChatAgentId = currentAgentId;
+        currentChatCwd = workingDirectory();
+        saveCurrentChat();
+
+        queuedPrompt = {
+            text: text,
+            attachments: attachments || []
+        };
+        isLoading = true;
+        agentTurnActive = true;
+        turnFailureHandled = false;
+        lastError = "";
+        statusText = sessionReady ? "Thinking…" : "Connecting to " + currentModel.name + "…";
+        activeAssistantIndex = -1;
+        activeAssistantMessageId = "";
+
+        if (sessionReady && agentProcess.running && processAgentId === currentAgentId)
+            dispatchQueuedPrompt();
+        else
+            ensureConnection({
+                kind: currentSessionId ? "load" : "new",
+                sessionId: currentSessionId,
+                cwd: currentChatCwd
+            });
+    }
+
+    function dispatchQueuedPrompt() {
+        if (!queuedPrompt || !sessionReady)
+            return;
+        let queued = queuedPrompt;
+        queuedPrompt = null;
+        let prompt = [];
+        if (queued.text)
+            prompt.push({
+                type: "text",
+                text: queued.text
+            });
+
+        let supportsImages = agentCapabilities && agentCapabilities.promptCapabilities
+            && agentCapabilities.promptCapabilities.image === true;
+        let attachments = queued.attachments || [];
+        for (let i = 0; i < attachments.length; i++) {
+            let attachment = attachments[i];
+            if (supportsImages && attachment && attachment.base64) {
+                prompt.push({
+                    type: "image",
+                    mimeType: attachment.mimeType || "image/png",
+                    data: attachment.base64
+                });
+            }
+        }
+        if (attachments.length > 0 && !supportsImages)
+            pushSystemMessage(currentModel.name + " does not advertise ACP image support; attachments were omitted.");
+
+        activePromptRequestId = sendRequest("session/prompt", {
+            sessionId: currentSessionId,
+            prompt: prompt
+        }, "prompt");
+        turnWatchdog.restart();
+        statusText = "Thinking…";
+    }
+
+    function cancelGeneration(announce) {
+        turnWatchdog.stop();
+        if (currentSessionId && agentProcess.running) {
+            sendNotification("session/cancel", {
+                sessionId: currentSessionId
+            });
+            if (activePromptRequestId >= 0) {
+                sendNotification("$/cancel_request", {
+                    id: activePromptRequestId
+                });
+            }
+        }
+
+        let permissionKeys = Object.keys(pendingPermissions);
+        for (let i = 0; i < permissionKeys.length; i++) {
+            let pending = pendingPermissions[permissionKeys[i]];
+            sendResponse(pending.requestId, {
+                outcome: {
+                    outcome: "cancelled"
+                }
+            });
+        }
+        pendingPermissions = {};
+        activePromptRequestId = -1;
+        queuedPrompt = null;
+        isLoading = false;
+        agentTurnActive = false;
+        toolRunning = false;
+        statusText = announce ? "Stopped" : "";
+
+        let chat = Array.from(currentChat);
+        for (let i = 0; i < chat.length; i++) {
+            if (chat[i] && chat[i].functionPending === true) {
+                chat[i] = Object.assign({}, chat[i], {
+                    functionPending: false,
+                    functionApproved: false,
+                    toolStatus: "failed"
+                });
+            }
+        }
+        currentChat = chat;
+        saveCurrentChat();
+    }
+
+    function createNewChat() {
+        cancelGeneration(false);
+        currentChat = [];
+        currentChatId = String(Date.now());
+        currentChatAgentId = currentAgentId;
+        currentChatCwd = workingDirectory();
+        currentSessionId = "";
+        sessionReady = false;
+        activeAssistantIndex = -1;
+        activeAssistantMessageId = "";
+        pendingPermissions = {};
+        chatModelChanged();
+        ensureConnection({
+            kind: "new",
+            cwd: currentChatCwd
         });
     }
 
-    function updateStrategy() {
-        if (currentModel)
-            currentStrategy = getStrategyForProvider(currentModel.provider);
-        else
-            currentStrategy = openaiStrategy;
+    function regenerateResponse(index) {
+        pushSystemMessage("Regeneration is owned by the ACP agent. Ask it to reconsider or regenerate the response.");
+    }
+
+    function updateMessage(index, newContent) {
+        pushSystemMessage("ACP session history is agent-owned, so previous turns cannot be edited locally.");
     }
 
     // ============================================
-    // STATE
+    // CHAT PERSISTENCE
     // ============================================
 
-    property bool isLoading: false
-    property string lastError: ""
-    property string responseBuffer: ""
-
-    // Current Chat
-    property var currentChat: []
-    property string currentChatId: ""
-
-    // Chat History List (files)
-    property var chatHistory: []
+    property string chatDir: Quickshell.env("HOME") + "/.local/share/nonchalant/chats"
+    property string pendingSavePath: ""
+    property string pendingSaveData: ""
 
     FileView {
         id: chatFileView
         printErrors: false
+        atomicWrites: true
     }
 
-    FileView {
-        id: bodyFileView
-        printErrors: false
-    }
-
-    // ============================================
-    // TOOLS
-    // ============================================
-
-    function regenerateResponse(index) {
-        if (index < 0 || index >= currentChat.length)
-            return;
-
-        let newChat = currentChat.slice(0, index);
-        currentChat = newChat;
-
-        isLoading = true;
-        lastError = "";
-        makeRequest();
-    }
-
-    function updateMessage(index, newContent) {
-        if (index < 0 || index >= currentChat.length)
-            return;
-
-        let newChat = Array.from(currentChat);
-        let msg = newChat[index];
-        msg.content = newContent;
-        newChat[index] = msg;
-
-        currentChat = newChat;
-        saveCurrentChat();
-    }
-
-    property var systemTools: [
-        {
-            name: "run_shell_command",
-            description: "Execute a shell command on the user's system (Linux). Use this to list files, control the system, or run utilities. Output will be returned.",
-            parameters: {
-                type: "object",
-                properties: {
-                    command: {
-                        type: "string",
-                        description: "The shell command to run (e.g. 'ls -la', 'ip addr')"
-                    }
-                },
-                required: ["command"]
-            }
-        },
-        {
-            name: "web_search",
-            description: "Search the web for current information. Returns titles, snippets, and URLs. Use when you need facts, docs, news, or anything not available locally.",
-            parameters: {
-                type: "object",
-                properties: {
-                    query: {
-                        type: "string",
-                        description: "The search query"
-                    }
-                },
-                required: ["query"]
-            }
-        },
-        {
-            name: "fetch_url",
-            description: "Fetch the text content of a website or API URL. Use after web_search to read a specific page, or when the user provides a link.",
-            parameters: {
-                type: "object",
-                properties: {
-                    url: {
-                        type: "string",
-                        description: "Full URL to fetch (https://...)"
-                    },
-                    max_chars: {
-                        type: "integer",
-                        description: "Maximum characters of text to return (default 12000)"
-                    }
-                },
-                required: ["url"]
-            }
-        }
-    ]
-
-    // Streaming tool-call assembly (OpenAI-compatible deltas arrive fragmented).
-    property var pendingToolCalls: ({})
-    property bool streamHadToolCall: false
-
-    function resetToolCallBuffers() {
-        pendingToolCalls = {};
-        streamHadToolCall = false;
-    }
-
-    function accumulateToolCallDeltas(deltas) {
-        if (!deltas || deltas.length === 0)
-            return;
-        streamHadToolCall = true;
-        // Clone so QML notices the mutation.
-        let buf = Object.assign({}, pendingToolCalls);
-        for (let i = 0; i < deltas.length; i++) {
-            let d = deltas[i];
-            let idx = (d.index !== undefined && d.index !== null) ? d.index : 0;
-            let key = String(idx);
-            if (!buf[key]) {
-                buf[key] = {
-                    id: "",
-                    name: "",
-                    arguments: ""
-                };
-            }
-            let entry = Object.assign({}, buf[key]);
-            if (d.id)
-                entry.id = d.id;
-            if (d.function) {
-                if (d.function.name)
-                    entry.name = (entry.name || "") + d.function.name;
-                if (d.function.arguments)
-                    entry.arguments = (entry.arguments || "") + d.function.arguments;
-            }
-            buf[key] = entry;
-        }
-        pendingToolCalls = buf;
-    }
-
-    function finalizePendingToolCalls() {
-        let keys = Object.keys(pendingToolCalls);
-        if (keys.length === 0)
-            return null;
-
-        // Prefer the first tool call (UI currently supports one pending action).
-        keys.sort();
-        let entry = pendingToolCalls[keys[0]];
-        if (!entry || !entry.name)
-            return null;
-
-        let args = {};
-        try {
-            args = entry.arguments && entry.arguments.length > 0 ? JSON.parse(entry.arguments) : {};
-        } catch (e) {
-            args = {
-                command: entry.arguments || "",
-                _parseError: String(e)
-            };
-        }
-
+    function chatEnvelope() {
         return {
-            id: entry.id || ("call_" + Date.now()),
-            name: entry.name,
-            args: args,
-            rawArguments: entry.arguments || ""
+            version: 2,
+            protocol: "acp",
+            agentId: currentChatAgentId || currentAgentId,
+            sessionId: currentSessionId,
+            cwd: currentChatCwd || workingDirectory(),
+            messages: currentChat
         };
-    }
-
-    // ============================================
-    // CHAT MANAGEMENT
-    // ============================================
-
-    function deleteChat(id) {
-        if (id === currentChatId)
-            createNewChat();
-
-        let filename = chatDir + "/" + id + ".json";
-        deleteChatProcess.command = ["rm", filename];
-        deleteChatProcess.running = true;
-    }
-
-    // ============================================
-    // LOGIC
-    // ============================================
-
-    function setModel(modelName) {
-        for (let i = 0; i < models.length; i++) {
-            if (models[i].name === modelName) {
-                currentModel = models[i];
-                return;
-            }
-        }
-    }
-
-    function getApiKey(model) {
-        if (!model || !model.requires_key)
-            return "";
-
-        // Try KeyStore first
-        let ksKey = KeyStore.getKey(model.provider);
-        if (ksKey)
-            return ksKey;
-
-        return "";
-    }
-
-    function processCommand(text) {
-        let cmd = text.trim();
-        if (!cmd.startsWith("/"))
-            return false;
-
-        let parts = cmd.split(" ");
-        let command = parts[0].toLowerCase();
-        let args = parts.slice(1).join(" ");
-
-        switch (command) {
-        case "/new":
-            createNewChat();
-            return true;
-        case "/model":
-            if (args) {
-                let found = false;
-                for (let i = 0; i < models.length; i++) {
-                    if (models[i].name.toLowerCase().includes(args.toLowerCase()) || models[i].model.toLowerCase() === args.toLowerCase()) {
-                        setModel(models[i].name);
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    pushSystemMessage("Model '" + args + "' not found.");
-                } else {
-                    pushSystemMessage("Switched to model: " + currentModel.name);
-                }
-            } else {
-                modelSelectionRequested();
-            }
-            return true;
-        case "/help":
-            pushSystemMessage("🤖 **Assistant Commands**\n\n" + "**`/new`**\n" + "Starts a fresh conversation context.\n\n" + "**`/model [name]`**\n" + "Switches the active AI model.\n" + "• **List models:** Type `/model` without arguments.\n" + "• **Switch:** Type `/model gemini` or `/model mistral`.\n\n" + "**`/help`**\n" + "Shows this help message.\n\n" + "💡 **Tips:**\n" + "• **Edit:** Click the pen icon on any message to modify it.\n" + "• **Regenerate:** Click the refresh icon to get a new response.\n" + "• **Copy:** Use the copy button to grab code or text.");
-            return true;
-        }
-
-        return false;
-    }
-
-    function pushSystemMessage(text) {
-        let newChat = Array.from(currentChat);
-        newChat.push({
-            role: "system",
-            content: text
-        });
-        currentChat = newChat;
-    }
-
-    // Function Call Handling
-    readonly property string webToolsScript: {
-        let p = Qt.resolvedUrl("../../scripts/ai_web_tools.py").toString().replace("file://", "");
-        try {
-            return decodeURIComponent(p);
-        } catch (e) {
-            return p;
-        }
-    }
-
-    function _toolFallbackContent(name) {
-        if (name === "web_search")
-            return "I'd like to search the web:";
-        if (name === "fetch_url")
-            return "I'd like to fetch a webpage:";
-        return "I'd like to run a command:";
-    }
-
-    function approveCommand(index) {
-        let msg = currentChat[index];
-        if (!msg.functionCall)
-            return;
-
-        let newChat = Array.from(currentChat);
-        newChat[index].functionPending = false;
-        newChat[index].functionApproved = true;
-        currentChat = newChat;
-        saveCurrentChat();
-
-        let args = msg.functionCall.args || {};
-        let name = msg.functionCall.name;
-
-        if (name === "run_shell_command") {
-            commandExecutionProc.command = ["bash", "-c", args.command || ""];
-            commandExecutionProc.targetIndex = index;
-            commandExecutionProc.running = true;
-            return;
-        }
-
-        if (name === "web_search") {
-            commandExecutionProc.command = ["python3", webToolsScript, "search", args.query || ""];
-            commandExecutionProc.targetIndex = index;
-            commandExecutionProc.running = true;
-            return;
-        }
-
-        if (name === "fetch_url") {
-            let maxChars = parseInt(args.max_chars, 10);
-            if (!maxChars || maxChars < 500)
-                maxChars = 12000;
-            if (maxChars > 50000)
-                maxChars = 50000;
-            commandExecutionProc.command = ["python3", webToolsScript, "fetch", args.url || "", String(maxChars)];
-            commandExecutionProc.targetIndex = index;
-            commandExecutionProc.running = true;
-            return;
-        }
-
-        // Unknown tool — feed an error back into the chat loop.
-        let errChat = Array.from(currentChat);
-        errChat.push({
-            role: "function",
-            name: name,
-            tool_call_id: msg.functionCall.id || "",
-            content: "Unknown tool: " + name
-        });
-        currentChat = errChat;
-        saveCurrentChat();
-        makeRequest();
-    }
-
-    function rejectCommand(index) {
-        let newChat = Array.from(currentChat);
-        newChat[index].functionPending = false;
-        newChat[index].functionApproved = false;
-
-        newChat.push({
-            role: "function",
-            name: newChat[index].functionCall.name,
-            tool_call_id: newChat[index].functionCall.id || "",
-            content: "User rejected the tool execution."
-        });
-
-        currentChat = newChat;
-        saveCurrentChat();
-        makeRequest();
-    }
-
-    function sendMessage(text, attachments) {
-        if (text.trim() === "" && (!attachments || attachments.length === 0))
-            return;
-        if (processCommand(text))
-            return;
-        isLoading = true;
-        lastError = "";
-        let userMsg = {
-            role: "user",
-            content: text
-        };
-        if (attachments && attachments.length > 0)
-            userMsg.attachments = attachments;
-        let newChat = Array.from(currentChat);
-        newChat.push(userMsg);
-        currentChat = newChat;
-        saveCurrentChat();
-        makeRequest();
-    }
-
-    function makeRequest() {
-        let apiKey = getApiKey(currentModel);
-        if (!apiKey && currentModel.requires_key) {
-            lastError = "API Key missing for " + currentModel.name + ". Add it in Settings or set " + (currentModel.key_id || "the environment variable") + ".";
-            isLoading = false;
-
-            let errChat = Array.from(currentChat);
-            errChat.push({
-                role: "assistant",
-                content: "Error: " + lastError
-            });
-            currentChat = errChat;
-            return;
-        }
-
-        // Determine endpoint — Gemini streaming uses a different endpoint
-        let endpoint;
-        let isGemini = currentModel.provider === "gemini";
-        if (isGemini && geminiStrategy._getStreamEndpoint) {
-            endpoint = geminiStrategy._getStreamEndpoint(currentModel, apiKey);
-        } else {
-            endpoint = currentStrategy.getEndpoint(currentModel, apiKey);
-        }
-
-        let headers = currentStrategy.getHeaders(apiKey);
-
-        // Build messages array
-        let messages = [];
-        if (Config.ai.systemPrompt) {
-            messages.push({
-                role: "system",
-                content: Config.ai.systemPrompt
-            });
-        }
-
-        for (let i = 0; i < currentChat.length; i++) {
-            let msg = currentChat[i];
-            // Map stored tool-result role → OpenAI "tool" / legacy "function"
-            let role = msg.role;
-            if (role === "function")
-                role = "tool";
-
-            let apiMsg = {
-                role: role,
-                content: msg.content
-            };
-            if (msg.attachments)
-                apiMsg.attachments = msg.attachments;
-            if (msg.functionCall) {
-                apiMsg.functionCall = msg.functionCall;
-                // OpenAI-compatible tool_calls on the assistant turn
-                apiMsg.tool_calls = [
-                    {
-                        id: msg.functionCall.id || ("call_" + i),
-                        type: "function",
-                        function: {
-                            name: msg.functionCall.name,
-                            arguments: typeof msg.functionCall.args === "string" ? msg.functionCall.args : JSON.stringify(msg.functionCall.args || {})
-                        }
-                    }
-                ];
-            }
-            if (msg.tool_call_id)
-                apiMsg.tool_call_id = msg.tool_call_id;
-            else if (role === "tool" && msg.name) {
-                // Best-effort: recover id from the preceding assistant tool call
-                for (let j = i - 1; j >= 0; j--) {
-                    if (currentChat[j].functionCall && currentChat[j].functionCall.name === msg.name) {
-                        apiMsg.tool_call_id = currentChat[j].functionCall.id || ("call_" + j);
-                        break;
-                    }
-                }
-            }
-            if (msg.geminiParts)
-                apiMsg.geminiParts = msg.geminiParts;
-            if (msg.name)
-                apiMsg.name = msg.name;
-            messages.push(apiMsg);
-        }
-
-        // Build body — always use streaming
-        let body = currentStrategy.getStreamBody(messages, currentModel, systemTools);
-
-        // Reset streaming buffers
-        responseBuffer = "";
-        resetToolCallBuffers();
-
-        // Add placeholder assistant message for streaming
-        let streamChat = Array.from(currentChat);
-        streamChat.push({
-            role: "assistant",
-            content: "",
-            model: currentModel ? currentModel.name : "Unknown"
-        });
-        currentChat = streamChat;
-
-        writeTempBody(JSON.stringify(body), headers, endpoint);
-    }
-
-    function writeTempBody(jsonBody, headers, endpoint) {
-        requestProcess.command = ["/usr/bin/mkdir", "-p", tmpDir];
-        requestProcess.step = "mkdir";
-        requestProcess.payload = {
-            body: jsonBody,
-            headers: headers,
-            endpoint: endpoint
-        };
-        requestProcess.running = true;
-    }
-
-    function executeRequest(payload) {
-        let bodyPath = tmpDir + "/body.json";
-        bodyFileView.path = bodyPath;
-        bodyFileView.setText(payload.body);
-        Qt.callLater(() => runCurl(payload));
-    }
-
-    function runCurl(payload) {
-        let bodyPath = tmpDir + "/body.json";
-        let headerArgs = payload.headers.map(h => "-H \"" + h + "\"").join(" ");
-
-        // Check for custom curl template
-        let customCurl = "";
-        if (currentModel && currentModel.customCurlTemplate) {
-            customCurl = currentModel.customCurlTemplate;
-        } else if (currentModel && KeyStore.getCustomCurl(currentModel.provider)) {
-            customCurl = KeyStore.getCustomCurl(currentModel.provider);
-        }
-
-        let curlCmd;
-        if (customCurl) {
-            // Replace placeholders in custom curl
-            curlCmd = customCurl
-                .replace("{{BODY_PATH}}", bodyPath)
-                .replace("{{ENDPOINT}}", payload.endpoint)
-                .replace("{{API_KEY}}", getApiKey(currentModel));
-        } else {
-            curlCmd = "curl -s --no-buffer -N -X POST \"" + payload.endpoint + "\" " + headerArgs + " -d @" + bodyPath;
-        }
-
-        curlProcess.command = ["/usr/bin/bash", "-c", curlCmd];
-        curlProcess.running = true;
-    }
-
-    // ============================================
-    // PROCESSES
-    // ============================================
-
-    Process {
-        id: requestProcess
-        property string step: ""
-        property var payload: ({})
-
-        onExited: exitCode => {
-            if (exitCode === 0 && step === "mkdir") {
-                executeRequest(payload);
-            } else if (exitCode !== 0) {
-                root.lastError = "Failed to create temp directory";
-                root.isLoading = false;
-            }
-        }
-    }
-
-    Process {
-        id: writeBodyProcess
-        property var payload: ({})
-        stderr: StdioCollector {
-            id: writeBodyStderr
-        }
-
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                runCurl(payload);
-            } else {
-                root.lastError = "Failed to write request body: " + writeBodyStderr.text;
-                root.isLoading = false;
-            }
-        }
-    }
-
-    Process {
-        id: curlProcess
-
-        // Use SplitParser for streaming — emits onRead per line
-        stdout: SplitParser {
-            onRead: data => {
-                let result = root.currentStrategy.parseStreamChunk(data);
-
-                if (result.error) {
-                    root.lastError = result.error;
-                    return;
-                }
-
-                if (result.toolCallDelta)
-                    root.accumulateToolCallDeltas(result.toolCallDelta);
-
-                if (result.content) {
-                    root.responseBuffer += result.content;
-                    // Update the last message in currentChat with accumulated text
-                    let newChat = Array.from(root.currentChat);
-                    if (newChat.length > 0) {
-                        newChat[newChat.length - 1].content = root.responseBuffer;
-                        root.currentChat = newChat;
-                    }
-                }
-
-                // Note: done / tool finalization is handled in onExited
-            }
-        }
-
-        stderr: StdioCollector {
-            id: curlStderr
-        }
-
-        onExited: exitCode => {
-            root.isLoading = false;
-
-            if (exitCode === 0) {
-                let newChat = Array.from(root.currentChat);
-                let lastIdx = newChat.length - 1;
-
-                // Finalize streamed tool calls into a pending approval bubble.
-                let toolCall = root.finalizePendingToolCalls();
-                if (toolCall && lastIdx >= 0) {
-                    let last = Object.assign({}, newChat[lastIdx]);
-                    last.content = root.responseBuffer || last.content || "";
-                    last.functionCall = {
-                        id: toolCall.id,
-                        name: toolCall.name,
-                        args: toolCall.args
-                    };
-                    last.functionPending = true;
-                    last.functionApproved = undefined;
-                    if (!last.content || last.content.length === 0) {
-                        last.content = root._toolFallbackContent(toolCall.name);
-                    }
-                    newChat[lastIdx] = last;
-                    root.currentChat = newChat;
-                    root.saveCurrentChat();
-
-                    // Read-only web tools: auto-approve so the agent can research without extra clicks.
-                    // Shell commands still require explicit approval.
-                    if (toolCall.name === "web_search" || toolCall.name === "fetch_url") {
-                        Qt.callLater(() => root.approveCommand(lastIdx));
-                    }
-                } else if (root.responseBuffer === "" && lastIdx >= 0) {
-                    // No streaming data and no tool call — surface a soft error.
-                    let lastMsg = newChat[lastIdx];
-                    if (!lastMsg.content && !lastMsg.functionCall) {
-                        newChat[lastIdx] = Object.assign({}, lastMsg, {
-                            content: "No response received from the API."
-                        });
-                        root.currentChat = newChat;
-                    }
-                    root.saveCurrentChat();
-                } else {
-                    root.saveCurrentChat();
-                }
-            } else {
-                root.lastError = "Network Request Failed: " + curlStderr.text;
-
-                // Update the placeholder message with error
-                let errChat = Array.from(root.currentChat);
-                if (errChat.length > 0) {
-                    errChat[errChat.length - 1].content = "Error: " + root.lastError;
-                }
-                root.currentChat = errChat;
-            }
-
-            root.responseBuffer = "";
-            root.resetToolCallBuffers();
-        }
-    }
-
-    Process {
-        id: commandExecutionProc
-        property int targetIndex: -1
-
-        stdout: StdioCollector {
-            id: cmdStdout
-        }
-        stderr: StdioCollector {
-            id: cmdStderr
-        }
-
-        onExited: exitCode => {
-            let output = cmdStdout.text + "\n" + cmdStderr.text;
-            if (output.trim() === "")
-                output = "Command executed successfully (no output).";
-
-            let msg = currentChat[targetIndex];
-            let newChat = Array.from(currentChat);
-
-            newChat.push({
-                role: "function",
-                name: msg.functionCall.name,
-                tool_call_id: msg.functionCall.id || "",
-                content: output
-            });
-
-            root.currentChat = newChat;
-            root.saveCurrentChat();
-            root.makeRequest();
-        }
-    }
-
-    // ============================================
-    // CHAT STORAGE
-    // ============================================
-
-    function createNewChat() {
-        currentChat = [];
-        currentChatId = Date.now().toString();
-        chatModelChanged();
     }
 
     function saveCurrentChat() {
-        if (currentChat.length === 0)
+        if (!currentChatId || currentChat.length === 0)
             return;
+        pendingSavePath = chatDir + "/" + currentChatId + ".json";
+        pendingSaveData = JSON.stringify(chatEnvelope(), null, 2);
+        if (!ensureChatDirProcess.running) {
+            ensureChatDirProcess.command = ["/usr/bin/mkdir", "-p", chatDir];
+            ensureChatDirProcess.running = true;
+        }
+    }
 
-        let filename = chatDir + "/" + currentChatId + ".json";
-        let data = JSON.stringify(currentChat, null, 2);
+    Process {
+        id: ensureChatDirProcess
+        onExited: exitCode => {
+            if (exitCode !== 0 || !root.pendingSavePath)
+                return;
+            chatFileView.path = root.pendingSavePath;
+            chatFileView.setText(root.pendingSaveData);
+            root.pendingSavePath = "";
+            root.pendingSaveData = "";
+            root.reloadHistory();
+        }
+    }
 
-        saveChatProcess.filePath = filename;
-        saveChatProcess.data = data;
-        saveChatProcess.command = ["/usr/bin/mkdir", "-p", chatDir];
-        saveChatProcess.running = true;
+    function deleteChat(id) {
+        if (!id)
+            return;
+        if (id === currentChatId)
+            createNewChat();
+        deleteChatProcess.command = ["/usr/bin/rm", "-f", chatDir + "/" + id + ".json"];
+        deleteChatProcess.running = true;
+    }
+
+    Process {
+        id: deleteChatProcess
+        onExited: root.reloadHistory()
     }
 
     function reloadHistory() {
-        let pyScript = `import os, json, glob
-chat_dir = "${chatDir}"
+        let pyScript = `import glob, json, os
+chat_dir = ${JSON.stringify(chatDir)}
 os.makedirs(chat_dir, exist_ok=True)
-files = sorted(glob.glob(chat_dir + "/*.json"), key=os.path.getmtime, reverse=True)
-for f in files:
-    id = os.path.basename(f)[:-5]
+files = sorted(glob.glob(os.path.join(chat_dir, "*.json")), key=os.path.getmtime, reverse=True)
+for path in files:
+    chat_id = os.path.basename(path)[:-5]
     title = "New Chat"
+    agent = ""
     try:
-        with open(f, 'r') as fp:
-            data = json.load(fp)
-            for msg in data:
-                if msg.get("role") == "user":
-                    title = msg.get("content", "")[:40].replace("\\n", " ").strip()
-                    if len(msg.get("content", "")) > 40: title += "..."
-                    break
-    except: pass
-    print(f"{id}|{title}")
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        messages = payload if isinstance(payload, list) else payload.get("messages", [])
+        agent = "" if isinstance(payload, list) else payload.get("agentId", "")
+        for message in messages:
+            if message.get("role") == "user":
+                value = message.get("content", "").replace("\\n", " ").strip()
+                title = value[:40] + ("..." if len(value) > 40 else "")
+                break
+    except Exception:
+        pass
+    print(json.dumps({"id": chat_id, "title": title, "agentId": agent}))
 `;
         listHistoryProcess.command = ["python3", "-c", pyScript];
         listHistoryProcess.running = true;
     }
 
-    function loadChat(id) {
-        let filename = chatDir + "/" + id + ".json";
-        loadChatProcess.targetId = id;
-        loadChatProcess.command = ["cat", filename];
-        loadChatProcess.running = true;
-    }
-
-    Process {
-        id: saveChatProcess
-        property string filePath: ""
-        property string data: ""
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                if (filePath.length > 0)
-                    chatFileView.path = filePath;
-                if (data.length > 0)
-                    chatFileView.setText(data);
-                reloadHistory();
-            } else {
-                console.warn("Failed to create chat directory");
-            }
-        }
-    }
-
-    Process {
-        id: deleteChatProcess
-        onExited: reloadHistory()
-    }
-
     Process {
         id: listHistoryProcess
-        stdout: StdioCollector {
-            id: listHistoryStdout
+        stdout: SplitParser {
+            onRead: data => {
+                try {
+                    let item = JSON.parse(data);
+                    root._historyBuffer.push({
+                        id: item.id,
+                        title: item.title || "New Chat",
+                        agentId: item.agentId || "",
+                        path: root.chatDir + "/" + item.id + ".json"
+                    });
+                } catch (e) {
+                    console.warn("Failed to parse chat history entry: " + e);
+                }
+            }
+        }
+        onRunningChanged: {
+            if (running)
+                root._historyBuffer = [];
         }
         onExited: exitCode => {
             if (exitCode === 0) {
-                let lines = listHistoryStdout.text.trim().split("\n");
-                let history = [];
-                for (let i = 0; i < lines.length; i++) {
-                    let line = lines[i];
-                    if (line === "")
-                        continue;
-                    let parts = line.split("|");
-                    if (parts.length >= 2) {
-                        history.push({
-                            id: parts[0],
-                            title: parts.slice(1).join("|"),
-                            path: chatDir + "/" + parts[0] + ".json"
-                        });
-                    }
-                }
-                root.chatHistory = history;
+                root.chatHistory = root._historyBuffer.slice();
                 root.historyModelChanged();
             }
         }
+    }
+    property var _historyBuffer: []
+
+    function loadChat(id) {
+        if (!id)
+            return;
+        cancelGeneration(false);
+        loadChatProcess.targetId = id;
+        loadChatProcess.command = ["/usr/bin/cat", chatDir + "/" + id + ".json"];
+        loadChatProcess.running = true;
     }
 
     Process {
@@ -957,471 +1396,83 @@ for f in files:
             id: loadChatStdout
         }
         onExited: exitCode => {
-            if (exitCode === 0) {
-                try {
-                    root.currentChat = JSON.parse(loadChatStdout.text);
-                    root.currentChatId = targetId;
-                    root.chatModelChanged();
-                } catch (e) {
-                    console.log("Error loading chat: " + e);
-                }
+            if (exitCode !== 0)
+                return;
+            try {
+                let payload = JSON.parse(loadChatStdout.text);
+                let isLegacy = Array.isArray(payload);
+                let agentId = isLegacy ? root.currentAgentId : (payload.agentId || root.currentAgentId);
+                let agent = root.findAgent(agentId) || root.currentModel;
+                root.currentModel = agent;
+                root.currentAgentId = agent.id;
+                root.currentChatAgentId = agent.id;
+                root.currentChat = isLegacy ? payload : (payload.messages || []);
+                root.currentChatId = targetId;
+                root.currentSessionId = isLegacy ? "" : (payload.sessionId || "");
+                root.currentChatCwd = isLegacy ? root.workingDirectory() : (payload.cwd || root.workingDirectory());
+                root.sessionReady = false;
+                root.activeAssistantIndex = -1;
+                root.activeAssistantMessageId = "";
+                root.pendingPermissions = {};
+                root.chatModelChanged();
+                root.ensureConnection({
+                    kind: root.currentSessionId ? "load" : "new",
+                    sessionId: root.currentSessionId,
+                    cwd: root.currentChatCwd
+                });
+            } catch (e) {
+                root.pushSystemMessage("Failed to load chat: " + e);
             }
         }
     }
 
     // ============================================
-    // DYNAMIC MODEL FETCHING
+    // INITIALIZATION
     // ============================================
 
-    property bool fetchingModels: false
-    property int pendingFetches: 0
+    property bool bootstrapped: false
 
-    function fetchAvailableModels() {
-        fetchingModels = false; // Force refresh
-        if (fetchingModels)
+    function bootstrap() {
+        if (bootstrapped)
             return;
-
-        fetchingModels = true;
-        pendingFetches = 0;
-
-        // Gemini
-        let geminiKey = KeyStore.getKey("gemini");
-        if (geminiKey) {
-            pendingFetches++;
-            fetchProcessGemini.command = ["bash", "-c", "curl -s 'https://generativelanguage.googleapis.com/v1beta/models?key=" + geminiKey + "'"];
-            fetchProcessGemini.running = true;
+        bootstrapped = true;
+        refreshAgents();
+        let preferred = StateService.get(
+            "lastAiAgent",
+            Config.ai && Config.ai.defaultAgent ? Config.ai.defaultAgent : "opencode"
+        );
+        let agent = findAgent(preferred) || models[0];
+        if (agent) {
+            currentModel = agent;
+            currentAgentId = agent.id;
         }
+        reloadHistory();
+        createNewChat();
+    }
 
-        // OpenAI
-        let openaiKey = KeyStore.getKey("openai");
-        if (openaiKey) {
-            pendingFetches++;
-            fetchProcessOpenAI.command = ["bash", "-c", "curl -s https://api.openai.com/v1/models -H 'Authorization: Bearer " + openaiKey + "'"];
-            fetchProcessOpenAI.running = true;
-        }
-
-        // Anthropic
-        let anthropicKey = KeyStore.getKey("anthropic");
-        if (anthropicKey) {
-            pendingFetches++;
-            fetchProcessAnthropic.command = ["bash", "-c", "curl -s https://api.anthropic.com/v1/models -H 'x-api-key: " + anthropicKey + "' -H 'anthropic-version: 2023-06-01'"];
-            fetchProcessAnthropic.running = true;
-        }
-
-        // Mistral
-        let mistralKey = KeyStore.getKey("mistral");
-        if (mistralKey) {
-            pendingFetches++;
-            fetchProcessMistral.command = ["bash", "-c", "curl -s https://api.mistral.ai/v1/models -H 'Authorization: Bearer " + mistralKey + "'"];
-            fetchProcessMistral.running = true;
-        }
-
-        // Groq
-        let groqKey = KeyStore.getKey("groq");
-        if (groqKey) {
-            pendingFetches++;
-            fetchProcessGroq.command = ["bash", "-c", "curl -s https://api.groq.com/openai/v1/models -H 'Authorization: Bearer " + groqKey + "'"];
-            fetchProcessGroq.running = true;
-        }
-
-        // Ollama (local)
-        let ollamaEnabled = KeyStore.hasKey("ollama");
-        if (ollamaEnabled) {
-            pendingFetches++;
-            fetchProcessOllama.command = ["bash", "-c", "curl -s http://127.0.0.1:11434/api/tags"];
-            fetchProcessOllama.running = true;
-        }
-
-        // MiniMax
-        let minimaxKey = KeyStore.getKey("minimax");
-        if (minimaxKey) {
-            pendingFetches++;
-            fetchProcessMiniMax.command = ["bash", "-c", "echo 'done'"];
-            fetchProcessMiniMax.running = true;
-        }
-
-        // OpenCode Zen (OpenAI-compatible chat/completions gateway)
-        let opencodeKey = KeyStore.getKey("opencode");
-        if (opencodeKey) {
-            pendingFetches++;
-            fetchProcessOpenCode.command = [
-                "bash", "-c",
-                "curl -sS 'https://opencode.ai/zen/v1/models' -H 'Authorization: Bearer " + opencodeKey.replace(/'/g, "'\\''") + "'"
-            ];
-            fetchProcessOpenCode.running = true;
-        }
-
-        if (pendingFetches === 0) {
-            fetchingModels = false;
+    Connections {
+        target: StateService
+        function onStateLoaded() {
+            if (!root.bootstrapped)
+                root.bootstrap();
         }
     }
 
-    Process {
-        id: fetchProcessGemini
-        stdout: StdioCollector {
-            id: fetchGeminiOut
-        }
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                try {
-                    let data = JSON.parse(fetchGeminiOut.text);
-                    if (data.models) {
-                        let newModels = [];
-                        for (let i = 0; i < data.models.length; i++) {
-                            let item = data.models[i];
-                            let id = item.name.replace("models/", "");
-                            if (id.includes("gemini") || id.includes("flash") || id.includes("pro")) {
-                                let m = aiModelFactory.createObject(root, {
-                                    name: item.displayName || id,
-                                    icon: Qt.resolvedUrl("../../../assets/aiproviders/google.svg"),
-                                    description: item.description || "Google Gemini Model",
-                                    endpoint: "https://generativelanguage.googleapis.com/v1beta",
-                                    model: id,
-                                    provider: "gemini",
-                                    requires_key: true,
-                                    key_id: "GEMINI_API_KEY"
-                                });
-                                if (m) newModels.push(m);
-                            }
-                        }
-                        mergeModels(newModels);
-                    }
-                } catch (e) {
-                    console.log("Gemini fetch error: " + e);
-                }
-            }
-            checkFetchCompletion();
-        }
-    }
-
-    Process {
-        id: fetchProcessOpenAI
-        stdout: StdioCollector {
-            id: fetchOpenAIOut
-        }
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                try {
-                    let data = JSON.parse(fetchOpenAIOut.text);
-                    if (data.data) {
-                        let newModels = [];
-                        let allowed = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "o1", "o1-mini", "o1-preview", "o3-mini"];
-                        for (let i = 0; i < data.data.length; i++) {
-                            let item = data.data[i];
-                            let id = item.id;
-                            let isAllowed = false;
-                            for (let j = 0; j < allowed.length; j++) {
-                                if (id === allowed[j] || id.startsWith(allowed[j] + "-")) {
-                                    isAllowed = true;
-                                    break;
-                                }
-                            }
-                            if (isAllowed) {
-                                let m = aiModelFactory.createObject(root, {
-                                    name: id,
-                                    icon: Qt.resolvedUrl("../../../assets/aiproviders/openai.svg"),
-                                    description: "OpenAI Model",
-                                    endpoint: "https://api.openai.com",
-                                    model: id,
-                                    provider: "openai",
-                                    requires_key: true,
-                                    key_id: "OPENAI_API_KEY"
-                                });
-                                if (m) newModels.push(m);
-                            }
-                        }
-                        mergeModels(newModels);
-                    }
-                } catch (e) {
-                    console.log("OpenAI fetch error: " + e);
-                }
-            }
-            checkFetchCompletion();
-        }
-    }
-
-    Process {
-        id: fetchProcessMistral
-        stdout: StdioCollector {
-            id: fetchMistralOut
-        }
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                try {
-                    let data = JSON.parse(fetchMistralOut.text);
-                    if (data.data) {
-                        let newModels = [];
-                        for (let i = 0; i < data.data.length; i++) {
-                            let item = data.data[i];
-                            let id = item.id;
-                            let m = aiModelFactory.createObject(root, {
-                                name: id,
-                                icon: Qt.resolvedUrl("../../../assets/aiproviders/mistral.svg"),
-                                description: "Mistral Model",
-                                endpoint: "https://api.mistral.ai/v1",
-                                model: id,
-                                provider: "mistral",
-                                requires_key: true,
-                                key_id: "MISTRAL_API_KEY"
-                            });
-                            if (m) newModels.push(m);
-                        }
-                        mergeModels(newModels);
-                    }
-                } catch (e) {
-                    console.log("Mistral fetch error: " + e);
-                }
-            }
-            checkFetchCompletion();
-        }
-    }
-
-    Process {
-        id: fetchProcessGroq
-        stdout: StdioCollector {
-            id: fetchGroqOut
-        }
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                try {
-                    let data = JSON.parse(fetchGroqOut.text);
-                    if (data.data) {
-                        let newModels = [];
-                        for (let i = 0; i < data.data.length; i++) {
-                            let item = data.data[i];
-                            let id = item.id;
-                            let m = aiModelFactory.createObject(root, {
-                                name: id,
-                                icon: Qt.resolvedUrl("../../../assets/aiproviders/groq.svg"),
-                                description: "Groq Model",
-                                endpoint: "https://api.groq.com/openai/v1",
-                                model: id,
-                                provider: "groq",
-                                requires_key: true,
-                                key_id: "GROQ_API_KEY"
-                            });
-                            if (m) newModels.push(m);
-                        }
-                        mergeModels(newModels);
-                    }
-                } catch (e) {
-                    console.log("Groq fetch error: " + e);
-                }
-            }
-            checkFetchCompletion();
-        }
-    }
-
-    Process {
-        id: fetchProcessAnthropic
-        stdout: StdioCollector {
-            id: fetchAnthropicOut
-        }
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                try {
-                    let data = JSON.parse(fetchAnthropicOut.text);
-                    if (data.data) {
-                        let newModels = [];
-                        for (let i = 0; i < data.data.length; i++) {
-                            let item = data.data[i];
-                            let id = item.id;
-                            let m = aiModelFactory.createObject(root, {
-                                name: item.display_name || id,
-                                icon: Qt.resolvedUrl("../../../assets/aiproviders/anthropic.svg"),
-                                description: item.description || "Anthropic Model",
-                                endpoint: "https://api.anthropic.com/v1/messages",
-                                model: id,
-                                provider: "anthropic",
-                                requires_key: true,
-                                key_id: "ANTHROPIC_API_KEY"
-                            });
-                            if (m) newModels.push(m);
-                        }
-                        mergeModels(newModels);
-                    }
-                } catch (e) {
-                    console.log("Anthropic fetch error: " + e);
-                }
-            }
-            checkFetchCompletion();
-        }
-    }
-
-    Process {
-        id: fetchProcessOllama
-        stdout: StdioCollector {
-            id: fetchOllamaOut
-        }
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                try {
-                    let data = JSON.parse(fetchOllamaOut.text);
-                    if (data.models) {
-                        let newModels = [];
-                        for (let i = 0; i < data.models.length; i++) {
-                            let item = data.models[i];
-                            let m = aiModelFactory.createObject(root, {
-                                name: item.name,
-                                icon: Qt.resolvedUrl("../../../assets/aiproviders/ollama.svg"),
-                                description: "Local Ollama Model",
-                                endpoint: "http://127.0.0.1:11434",
-                                model: item.name,
-                                provider: "ollama",
-                                requires_key: false
-                            });
-                            if (m) newModels.push(m);
-                        }
-                        mergeModels(newModels);
-                    }
-                } catch (e) {
-                    console.log("Ollama fetch error: " + e);
-                }
-            }
-            checkFetchCompletion();
-        }
-    }
-
-    Process {
-        id: fetchProcessMiniMax
-        onExited: exitCode => {
-            if (exitCode === 0) {
-                let newModels = [];
-                
-                let models = [
-                    { name: "MiniMax-M2.7", model: "MiniMax-M2.7", description: "Latest model with recursive self-improvement, SOTA coding capabilities", endpoint: "https://api.minimax.io" },
-                    { name: "MiniMax-M2.7-highspeed", model: "MiniMax-M2.7-highspeed", description: "Same performance as M2.7, faster inference (~100 tps)", endpoint: "https://api.minimax.io" },
-                    { name: "MiniMax-M2.5", model: "MiniMax-M2.5", description: "Peak performance, ultimate value, master the complex", endpoint: "https://api.minimax.io" },
-                    { name: "MiniMax-M2.5-highspeed", model: "MiniMax-M2.5-highspeed", description: "Same performance as M2.5, faster inference (~100 tps)", endpoint: "https://api.minimax.io" },
-                    { name: "MiniMax-M2.1", model: "MiniMax-M2.1", description: "Powerful multi-language programming, enhanced reasoning", endpoint: "https://api.minimax.io" },
-                    { name: "MiniMax-M2.1-highspeed", model: "MiniMax-M2.1-highspeed", description: "Same performance as M2.1, faster inference (~100 tps)", endpoint: "https://api.minimax.io" },
-                    { name: "MiniMax-M2", model: "MiniMax-M2", description: "Agentic capabilities, advanced reasoning, 200k context", endpoint: "https://api.minimax.io" },
-                    { name: "M2-her", model: "M2-her", description: "Role-playing, multi-turn conversations, emotional expression", endpoint: "https://api.minimax.io" }
-                ];
-                
-                for (let i = 0; i < models.length; i++) {
-                    let item = models[i];
-                    let m = aiModelFactory.createObject(root, {
-                        name: item.name,
-                        icon: Qt.resolvedUrl("../../../assets/aiproviders/minimax.svg"),
-                        description: item.description,
-                        endpoint: item.endpoint,
-                        model: item.model,
-                        provider: "minimax",
-                        requires_key: true,
-                        key_id: "MINIMAX_API_KEY"
-                    });
-                    if (m) newModels.push(m);
-                }
-                
-                mergeModels(newModels);
-            }
-            checkFetchCompletion();
-        }
-    }
-
-    Process {
-        id: fetchProcessOpenCode
-        stdout: StdioCollector {
-            id: fetchOpenCodeOut
-        }
-        onExited: exitCode => {
-            let newModels = [];
-            let seen = {};
-
-            function pushModel(id, description) {
-                if (!id || seen[id] || !isOpencodeChatCompletionsModel(id))
-                    return;
-                seen[id] = true;
-                let m = createOpencodeModel(id, description);
-                if (m)
-                    newModels.push(m);
-            }
-
-            if (exitCode === 0) {
-                try {
-                    let data = JSON.parse(fetchOpenCodeOut.text);
-                    let list = (data && data.data) ? data.data : [];
-                    for (let i = 0; i < list.length; i++) {
-                        let item = list[i];
-                        let id = item.id || item.name || "";
-                        pushModel(id, item.description || "OpenCode Zen model");
-                    }
-                } catch (e) {
-                    console.log("OpenCode Zen fetch error: " + e);
-                }
-            } else {
-                console.log("OpenCode Zen models request failed (exit " + exitCode + ")");
-            }
-
-            // Always ensure free chat-completions models are available when key is set
-            let freeFallback = [
-                "big-pickle",
-                "deepseek-v4-flash-free",
-                "mimo-v2.5-free",
-                "laguna-s-2.1-free",
-                "north-mini-code-free",
-                "nemotron-3-ultra-free"
-            ];
-            for (let j = 0; j < freeFallback.length; j++)
-                pushModel(freeFallback[j], "OpenCode Zen free model");
-
-            if (newModels.length > 0)
-                mergeModels(newModels);
-
-            checkFetchCompletion();
-        }
-    }
-
-
-    function checkFetchCompletion() {
-        pendingFetches--;
-        if (pendingFetches <= 0) {
-            fetchingModels = false;
-            pendingFetches = 0;
-
-            tryRestore();
-
-            if (!currentModel && models.length > 0) {
-                currentModel = models[0];
-                isRestored = true;
-            } else if (!isRestored && currentModel) {
-                isRestored = true;
+    Connections {
+        target: Config
+        function onAiReadyChanged() {
+            if (Config.aiReady) {
+                root.refreshAgents();
+                if (!root.bootstrapped)
+                    root.bootstrap();
             }
         }
     }
 
-    function mergeModels(newModels) {
-        let updatedList = [];
-        for (let i = 0; i < models.length; i++)
-            updatedList.push(models[i]);
-
-        for (let i = 0; i < newModels.length; i++) {
-            let m = newModels[i];
-            let isDuplicate = false;
-            for (let j = 0; j < updatedList.length; j++) {
-                if (updatedList[j].model === m.model) {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-            if (!isDuplicate)
-                updatedList.push(m);
-        }
-
-        models = updatedList;
-
-        if (!isRestored)
-            tryRestore();
-    }
-
-    // Signals
-    signal chatModelChanged
-    signal historyModelChanged
-    signal modelSelectionRequested
-
-    Component {
-        id: aiModelFactory
-        AiModel {}
+    Component.onCompleted: {
+        Qt.callLater(() => {
+            if (!root.bootstrapped)
+                root.bootstrap();
+        });
     }
 }

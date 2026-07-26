@@ -11,7 +11,7 @@ import qs.modules.components
 Popup {
     id: root
 
-    signal modelSelected(string modelName)
+    signal modelSelected(string agentName)
 
     // Keep clear air from the sidebar edges so the popup never sits flush.
     readonly property int edgeMargin: 16
@@ -33,7 +33,7 @@ Popup {
         updateFilteredModels();
     }
 
-    // Initialize fetching if empty (e.g. first run)
+    // ACP agents are configured locally; refresh reloads their command bindings.
     Component.onCompleted: {
         if (Ai.models.length === 0) {
             Ai.fetchAvailableModels();
@@ -87,7 +87,12 @@ Popup {
         if (text.trim() === "") {
             filteredModels = allModels;
         } else {
-            filteredModels = allModels.filter(m => m.name.toLowerCase().includes(text) || m.api_format.toLowerCase().includes(text) || m.model.toLowerCase().includes(text));
+            filteredModels = allModels.filter(m => {
+                let name = m && m.name ? m.name.toLowerCase() : "";
+                let id = m && m.id ? m.id.toLowerCase() : "";
+                let description = m && m.description ? m.description.toLowerCase() : "";
+                return name.includes(text) || id.includes(text) || description.includes(text);
+            });
         }
 
         // Reset selection if out of bounds
@@ -117,7 +122,7 @@ Popup {
             SearchInput {
                 id: searchInput
                 Layout.fillWidth: true
-                placeholderText: "Search models..."
+                placeholderText: "Search agents..."
                 iconText: "" // Removed icon as requested
 
                 onSearchTextChanged: text => {
@@ -288,7 +293,7 @@ Popup {
             }
         }
 
-        // Model List
+        // ACP Agent List
         ListView {
             id: modelList
             Layout.fillWidth: true
@@ -361,7 +366,7 @@ Popup {
 
                 // Controlled by ListView's currentIndex via root.selectedIndex
                 property bool isSelected: ListView.isCurrentItem
-                property bool isActiveModel: Ai.currentModel.name === modelData.name
+                property bool isActiveModel: Ai.currentModel && Ai.currentModel.id === modelData.id
 
                 contentItem: RowLayout {
                     anchors.fill: parent
@@ -487,8 +492,7 @@ Popup {
                         Text {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            // Show provider and model ID
-                            text: modelData.api_format.toUpperCase() + " • " + modelData.model
+                            text: "ACP • " + modelData.command.join(" ")
                             color: delegateBtn.isSelected ? Styling.srItem("primary") : Colors.outline
                             font.family: Config.theme.font
                             font.pixelSize: 11

@@ -106,8 +106,7 @@ ShellRoot {
 
         Component.onCompleted: {
             Qt.callLater(() => {
-                let _ = IdleService.lockCmd;
-                _ = GlobalShortcuts.appId;
+                let _ = GlobalShortcuts.appId;
                 _ = LockscreenService;
                 // Keep compositor + OSD services hot for overview hide and media keys.
                 _ = NiriService.overviewOpen;
@@ -115,9 +114,8 @@ ShellRoot {
                 _ = Brightness.monitors;
                 // Own org.freedesktop.Notifications and load history early.
                 _ = Notifications.appNameList;
-                // AI assistant (sidebar + OpenCode Zen provider keys/models).
+                // ACP assistant (OpenCode, Grok Build, and Codex agents).
                 _ = StateService.initialized;
-                _ = KeyStore.initialized;
                 _ = Ai.models;
             });
         }
