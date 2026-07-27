@@ -15,7 +15,7 @@ StyledRect {
     implicitHeight: columnLayout.implicitHeight + 8
     radius: Styling.radius(4)
 
-    property int expandedPanel: -1 // -1: none, 0: wifi, 1: bluetooth
+    property int expandedPanel: -1 // -1: none, 0: wifi, 1: bluetooth, 2: GPU
 
     onVisibleChanged: {
         if (!visible) {
@@ -129,8 +129,10 @@ StyledRect {
                     Layout.preferredHeight: 48
                     iconName: Icons.gpu
                     isActive: GpuService.nvidiaActive
-                    tooltipText: "GPU: " + GpuService.modeLabel + " · Click to switch"
+                    tooltipText: "GPU: " + GpuService.modeLabel + " · Left: switch · Right: menu"
                     onClicked: GpuService.toggle()
+                    onRightClicked: root.togglePanel(2)
+                    onLongPressed: root.togglePanel(2)
                 }
             }
         }
@@ -193,6 +195,26 @@ StyledRect {
 
                         opacity: root.expandedPanel === 1 ? 1 : 0
                         x: root.expandedPanel === 1 ? 0 : (root.expandedPanel === 0 ? width : -width)
+
+                        onLoaded: {
+                            if (item) {
+                                item.maxContentWidth = width;
+                            }
+                        }
+
+                        Behavior on opacity { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
+                        Behavior on x { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
+                    }
+
+                    Loader {
+                        id: gpuLoader
+                        anchors.fill: parent
+                        active: root.expandedPanel === 2
+                        source: "../controls/GpuPanel.qml"
+                        asynchronous: true
+
+                        opacity: root.expandedPanel === 2 ? 1 : 0
+                        x: root.expandedPanel === 2 ? 0 : width
 
                         onLoaded: {
                             if (item) {
