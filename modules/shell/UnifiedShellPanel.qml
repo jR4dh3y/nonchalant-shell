@@ -6,7 +6,6 @@ import qs.modules.services
 import qs.modules.globals
 import qs.modules.components
 import qs.modules.widgets.launcher
-import qs.modules.widgets.projects
 import qs.modules.widgets.powermenu
 import qs.modules.notifications
 import qs.modules.sidebar
@@ -28,7 +27,7 @@ PanelWindow {
     color: "transparent"
 
     WlrLayershell.keyboardFocus: {
-        if (runMenu.open || projectPicker.open)
+        if (runMenu.open)
             return WlrKeyboardFocus.Exclusive;
         // Only take the keyboard while the assistant input is actively focused.
         // Keeping Exclusive + full-screen grab for the whole open sidebar locked
@@ -43,7 +42,7 @@ PanelWindow {
 
     // Assistant stays open without eating the whole screen — only its hitbox
     // receives clicks (see mask regions). Run menu / grabs still go full-screen.
-    readonly property bool needsFullScreenInput: runMenu.open || projectPicker.open || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: runMenu.open || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -96,9 +95,6 @@ PanelWindow {
                 item: runMenu.hitbox
             },
             Region {
-                item: projectPicker.hitbox
-            },
-            Region {
                 item: toastStack.hitbox
             },
             Region {
@@ -107,11 +103,11 @@ PanelWindow {
         ]
     }
 
-    // Close the run menu / project picker when its focus grab is cleared.
+    // Close the run menu when its focus grab is cleared.
     FocusGrab {
         id: focusGrab
         windows: [unifiedPanel]
-        active: runMenu.open || projectPicker.open
+        active: runMenu.open
 
         onCleared: {
             Visibilities.setActiveModule("");
@@ -164,13 +160,6 @@ PanelWindow {
         // Detached popup; it never joins the screen edge or reserves space.
         RunMenuHost {
             id: runMenu
-            anchors.fill: parent
-            screen: unifiedPanel.targetScreen
-            z: 2
-        }
-
-        ProjectPickerHost {
-            id: projectPicker
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
             z: 2

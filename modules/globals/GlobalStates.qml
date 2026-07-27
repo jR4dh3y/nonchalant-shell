@@ -55,6 +55,7 @@ Singleton {
     }
 
     // Persistent launcher state across monitors
+    property string launcherMode: "apps"
     property string launcherSearchText: ""
     property int launcherSelectedIndex: -1
 
@@ -95,8 +96,7 @@ Singleton {
     }
 
     function getActiveProjects() {
-        let active = Visibilities.getForActive();
-        return active ? active.projects : false;
+        return getActiveLauncher() && launcherMode === "projects";
     }
 
     function getActiveDashboard() {

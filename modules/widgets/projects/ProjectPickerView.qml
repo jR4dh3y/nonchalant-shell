@@ -23,6 +23,8 @@ Rectangle {
     property int selectedIndex: GlobalStates.projectPickerSelectedIndex
     property var filteredProjects: []
 
+    signal modeSwitchRequested
+
     onActiveFocusChanged: {
         if (activeFocus)
             focusSearchInput();
@@ -98,8 +100,8 @@ Rectangle {
             Layout.fillWidth: true
             text: GlobalStates.projectPickerSearchText
             placeholderText: "Search projects..."
-            iconText: Icons.folder
-            handleTabNavigation: false
+            iconText: ""
+            handleTabNavigation: true
             disableCursorNavigation: false
             clearOnEscape: false
 
@@ -116,6 +118,8 @@ Rectangle {
             }
 
             onAccepted: root.openSelected()
+            onTabPressed: root.modeSwitchRequested()
+            onShiftTabPressed: root.modeSwitchRequested()
 
             onEscapePressed: Visibilities.setActiveModule("")
 
@@ -184,6 +188,8 @@ Rectangle {
                 required property var modelData
                 required property int index
 
+                property string projectIcon: ProjectPickerService.projectIcon(modelData)
+
                 width: resultsList.width
                 height: 48
                 radius: Styling.radius(4)
@@ -209,34 +215,50 @@ Rectangle {
                     anchors.margins: 8
                     spacing: 12
 
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.folder
-                        font.family: Icons.font
-                        font.pixelSize: 20
-                        color: root.selectedIndex === index
-                            ? Styling.srItem("primary")
-                            : Colors.outline
-                        Layout.alignment: Qt.AlignVCenter
+                    Item {
+                        Layout.preferredWidth: 32
+                        Layout.preferredHeight: 32
 
-                        Behavior on color {
-                            enabled: Config.animDuration > 0
-                            ColorAnimation {
-                                duration: Config.animDuration / 2
-                                easing.type: Easing.OutCubic
+                        Image {
+                            id: projectIconImage
+                            anchors.fill: parent
+                            source: row.projectIcon.length > 0
+                                ? encodeURI("file://" + row.projectIcon)
+                                : ""
+                            fillMode: Image.PreserveAspectFit
+                            mipmap: true
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            visible: projectIconImage.status !== Image.Ready
+                            text: Icons.folder
+                            font.family: Icons.font
+                            font.pixelSize: 20
+                            color: root.selectedIndex === index
+                                ? Styling.srItem("primary")
+                                : Colors.outline
+
+                            Behavior on color {
+                                enabled: Config.animDuration > 0
+                                ColorAnimation {
+                                    duration: Config.animDuration / 2
+                                    easing.type: Easing.OutCubic
+                                }
                             }
                         }
                     }
 
-                    ColumnLayout {
+                    Column {
                         Layout.fillWidth: true
                         spacing: 0
 
                         Text {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            Layout.fillWidth: true
+                            width: parent.width
                             text: ProjectPickerService.projectName(row.modelData)
                             color: root.selectedIndex === index
                                 ? Styling.srItem("primary")
@@ -258,7 +280,7 @@ Rectangle {
                         Text {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            Layout.fillWidth: true
+                            width: parent.width
                             text: ProjectPickerService.displayPath(row.modelData)
                             color: root.selectedIndex === index
                                 ? Styling.srItem("primary")

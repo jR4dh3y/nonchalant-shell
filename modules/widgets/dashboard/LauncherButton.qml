@@ -16,6 +16,7 @@ ToggleButton {
             GlobalStates.clearLauncherState();
             Visibilities.setActiveModule("");
         } else {
+            GlobalStates.launcherMode = "apps";
             GlobalStates.clearLauncherState();
             Visibilities.setActiveModule("launcher");
         }

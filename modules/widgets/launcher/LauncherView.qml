@@ -8,6 +8,7 @@ import qs.modules.theme
 import qs.modules.components
 import qs.modules.globals
 import qs.modules.services
+import qs.modules.widgets.projects
 import qs.config
 
 Rectangle {
@@ -15,7 +16,7 @@ Rectangle {
     color: "transparent"
     
     implicitWidth: 464
-    implicitHeight: 296
+    implicitHeight: 320
     
     focus: true
 
@@ -23,6 +24,15 @@ Rectangle {
         if (activeFocus) {
             focusSearchInput();
         }
+    }
+
+    function switchMode() {
+        appLauncher.expandedItemIndex = -1;
+        appLauncher.selectedOptionIndex = 0;
+        appLauncher.keyboardNavigation = false;
+        GlobalStates.launcherMode =
+            GlobalStates.launcherMode === "projects" ? "apps" : "projects";
+        Qt.callLater(() => root.focusSearchInput());
     }
 
     // Retry briefly because the view is pushed into a StackView asynchronously.
@@ -38,7 +48,7 @@ Rectangle {
                 return;
             }
             
-            appLauncher.focusSearchInput();
+            root.focusActiveSearchInput();
             running = false;
             retries++;
         }
@@ -47,6 +57,21 @@ Rectangle {
     function focusSearchInput() {
         focusRetryTimer.retries = 0;
         focusRetryTimer.start();
+    }
+
+    function focusActiveSearchInput() {
+        if (GlobalStates.launcherMode === "projects")
+            projectPicker.focusSearchInput();
+        else
+            appLauncher.focusSearchInput();
+    }
+
+    Connections {
+        target: GlobalStates
+
+        function onLauncherModeChanged() {
+            root.focusSearchInput();
+        }
     }
 
     Component.onCompleted: {
@@ -58,6 +83,8 @@ Rectangle {
         id: appLauncher
         anchors.fill: parent
         color: "transparent"
+        visible: GlobalStates.launcherMode === "apps"
+        enabled: visible
 
         property string searchText: GlobalStates.launcherSearchText
         property bool showResults: searchText.length > 0
@@ -277,6 +304,7 @@ Rectangle {
                 text: GlobalStates.launcherSearchText
                 placeholderText: "Search applications..."
                 iconText: ""
+                handleTabNavigation: true
 
                 onSearchTextChanged: text => {
                     GlobalStates.launcherSearchText = text;
@@ -302,6 +330,9 @@ Rectangle {
                         resultsList.enableScrollAnimation = true;
                     });
                 }
+
+                onTabPressed: root.switchMode()
+                onShiftTabPressed: root.switchMode()
 
                 onAccepted: {
                     if (appLauncher.expandedItemIndex >= 0) {
@@ -948,6 +979,15 @@ Rectangle {
 
             onExited: function (code) {}
         }
+    }
+
+    ProjectPickerView {
+        id: projectPicker
+        anchors.fill: parent
+        visible: GlobalStates.launcherMode === "projects"
+        enabled: visible
+
+        onModeSwitchRequested: root.switchMode()
     }
 
 }

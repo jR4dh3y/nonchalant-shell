@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import qs.config
 import qs.modules.components
+import qs.modules.globals
 import qs.modules.services
 import qs.modules.theme
 
@@ -36,6 +37,8 @@ Item {
         if (open) {
             closeTimer.stop();
             menuShown = true;
+            GlobalStates.clearLauncherState();
+            GlobalStates.clearProjectPickerState();
             // Next frame so the window has a size before we animate in.
             Qt.callLater(() => {
                 if (!root.open)

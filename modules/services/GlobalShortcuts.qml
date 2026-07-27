@@ -61,22 +61,26 @@ QtObject {
     }
 
     function toggleLauncher() {
-        const isActive = Visibilities.currentActiveModule === "launcher";
+        const isActive = Visibilities.currentActiveModule === "launcher"
+            && GlobalStates.launcherMode === "apps";
         if (isActive) {
             Visibilities.setActiveModule("");
         } else {
+            GlobalStates.launcherMode = "apps";
             GlobalStates.clearLauncherState();
             Visibilities.setActiveModule("launcher");
         }
     }
 
     function toggleProjects() {
-        const isActive = Visibilities.currentActiveModule === "projects";
+        const isActive = Visibilities.currentActiveModule === "launcher"
+            && GlobalStates.launcherMode === "projects";
         if (isActive) {
             Visibilities.setActiveModule("");
         } else {
+            GlobalStates.launcherMode = "projects";
             GlobalStates.clearProjectPickerState();
-            Visibilities.setActiveModule("projects");
+            Visibilities.setActiveModule("launcher");
         }
     }
 

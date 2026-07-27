@@ -23,6 +23,7 @@ Singleton {
     readonly property int maxRecent: 100
 
     property var allProjects: []
+    property var projectIcons: ({})
     property var recentProjects: []
     property string editor: "code"
     property var availableEditors: []
@@ -93,6 +94,10 @@ Singleton {
         if (idx <= 0)
             return displayPath(trimmed);
         return displayPath(trimmed.slice(0, idx));
+    }
+
+    function projectIcon(absPath) {
+        return projectIcons[absPath] || "";
     }
 
     function isEditorAvailable(id) {
@@ -191,7 +196,7 @@ Singleton {
     }
 
     function refresh() {
-        if (scanning)
+        if (scanning || ready)
             return;
         detectEditors();
         _loadState();
@@ -351,28 +356,61 @@ Singleton {
         running: false
         command: [
             "bash", "-c",
-            "roots=(" + root.roots.map(r => root._shellQuote(r)).join(" ") + "); " +
-            "for root in \"${roots[@]}\"; do " +
-            "  [[ -d \"$root\" ]] || continue; " +
-            "  find \"$root\" -mindepth 1 -maxdepth 1 -type d 2>/dev/null; " +
-            "  if command -v fd >/dev/null 2>&1; then " +
-            "    fd -H -t d -d 4 '^\\.git$' \"$root\" 2>/dev/null | sed -E 's#/.git/?$##'; " +
-            "  else " +
-            "    find \"$root\" -maxdepth 5 -type d -name .git 2>/dev/null | sed -E 's#/.git/?$##'; " +
-            "  fi; " +
-            "done | awk '!seen[$0]++'"
+            "mapfile -t projects < <(" +
+            "  roots=(" + root.roots.map(r => root._shellQuote(r)).join(" ") + "); " +
+            "  for scan_root in \"${roots[@]}\"; do " +
+            "    [[ -d \"$scan_root\" ]] || continue; " +
+            "    find \"$scan_root\" -mindepth 1 -maxdepth 1 -type d 2>/dev/null; " +
+            "    if command -v fd >/dev/null 2>&1; then " +
+            "      fd -H -t d -d 4 '^\\.git$' \"$scan_root\" 2>/dev/null | sed -E 's#/.git/?$##'; " +
+            "    else " +
+            "      find \"$scan_root\" -maxdepth 5 -type d -name .git 2>/dev/null | sed -E 's#/.git/?$##'; " +
+            "    fi; " +
+            "  done | awk '!seen[$0]++'" +
+            "); " +
+            "for project in \"${projects[@]}\"; do " +
+            "  icon=$(find \"$project\" " +
+            "    \\( -type d \\( -name .git -o -name node_modules -o -name build -o -name dist -o -name target -o -name .cache -o -name .venv \\) -prune \\) -o " +
+            "    \\( -type f " +
+            "      \\( -iname '*.svg' -o -iname '*.ico' -o -iname '*.png' \\) " +
+            "      \\( -iname 'dev.*' -o -iname 'dev-*' -o -iname 'dev_*' " +
+            "         -o -iname 'icon*' -o -iname 'favicon*' -o -iname 'logo*' " +
+            "         -o -iname 'io.*' " +
+            "         -o -iname 'app-icon*' -o -iname 'app_icon*' -o -iname 'appicon*' " +
+            "         -o -iname 'application-icon*' -o -iname 'application_icon*' -o -iname 'applicationicon*' " +
+            "         -o -iname 'project-icon*' -o -iname 'project_icon*' -o -iname 'projecticon*' " +
+            "         -o -iname 'site-icon*' -o -iname 'site_icon*' -o -iname 'siteicon*' " +
+            "         -o -iname 'web-icon*' -o -iname 'web_icon*' -o -iname 'webicon*' " +
+            "         -o -iname 'launcher-icon*' -o -iname 'launcher_icon*' -o -iname 'launcher*' " +
+            "         -o -iname 'desktop-icon*' -o -iname 'desktop_icon*' " +
+            "         -o -iname 'apple-touch-icon*' -o -iname 'android-chrome*' -o -iname 'mstile*' " +
+            "         -o -iname 'brand*' -o -iname 'brandmark*' -o -iname 'mark.*' -o -iname 'symbol.*' \\) " +
+            // "         -o -iname '*-logo.*' " +
+            "      -print -quit \\) 2>/dev/null); " +
+            "  printf '%s\\t%s\\n' \"$project\" \"$icon\"; " +
+            "done"
         ]
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = (text || "").split("\n");
                 const projects = [];
+                const icons = {};
                 for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (line.length > 0)
-                        projects.push(line);
+                    const line = lines[i];
+                    if (line.length === 0)
+                        continue;
+                    const separator = line.indexOf("\t");
+                    const project = (separator === -1 ? line : line.slice(0, separator)).trim();
+                    const icon = separator === -1 ? "" : line.slice(separator + 1).trim();
+                    if (project.length > 0) {
+                        projects.push(project);
+                        if (icon.length > 0)
+                            icons[project] = icon;
+                    }
                 }
                 Qt.callLater(() => {
                     root.allProjects = projects;
+                    root.projectIcons = icons;
                     root.scanning = false;
                     root.ready = true;
                     root.projectsUpdated();

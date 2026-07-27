@@ -1,18 +1,20 @@
 # RUN MENU KNOWLEDGE BASE
 
 ## OVERVIEW
-The launcher is a single-purpose application run menu. It is rendered as a detached floating card inside `UnifiedShellPanel`; it must never attach to a screen edge or recreate the removed notch UI.
+The launcher is a unified application and project run menu. It is rendered as a detached floating card inside `UnifiedShellPanel`; Tab switches between Apps and Projects modes without closing it. It must never attach to a screen edge or recreate the removed notch UI.
 
 ## STRUCTURE
 
 - `RunMenuHost.qml`: Floating placement, popup styling, focus, and lazy loading.
-- `LauncherView.qml`: App search, keyboard navigation, execution, and app actions.
+- `LauncherView.qml`: Apps/Projects mode switching plus app search, keyboard navigation, execution, and actions.
+- `../projects/ProjectPickerView.qml`: Project search, keyboard navigation, opening, and path copying.
 
 ## KEY SERVICES
 
 | Service | Role |
 |---------|------|
 | `AppSearch` | Application indexing and fuzzy search |
+| `ProjectPickerService` | Project indexing, fuzzy search, and opening |
 | `UsageTracker` | Records launches for result ordering |
 | `Visibilities` | Per-screen open/close state |
 
