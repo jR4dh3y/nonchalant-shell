@@ -9,8 +9,6 @@ Item {
 
     property string icon: ""
     property string label: ""
-    property string statusText: ""
-    property real value: 0.0
     property color barColor: Styling.srItem("overprimary")
 
     implicitHeight: 24
@@ -31,61 +29,17 @@ Item {
             Layout.preferredWidth: 20
         }
 
-        // Progress bar
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 16
-            Layout.alignment: Qt.AlignVCenter
-            radius: Styling.radius(0)
-            color: Colors.surface
-            border.width: 2
-            border.color: root.barColor
-
-            Rectangle {
-                visible: root.statusText.length === 0
-                width: (parent.width - 8) * Math.max(0, Math.min(1, root.value))
-                height: parent.height - 8
-                radius: parent.radius
-                color: root.barColor
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
-                anchors.leftMargin: 4
-
-                Behavior on width {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutCubic
-                    }
-                }
-            }
-
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                visible: root.statusText.length > 0
-                anchors.centerIn: parent
-                text: root.statusText
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
-                font.weight: Font.DemiBold
-                color: root.barColor
-            }
-        }
-
-        // Percentage text
         Text {
             renderType: Text.NativeRendering
             font.hintingPreference: Font.PreferFullHinting
-            visible: false
-            text: `${Math.round(root.value * 100)}%`
+            text: root.label
             font.family: Config.theme.font
-            font.pixelSize: Config.theme.fontSize
-            font.weight: Font.Medium
-            color: Colors.overSurfaceVariant
+            font.pixelSize: Styling.fontSize(-2)
+            font.weight: Font.DemiBold
+            color: root.barColor
+            elide: Text.ElideMiddle
+            Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: 35
-            horizontalAlignment: Text.AlignRight
         }
     }
 }

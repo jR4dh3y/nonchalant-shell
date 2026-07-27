@@ -35,13 +35,59 @@ Rectangle {
 
     function formatSpeed(bytesPerSecond) {
         const value = Math.max(0, bytesPerSecond || 0);
-        if (value < 1024)
-            return `${Math.round(value)} B/s`;
-        if (value < 1024 * 1024)
-            return `${(value / 1024).toFixed(value < 10 * 1024 ? 1 : 0)} KiB/s`;
-        if (value < 1024 * 1024 * 1024)
-            return `${(value / 1024 / 1024).toFixed(1)} MiB/s`;
-        return `${(value / 1024 / 1024 / 1024).toFixed(1)} GiB/s`;
+        return (value * 8 / 1000 / 1000).toFixed(1);
+    }
+
+    function formatStoragePair(usedBytes, totalBytes) {
+        const used = Math.max(0, usedBytes || 0);
+        const total = Math.max(0, totalBytes || 0);
+        const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+        let divisor = 1;
+        let unitIndex = 0;
+        while (total / divisor >= 1024 && unitIndex < units.length - 1) {
+            divisor *= 1024;
+            unitIndex++;
+        }
+        const precision = unitIndex === 0 ? 0 : 1;
+        return `${(used / divisor).toFixed(precision)} / ${(total / divisor).toFixed(precision)} ${units[unitIndex]}`;
+    }
+
+    function formatCompactStoragePair(usedBytes, totalBytes) {
+        const used = Math.max(0, usedBytes || 0);
+        const total = Math.max(0, totalBytes || 0);
+        const units = ["B", "K", "M", "G", "T"];
+        let divisor = 1;
+        let unitIndex = 0;
+        while (total / divisor >= 1024 && unitIndex < units.length - 1) {
+            divisor *= 1024;
+            unitIndex++;
+        }
+        const precision = total / divisor >= 10 ? 0 : 1;
+        return `${(used / divisor).toFixed(precision)}/${(total / divisor).toFixed(precision)}${units[unitIndex]}`;
+    }
+
+    function formatFrequency(mhz) {
+        const value = Math.max(0, mhz || 0);
+        if (value <= 0)
+            return "";
+        return value >= 1000 ? `${(value / 1000).toFixed(1)} GHz` : `${Math.round(value)} MHz`;
+    }
+
+    function gpuDetails(index, toVfio) {
+        if (toVfio)
+            return "Unavailable";
+
+        const details = [];
+        const total = SystemResources.gpuVramTotal[index] || 0;
+        if (total > 0) {
+            const used = SystemResources.gpuVramUsed[index] || 0;
+            details.push(root.formatCompactStoragePair(used, total));
+        }
+
+        const frequency = root.formatFrequency(SystemResources.gpuClockMhz[index]);
+        if (frequency)
+            details.push(frequency);
+        return details.join(" · ");
     }
 
     function gpuColor(vendor) {
@@ -83,7 +129,8 @@ Rectangle {
         Text {
             renderType: Text.NativeRendering
             font.hintingPreference: Font.PreferFullHinting
-            Layout.maximumWidth: Math.max(80, detail.width * 0.58)
+            visible: detail.primaryText.length > 0
+            Layout.maximumWidth: Math.max(80, detail.width * 0.62)
             text: detail.primaryText
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-2)
@@ -94,16 +141,6 @@ Rectangle {
         Separator {
             Layout.preferredHeight: 2
             Layout.fillWidth: true
-        }
-
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: detail.secondaryText
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(-2)
-            font.weight: Font.Medium
-            color: Colors.overBackground
         }
 
         Text {
@@ -126,6 +163,17 @@ Rectangle {
             font.weight: Font.Medium
             color: Colors.overBackground
         }
+
+        Text {
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferFullHinting
+            visible: detail.secondaryText.length > 0
+            text: detail.secondaryText
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(-2)
+            font.weight: Font.Medium
+            color: Colors.overBackground
+        }
     }
 
     Column {
@@ -141,15 +189,15 @@ Rectangle {
             ResourceItem {
                 width: parent.width
                 icon: Icons.cpu
-                label: "CPU"
-                value: SystemResources.cpuUsage / 100
+                label: SystemResources.cpuModel || "CPU"
                 barColor: Colors.red
             }
 
             DetailRow {
-                primaryText: SystemResources.cpuModel || "CPU"
+                primaryText: root.formatFrequency(SystemResources.cpuFrequency)
                 secondaryText: `${Math.round(SystemResources.cpuUsage)}%`
                 temperature: SystemResources.cpuTemp
+                accentColor: Colors.red
             }
         }
 
@@ -161,7 +209,6 @@ Rectangle {
                 width: parent.width
                 icon: Icons.ram
                 label: "RAM"
-                value: SystemResources.ramUsage / 100
                 barColor: Colors.cyan
             }
 
@@ -193,13 +240,11 @@ Rectangle {
                     width: parent.width
                     icon: Icons.gpu
                     label: root.gpuName(gpuColumn.index)
-                    value: (SystemResources.gpuUsages[gpuColumn.index] || 0) / 100
-                    statusText: gpuColumn.toVfio ? "To VFIO" : ""
                     barColor: gpuColumn.accentColor
                 }
 
                 DetailRow {
-                    primaryText: root.gpuName(gpuColumn.index)
+                    primaryText: root.gpuDetails(gpuColumn.index, gpuColumn.toVfio)
                     secondaryText: gpuColumn.toVfio ? "To VFIO" : `${Math.round(SystemResources.gpuUsages[gpuColumn.index] || 0)}%`
                     temperature: gpuColumn.toVfio ? -1 : (SystemResources.gpuTemps[gpuColumn.index] ?? -1)
                     accentColor: gpuColumn.accentColor
@@ -231,87 +276,103 @@ Rectangle {
                         }
                     }
                     label: diskColumn.modelData
-                    value: (SystemResources.diskUsage[diskColumn.modelData] || 0) / 100
                     barColor: Colors.yellow
                 }
 
                 DetailRow {
-                    primaryText: diskColumn.modelData
+                    primaryText: root.formatStoragePair(SystemResources.diskUsed[diskColumn.modelData], SystemResources.diskTotal[diskColumn.modelData])
                     secondaryText: `${Math.round(SystemResources.diskUsage[diskColumn.modelData] || 0)}%`
                 }
             }
         }
 
-        // Network: SSID (or connection name) + speeds
-        RowLayout {
+        Column {
             width: parent.width
-            height: 24
-            spacing: 8
+            spacing: 4
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: root.networkIcon
-                font.family: Icons.font
-                font.pixelSize: 18
-                color: Colors.overBackground
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: 20
+            ResourceItem {
+                width: parent.width
+                icon: root.networkIcon
+                label: root.networkLabel
+                barColor: Colors.cyan
             }
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: root.networkLabel
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
-                font.weight: Font.Medium
-                color: Colors.overBackground
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-            }
+            RowLayout {
+                width: parent.width
+                spacing: 4
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: Icons.arrowDown
-                font.family: Icons.font
-                font.pixelSize: Styling.fontSize(-2)
-                color: Colors.cyan
-                Layout.alignment: Qt.AlignVCenter
-            }
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: Icons.arrowUp
+                    font.family: Icons.font
+                    font.pixelSize: Styling.fontSize(-2)
+                    color: Colors.red
+                }
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: root.formatSpeed(SystemResources.networkDownloadSpeed)
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
-                font.weight: Font.Medium
-                color: Colors.overBackground
-                Layout.alignment: Qt.AlignVCenter
-            }
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: root.formatSpeed(SystemResources.networkUploadSpeed)
+                    font.family: Config.theme.font
+                    font.pixelSize: Styling.fontSize(-2)
+                    font.weight: Font.Medium
+                    color: Colors.overBackground
+                }
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: Icons.arrowUp
-                font.family: Icons.font
-                font.pixelSize: Styling.fontSize(-2)
-                color: Colors.red
-                Layout.alignment: Qt.AlignVCenter
-            }
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: "/"
+                    font.family: Icons.font
+                    font.pixelSize: Styling.fontSize(-2)
+                    color: Colors.overBackground
+                }
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: root.formatSpeed(SystemResources.networkUploadSpeed)
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(-2)
-                font.weight: Font.Medium
-                color: Colors.overBackground
-                Layout.alignment: Qt.AlignVCenter
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: Icons.arrowDown
+                    font.family: Icons.font
+                    font.pixelSize: Styling.fontSize(-2)
+                    color: Colors.cyan
+                }
+
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: root.formatSpeed(SystemResources.networkDownloadSpeed)
+                    font.family: Config.theme.font
+                    font.pixelSize: Styling.fontSize(-2)
+                    font.weight: Font.Medium
+                    color: Colors.overBackground
+                }
+
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: "Mb/s"
+                    font.family: Config.theme.font
+                    font.pixelSize: Styling.fontSize(-2)
+                    font.weight: Font.Medium
+                    color: Colors.overBackground
+                }
+
+                Separator {
+                    Layout.preferredHeight: 2
+                    Layout.fillWidth: true
+                }
+
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    visible: NetworkService.wifiEnabled && !NetworkService.ethernet
+                    text: `${Math.round(NetworkService.networkStrength)}%`
+                    font.family: Config.theme.font
+                    font.pixelSize: Styling.fontSize(-2)
+                    font.weight: Font.Medium
+                    color: Colors.overBackground
+                }
             }
         }
     }

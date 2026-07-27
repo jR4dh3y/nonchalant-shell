@@ -193,6 +193,34 @@ class SystemMonitor:
                 continue
         return -1
 
+    def get_cpu_frequency(self):
+        frequencies = []
+        cpu_base = "/sys/devices/system/cpu"
+        try:
+            for cpu in os.listdir(cpu_base):
+                if not re.fullmatch(r"cpu\d+", cpu):
+                    continue
+                path = os.path.join(cpu_base, cpu, "cpufreq", "scaling_cur_freq")
+                try:
+                    with open(path, "r") as f:
+                        frequencies.append(float(f.read().strip()) / 1000.0)
+                except (OSError, ValueError):
+                    continue
+        except OSError:
+            pass
+
+        if frequencies:
+            return sum(frequencies) / len(frequencies)
+
+        try:
+            with open("/proc/cpuinfo", "r") as f:
+                for line in f:
+                    if line.startswith("cpu MHz"):
+                        frequencies.append(float(line.split(":", 1)[1].strip()))
+        except (OSError, ValueError):
+            pass
+        return sum(frequencies) / len(frequencies) if frequencies else 0.0
+
     def get_mem(self):
         try:
             mem_total = 0
@@ -214,18 +242,24 @@ class SystemMonitor:
 
     def get_disk_usage(self, disks):
         usage_map = {}
+        used_map = {}
+        total_map = {}
         for mount in disks:
             try:
                 st = os.statvfs(mount)
                 total = st.f_blocks * st.f_frsize
+                used = total - (st.f_bavail * st.f_frsize)
+                used_map[mount] = used
+                total_map[mount] = total
                 if total > 0:
-                    used = total - (st.f_bavail * st.f_frsize)
                     usage_map[mount] = (used / total) * 100.0
                 else:
                     usage_map[mount] = 0.0
             except:
                 usage_map[mount] = 0.0
-        return usage_map
+                used_map[mount] = 0
+                total_map[mount] = 0
+        return usage_map, used_map, total_map
 
     def _get_default_network_interfaces(self):
         interfaces = set()
@@ -293,8 +327,12 @@ class SystemMonitor:
         usages = []
         temps = []
         drivers = []
+        vram_used = []
+        vram_total = []
+        clock_mhz = []
         for gpu in self.gpu_info:
             u, t = 0.0, -1
+            memory_used, memory_total, frequency = 0, 0, 0.0
             driver = self._get_pci_driver(gpu["pci_id"])
             drivers.append(driver)
 
@@ -316,7 +354,7 @@ class SystemMonitor:
                                     "nvidia-smi",
                                     "-i",
                                     gpu["pci_id"],
-                                    "--query-gpu=utilization.gpu,temperature.gpu",
+                                    "--query-gpu=utilization.gpu,temperature.gpu,memory.used,memory.total,clocks.current.graphics",
                                     "--format=csv,noheader,nounits",
                                 ]
                             )
@@ -324,8 +362,11 @@ class SystemMonitor:
                             .strip()
                         )
                         parts = out.split(",")
-                        if len(parts) >= 2:
+                        if len(parts) >= 5:
                             u, t = float(parts[0]), int(parts[1])
+                            memory_used = int(float(parts[2])) * 1024 * 1024
+                            memory_total = int(float(parts[3])) * 1024 * 1024
+                            frequency = float(parts[4])
                     except:
                         pass
                 else:
@@ -349,11 +390,50 @@ class SystemMonitor:
                             t = int(f.read().strip()) // 1000
                 except:
                     pass
+                try:
+                    with open(
+                        f"/sys/class/drm/{card}/device/mem_info_vram_used", "r"
+                    ) as f:
+                        memory_used = int(f.read().strip())
+                    with open(
+                        f"/sys/class/drm/{card}/device/mem_info_vram_total", "r"
+                    ) as f:
+                        memory_total = int(f.read().strip())
+                except (OSError, ValueError):
+                    pass
+                try:
+                    with open(
+                        f"/sys/class/drm/{card}/device/pp_dpm_sclk", "r"
+                    ) as f:
+                        clock_data = f.read()
+                    active_clock = next(
+                        (line for line in clock_data.splitlines() if "*" in line),
+                        "",
+                    )
+                    match = re.search(r"(\d+)\s*Mhz", active_clock, re.I)
+                    if match:
+                        frequency = float(match.group(1))
+                except OSError:
+                    pass
             elif gpu["vendor"] == "intel" and driver in ("i915", "xe"):
-                pass
+                card = gpu["card"]
+                frequency_paths = [
+                    f"/sys/class/drm/{card}/gt/gt0/rps_cur_freq_mhz",
+                    f"/sys/class/drm/{card}/device/tile0/gt0/freq0/cur_freq",
+                ]
+                for path in frequency_paths:
+                    try:
+                        with open(path, "r") as f:
+                            frequency = float(f.read().strip())
+                        break
+                    except (OSError, ValueError):
+                        continue
             usages.append(u)
             temps.append(t)
-        return usages, temps, drivers
+            vram_used.append(memory_used)
+            vram_total.append(memory_total)
+            clock_mhz.append(frequency)
+        return usages, temps, drivers, vram_used, vram_total, clock_mhz
 
 
 if __name__ == "__main__":
@@ -394,22 +474,38 @@ if __name__ == "__main__":
         while True:
             cpu_usage = monitor.get_cpu()
             cpu_temp = monitor.get_cpu_temp()
+            cpu_frequency = monitor.get_cpu_frequency()
             ram_usage, ram_total, ram_used, ram_avail = monitor.get_mem()
-            disk_usage = monitor.get_disk_usage(disks)
+            disk_usage, disk_used, disk_total = monitor.get_disk_usage(disks)
             network_download, network_upload = monitor.get_network_speed()
-            gpu_usages, gpu_temps, gpu_drivers = monitor.get_gpu_stats()
+            (
+                gpu_usages,
+                gpu_temps,
+                gpu_drivers,
+                gpu_vram_used,
+                gpu_vram_total,
+                gpu_clock_mhz,
+            ) = monitor.get_gpu_stats()
 
             print(
                 json.dumps(
                     {
-                        "cpu": {"usage": cpu_usage, "temp": cpu_temp},
+                        "cpu": {
+                            "usage": cpu_usage,
+                            "temp": cpu_temp,
+                            "frequency": cpu_frequency,
+                        },
                         "ram": {
                             "usage": ram_usage,
                             "total": ram_total,
                             "used": ram_used,
                             "available": ram_avail,
                         },
-                        "disk": {"usage": disk_usage},
+                        "disk": {
+                            "usage": disk_usage,
+                            "used": disk_used,
+                            "total": disk_total,
+                        },
                         "network": {
                             "download": network_download,
                             "upload": network_upload,
@@ -420,6 +516,9 @@ if __name__ == "__main__":
                             "usages": gpu_usages,
                             "temps": gpu_temps,
                             "drivers": gpu_drivers,
+                            "vram_used": gpu_vram_used,
+                            "vram_total": gpu_vram_total,
+                            "clock_mhz": gpu_clock_mhz,
                         },
                     }
                 ),

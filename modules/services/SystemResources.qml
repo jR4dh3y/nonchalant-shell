@@ -17,6 +17,7 @@ Singleton {
     property real cpuUsage: 0.0
     property string cpuModel: ""
     property int cpuTemp: -1
+    property real cpuFrequency: 0
 
     // RAM metrics
     property real ramUsage: 0.0
@@ -32,6 +33,9 @@ Singleton {
     property int gpuCount: 0
     property bool gpuDetected: false
     property var gpuTemps: []
+    property var gpuVramUsed: []
+    property var gpuVramTotal: []
+    property var gpuClockMhz: []
     
     // Legacy single GPU properties
     property real gpuUsage: gpuUsages.length > 0 ? gpuUsages[0] : 0.0
@@ -40,6 +44,8 @@ Singleton {
 
     // Disk metrics
     property var diskUsage: ({})
+    property var diskUsed: ({})
+    property var diskTotal: ({})
     property var diskTypes: ({})
     property var validDisks: []
 
@@ -83,6 +89,7 @@ Singleton {
                     if (stats.cpu) {
                         root.cpuUsage = stats.cpu.usage;
                         root.cpuTemp = stats.cpu.temp;
+                        root.cpuFrequency = stats.cpu.frequency || 0;
                     }
                     
                     if (stats.ram) {
@@ -92,7 +99,11 @@ Singleton {
                         root.ramAvailable = stats.ram.available;
                     }
                     
-                    if (stats.disk) root.diskUsage = stats.disk.usage;
+                    if (stats.disk) {
+                        root.diskUsage = stats.disk.usage || {};
+                        root.diskUsed = stats.disk.used || {};
+                        root.diskTotal = stats.disk.total || {};
+                    }
 
                     if (stats.network) {
                         root.networkDownloadSpeed = stats.network.download || 0;
@@ -103,6 +114,9 @@ Singleton {
                         root.gpuUsages = stats.gpu.usages;
                         root.gpuTemps = stats.gpu.temps;
                         root.gpuDrivers = stats.gpu.drivers || root.gpuDrivers;
+                        root.gpuVramUsed = stats.gpu.vram_used || [];
+                        root.gpuVramTotal = stats.gpu.vram_total || [];
+                        root.gpuClockMhz = stats.gpu.clock_mhz || [];
                     }
                 } catch (e) {
                     console.warn("SystemResources: Failed to parse monitor data: " + e);
