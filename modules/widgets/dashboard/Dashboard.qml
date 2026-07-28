@@ -180,51 +180,6 @@ Item {
                     z: visible ? 1 : 0
                 }
 
-                // Gesture handling para swipe vertical
-                MouseArea {
-                    anchors.fill: parent
-                    property real startY: 0
-                    property real startX: 0
-                    property bool swiping: false
-                    property real swipeThreshold: 50
-                    
-                    // Allow clicking through to tabs
-                    propagateComposedEvents: true
-                    preventStealing: false
-
-                    onPressed: mouse => {
-                        startY = mouse.y;
-                        startX = mouse.x;
-                        swiping = false;
-                        mouse.accepted = false; // Let children handle clicks
-                    }
-
-                    onPositionChanged: mouse => {
-                        let deltaY = mouse.y - startY;
-                        let deltaX = Math.abs(mouse.x - startX);
-
-                        // Solo considerar swipe vertical si el movimiento horizontal es mínimo
-                        if (Math.abs(deltaY) > 20 && deltaX < 30) {
-                            swiping = true;
-                        }
-                    }
-
-                    onReleased: mouse => {
-                        if (swiping) {
-                            let deltaY = mouse.y - startY;
-
-                            if (deltaY < -swipeThreshold && root.state.currentTab < root.tabCount - 1) {
-                                // Swipe hacia arriba - siguiente tab
-                                stack.navigateToTab(root.state.currentTab + 1);
-                            } else if (deltaY > swipeThreshold && root.state.currentTab > 0) {
-                                // Swipe hacia abajo - tab anterior
-                                stack.navigateToTab(root.state.currentTab - 1);
-                            }
-                        }
-                        swiping = false;
-                        mouse.accepted = false;
-                    }
-                }
             }
         }
     }
