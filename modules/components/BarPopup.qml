@@ -27,6 +27,9 @@ PopupWindow {
 
     // Behavior configuration
     property bool closeOnFocusLost: true
+    // Large nested surfaces can remain mapped between opens to avoid
+    // compositor remap artifacts. Their input is limited by the mask below.
+    property bool keepMapped: false
 
     // Logical open state (changes immediately, not after animation)
     property bool isOpen: false
@@ -78,7 +81,10 @@ PopupWindow {
     anchor.rect.height: 0
 
     color: "transparent"
-    visible: false
+    visible: keepMapped
+    mask: Region {
+        item: root.visible ? revealViewport : null
+    }
 
     property bool focusActive: false
 
@@ -203,7 +209,7 @@ PopupWindow {
         id: closeTimer
         interval: 50
         onTriggered: {
-            if (!root.isOpen)
+            if (!root.isOpen && !root.keepMapped)
                 root.visible = false;
         }
     }

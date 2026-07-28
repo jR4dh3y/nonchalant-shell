@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Io
 import qs.config
 import qs.modules.theme
 import qs.modules.components
@@ -11,6 +12,24 @@ import "../../widgets/dashboard/widgets"
 
 Item {
     id: root
+
+    IpcHandler {
+        target: "dashboard-animation-debug"
+
+        function open(): void {
+            if (!dashboardPopup.isOpen)
+                root.toggleCenterMenu();
+        }
+
+        function close(): void {
+            if (dashboardPopup.isOpen)
+                dashboardPopup.close();
+        }
+
+        function toggle(): void {
+            root.toggleCenterMenu();
+        }
+    }
 
     property string currentTime: ""
     property string currentDayAbbrev: ""
@@ -560,6 +579,7 @@ Item {
         anchorItem: buttonBg
         variant: "transparent"
         popupPadding: 0
+        keepMapped: true
 
         contentWidth: dashboardWrapper.width
         contentHeight: dashboardWrapper.height
