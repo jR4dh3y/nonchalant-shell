@@ -247,7 +247,7 @@ Singleton {
         id: updateTimer
         interval: 5000
         // Only poll when interface is visible
-        running: root.enabled && !SuspendManager.isSuspending && (GlobalStates.dashboardOpen || GlobalStates.launcherOpen || GlobalStates.overviewOpen)
+        running: root.enabled && !SuspendManager.isSuspending && (GlobalStates.dashboardOpen || GlobalStates.launcherOpen)
         repeat: true
         onTriggered: root.updateDevices()
     }

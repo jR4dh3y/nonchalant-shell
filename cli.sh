@@ -29,7 +29,7 @@ ensure_config_files() {
 	mkdir -p "$config_dir"
 
 	# Copy preset files if they don't exist (cp -n = no-clobber)
-	for file in theme bar workspaces performance weather lockscreen system ai; do
+	for file in theme bar performance weather lockscreen system ai; do
 		cp -n "${preset_dir}/${file}.json" "${config_dir}/${file}.json" 2>/dev/null || true
 	done
 }
@@ -70,25 +70,16 @@ EOF
 }
 
 find_nonchalant_pid() {
-	# Try to find QuickShell process running shell.qml
-	# QuickShell binary can be named 'qs' or 'quickshell'
 	local pid
 
-	# First try with full path (production/flake mode)
-	pid=$(pgrep -f "qs.*${SCRIPT_DIR}/shell.qml" 2>/dev/null | head -1)
-	if [ -z "$pid" ]; then
-		pid=$(pgrep -f "quickshell.*${SCRIPT_DIR}/shell.qml" 2>/dev/null | head -1)
-	fi
+	# Ask Quickshell first. Broad pgrep patterns can match this CLI's own
+	# command line when it contains "shell.qml".
+	pid=$("$QS_BIN" list --all 2>/dev/null | awk -v target="${SCRIPT_DIR}/shell.qml" '
+		$1 == "Process" && $2 == "ID:" { candidate = $3 }
+		$1 == "Config" && $2 == "path:" && $3 == target { print candidate; exit }
+	')
 
-	# If not found, try with relative path (development mode)
-	if [ -z "$pid" ]; then
-		pid=$(pgrep -f "qs.*shell.qml" 2>/dev/null | head -1)
-	fi
-	if [ -z "$pid" ]; then
-		pid=$(pgrep -f "quickshell.*shell.qml" 2>/dev/null | head -1)
-	fi
-
-	# Last resort: find any qs/quickshell process in this directory
+	# Fallback for older Quickshell builds without `list --all`.
 	if [ -z "$pid" ]; then
 		pid=$(pgrep -a "qs" 2>/dev/null | grep -F "$SCRIPT_DIR" | awk '{print $1}' | head -1)
 	fi

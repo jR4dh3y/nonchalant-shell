@@ -649,10 +649,6 @@ Item {
                             sectionId: "sidebar"
                         }
                         SectionButton {
-                            text: "Workspaces"
-                            sectionId: "workspaces"
-                        }
-                        SectionButton {
                             text: "Lockscreen"
                             sectionId: "lockscreen"
                         }
@@ -679,82 +675,6 @@ Item {
                             font.weight: Font.Medium
                             color: Colors.overSurfaceVariant
                             Layout.bottomMargin: -4
-                        }
-
-                        SelectorRow {
-                            label: ""
-                            options: [
-                                {
-                                    label: "Top",
-                                    value: "top",
-                                    icon: Icons.arrowUp
-                                },
-                                {
-                                    label: "Bottom",
-                                    value: "bottom",
-                                    icon: Icons.arrowDown
-                                },
-                                {
-                                    label: "Left",
-                                    value: "left",
-                                    icon: Icons.arrowLeft
-                                },
-                                {
-                                    label: "Right",
-                                    value: "right",
-                                    icon: Icons.arrowRight
-                                }
-                            ]
-                            value: Config.bar.position ?? "top"
-                            onValueSelected: newValue => {
-                                if (newValue !== Config.bar.position) {
-                                    Config.bar.position = newValue;
-                                }
-                            }
-                        }
-
-                        TextInputRow {
-                            label: "Launcher Icon"
-                            value: Config.bar.launcherIcon ?? ""
-                            placeholder: "Symbol or path to icon..."
-                            onValueEdited: newValue => {
-                                if (newValue !== Config.bar.launcherIcon) {
-                                    Config.bar.launcherIcon = newValue;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Launcher Icon Tint"
-                            checked: Config.bar.launcherIconTint ?? true
-                            onToggled: value => {
-                                if (value !== Config.bar.launcherIconTint) {
-                                    Config.bar.launcherIconTint = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Launcher Icon Full Tint"
-                            checked: Config.bar.launcherIconFullTint ?? true
-                            onToggled: value => {
-                                if (value !== Config.bar.launcherIconFullTint) {
-                                    Config.bar.launcherIconFullTint = value;
-                                }
-                            }
-                        }
-
-                        NumberInputRow {
-                            label: "Launcher Icon Size"
-                            value: Config.bar.launcherIconSize ?? 24
-                            minValue: 12
-                            maxValue: 64
-                            suffix: "px"
-                            onValueEdited: newValue => {
-                                if (newValue !== Config.bar.launcherIconSize) {
-                                    Config.bar.launcherIconSize = newValue;
-                                }
-                            }
                         }
 
                         SelectorRow {
@@ -797,154 +717,11 @@ Item {
                             }
                         }
 
-                        Separator {
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "Auto-hide"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
-                            font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
-                            Layout.bottomMargin: -4
-                        }
-
-                        ToggleRow {
-                            label: "Pinned on Startup"
-                            checked: Config.bar.pinnedOnStartup ?? true
-                            onToggled: value => {
-                                if (value !== Config.bar.pinnedOnStartup) {
-                                    Config.bar.pinnedOnStartup = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Hover to Reveal"
-                            checked: Config.bar.hoverToReveal ?? true
-                            onToggled: value => {
-                                if (value !== Config.bar.hoverToReveal) {
-                                    Config.bar.hoverToReveal = value;
-                                }
-                            }
-                        }
-
-                        NumberInputRow {
-                            label: "Hover Region Height"
-                            value: Config.bar.hoverRegionHeight ?? 8
-                            minValue: 0
-                            maxValue: 32
-                            suffix: "px"
-                            onValueEdited: newValue => {
-                                if (newValue !== Config.bar.hoverRegionHeight) {
-                                    Config.bar.hoverRegionHeight = newValue;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Show Pin Button"
-                            checked: Config.bar.showPinButton ?? true
-                            onToggled: value => {
-                                if (value !== Config.bar.showPinButton) {
-                                    Config.bar.showPinButton = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Available on Fullscreen"
-                            checked: Config.bar.availableOnFullscreen ?? false
-                            onToggled: value => {
-                                if (value !== Config.bar.availableOnFullscreen) {
-                                    Config.bar.availableOnFullscreen = value;
-                                }
-                            }
-                        }
-
                         ScreenListRow {
                             label: "Screens"
                             selectedScreens: Config.bar.screenList ?? []
                             onScreensChanged: newList => {
                                 Config.bar.screenList = newList;
-                            }
-                        }
-                    }
-
-                    // ═══════════════════════════════════════════════════════════════
-                    // FRAME SECTION
-                    // ═══════════════════════════════════════════════════════════════
-                    ColumnLayout {
-                        visible: root.currentSection === "frame"
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "Frame"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
-                            font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
-                            Layout.bottomMargin: -4
-                        }
-
-                        ToggleRow {
-                            label: "Enabled"
-                            checked: Config.bar.frameEnabled ?? false
-                            onToggled: value => {
-                                if (value !== Config.bar.frameEnabled) {
-                                    Config.bar.frameEnabled = value;
-                                }
-                            }
-                        }
-
-                        NumberInputRow {
-                            label: "Thickness"
-                            value: Config.bar.frameThickness ?? 6
-                            minValue: 0
-                            maxValue: 40
-                            suffix: "px"
-                            onValueEdited: newValue => {
-                                if (newValue !== Config.bar.frameThickness) {
-                                    Config.bar.frameThickness = newValue;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Contain Bar"
-                            checked: Config.bar.containBar ?? false
-                            onToggled: value => {
-                                if (value !== Config.bar.containBar) {
-                                    Config.bar.containBar = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Keep Bar Shadow"
-                            checked: Config.bar.keepBarShadow ?? false
-                            visible: Config.bar.containBar ?? false
-                            onToggled: value => {
-                                if (value !== Config.bar.keepBarShadow) {
-                                    Config.bar.keepBarShadow = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Keep Bar Border"
-                            checked: Config.bar.keepBarBorder ?? false
-                            visible: Config.bar.containBar ?? false
-                            onToggled: value => {
-                                if (value !== Config.bar.keepBarBorder) {
-                                    Config.bar.keepBarBorder = value;
-                                }
                             }
                         }
                     }
@@ -956,76 +733,6 @@ Item {
 
                     // ═══════════════════════════════════════════════════════════════
                     // WORKSPACES SECTION
-                    // ═══════════════════════════════════════════════════════════════
-                    ColumnLayout {
-                        visible: root.currentSection === "workspaces"
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "Workspaces"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
-                            font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
-                            Layout.bottomMargin: -4
-                        }
-
-                        NumberInputRow {
-                            label: "Shown"
-                            value: Config.workspaces.shown ?? 10
-                            minValue: 1
-                            maxValue: 20
-                            onValueEdited: newValue => {
-                                if (newValue !== Config.workspaces.shown) {
-                                    Config.workspaces.shown = newValue;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Show App Icons"
-                            checked: Config.workspaces.showAppIcons ?? true
-                            onToggled: value => {
-                                if (value !== Config.workspaces.showAppIcons) {
-                                    Config.workspaces.showAppIcons = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Always Show Numbers"
-                            checked: Config.workspaces.alwaysShowNumbers ?? false
-                            onToggled: value => {
-                                if (value !== Config.workspaces.alwaysShowNumbers) {
-                                    Config.workspaces.alwaysShowNumbers = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Show Numbers"
-                            checked: Config.workspaces.showNumbers ?? false
-                            onToggled: value => {
-                                if (value !== Config.workspaces.showNumbers) {
-                                    Config.workspaces.showNumbers = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Dynamic"
-                            checked: Config.workspaces.dynamic ?? false
-                            onToggled: value => {
-                                if (value !== Config.workspaces.dynamic) {
-                                    Config.workspaces.dynamic = value;
-                                }
-                            }
-                        }
-                    }
-
                     // LOCKSCREEN SECTION
                     // ═══════════════════════════════════════════════════════════════
                     ColumnLayout {
@@ -1085,16 +792,6 @@ Item {
                             Layout.bottomMargin: -4
                         }
 
-                        ToggleRow {
-                            label: "Update Service"
-                            checked: Config.system.updateServiceEnabled ?? true
-                            onToggled: value => {
-                                if (value !== Config.system.updateServiceEnabled) {
-                                    Config.system.updateServiceEnabled = value;
-                                }
-                            }
-                        }
-
                         ActionButton {
                             text: "About Nonchalant " + Config.version
                             icon: Icons.info
@@ -1107,86 +804,6 @@ Item {
                             onClicked: Quickshell.execDetached(["xdg-open", "https://axeni.de/donate"])
                         }
 
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "OCR Languages"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
-                            color: Styling.srItem("overprimary")
-                            font.bold: true
-                            Layout.topMargin: 8
-                        }
-
-                        ToggleRow {
-                            label: "English"
-                            checked: Config.system.ocr.eng ?? true
-                            onToggled: value => {
-                                if (value !== Config.system.ocr.eng) {
-                                    Config.system.ocr.eng = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Spanish"
-                            checked: Config.system.ocr.spa ?? true
-                            onToggled: value => {
-                                if (value !== Config.system.ocr.spa) {
-                                    Config.system.ocr.spa = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Latin"
-                            checked: Config.system.ocr.lat ?? false
-                            onToggled: value => {
-                                if (value !== Config.system.ocr.lat) {
-                                    Config.system.ocr.lat = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Japanese"
-                            checked: Config.system.ocr.jpn ?? false
-                            onToggled: value => {
-                                if (value !== Config.system.ocr.jpn) {
-                                    Config.system.ocr.jpn = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Chinese (Simplified)"
-                            checked: Config.system.ocr.chi_sim ?? false
-                            onToggled: value => {
-                                if (value !== Config.system.ocr.chi_sim) {
-                                    Config.system.ocr.chi_sim = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Chinese (Traditional)"
-                            checked: Config.system.ocr.chi_tra ?? false
-                            onToggled: value => {
-                                if (value !== Config.system.ocr.chi_tra) {
-                                    Config.system.ocr.chi_tra = value;
-                                }
-                            }
-                        }
-
-                        ToggleRow {
-                            label: "Korean"
-                            checked: Config.system.ocr.kor ?? false
-                            onToggled: value => {
-                                if (value !== Config.system.ocr.kor) {
-                                    Config.system.ocr.kor = value;
-                                }
-                            }
-                        }
                     }
 
                     // ═══════════════════════════════════════════════════════════════

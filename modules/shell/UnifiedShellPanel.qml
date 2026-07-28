@@ -50,29 +50,15 @@ PanelWindow {
         return (!list || list.length === 0 || list.indexOf(targetScreen.name) !== -1);
     }
 
-    readonly property alias barPosition: barContent.barPosition
-    readonly property alias barPinned: barContent.pinned
-    readonly property alias barHoverActive: barContent.hoverActive
-    readonly property alias barFullscreen: barContent.activeWindowFullscreen
-    readonly property bool barReveal: barEnabled && barContent.reveal
-    readonly property alias barTargetWidth: barContent.barTargetWidth
     readonly property alias barTargetHeight: barContent.barTargetHeight
     readonly property alias barOuterMargin: barContent.baseOuterMargin
 
-    // Generic names for external compatibility (Visibilities expects these on the panel object)
-    readonly property alias pinned: barContent.pinned
-    readonly property bool reveal: barEnabled ? barContent.reveal : false
-    readonly property alias hoverActive: barContent.hoverActive // Default hoverActive points to bar
-    readonly property bool hasFullscreenWindow: barContent.activeWindowFullscreen
-
     Component.onCompleted: {
         Visibilities.registerBarPanel(screen.name, unifiedPanel);
-        Visibilities.registerBar(screen.name, barContent);
     }
 
     Component.onDestruction: {
         Visibilities.unregisterBarPanel(screen.name);
-        Visibilities.unregisterBar(screen.name);
     }
 
     // Full-screen mask item (used when modules/popups are open)
@@ -152,7 +138,6 @@ PanelWindow {
         // Power menu host (no bar icon — Super+X / IPC only).
         PowerMenuHost {
             id: powerMenuHost
-            bar: barContent
             panel: unifiedPanel
             z: 3
         }
@@ -170,33 +155,9 @@ PanelWindow {
             targetScreen: unifiedPanel.targetScreen
             z: 1
 
-            anchors.topMargin: {
-                let margin = 0;
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "top" && unifiedPanel.barPinned)
-                    margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin;
-                return margin;
-            }
-
-            anchors.bottomMargin: {
-                let margin = 0;
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "bottom" && unifiedPanel.barPinned)
-                    margin += unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin;
-                return margin;
-            }
-
-            anchors.leftMargin: {
-                let margin = 0;
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "left" && unifiedPanel.barPinned)
-                    margin += unifiedPanel.barTargetWidth + unifiedPanel.barOuterMargin;
-                return margin;
-            }
-
-            anchors.rightMargin: {
-                let margin = 0;
-                if (unifiedPanel.barEnabled && unifiedPanel.barPosition === "right" && unifiedPanel.barPinned)
-                    margin += unifiedPanel.barTargetWidth + unifiedPanel.barOuterMargin;
-                return margin;
-            }
+            anchors.topMargin: unifiedPanel.barEnabled
+                ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
+                : 0
         }
     }
 }

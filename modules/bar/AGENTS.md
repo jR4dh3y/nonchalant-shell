@@ -1,12 +1,13 @@
 # BAR MODULE KNOWLEDGE BASE
 
 ## OVERVIEW
-Primary system panel supporting horizontal (top/bottom) and vertical (left/right) orientations, reactive auto-hiding, and space reservation via Quickshell's `PanelWindow`. Rendered inside `UnifiedShellPanel`.
+Fixed top system panel rendered inside `UnifiedShellPanel`. The bar is always
+pinned and reserves space through `ReservationWindows`.
 
 ## STRUCTURE
 - **Core Layout**:
-  - `BarContent.qml` (767 lines): Orchestrates widget groups via `RowLayout`/`ColumnLayout`. Manages auto-hide with `reveal` property + `hideDelayTimer`.
-  - `BarBg.qml` / `BarBgShadow.qml`: Background aesthetic layers.
+  - `BarContent.qml`: Orchestrates the top-bar widget groups.
+  - `BarBg.qml`: Background and content padding.
 - **Widgets**:
   - `clock/`: Time, date, weather integration (`Clock.qml` — 672 lines).
   - `systray/`: SNI-based system tray.
@@ -17,15 +18,13 @@ Primary system panel supporting horizontal (top/bottom) and vertical (left/right
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
-| **Auto-hide logic** | `BarContent.qml` | `reveal` property + `hideDelayTimer` |
 | **Space reservation** | Parent: `shell.qml` → `ReservationWindows` | `exclusiveZone` calculation |
-| **Adding widgets** | `BarContent.qml` | Update `horizontalLayout` or `verticalLayout` |
-| **Integrated dock** | `IntegratedDock.qml` | App switching within bar |
+| **Adding widgets** | `BarContent.qml` | Update the top-bar layout |
 | **Clock/Weather** | `clock/Clock.qml` | Complex: 672 lines, multiple display modes |
 
 ## CONVENTIONS
 - **Adaptive styling**: Widgets use `startRadius`/`endRadius` for "pill" continuity based on group position.
 - **Visibility registration**: Panels must register with `Visibilities` in `Component.onCompleted`.
-- **Orientation**: ALWAYS handle both `horizontal` and `vertical` cases in UI components.
+- **Orientation**: Bar components only need to support the fixed top layout.
 - **Config binding**: Use `Config.bar.*` properties for all layout-related state.
 - **Screen filtering**: Respects `Config.bar.screenList` for multi-monitor control.

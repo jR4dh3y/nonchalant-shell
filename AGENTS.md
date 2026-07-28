@@ -15,15 +15,12 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 ├── modules/
 │   ├── bar/              # Panel widgets: clock, systray, workspaces, indicators
 │   ├── components/       # Reusable UI primitives + GLSL shaders (55 files)
-│   ├── corners/          # Rounded screen corners overlay
-│   ├── frame/            # Screen border/glow effect
 │   ├── globals/          # GlobalStates.qml — transient runtime state
 │   ├── lockscreen/       # WlSessionLock + PAM authentication
 │   ├── notifications/    # Notification popup system + history
 │   ├── services/         # Backend singletons (30+): Battery, AI, Network, etc.
 │   ├── shell/            # UnifiedShellPanel + ReservationWindows + OSD
 │   ├── theme/            # Colors, Icons, Styling singletons + app generators
-│   ├── tools/            # Screenshot, screen recording, mirror, color picker
 │   └── widgets/          # Complex overlays: dashboard, launcher, overview, etc.
 │       ├── config/       # Standalone settings window
 │       ├── dashboard/    # Main hub: controls, metrics, assistant, clipboard, notes
@@ -49,7 +46,7 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 | **UI Primitives** | `modules/components/` | `StyledRect`, `BarPopup`, `SearchInput`, shaders |
 | **Dashboard** | `modules/widgets/dashboard/` | Tabbed hub with LRU lazy-loading |
 | **Launcher** | `modules/widgets/launcher/LauncherView.qml` | Unified search: apps, clipboard, emoji |
-| **Bar Layout** | `modules/bar/BarContent.qml` | Auto-hide, horizontal/vertical, widget groups |
+| **Bar Layout** | `modules/bar/BarContent.qml` | Fixed top bar and widget groups |
 | **Run Menu** | `modules/widgets/launcher/RunMenuHost.qml` | Floating launcher host inside the unified panel |
 | **Lockscreen** | `modules/lockscreen/LockScreen.qml` | PAM auth + `WlSessionLockSurface` |
 | **Notifications** | `modules/notifications/` | Popup system + delegate + history |
@@ -105,7 +102,6 @@ qs -p .
 ## NOTES
 - Large files (>1000 lines): `ClipboardTab`, `NotesTab`, `TmuxTab`, `ShellPanel`, `ThemePanel`, `LauncherView`, `AssistantTab`, `Ai.qml`.
 - The `qs.` import prefix is a Quickshell VFS construct, not a physical directory.
-- `screenshotToolMode` in `GlobalStates.qml` is **DEPRECATED**.
 - Gemini AI provider doesn't support the `system` role; handled in `services/ai/strategies/`.
 - New compositor integration must use Niri IPC or native Quickshell/Wayland APIs. Do not introduce `axctl` or Hyprland as runtime dependencies. Some inherited optional paths still contain them and should be replaced as those features are ported.
 - Keep the inherited wallpaper and `WlSessionLock` implementations during initial bring-up. Treat lock/login modularization as later work.

@@ -26,7 +26,7 @@ StyledRect {
     }
 
     Behavior on implicitHeight {
-        enabled: Config.animDuration > 0
+        enabled: Config.animDuration > 0 && root.expandedPanel !== -1
         NumberAnimation {
             duration: Config.animDuration
             easing.type: Easing.OutCubic
@@ -145,7 +145,7 @@ StyledRect {
             opacity: root.expandedPanel !== -1 ? 1 : 0
 
             Behavior on Layout.preferredHeight {
-                enabled: Config.animDuration > 0
+                enabled: Config.animDuration > 0 && root.expandedPanel !== -1
                 NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
             }
 

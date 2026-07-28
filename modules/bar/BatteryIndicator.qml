@@ -10,9 +10,6 @@ import qs.config
 Item {
     id: root
 
-    required property var bar
-
-    property bool vertical: bar.orientation === "vertical"
     property bool isHovered: false
     property bool layerEnabled: false
 
@@ -41,8 +38,7 @@ Item {
 
     Layout.preferredWidth: 36
     Layout.preferredHeight: 36
-    Layout.fillWidth: vertical
-    Layout.fillHeight: !vertical
+    Layout.fillHeight: true
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
@@ -55,10 +51,10 @@ Item {
         anchors.fill: parent
         enableShadow: root.layerEnabled
 
-        topLeftRadius: root.vertical ? root.startRadius : root.startRadius
-        topRightRadius: root.vertical ? root.startRadius : root.endRadius
-        bottomLeftRadius: root.vertical ? root.endRadius : root.startRadius
-        bottomRightRadius: root.vertical ? root.endRadius : root.endRadius
+        topLeftRadius: root.startRadius
+        topRightRadius: root.endRadius
+        bottomLeftRadius: root.startRadius
+        bottomRightRadius: root.endRadius
 
         // Background highlight on hover
         Rectangle {
@@ -196,7 +192,6 @@ Item {
     BarPopup {
         id: batteryPopup
         anchorItem: buttonBg
-        bar: root.bar
 
         contentWidth: Math.max(280, mainColumn.implicitWidth + batteryPopup.popupPadding * 2)
         // Fixed height calculation to prevent expansion animation on first open

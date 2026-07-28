@@ -16,9 +16,6 @@ PopupWindow {
 
     // Required: the item this popup anchors to
     required property Item anchorItem
-    // Required: the bar panel for position detection
-    required property var bar
-
     // Content to display inside the popup
     default property alias contentData: contentContainer.data
 
@@ -37,19 +34,12 @@ PopupWindow {
     // Signal emitted when popup is closed externally (click outside)
     signal closedExternally
 
-    // Animation state. Do not scale this tree: a scale transform resamples all
-    // text in the popup, which makes otherwise sharp glyphs look soft.
-    property real popupOpacity: 0
+    // Reveal the popup at its attachment edge. Moving or scaling a large popup
+    // makes dashboard content hitch and resamples text; changing only this clip
+    // boundary keeps the content stationary and sharp.
+    property real revealProgress: 0
     // Mutable duration so sibling switches can use a snappier close/open.
     property int transitionMs: Config.animDuration > 0 ? Config.animDuration : 0
-
-    // Bar position detection
-    readonly property string barPosition: bar?.barPosition ?? "top"
-    readonly property bool barAtTop: barPosition === "top"
-    readonly property bool barAtBottom: barPosition === "bottom"
-    readonly property bool barAtLeft: barPosition === "left"
-    readonly property bool barAtRight: barPosition === "right"
-    readonly property bool barVertical: barAtLeft || barAtRight
 
     // Total size including shadow margin
     readonly property int totalWidth: contentWidth + shadowMargin * 2
@@ -76,31 +66,14 @@ PopupWindow {
         }
     }
 
-    // Frame detection
-    readonly property bool frameEnabled: Config.bar?.frameEnabled ?? false
-    readonly property bool containBar: Config.bar?.containBar ?? false
-    readonly property int frameThickness: Config.bar?.frameThickness ?? 0
-    readonly property int frameOffset: (frameEnabled && containBar) ? frameThickness : 0
-    readonly property int effectiveFrameOffset: (frameEnabled && containBar) ? frameOffset : 0
+    readonly property bool bottomBar: (Config.bar?.position ?? "top") === "bottom"
 
-    // Anchor positioning
+    // Open away from the configured screen edge.
     anchor.item: anchorItem
-    anchor.rect.x: {
-        if (barVertical) {
-            if (barAtLeft)
-                return anchorItem.width + visualMargin + effectiveFrameOffset - shadowMargin;
-            return -totalWidth + shadowMargin - visualMargin - effectiveFrameOffset;
-        }
-        return (anchorItem.width - totalWidth) / 2;
-    }
-    anchor.rect.y: {
-        if (barVertical) {
-            return (anchorItem.height - totalHeight) / 2;
-        }
-        if (barAtTop)
-            return anchorItem.height + visualMargin + effectiveFrameOffset - shadowMargin;
-        return -totalHeight + shadowMargin - visualMargin - effectiveFrameOffset;
-    }
+    anchor.rect.x: (anchorItem.width - totalWidth) / 2
+    anchor.rect.y: bottomBar
+        ? -totalHeight - visualMargin + shadowMargin
+        : anchorItem.height + visualMargin - shadowMargin
     anchor.rect.width: 0
     anchor.rect.height: 0
 
@@ -123,23 +96,31 @@ PopupWindow {
         }
     }
 
-    Behavior on popupOpacity {
+    Behavior on revealProgress {
         enabled: root.transitionMs > 0
         NumberAnimation {
             duration: root.transitionMs
-            easing.type: Easing.OutCubic
+            easing.type: root.isOpen ? Easing.OutCubic : Easing.InCubic
         }
     }
 
     Item {
-        id: popupContainer
-        anchors.fill: parent
-        anchors.margins: root.shadowMargin
-        opacity: root.popupOpacity
+        id: revealViewport
+
+        x: root.shadowMargin
+        width: root.contentWidth
+        height: root.contentHeight * root.revealProgress
+        y: root.bottomBar
+            ? root.shadowMargin + root.contentHeight - height
+            : root.shadowMargin
+        clip: true
 
         StyledRect {
-            id: background
-            anchors.fill: parent
+            id: popupContainer
+
+            width: root.contentWidth
+            height: root.contentHeight
+            y: root.bottomBar ? revealViewport.height - height : 0
             variant: root.variant
             enableShadow: false
             radius: Styling.radius(8)
@@ -153,7 +134,7 @@ PopupWindow {
     }
 
     function open() {
-        if (visible && isOpen && popupOpacity >= 0.99)
+        if (visible && isOpen && revealProgress >= 0.99)
             return;
 
         closeTimer.stop();
@@ -162,17 +143,14 @@ PopupWindow {
         // Snappy full-duration open for a clean settle.
         transitionMs = Config.animDuration > 0 ? Config.animDuration : 0;
 
-        // One bar popup at a time — sibling gets a quick fade, not a long exit.
+        // One bar popup at a time; a replaced sibling uses a quicker collapse.
         Visibilities.claimBarPopup(root);
 
         isOpen = true;
 
-        // Mid-close reopen: keep the current opacity and fade back in.
-        if (!visible) {
-            // Start slightly present so weather→dashboard doesn't flash empty.
-            popupOpacity = 0;
+        // A mid-close reopen continues from the current reveal boundary.
+        if (!visible)
             visible = true;
-        }
 
         // Grab focus immediately so we don't thrash focus between the two popups.
         focusActive = true;
@@ -180,7 +158,7 @@ PopupWindow {
         Qt.callLater(() => {
             if (!root.isOpen)
                 return;
-            popupOpacity = 1;
+            revealProgress = 1;
         });
     }
 
@@ -204,7 +182,7 @@ PopupWindow {
         const base = Config.animDuration > 0 ? Config.animDuration : 0;
         transitionMs = quick ? Math.max(Math.round(base / 2), 80) : base;
 
-        popupOpacity = 0;
+        revealProgress = 0;
 
         closeTimer.interval = transitionMs > 0 ? transitionMs + 30 : 20;
         closeTimer.restart();
@@ -215,7 +193,7 @@ PopupWindow {
     }
 
     function toggle() {
-        if (isOpen || (visible && popupOpacity > 0.5))
+        if (isOpen || (visible && revealProgress > 0.5))
             close();
         else
             open();

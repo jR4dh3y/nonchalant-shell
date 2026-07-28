@@ -57,13 +57,9 @@ ShellRoot {
                     const list = (Config.bar && Config.bar.screenList !== undefined ? Config.bar.screenList : []);
                     return (!list || list.length === 0 || list.indexOf(screen.name) !== -1);
                 }
-                barPosition: unifiedPanel.barPosition
-                barPinned: unifiedPanel.pinned
-                barSize: (unifiedPanel.barPosition === "left" || unifiedPanel.barPosition === "right") ? unifiedPanel.barTargetWidth : unifiedPanel.barTargetHeight
+                barSize: unifiedPanel.barTargetHeight
                 barOuterMargin: unifiedPanel.barOuterMargin
 
-                dockEnabled: false
-                frameEnabled: false
                 sidebarEnabled: GlobalStates.assistantVisible
                     && screenShellContainer.modelData.name === GlobalStates.assistantScreenName
                 sidebarPinned: GlobalStates.assistantPinned

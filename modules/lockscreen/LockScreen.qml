@@ -7,7 +7,6 @@ import Quickshell.Io
 import Quickshell.Services.Pam
 import Quickshell.Wayland
 import qs.modules.components
-import qs.modules.corners
 import qs.modules.theme
 import qs.modules.globals
 import qs.modules.services

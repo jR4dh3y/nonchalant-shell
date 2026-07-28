@@ -2,16 +2,6 @@
 
 var data = {
     "disks": ["/"],
-    "updateServiceEnabled": true,
-    "ocr": {
-        "eng": true,
-        "spa": true,
-        "lat": false,
-        "jpn": false,
-        "chi_sim": false,
-        "chi_tra": false,
-        "kor": false
-    },
     "pomodoro": {
         "workTime": 1500,
         "restTime": 300,

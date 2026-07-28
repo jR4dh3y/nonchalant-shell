@@ -11,7 +11,6 @@ Item {
     id: root
 
     required property var bar
-    property bool vertical: bar.orientation === "vertical"
     property bool layerEnabled: false
     property real startRadius: Styling.radius(0)
     property real endRadius: Styling.radius(0)
@@ -29,8 +28,7 @@ Item {
 
     Layout.preferredWidth: 36
     Layout.preferredHeight: 36
-    Layout.fillWidth: vertical
-    Layout.fillHeight: !vertical
+    Layout.fillHeight: true
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
@@ -41,10 +39,10 @@ Item {
         anchors.fill: parent
         variant: "bg"
         enableShadow: root.layerEnabled
-        topLeftRadius: root.vertical ? root.startRadius : root.startRadius
-        topRightRadius: root.vertical ? root.startRadius : root.endRadius
-        bottomLeftRadius: root.vertical ? root.endRadius : root.startRadius
-        bottomRightRadius: root.vertical ? root.endRadius : root.endRadius
+        topLeftRadius: root.startRadius
+        topRightRadius: root.endRadius
+        bottomLeftRadius: root.startRadius
+        bottomRightRadius: root.endRadius
 
         Rectangle {
             anchors.fill: parent

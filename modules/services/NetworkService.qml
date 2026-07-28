@@ -206,7 +206,7 @@ Singleton {
         // Skip/delay updates if UI closed
         // nmcli monitor is event-based; safe to run.
         // Optimization: Only update signal strength when UI open
-        const uiOpen = GlobalStates.dashboardOpen || GlobalStates.launcherOpen || GlobalStates.overviewOpen;
+        const uiOpen = GlobalStates.dashboardOpen || GlobalStates.launcherOpen;
         
         isUpdating = true;
         updateConnectionType.startCheck();

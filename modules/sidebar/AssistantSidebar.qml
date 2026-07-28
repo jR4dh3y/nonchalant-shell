@@ -20,9 +20,7 @@ Item {
     property alias hitbox: sidebarContainer
     property alias hasActiveFocus: inputField.activeFocus
 
-    readonly property bool frameEnabled: (Config.bar?.frameEnabled ?? false)
-    readonly property bool frameWrapped: frameEnabled && GlobalStates.assistantPinned
-    readonly property int sidebarMargin: frameWrapped ? 0 : 4
+    readonly property int sidebarMargin: 4
     property bool wantsFocus: false
     property bool menuExpanded: false
     property real menuWidth: 250
@@ -174,9 +172,8 @@ Item {
             anchors.bottomMargin: root.sidebarMargin
             anchors.leftMargin: GlobalStates.assistantPosition === "left" ? root.sidebarMargin : 0
             anchors.rightMargin: GlobalStates.assistantPosition === "right" ? root.sidebarMargin : 0
-            variant: root.frameWrapped ? "transparent" : "bg"
-
-            radius: root.frameWrapped ? 0 : (variantConfig.radius !== undefined ? variantConfig.radius : Styling.radius(0))
+            variant: "bg"
+            radius: variantConfig.radius !== undefined ? variantConfig.radius : Styling.radius(0)
             ColumnLayout {
                 anchors.fill: parent
                 spacing: 0

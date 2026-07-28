@@ -76,7 +76,7 @@ Singleton {
 
     property Timer sunPositionTimer: Timer {
         interval: 60000  // 1 minute
-        running: !SuspendManager.isSuspending && (GlobalStates.dashboardOpen || GlobalStates.launcherOpen || GlobalStates.overviewOpen)
+        running: !SuspendManager.isSuspending && (GlobalStates.dashboardOpen || GlobalStates.launcherOpen)
         repeat: true
         onTriggered: root.calculateSunPosition()
     }

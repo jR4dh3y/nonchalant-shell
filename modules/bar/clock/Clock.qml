@@ -14,12 +14,9 @@ Item {
 
     property string currentTime: ""
     property string currentDayAbbrev: ""
-    property string currentHours: ""
-    property string currentMinutes: ""
     property string currentFullDate: ""
 
     required property var bar
-    property bool vertical: bar.orientation === "vertical"
     property bool isHovered: false
     property bool layerEnabled: false
     
@@ -30,6 +27,16 @@ Item {
     // Popup visibility state
     property bool popupOpen: clockPopup.isOpen
     readonly property bool menuOpen: dashboardPopup.isOpen
+    readonly property bool timeToolsOpen: timePopup.isOpen
+    readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
+
+    function formatDuration(seconds) {
+        const safeSeconds = Math.max(0, seconds);
+        const minutes = Math.floor(safeSeconds / 60);
+        const remainder = safeSeconds % 60;
+        return minutes.toString().padStart(2, "0") + ":"
+            + remainder.toString().padStart(2, "0");
+    }
 
     function toggleCenterMenu() {
         if (dashboardPopup.isOpen) {
@@ -47,10 +54,10 @@ Item {
 
     readonly property bool weatherAvailable: WeatherService.dataAvailable
 
-    implicitWidth: vertical ? 36 : buttonBg.implicitWidth
-    implicitHeight: vertical ? buttonBg.implicitHeight : 36
-    Layout.preferredWidth: vertical ? 36 : buttonBg.implicitWidth
-    Layout.preferredHeight: vertical ? buttonBg.implicitHeight : 36
+    implicitWidth: buttonBg.implicitWidth
+    implicitHeight: 36
+    Layout.preferredWidth: buttonBg.implicitWidth
+    Layout.preferredHeight: 36
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
@@ -59,22 +66,22 @@ Item {
     // Main button
     StyledRect {
         id: buttonBg
-        variant: root.popupOpen || root.menuOpen ? "primary" : "bg"
+        variant: root.anyPopupOpen ? "primary" : "bg"
         anchors.fill: parent
         enableShadow: root.layerEnabled
 
-        topLeftRadius: root.vertical ? root.startRadius : root.startRadius
-        topRightRadius: root.vertical ? root.startRadius : root.endRadius
-        bottomLeftRadius: root.vertical ? root.endRadius : root.startRadius
-        bottomRightRadius: root.vertical ? root.endRadius : root.endRadius
+        topLeftRadius: root.startRadius
+        topRightRadius: root.endRadius
+        bottomLeftRadius: root.startRadius
+        bottomRightRadius: root.endRadius
 
-        implicitWidth: vertical ? 36 : rowLayout.implicitWidth + 24
-        implicitHeight: vertical ? columnLayout.implicitHeight + 24 : 36
+        implicitWidth: rowLayout.implicitWidth + 24
+        implicitHeight: 36
 
         Rectangle {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
-            opacity: root.popupOpen || root.menuOpen ? 0 : (root.isHovered ? 0.25 : 0)
+            opacity: root.anyPopupOpen ? 0 : (root.isHovered ? 0.25 : 0)
             radius: parent.radius ?? 0
 
             Behavior on opacity {
@@ -87,7 +94,6 @@ Item {
 
         RowLayout {
             id: rowLayout
-            visible: !root.vertical
             anchors.centerIn: parent
             spacing: 8
 
@@ -103,7 +109,7 @@ Item {
                     text: root.weatherAvailable
                         ? WeatherService.weatherSymbol + " " + Math.round(WeatherService.currentTemp) + "°"
                         : root.currentDayAbbrev
-                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -136,7 +142,7 @@ Item {
                     id: dateDisplay
                     anchors.centerIn: parent
                     text: root.currentFullDate
-                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.weight: Font.Medium
@@ -154,16 +160,21 @@ Item {
             }
 
             Item {
+                id: timeAnchor
                 Layout.preferredWidth: timeDisplay.implicitWidth
-                Layout.preferredHeight: 28
+                // Reach the same bar edge used by the weather/dashboard
+                // anchor so every clock popup has an identical visual gap.
+                Layout.preferredHeight: buttonBg.height
 
                 Text {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     id: timeDisplay
                     anchors.centerIn: parent
-                    text: root.currentTime
-                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    text: pomodoroWidget.isRunning || pomodoroWidget.alarmActive || pomodoroWidget.isResuming
+                        ? root.formatDuration(pomodoroWidget.timeLeft)
+                        : root.currentTime
+                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -171,73 +182,51 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.toggleCenterMenu()
+                    onClicked: mouse => {
+                        if (mouse.button === Qt.MiddleButton)
+                            pomodoroWidget.toggleTimer();
+                        else
+                            timePopup.toggle();
+                    }
                 }
             }
         }
 
-        ColumnLayout {
-            id: columnLayout
-            visible: root.vertical
-            anchors.centerIn: parent
-            spacing: 4
-            Layout.alignment: Qt.AlignHCenter
+    }
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                id: dayDisplayV
-                text: root.weatherAvailable ? WeatherService.weatherSymbol : root.currentDayAbbrev
-                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: root.weatherAvailable ? 16 : Config.theme.fontSize
-                font.family: Config.theme.font
-                font.bold: !root.weatherAvailable
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.NoWrap
-                Layout.alignment: Qt.AlignHCenter
-            }
+    // Compact countdown timer.
+    BarPopup {
+        id: timePopup
+        anchorItem: timeAnchor
+        grabFocus: true
+        variant: "transparent"
+        popupPadding: 0
 
-            Separator {
-                id: separatorV
-                vert: false
-                Layout.alignment: Qt.AlignHCenter
-            }
+        contentWidth: timeToolsWrapper.width
+        contentHeight: timeToolsWrapper.height
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                id: hoursDisplayV
-                text: root.currentHours
-                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: Config.theme.fontSize
-                font.family: Config.theme.font
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.NoWrap
-                Layout.alignment: Qt.AlignHCenter
-            }
-
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                id: minutesDisplayV
-                text: root.currentMinutes
-                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: Config.theme.fontSize
-                font.family: Config.theme.font
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.NoWrap
-                Layout.alignment: Qt.AlignHCenter
-            }
+        onIsOpenChanged: {
+            if (isOpen)
+                Qt.callLater(() => pomodoroWidget.focusInput());
         }
 
-        MouseArea {
-            anchors.fill: parent
-            enabled: root.vertical
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.toggleCenterMenu()
+        StyledRect {
+            id: timeToolsWrapper
+            variant: "popup"
+            radius: Styling.radius(8)
+            enableShadow: false
+            width: 316
+            height: pomodoroWidget.implicitHeight + 16
+
+            Pomodoro {
+                id: pomodoroWidget
+                anchors.centerIn: parent
+                width: 300
+                height: implicitHeight
+                onRequestPopupOpen: timePopup.open()
+            }
         }
     }
 
@@ -245,7 +234,6 @@ Item {
     BarPopup {
         id: clockPopup
         anchorItem: buttonBg
-        bar: root.bar
         variant: "transparent"
         popupPadding: 0
 
@@ -570,7 +558,6 @@ Item {
     BarPopup {
         id: dashboardPopup
         anchorItem: buttonBg
-        bar: root.bar
         variant: "transparent"
         popupPadding: 0
 
@@ -640,10 +627,7 @@ Item {
             var now = new Date();
             var format = Config.bar.use12hFormat ? "h:mm ap" : "hh:mm";
             var formatted = Qt.formatDateTime(now, format);
-            var parts = formatted.split(":");
             root.currentTime = formatted;
-            root.currentHours = parts[0];
-            root.currentMinutes = parts[1];
         }
     }
 
@@ -664,10 +648,7 @@ Item {
         var now = new Date();
         var format = Config.bar.use12hFormat ? "h:mm ap" : "hh:mm";
         var formatted = Qt.formatDateTime(now, format);
-        var parts = formatted.split(":");
         root.currentTime = formatted;
-        root.currentHours = parts[0];
-        root.currentMinutes = parts[1];
         updateDay();
     }
 }

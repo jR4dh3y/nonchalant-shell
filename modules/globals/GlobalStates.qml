@@ -79,10 +79,6 @@ Singleton {
     property string dashboardPopupScreen: ""
     property string systemMonitorPopupScreen: ""
     
-    // Widgets tab internal state (for prefix-based tabs)
-    // 0=launcher, 1=clipboard, 2=emoji, 3=tmux, 4=wallpapers
-    property int widgetsTabCurrentIndex: 0
-
     // Persistent wallpaper navigation state
     property int wallpaperSelectedIndex: -1
 
@@ -95,31 +91,8 @@ Singleton {
         return active ? active.launcher : false;
     }
 
-    function getActiveProjects() {
-        return getActiveLauncher() && launcherMode === "projects";
-    }
-
-    function getActiveDashboard() {
-        let active = Visibilities.getForActive();
-        return active ? active.dashboard === true : false;
-    }
-
-    function getActiveOverview() {
-        let active = Visibilities.getForActive();
-        return active ? active.overview === true : false;
-    }
-
-    function getActivePresets() {
-        let active = Visibilities.getForActive();
-        return active ? active.presets === true : false;
-    }
-
-    // Legacy properties for backward compatibility - use active screen
-    readonly property bool overviewOpen: getActiveOverview()
-    readonly property bool presetsOpen: getActivePresets()
     readonly property bool launcherOpen: getActiveLauncher()
-    readonly property bool projectsOpen: getActiveProjects()
-    readonly property bool dashboardOpen: getActiveDashboard() || dashboardPopupScreen !== ""
+    readonly property bool dashboardOpen: dashboardPopupScreen !== ""
     readonly property bool systemMonitorOpen: systemMonitorPopupScreen !== ""
 
     // Lockscreen state
@@ -132,23 +105,6 @@ Singleton {
     // OSD state
     property bool osdVisible: false
     property string osdIndicator: "volume" // volume, mic, brightness
-
-    // Screenshot Tool state
-    property bool screenshotToolVisible: false
-    // property string screenshotToolMode: "normal" // DEPRECATED
-    property string screenshotCaptureMode: "region" // region, window, screen
-    
-    // Global selection state for synchronization
-    property int screenshotSelectionX: 0
-    property int screenshotSelectionY: 0
-    property int screenshotSelectionW: 0
-    property int screenshotSelectionH: 0
-
-    // Screen Record Tool state
-    property bool screenRecordToolVisible: false
-
-    // Mirror Tool state
-    property bool mirrorWindowVisible: false
 
     // Settings Window state
     property bool settingsWindowVisible: false

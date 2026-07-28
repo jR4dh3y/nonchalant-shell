@@ -15,23 +15,28 @@ Item {
 
     readonly property var screenVisibilities: Visibilities.getForScreen(screen.name)
     readonly property bool open: screenVisibilities ? screenVisibilities.launcher : false
-    readonly property Item hitbox: menuShown ? menuCard : null
-    readonly property string barPosition: Config.bar?.position ?? "top"
+    readonly property Item hitbox: menuShown ? cardReveal : null
     readonly property var barPanel: Visibilities.getBarPanelForScreen(screen.name)
     readonly property int contentPadding: Styling.radius(3)
     readonly property int edgeGap: Styling.radius(2)
+    readonly property bool bottomEdge: (Config.bar?.position ?? "top") === "bottom"
     readonly property real barClearance: {
-        if (!barPanel)
+        if (!barPanel || !barPanel.barEnabled)
             return Styling.radius(4);
-        const vertical = barPosition === "left" || barPosition === "right";
-        const size = vertical ? barPanel.barTargetWidth : barPanel.barTargetHeight;
-        return size + barPanel.barOuterMargin + edgeGap;
+        return barPanel.barTargetHeight + barPanel.barOuterMargin + edgeGap;
     }
 
-    // Keep the card mounted through the fade-out animation. Scaling this card
-    // would resample every label and input inside it.
+    // Keep the card mounted while its edge clip closes.
     property bool menuShown: false
-    property real menuOpacity: 0
+    property real revealProgress: 0
+
+    Behavior on revealProgress {
+        enabled: Config.animDuration > 0
+        NumberAnimation {
+            duration: Config.animDuration
+            easing.type: root.open ? Easing.OutCubic : Easing.InCubic
+        }
+    }
 
     onOpenChanged: {
         if (open) {
@@ -43,71 +48,73 @@ Item {
             Qt.callLater(() => {
                 if (!root.open)
                     return;
-                menuOpacity = 1;
+                revealProgress = 1;
                 if (launcherLoader.item)
                     launcherLoader.item.forceActiveFocus();
             });
         } else if (menuShown) {
-            menuOpacity = 0;
+            revealProgress = 0;
             closeTimer.restart();
         }
     }
 
     Timer {
         id: closeTimer
-        interval: Config.animDuration > 0 ? Math.max(Config.animDuration / 2, 80) + 40 : 40
+        interval: Config.animDuration > 0 ? Config.animDuration + 40 : 40
         onTriggered: {
             if (!root.open)
                 root.menuShown = false;
         }
     }
 
-    StyledRect {
-        id: menuCard
+    Item {
+        id: edgeRegion
 
-        variant: "popup"
-        enableShadow: false
-        radius: Styling.radius(8)
-        visible: root.menuShown
-        opacity: root.menuOpacity
-        width: launcherLoader.item ? launcherLoader.item.implicitWidth + root.contentPadding * 2 : 0
-        height: launcherLoader.item ? launcherLoader.item.implicitHeight + root.contentPadding * 2 : 0
-        x: {
-            if (root.barPosition === "left")
-                return root.barClearance;
-            if (root.barPosition === "right")
-                return root.width - width - root.barClearance;
-            return Math.round((root.width - width) / 2);
-        }
-        y: {
-            if (root.barPosition === "top")
-                return root.barClearance;
-            if (root.barPosition === "bottom")
-                return root.height - height - root.barClearance;
-            return Math.round((root.height - height) / 2);
-        }
+        x: 0
+        y: root.bottomEdge ? 0 : root.barClearance
+        width: root.width
+        height: Math.max(0, root.height - root.barClearance)
+        clip: true
 
-        Behavior on opacity {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration / 2
-                easing.type: Easing.OutQuad
-            }
-        }
+        Item {
+            id: cardReveal
 
-        Loader {
-            id: launcherLoader
-            anchors.fill: parent
-            anchors.margins: root.contentPadding
-            // Keep loaded so open/close does not hitch on first paint.
-            active: true
-            sourceComponent: Component {
-                LauncherView {}
-            }
+            visible: root.menuShown
+            width: launcherLoader.item ? launcherLoader.item.implicitWidth + root.contentPadding * 2 : 0
+            height: (launcherLoader.item
+                ? launcherLoader.item.implicitHeight + root.contentPadding * 2
+                : 0) * root.revealProgress
+            x: Math.round((edgeRegion.width - width) / 2)
+            y: root.bottomEdge ? edgeRegion.height - height : 0
+            clip: true
 
-            onLoaded: {
-                if (root.open)
-                    Qt.callLater(() => item.forceActiveFocus());
+            StyledRect {
+                id: menuCard
+
+                variant: "popup"
+                enableShadow: false
+                radius: Styling.radius(8)
+                width: cardReveal.width
+                height: launcherLoader.item
+                    ? launcherLoader.item.implicitHeight + root.contentPadding * 2
+                    : 0
+                y: root.bottomEdge ? cardReveal.height - height : 0
+
+                Loader {
+                    id: launcherLoader
+                    anchors.fill: parent
+                    anchors.margins: root.contentPadding
+                    // Keep loaded so open/close does not hitch on first paint.
+                    active: true
+                    sourceComponent: Component {
+                        LauncherView {}
+                    }
+
+                    onLoaded: {
+                        if (root.open)
+                            Qt.callLater(() => item.forceActiveFocus());
+                    }
+                }
             }
         }
     }
