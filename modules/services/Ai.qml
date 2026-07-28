@@ -13,6 +13,8 @@ import qs.modules.services
 Singleton {
     id: root
 
+    readonly property bool featureEnabled: Config.aiReady && (Config.ai.enabled ?? true)
+
     // ============================================
     // AGENTS
     // ============================================
@@ -140,6 +142,8 @@ Singleton {
     }
 
     function reconnectAgent() {
+        if (!featureEnabled)
+            return;
         cancelGeneration(false);
         sessionReady = false;
         currentSessionId = "";
@@ -217,7 +221,7 @@ Singleton {
     }
 
     function startAgentProcess() {
-        if (!currentModel)
+        if (!featureEnabled || !currentModel)
             return;
         resetConnectionState();
         processAgentId = currentAgentId;
@@ -229,6 +233,10 @@ Singleton {
     }
 
     function restartAgentProcess() {
+        if (!featureEnabled) {
+            shutdown();
+            return;
+        }
         if (agentProcess.running) {
             restartPending = true;
             expectedProcessStop = true;
@@ -240,6 +248,8 @@ Singleton {
     }
 
     function ensureConnection(action) {
+        if (!featureEnabled)
+            return;
         pendingSessionAction = action;
         if (agentProcess.running && processAgentId === currentAgentId && authenticated) {
             performSessionAction();
@@ -1246,10 +1256,12 @@ Singleton {
         activeAssistantMessageId = "";
         pendingPermissions = {};
         chatModelChanged();
-        ensureConnection({
-            kind: "new",
-            cwd: currentChatCwd
-        });
+        if (featureEnabled) {
+            ensureConnection({
+                kind: "new",
+                cwd: currentChatCwd
+            });
+        }
     }
 
     function regenerateResponse(index) {
@@ -1432,8 +1444,35 @@ for path in files:
 
     property bool bootstrapped: false
 
+    function shutdown() {
+        refreshTimer.stop();
+        turnWatchdog.stop();
+        restartPending = false;
+        expectedProcessStop = true;
+        pendingSessionAction = null;
+        queuedPrompt = null;
+        pendingPermissions = {};
+        activePromptRequestId = -1;
+        isLoading = false;
+        agentTurnActive = false;
+        toolRunning = false;
+        statusText = "";
+        if (agentProcess.running)
+            agentProcess.running = false;
+        if (ensureChatDirProcess.running)
+            ensureChatDirProcess.running = false;
+        if (deleteChatProcess.running)
+            deleteChatProcess.running = false;
+        if (listHistoryProcess.running)
+            listHistoryProcess.running = false;
+        if (loadChatProcess.running)
+            loadChatProcess.running = false;
+        resetConnectionState();
+        bootstrapped = false;
+    }
+
     function bootstrap() {
-        if (bootstrapped)
+        if (!featureEnabled || bootstrapped)
             return;
         bootstrapped = true;
         refreshAgents();
@@ -1453,7 +1492,7 @@ for path in files:
     Connections {
         target: StateService
         function onStateLoaded() {
-            if (!root.bootstrapped)
+            if (root.featureEnabled && !root.bootstrapped)
                 root.bootstrap();
         }
     }
@@ -1461,7 +1500,7 @@ for path in files:
     Connections {
         target: Config
         function onAiReadyChanged() {
-            if (Config.aiReady) {
+            if (root.featureEnabled) {
                 root.refreshAgents();
                 if (!root.bootstrapped)
                     root.bootstrap();
@@ -1469,9 +1508,19 @@ for path in files:
         }
     }
 
+    Connections {
+        target: Config.ai
+        function onEnabledChanged() {
+            if (root.featureEnabled)
+                root.bootstrap();
+            else
+                root.shutdown();
+        }
+    }
+
     Component.onCompleted: {
         Qt.callLater(() => {
-            if (!root.bootstrapped)
+            if (root.featureEnabled && !root.bootstrapped)
                 root.bootstrap();
         });
     }

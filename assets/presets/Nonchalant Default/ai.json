@@ -1,4 +1,6 @@
 {
+    "enabled": true,
+    "sidebarEnabled": true,
     "defaultAgent": "opencode",
     "workingDirectory": "",
     "agents": [

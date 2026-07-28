@@ -16,7 +16,9 @@ Item {
 
     required property var targetScreen
 
-    readonly property bool active: GlobalStates.assistantVisible && targetScreen.name === GlobalStates.assistantScreenName
+    readonly property bool active: GlobalStates.assistantAvailable
+        && GlobalStates.assistantVisible
+        && targetScreen.name === GlobalStates.assistantScreenName
     property alias hitbox: sidebarContainer
     property alias hasActiveFocus: inputField.activeFocus
 

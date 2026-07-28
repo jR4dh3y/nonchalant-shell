@@ -14,11 +14,10 @@ Item {
     required property ShellScreen screen
 
     readonly property bool reveal: !NiriService.overviewOpen
+    readonly property bool bottomPosition: (Config.bar?.position ?? "top") === "bottom"
 
     readonly property real outerRadius: Styling.radius(0)
-    readonly property real innerRadius: Config.bar?.pillStyle === "squished"
-        ? Styling.radius(0) / 2
-        : Styling.radius(0)
+    readonly property real innerRadius: outerRadius
     readonly property int barPadding: barBg.padding
     readonly property int barTargetHeight: horizontalContent.implicitHeight + 2 * barPadding
     readonly property int totalBarHeight: barTargetHeight + barBg.outerMargin
@@ -29,22 +28,19 @@ Item {
     readonly property bool shadowsEnabled: false
 
     property alias barHitbox: hitbox
+    readonly property alias timerInputActive: clock.timeToolsOpen
 
     Item {
         id: hitbox
         width: root.width
         height: root.reveal ? root.totalBarHeight : 0
+        y: root.bottomPosition ? root.height - height : 0
 
         Item {
             id: bar
-            anchors {
-                top: parent.top
-                left: parent.left
-                right: parent.right
-                topMargin: barBg.outerMargin
-                leftMargin: barBg.outerMargin
-                rightMargin: barBg.outerMargin
-            }
+            x: barBg.outerMargin
+            y: root.bottomPosition ? 0 : barBg.outerMargin
+            width: parent.width - barBg.outerMargin * 2
             height: root.barTargetHeight
             opacity: root.reveal ? 1 : 0
 
@@ -85,6 +81,7 @@ Item {
                     }
 
                     Clock {
+                        id: clock
                         anchors.centerIn: parent
                         width: implicitWidth
                         height: implicitHeight

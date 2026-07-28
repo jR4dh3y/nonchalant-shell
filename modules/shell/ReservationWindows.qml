@@ -11,6 +11,7 @@ Item {
     property bool barEnabled: true
     property int barSize: 0
     property int barOuterMargin: 0
+    property string barPosition: "top"
 
     property bool sidebarEnabled: false
     property bool sidebarPinned: false
@@ -40,7 +41,31 @@ Item {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         WlrLayershell.namespace: "nonchalant:reservation:top"
 
-        exclusiveZone: Config.barReady && root.barEnabled
+        exclusiveZone: Config.barReady && root.barEnabled && root.barPosition === "top"
+            ? root.barSize + root.barOuterMargin
+            : 0
+        exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore
+
+        mask: Region {
+            item: noInputRegion
+        }
+    }
+
+    PanelWindow {
+        screen: root.screen
+        visible: true
+        implicitHeight: Math.max(1, exclusiveZone)
+        color: "transparent"
+        anchors {
+            left: true
+            right: true
+            bottom: true
+        }
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        WlrLayershell.namespace: "nonchalant:reservation:bottom"
+
+        exclusiveZone: Config.barReady && root.barEnabled && root.barPosition === "bottom"
             ? root.barSize + root.barOuterMargin
             : 0
         exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore

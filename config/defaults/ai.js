@@ -1,4 +1,6 @@
 var data = {
+    "enabled": true,
+    "sidebarEnabled": true,
     "defaultAgent": "opencode",
     "workingDirectory": "",
     "agents": [

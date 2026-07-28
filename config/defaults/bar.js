@@ -1,7 +1,7 @@
 .pragma library
 
 var data = {
-    "pillStyle": "default",
+    "position": "top",
     "screenList": [],
     "enableFirefoxPlayer": false,
     "use12hFormat": false

@@ -678,21 +678,23 @@ Item {
                         }
 
                         SelectorRow {
-                            label: "Pill Style"
+                            label: "Position"
                             options: [
                                 {
-                                    label: "Default",
-                                    value: "default"
+                                    label: "Top",
+                                    value: "top",
+                                    icon: Icons.arrowUp
                                 },
                                 {
-                                    label: "Squished",
-                                    value: "squished"
+                                    label: "Bottom",
+                                    value: "bottom",
+                                    icon: Icons.arrowDown
                                 }
                             ]
-                            value: Config.bar.pillStyle ?? "default"
+                            value: Config.bar.position ?? "top"
                             onValueSelected: newValue => {
-                                if (newValue !== Config.bar.pillStyle) {
-                                    Config.bar.pillStyle = newValue;
+                                if (newValue !== Config.bar.position) {
+                                    Config.bar.position = newValue;
                                 }
                             }
                         }
@@ -799,9 +801,9 @@ Item {
                         }
 
                         ActionButton {
-                            text: "Donate ❤️"
+                            text: "Sponsor ❤️"
                             icon: Icons.heart
-                            onClicked: Quickshell.execDetached(["xdg-open", "https://axeni.de/donate"])
+                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/sponsors/jR4dh3y"])
                         }
 
                     }
@@ -825,8 +827,20 @@ Item {
                             Layout.bottomMargin: -4
                         }
 
+                        ToggleRow {
+                            label: "Enable Sidebar"
+                            checked: Config.ai.sidebarEnabled ?? true
+                            onToggled: value => {
+                                if (value !== Config.ai.sidebarEnabled) {
+                                    Config.ai.sidebarEnabled = value;
+                                }
+                            }
+                        }
+
                         SelectorRow {
                             label: "Position"
+                            enabled: Config.ai.sidebarEnabled ?? true
+                            opacity: enabled ? 1 : 0.5
                             options: [
                                 {
                                     label: "Left",
@@ -849,6 +863,8 @@ Item {
 
                         NumberInputRow {
                             label: "Width"
+                            enabled: Config.ai.sidebarEnabled ?? true
+                            opacity: enabled ? 1 : 0.5
                             value: Config.ai.sidebarWidth ?? 400
                             minValue: 300
                             maxValue: 800
@@ -862,6 +878,8 @@ Item {
 
                         ToggleRow {
                             label: "Pinned on Startup"
+                            enabled: Config.ai.sidebarEnabled ?? true
+                            opacity: enabled ? 1 : 0.5
                             checked: Config.ai.sidebarPinnedOnStartup ?? false
                             onToggled: value => {
                                 if (value !== Config.ai.sidebarPinnedOnStartup) {

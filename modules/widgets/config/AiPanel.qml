@@ -46,9 +46,61 @@ Item {
 
             StyledRect {
                 Layout.fillWidth: true
+                implicitHeight: 64
+                variant: "surface"
+                radius: Styling.radius(8)
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Text {
+                            text: "Enable AI"
+                            font.family: Config.theme.font
+                            font.pixelSize: 15
+                            font.weight: Font.Bold
+                            color: Colors.overSurface
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Allow ACP agents to start and provide assistant features."
+                            font.family: Config.theme.font
+                            font.pixelSize: 12
+                            color: Colors.outline
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    Switch {
+                        checked: Config.ai.enabled ?? true
+                        onToggled: Config.ai.enabled = checked
+                    }
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                visible: !(Config.ai.enabled ?? true)
+                text: "AI is disabled. No ACP agent processes will be started."
+                font.family: Config.theme.font
+                font.pixelSize: 13
+                color: Colors.outline
+                wrapMode: Text.Wrap
+            }
+
+            StyledRect {
+                Layout.fillWidth: true
                 implicitHeight: workingDirectoryColumn.implicitHeight + 32
                 variant: "surface"
                 radius: Styling.radius(8)
+                enabled: Config.ai.enabled ?? true
+                opacity: enabled ? 1 : 0.5
 
                 ColumnLayout {
                     id: workingDirectoryColumn
@@ -98,6 +150,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: "ACP agents"
+                visible: Config.ai.enabled ?? true
                 font.family: Config.theme.font
                 font.pixelSize: 18
                 font.weight: Font.Bold
@@ -105,7 +158,7 @@ Item {
             }
 
             Repeater {
-                model: Ai.models
+                model: (Config.ai.enabled ?? true) ? Ai.models : []
 
                 delegate: StyledRect {
                     id: agentCard
@@ -244,7 +297,7 @@ Item {
 
             StyledRect {
                 Layout.fillWidth: true
-                visible: Ai.currentSessionModelId.length > 0
+                visible: (Config.ai.enabled ?? true) && Ai.currentSessionModelId.length > 0
                 implicitHeight: activeSessionColumn.implicitHeight + 32
                 variant: "surface"
                 radius: Styling.radius(8)

@@ -1,6 +1,6 @@
 {
     "enableFirefoxPlayer": false,
-    "pillStyle": "default",
+    "position": "top",
     "screenList": [
     ],
     "use12hFormat": false

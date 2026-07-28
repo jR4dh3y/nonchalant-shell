@@ -29,10 +29,15 @@ PanelWindow {
     WlrLayershell.keyboardFocus: {
         if (runMenu.open)
             return WlrKeyboardFocus.Exclusive;
+        // Bar popups are child surfaces of this panel. The parent layer must
+        // request keyboard focus or input continues to the client underneath.
+        if (barContent.timerInputActive)
+            return WlrKeyboardFocus.Exclusive;
         // Only take the keyboard while the assistant input is actively focused.
         // Keeping Exclusive + full-screen grab for the whole open sidebar locked
         // the desktop when a tool call hung (no way to click other apps).
-        if (assistantSidebar.active && assistantSidebar.wantsFocus && assistantSidebar.hasActiveFocus)
+        if (assistantSidebar && assistantSidebar.active
+                && assistantSidebar.wantsFocus && assistantSidebar.hasActiveFocus)
             return WlrKeyboardFocus.Exclusive;
         return WlrKeyboardFocus.None;
     }
@@ -52,6 +57,8 @@ PanelWindow {
 
     readonly property alias barTargetHeight: barContent.barTargetHeight
     readonly property alias barOuterMargin: barContent.baseOuterMargin
+    readonly property string barPosition: Config.bar?.position ?? "top"
+    readonly property var assistantSidebar: assistantSidebarLoader.item
 
     Component.onCompleted: {
         Visibilities.registerBarPanel(screen.name, unifiedPanel);
@@ -84,7 +91,9 @@ PanelWindow {
                 item: toastStack.hitbox
             },
             Region {
-                item: (assistantSidebar.active || assistantSidebar.hitbox.visible) ? assistantSidebar.hitbox : null
+                item: assistantSidebar
+                    && (assistantSidebar.active || assistantSidebar.hitbox.visible)
+                    ? assistantSidebar.hitbox : null
             }
         ]
     }
@@ -108,7 +117,7 @@ PanelWindow {
 
         onClicked: {
             FocusGrabManager.clearTopGrab();
-            if (assistantSidebar.active && assistantSidebar.wantsFocus) {
+            if (assistantSidebar && assistantSidebar.active && assistantSidebar.wantsFocus) {
                 assistantSidebar.wantsFocus = false;
                 // Defocus the text field so keyboard returns to the session.
                 if (assistantSidebar.hasActiveFocus)
@@ -150,14 +159,26 @@ PanelWindow {
             z: 2
         }
 
-        AssistantSidebar {
-            id: assistantSidebar
-            targetScreen: unifiedPanel.targetScreen
+        Loader {
+            id: assistantSidebarLoader
+            anchors.fill: parent
+            active: GlobalStates.assistantAvailable
             z: 1
 
-            anchors.topMargin: unifiedPanel.barEnabled
-                ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
-                : 0
+            sourceComponent: Component {
+                AssistantSidebar {
+                    targetScreen: unifiedPanel.targetScreen
+
+                    anchors.topMargin: unifiedPanel.barEnabled
+                        && unifiedPanel.barPosition === "top"
+                        ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
+                        : 0
+                    anchors.bottomMargin: unifiedPanel.barEnabled
+                        && unifiedPanel.barPosition === "bottom"
+                        ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
+                        : 0
+                }
+            }
         }
     }
 }

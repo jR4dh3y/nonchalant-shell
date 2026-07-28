@@ -484,7 +484,7 @@ Singleton {
         }
 
         adapter: JsonAdapter {
-            property string pillStyle: "default"
+            property string position: "top"
             property list<string> screenList: []
             property bool enableFirefoxPlayer: false
             property bool use12hFormat: false
@@ -672,6 +672,8 @@ Singleton {
         }
 
         adapter: JsonAdapter {
+            property bool enabled: true
+            property bool sidebarEnabled: true
             property string defaultAgent: "opencode"
             property string workingDirectory: ""
             property list<var> agents: [

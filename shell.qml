@@ -59,8 +59,10 @@ ShellRoot {
                 }
                 barSize: unifiedPanel.barTargetHeight
                 barOuterMargin: unifiedPanel.barOuterMargin
+                barPosition: Config.bar.position ?? "top"
 
-                sidebarEnabled: GlobalStates.assistantVisible
+                sidebarEnabled: GlobalStates.assistantAvailable
+                    && GlobalStates.assistantVisible
                     && screenShellContainer.modelData.name === GlobalStates.assistantScreenName
                 sidebarPinned: GlobalStates.assistantPinned
                 sidebarWidth: GlobalStates.assistantWidth
@@ -110,9 +112,10 @@ ShellRoot {
                 _ = Brightness.monitors;
                 // Own org.freedesktop.Notifications and load history early.
                 _ = Notifications.appNameList;
-                // ACP assistant (OpenCode, Grok Build, and Codex agents).
                 _ = StateService.initialized;
-                _ = Ai.models;
+                // ACP agents remain entirely idle when the AI feature is off.
+                if (Config.ai.enabled ?? true)
+                    _ = Ai.models;
             });
         }
     }

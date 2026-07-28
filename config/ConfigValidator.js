@@ -46,5 +46,12 @@ function validate(current, defaults, keyName) {
         }
     }
 
+    if (keyName === "position") {
+        var validPositions = ["top", "bottom"];
+        if (validPositions.indexOf(current) === -1) {
+            return defaults;
+        }
+    }
+
     return current;
 }

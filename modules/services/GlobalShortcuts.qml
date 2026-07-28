@@ -105,6 +105,10 @@ QtObject {
     }
 
     function toggleAssistant() {
+        if (!GlobalStates.assistantAvailable) {
+            GlobalStates.hideAssistant();
+            return;
+        }
         GlobalStates.toggleAssistant();
     }
 }

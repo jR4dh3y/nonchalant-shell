@@ -114,6 +114,9 @@ Singleton {
 
     // ASSISTANT SIDEBAR STATE
     // ═══════════════════════════════════════════════════════════════
+    readonly property bool assistantAvailable: Config.aiReady
+        && (Config.ai.enabled ?? true)
+        && (Config.ai.sidebarEnabled ?? true)
     property bool assistantVisible: false
     property bool assistantPinned: Config.ai.sidebarPinnedOnStartup ?? false
     property int assistantWidth: Config.ai.sidebarWidth ?? 400
@@ -123,6 +126,10 @@ Singleton {
     signal assistantFocusRequested(bool wasAlreadyOpen)
 
     function toggleAssistant() {
+        if (!assistantAvailable) {
+            assistantVisible = false;
+            return;
+        }
         if (assistantVisible) {
             assistantFocusRequested(true);
         } else {
@@ -138,6 +145,11 @@ Singleton {
 
     function hideAssistant() {
         assistantVisible = false;
+    }
+
+    onAssistantAvailableChanged: {
+        if (!assistantAvailable)
+            hideAssistant();
     }
 
     property int settingsCurrentTab: 0
