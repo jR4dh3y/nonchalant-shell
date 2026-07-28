@@ -32,7 +32,6 @@ ToggleButton {
     BarPopup {
         id: monitorPopup
         anchorItem: root
-        bar: root.bar
         variant: "transparent"
         popupPadding: 0
 

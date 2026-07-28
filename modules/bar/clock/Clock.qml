@@ -14,12 +14,9 @@ Item {
 
     property string currentTime: ""
     property string currentDayAbbrev: ""
-    property string currentHours: ""
-    property string currentMinutes: ""
     property string currentFullDate: ""
 
     required property var bar
-    property bool vertical: bar.orientation === "vertical"
     property bool isHovered: false
     property bool layerEnabled: false
     
@@ -47,10 +44,10 @@ Item {
 
     readonly property bool weatherAvailable: WeatherService.dataAvailable
 
-    implicitWidth: vertical ? 36 : buttonBg.implicitWidth
-    implicitHeight: vertical ? buttonBg.implicitHeight : 36
-    Layout.preferredWidth: vertical ? 36 : buttonBg.implicitWidth
-    Layout.preferredHeight: vertical ? buttonBg.implicitHeight : 36
+    implicitWidth: buttonBg.implicitWidth
+    implicitHeight: 36
+    Layout.preferredWidth: buttonBg.implicitWidth
+    Layout.preferredHeight: 36
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
@@ -63,13 +60,13 @@ Item {
         anchors.fill: parent
         enableShadow: root.layerEnabled
 
-        topLeftRadius: root.vertical ? root.startRadius : root.startRadius
-        topRightRadius: root.vertical ? root.startRadius : root.endRadius
-        bottomLeftRadius: root.vertical ? root.endRadius : root.startRadius
-        bottomRightRadius: root.vertical ? root.endRadius : root.endRadius
+        topLeftRadius: root.startRadius
+        topRightRadius: root.endRadius
+        bottomLeftRadius: root.startRadius
+        bottomRightRadius: root.endRadius
 
-        implicitWidth: vertical ? 36 : rowLayout.implicitWidth + 24
-        implicitHeight: vertical ? columnLayout.implicitHeight + 24 : 36
+        implicitWidth: rowLayout.implicitWidth + 24
+        implicitHeight: 36
 
         Rectangle {
             anchors.fill: parent
@@ -87,7 +84,6 @@ Item {
 
         RowLayout {
             id: rowLayout
-            visible: !root.vertical
             anchors.centerIn: parent
             spacing: 8
 
@@ -177,75 +173,12 @@ Item {
             }
         }
 
-        ColumnLayout {
-            id: columnLayout
-            visible: root.vertical
-            anchors.centerIn: parent
-            spacing: 4
-            Layout.alignment: Qt.AlignHCenter
-
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                id: dayDisplayV
-                text: root.weatherAvailable ? WeatherService.weatherSymbol : root.currentDayAbbrev
-                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: root.weatherAvailable ? 16 : Config.theme.fontSize
-                font.family: Config.theme.font
-                font.bold: !root.weatherAvailable
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.NoWrap
-                Layout.alignment: Qt.AlignHCenter
-            }
-
-            Separator {
-                id: separatorV
-                vert: false
-                Layout.alignment: Qt.AlignHCenter
-            }
-
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                id: hoursDisplayV
-                text: root.currentHours
-                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: Config.theme.fontSize
-                font.family: Config.theme.font
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.NoWrap
-                Layout.alignment: Qt.AlignHCenter
-            }
-
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                id: minutesDisplayV
-                text: root.currentMinutes
-                color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
-                font.pixelSize: Config.theme.fontSize
-                font.family: Config.theme.font
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.NoWrap
-                Layout.alignment: Qt.AlignHCenter
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            enabled: root.vertical
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.toggleCenterMenu()
-        }
     }
 
     // Clock & Weather popup
     BarPopup {
         id: clockPopup
         anchorItem: buttonBg
-        bar: root.bar
         variant: "transparent"
         popupPadding: 0
 
@@ -570,7 +503,6 @@ Item {
     BarPopup {
         id: dashboardPopup
         anchorItem: buttonBg
-        bar: root.bar
         variant: "transparent"
         popupPadding: 0
 
@@ -640,10 +572,7 @@ Item {
             var now = new Date();
             var format = Config.bar.use12hFormat ? "h:mm ap" : "hh:mm";
             var formatted = Qt.formatDateTime(now, format);
-            var parts = formatted.split(":");
             root.currentTime = formatted;
-            root.currentHours = parts[0];
-            root.currentMinutes = parts[1];
         }
     }
 
@@ -664,10 +593,7 @@ Item {
         var now = new Date();
         var format = Config.bar.use12hFormat ? "h:mm ap" : "hh:mm";
         var formatted = Qt.formatDateTime(now, format);
-        var parts = formatted.split(":");
         root.currentTime = formatted;
-        root.currentHours = parts[0];
-        root.currentMinutes = parts[1];
         updateDay();
     }
 }

@@ -25,7 +25,6 @@ Item {
         }
     }
 
-    property int leftPanelWidth
     property string screenName: ""
 
     property var state: QtObject {
@@ -37,9 +36,6 @@ Item {
 
     implicitWidth: nonAnimWidth
     implicitHeight: 430
-
-    // Track which tabs have been loaded (for lazy loading)
-    property var loadedTabs: ({0: true}) // Tab 0 (widgets) loaded by default
 
     // LRU Tab Management
     property var lruAccessOrder: [0]  // Tracks access order: [0] means tab 0 is most recent
@@ -99,49 +95,9 @@ Item {
         GlobalStates.dashboardCurrentTab = root.state.currentTab;
     }
 
-    // Focus search input when dashboard opens to different tabs
     onIsVisibleChanged: {
-        if (isVisible) {
-            // Check if current item supports focus, otherwise default logic for launcher
-            if (stack.currentItem && stack.currentItem.focusSearchInput) {
-                focusUnifiedLauncherTimer.restart();
-            } else if (GlobalStates.dashboardCurrentTab === 0) {
-                Notifications.hideAllPopups();
-                focusUnifiedLauncherTimer.restart();
-            }
-        } else {
-            // Reset launcher state when dashboard closes
-            GlobalStates.clearLauncherState();
-        }
-    }
-
-    // Timer para focus en unified launcher tab
-    Timer {
-        id: focusUnifiedLauncherTimer
-        interval: 50
-        repeat: false
-        onTriggered: {
-            if (stack.currentItem && stack.currentItem.focusSearchInput) {
-                stack.currentItem.focusSearchInput();
-            }
-        }
-    }
-
-    // Escuchar cambios en dashboardCurrentTab para navegar automáticamente
-    Connections {
-        target: GlobalStates
-        function onDashboardCurrentTabChanged() {
-            if (GlobalStates.dashboardCurrentTab !== root.state.currentTab) {
-                stack.navigateToTab(GlobalStates.dashboardCurrentTab);
-            }
-        }
-
-        // Focus cuando cambia el texto del launcher (por shortcuts con prefix)
-        function onLauncherSearchTextChanged() {
-            if (isVisible && GlobalStates.dashboardCurrentTab === 0) {
-                focusUnifiedLauncherTimer.restart();
-            }
-        }
+        if (isVisible && GlobalStates.dashboardCurrentTab === 0)
+            Notifications.hideAllPopups();
     }
 
     Item {
@@ -162,8 +118,6 @@ Item {
                 id: stack
                 anchors.fill: parent
 
-                property int currentIndex: GlobalStates.dashboardCurrentTab
-
                 // Update internal index when global changes
                 Connections {
                     target: GlobalStates
@@ -175,21 +129,14 @@ Item {
                 // Function to navigate to a specific tab
                 function navigateToTab(index) {
                     if (index >= 0 && index < root.tabCount && index !== root.state.currentTab) {
-                        // Reset launcher state when leaving unified launcher tab (tab 0)
-                        if (root.state.currentTab === 0 && index !== 0) {
-                            GlobalStates.clearLauncherState();
-                        }
-
                         root.state.currentTab = index;
                         GlobalStates.dashboardCurrentTab = index;
                         
                         // Update LRU when tab is accessed
                         root.updateLRUAccess(index);
 
-                        if (index === 0) {
+                        if (index === 0)
                             Notifications.hideAllPopups();
-                            focusUnifiedLauncherTimer.restart();
-                        }
                     }
                 }
 
@@ -217,25 +164,12 @@ Item {
                         NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
                     }
 
-                    // Forward focus
-                    onLoaded: {
-                        if (visible && item && item.focusSearchInput) {
-                            focusUnifiedLauncherTimer.restart();
-                        }
-                    }
-                    
-                    // Ensure focus when becoming visible
-                    onVisibleChanged: {
-                        if (visible && item && item.focusSearchInput) {
-                            focusUnifiedLauncherTimer.restart();
-                        }
-                    }
                 }
 
-                // Tab 0: Unified Launcher
+                // Tab 0: widgets
                 TabLoader {
                     property int index: 0
-                    sourceComponent: unifiedLauncherComponent
+                    sourceComponent: widgetsComponent
                     z: visible ? 1 : 0
                 }
 
@@ -244,15 +178,6 @@ Item {
                     property int index: 1
                     sourceComponent: wallpapersComponent
                     z: visible ? 1 : 0
-                }
-
-                // Helper to access current item for focus
-                property var currentItem: {
-                    switch(root.state.currentTab) {
-                        case 0: return children[0].item;
-                        case 1: return children[1].item;
-                        default: return null;
-                    }
                 }
 
                 // Gesture handling para swipe vertical
@@ -361,10 +286,8 @@ Item {
 
     // Component definitions for better performance (defined once, reused)
     Component {
-        id: unifiedLauncherComponent
-        WidgetsTab {
-            leftPanelWidth: root.leftPanelWidth
-        }
+        id: widgetsComponent
+        WidgetsTab {}
     }
 
     Component {

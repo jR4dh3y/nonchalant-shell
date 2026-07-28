@@ -12,12 +12,9 @@ Item {
 
     signal closeRequested()
 
-    readonly property int leftPanelWidth: 270
-
     Dashboard {
         id: dashboardItem
         anchors.fill: parent
-        leftPanelWidth: root.leftPanelWidth
         screenName: root.screenName
         forceVisible: root.popupMode
 

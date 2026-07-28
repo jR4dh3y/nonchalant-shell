@@ -5,7 +5,7 @@ Reactive, file-backed configuration system built on `Quickshell.Io`. Source of t
 
 ## STRUCTURE
 - **Config.qml**: Core singleton. `FileView` monitors disk; `JsonAdapter` creates bidirectional QML bindings. Each live module domain has its own `FileView`/`JsonAdapter` pair.
-- **defaults/*.js**: JavaScript modules exporting a `data` object — the blueprint for initial file generation and validation baseline. Live domains are `theme`, `bar`, `workspaces`, `performance`, `weather`, `lockscreen`, `system`, and `ai`.
+- **defaults/*.js**: JavaScript modules exporting a `data` object — the blueprint for initial file generation and validation baseline. Live domains are `theme`, `bar`, `performance`, `weather`, `lockscreen`, `system`, and `ai`.
 - **ConfigValidator.js**: Recursive `validate()` function for deep-merging user settings with defaults. Handles type coercion and constraint enforcement (e.g., `gradientType` must be `"linear"`, `"radial"`, or `"halftone"`).
 - **pam/**: PAM configuration for lockscreen authentication.
 

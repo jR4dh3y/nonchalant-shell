@@ -8,11 +8,7 @@ Singleton {
     id: root
 
     property var screens: ({})
-    property var panels: ({})
-    property var bars: ({})
     property var barPanels: ({})
-    property var docks: ({})
-    property var dockPanels: ({})
     property var powerMenuButtons: ({})
     property var systemMonitorButtons: ({})
     property string currentActiveModule: ""
@@ -93,26 +89,6 @@ Singleton {
         return newMap;
     }
 
-    function registerPanel(screenName, panel) {
-        panels = _updateMap(panels, screenName, panel);
-    }
-
-    function unregisterPanel(screenName) {
-        panels = _updateMap(panels, screenName, null);
-    }
-
-    function registerBar(screenName, barContainer) {
-        bars = _updateMap(bars, screenName, barContainer);
-    }
-
-    function unregisterBar(screenName) {
-        bars = _updateMap(bars, screenName, null);
-    }
-
-    function getBarForScreen(screenName) {
-        return bars[screenName] || null;
-    }
-
     function registerBarPanel(screenName, barPanel) {
         barPanels = _updateMap(barPanels, screenName, barPanel);
     }
@@ -123,30 +99,6 @@ Singleton {
 
     function getBarPanelForScreen(screenName) {
         return barPanels[screenName] || null;
-    }
-
-    function registerDock(screenName, dockContainer) {
-        docks = _updateMap(docks, screenName, dockContainer);
-    }
-
-    function unregisterDock(screenName) {
-        docks = _updateMap(docks, screenName, null);
-    }
-
-    function getDockForScreen(screenName) {
-        return docks[screenName] || null;
-    }
-
-    function registerDockPanel(screenName, dockPanel) {
-        dockPanels = _updateMap(dockPanels, screenName, dockPanel);
-    }
-
-    function unregisterDockPanel(screenName) {
-        dockPanels = _updateMap(dockPanels, screenName, null);
-    }
-
-    function getDockPanelForScreen(screenName) {
-        return dockPanels[screenName] || null;
     }
 
     function registerPowerMenuButton(screenName, button) {

@@ -2,7 +2,6 @@
 { pkgs }:
 
 with pkgs; [
-  gpu-screen-recorder
   mpvpaper
 
   ffmpeg

@@ -16,7 +16,7 @@ Item {
 
     Shortcut {
         sequence: "Ctrl+L"
-        enabled: GlobalStates.dashboardOpen && GlobalStates.dashboardCurrentTab === 0 && GlobalStates.widgetsTabCurrentIndex === 0
+        enabled: GlobalStates.dashboardOpen && GlobalStates.dashboardCurrentTab === 0
         onActivated: discardAllWithAnimation()
     }
 

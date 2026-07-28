@@ -16,16 +16,13 @@ Item {
     readonly property var screenVisibilities: Visibilities.getForScreen(screen.name)
     readonly property bool open: screenVisibilities ? screenVisibilities.launcher : false
     readonly property Item hitbox: menuShown ? menuCard : null
-    readonly property string barPosition: Config.bar?.position ?? "top"
     readonly property var barPanel: Visibilities.getBarPanelForScreen(screen.name)
     readonly property int contentPadding: Styling.radius(3)
     readonly property int edgeGap: Styling.radius(2)
     readonly property real barClearance: {
-        if (!barPanel)
+        if (!barPanel || !barPanel.barEnabled)
             return Styling.radius(4);
-        const vertical = barPosition === "left" || barPosition === "right";
-        const size = vertical ? barPanel.barTargetWidth : barPanel.barTargetHeight;
-        return size + barPanel.barOuterMargin + edgeGap;
+        return barPanel.barTargetHeight + barPanel.barOuterMargin + edgeGap;
     }
 
     // Keep the card mounted through the fade-out animation. Scaling this card
@@ -72,20 +69,8 @@ Item {
         opacity: root.menuOpacity
         width: launcherLoader.item ? launcherLoader.item.implicitWidth + root.contentPadding * 2 : 0
         height: launcherLoader.item ? launcherLoader.item.implicitHeight + root.contentPadding * 2 : 0
-        x: {
-            if (root.barPosition === "left")
-                return root.barClearance;
-            if (root.barPosition === "right")
-                return root.width - width - root.barClearance;
-            return Math.round((root.width - width) / 2);
-        }
-        y: {
-            if (root.barPosition === "top")
-                return root.barClearance;
-            if (root.barPosition === "bottom")
-                return root.height - height - root.barClearance;
-            return Math.round((root.height - height) / 2);
-        }
+        x: Math.round((root.width - width) / 2)
+        y: root.barClearance
 
         Behavior on opacity {
             enabled: Config.animDuration > 0

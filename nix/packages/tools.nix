@@ -6,7 +6,6 @@ with pkgs; [
   ddcutil
   fontconfig
   glib
-  imagemagick
   jq
 
   libnotify
@@ -19,7 +18,6 @@ with pkgs; [
   wl-clipboard
   wlsunset
   wtype
-  zbar
   zenity
   inetutils
   adw-gtk3

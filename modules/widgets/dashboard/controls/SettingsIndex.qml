@@ -12,7 +12,7 @@ QtObject {
         { label: "Audio Effects", keywords: "equalizer bass treble easyeffects", section: 4, subSection: "", subLabel: "", icon: Icons.waveform, isIcon: true },
 
         { label: "Theme", keywords: "appearance look style customize", section: 5, subSection: "", subLabel: "Theme", icon: Icons.paintBrush, isIcon: true },
-        { label: "General Appearance", keywords: "wallpaper icons corners animation font roundness", section: 5, subSection: "general", subLabel: "Theme > General", icon: Icons.paintBrush, isIcon: true },
+        { label: "General Appearance", keywords: "wallpaper icons animation font roundness", section: 5, subSection: "general", subLabel: "Theme > General", icon: Icons.paintBrush, isIcon: true },
         { label: "Shadows", keywords: "opacity blur offset color", section: 5, subSection: "shadow", subLabel: "Theme > Shadow", icon: Icons.drop, isIcon: true },
         { label: "Colors", keywords: "scheme palette variant gradient border", section: 5, subSection: "colors", subLabel: "Theme > Colors", icon: Icons.palette, isIcon: true },
 
@@ -21,11 +21,10 @@ QtObject {
         { label: "Performance", keywords: "animations preview effects dashboard", section: 6, subSection: "performance", subLabel: "System > Performance", icon: Icons.lightning, isIcon: true },
         { label: "System Resources", keywords: "cpu ram memory disk usage monitor", section: 6, subSection: "system", subLabel: "System > Resources", icon: Icons.circuitry, isIcon: true },
 
-        { label: "Shell", keywords: "bar sidebar workspaces lockscreen settings", section: 7, subSection: "", subLabel: "Shell", icon: Icons.gear, isIcon: true },
-        { label: "Bar", keywords: "panel taskbar position launcher icon autohide screen", section: 7, subSection: "bar", subLabel: "Shell > Bar", icon: Icons.layout, isIcon: true },
-        { label: "Workspaces", keywords: "virtual desktop number icons dynamic", section: 7, subSection: "workspaces", subLabel: "Shell > Workspaces", icon: Icons.squaresFour, isIcon: true },
+        { label: "Shell", keywords: "bar sidebar lockscreen settings", section: 7, subSection: "", subLabel: "Shell", icon: Icons.gear, isIcon: true },
+        { label: "Bar", keywords: "panel taskbar clock player screen", section: 7, subSection: "bar", subLabel: "Shell > Bar", icon: Icons.layout, isIcon: true },
         { label: "Lockscreen", keywords: "lock screen password login position", section: 7, subSection: "lockscreen", subLabel: "Shell > Lockscreen", icon: Icons.lock, isIcon: true },
-        { label: "Shell System", keywords: "updates ocr languages", section: 7, subSection: "system", subLabel: "Shell > System", icon: Icons.circuitry, isIcon: true },
+        { label: "Shell System", keywords: "about donate version", section: 7, subSection: "system", subLabel: "Shell > System", icon: Icons.circuitry, isIcon: true },
         { label: "Assistant Sidebar", keywords: "ai sidebar width position pinned", section: 7, subSection: "sidebar", subLabel: "Shell > Sidebar", icon: Icons.robot, isIcon: true }
     ]
 

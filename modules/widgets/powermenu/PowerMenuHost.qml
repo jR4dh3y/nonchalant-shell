@@ -12,7 +12,6 @@ import qs.modules.globals
 Item {
     id: root
 
-    required property var bar
     required property var panel
 
     // Logical open state (true while open or mid-close animation).
@@ -163,13 +162,13 @@ Item {
     }
 
     Component.onCompleted: {
-        const screenName = root.bar?.screen?.name ?? root.panel?.targetScreen?.name ?? "";
+        const screenName = root.panel?.targetScreen?.name ?? "";
         if (screenName)
             Visibilities.registerPowerMenuButton(screenName, root);
     }
 
     Component.onDestruction: {
-        const screenName = root.bar?.screen?.name ?? root.panel?.targetScreen?.name ?? "";
+        const screenName = root.panel?.targetScreen?.name ?? "";
         if (screenName)
             Visibilities.unregisterPowerMenuButton(screenName, root);
     }

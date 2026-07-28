@@ -16,9 +16,6 @@ PopupWindow {
 
     // Required: the item this popup anchors to
     required property Item anchorItem
-    // Required: the bar panel for position detection
-    required property var bar
-
     // Content to display inside the popup
     default property alias contentData: contentContainer.data
 
@@ -42,14 +39,6 @@ PopupWindow {
     property real popupOpacity: 0
     // Mutable duration so sibling switches can use a snappier close/open.
     property int transitionMs: Config.animDuration > 0 ? Config.animDuration : 0
-
-    // Bar position detection
-    readonly property string barPosition: bar?.barPosition ?? "top"
-    readonly property bool barAtTop: barPosition === "top"
-    readonly property bool barAtBottom: barPosition === "bottom"
-    readonly property bool barAtLeft: barPosition === "left"
-    readonly property bool barAtRight: barPosition === "right"
-    readonly property bool barVertical: barAtLeft || barAtRight
 
     // Total size including shadow margin
     readonly property int totalWidth: contentWidth + shadowMargin * 2
@@ -76,31 +65,10 @@ PopupWindow {
         }
     }
 
-    // Frame detection
-    readonly property bool frameEnabled: Config.bar?.frameEnabled ?? false
-    readonly property bool containBar: Config.bar?.containBar ?? false
-    readonly property int frameThickness: Config.bar?.frameThickness ?? 0
-    readonly property int frameOffset: (frameEnabled && containBar) ? frameThickness : 0
-    readonly property int effectiveFrameOffset: (frameEnabled && containBar) ? frameOffset : 0
-
-    // Anchor positioning
+    // The shell only has a top bar, so every popup opens below its anchor.
     anchor.item: anchorItem
-    anchor.rect.x: {
-        if (barVertical) {
-            if (barAtLeft)
-                return anchorItem.width + visualMargin + effectiveFrameOffset - shadowMargin;
-            return -totalWidth + shadowMargin - visualMargin - effectiveFrameOffset;
-        }
-        return (anchorItem.width - totalWidth) / 2;
-    }
-    anchor.rect.y: {
-        if (barVertical) {
-            return (anchorItem.height - totalHeight) / 2;
-        }
-        if (barAtTop)
-            return anchorItem.height + visualMargin + effectiveFrameOffset - shadowMargin;
-        return -totalHeight + shadowMargin - visualMargin - effectiveFrameOffset;
-    }
+    anchor.rect.x: (anchorItem.width - totalWidth) / 2
+    anchor.rect.y: anchorItem.height + visualMargin - shadowMargin
     anchor.rect.width: 0
     anchor.rect.height: 0
 

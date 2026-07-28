@@ -14,7 +14,6 @@ with pkgs; [
   blueman
   pavucontrol
   easyeffects
-  gradia
 
   # Icons
   kdePackages.breeze-icons

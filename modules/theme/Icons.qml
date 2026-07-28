@@ -91,16 +91,6 @@ QtObject {
     readonly property string caffeine: ""
     readonly property string gameMode: ""
 
-    // Toolbox
-    readonly property string toolbox: ""
-    readonly property string regionScreenshot: ""
-    readonly property string windowScreenshot: ""
-    readonly property string fullScreenshot: ""
-    readonly property string screenshots: ""
-
-    readonly property string recordScreen: ""
-    readonly property string recordings: ""
-
     // Notifications
     readonly property string bell: ""
     readonly property string bellRinging: ""
@@ -192,10 +182,6 @@ QtObject {
     readonly property string sync: ""
     readonly property string cube: ""
     readonly property string picker: ""
-    readonly property string textT: ""
-    readonly property string qrCode: ""
-    readonly property string webcam: ""
-    readonly property string webcamSlash: ""
     readonly property string flipX: ""
     readonly property string crop: ""
     readonly property string arrowsOut: ""
@@ -251,7 +237,6 @@ QtObject {
     readonly property string compositor: ""
     readonly property string aperture: ""
     readonly property string magicWand: ""
-    readonly property string google: ""
 
     // Aliases for missing icons
     readonly property string palette: paintBrush

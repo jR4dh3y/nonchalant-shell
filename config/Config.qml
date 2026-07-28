@@ -7,7 +7,6 @@ import qs.modules.globals
 import qs.modules.theme
 import "defaults/theme.js" as ThemeDefaults
 import "defaults/bar.js" as BarDefaults
-import "defaults/workspaces.js" as WorkspacesDefaults
 import "defaults/performance.js" as PerformanceDefaults
 import "defaults/weather.js" as WeatherDefaults
 import "defaults/lockscreen.js" as LockscreenDefaults
@@ -33,14 +32,13 @@ Singleton {
     // Module init status
     property bool themeReady: false
     property bool barReady: false
-    property bool workspacesReady: false
     property bool performanceReady: false
     property bool weatherReady: false
     property bool lockscreenReady: false
     property bool systemReady: false
     property bool aiReady: false
 
-    property bool initialLoadComplete: themeReady && barReady && workspacesReady && performanceReady && weatherReady && lockscreenReady && systemReady && aiReady
+    property bool initialLoadComplete: themeReady && barReady && performanceReady && weatherReady && lockscreenReady && systemReady && aiReady
 
     // Compatibility aliases
     property alias loader: themeLoader
@@ -57,7 +55,6 @@ Singleton {
             "mkdir -p '" + root.configDir + "' && " +
             "cp -n '" + root.presetDir + "/theme.json' '" + root.configDir + "/theme.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/bar.json' '" + root.configDir + "/bar.json' 2>/dev/null || true; " +
-            "cp -n '" + root.presetDir + "/workspaces.json' '" + root.configDir + "/workspaces.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/performance.json' '" + root.configDir + "/performance.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/weather.json' '" + root.configDir + "/weather.json' 2>/dev/null || true; " +
             "cp -n '" + root.presetDir + "/lockscreen.json' '" + root.configDir + "/lockscreen.json' 2>/dev/null || true; " +
@@ -106,7 +103,6 @@ Singleton {
             property string monoFont: "JetBrains Mono"
             property int monoFontSize: 14
             property bool tintIcons: false
-            property bool enableCorners: true
             property int animDuration: 300
             property real shadowOpacity: 0.5
             property string shadowColor: "shadow"
@@ -488,68 +484,12 @@ Singleton {
         }
 
         adapter: JsonAdapter {
-            property string position: "top"
-            property string launcherIcon: ""
-            property bool launcherIconTint: true
-            property bool launcherIconFullTint: true
-            property int launcherIconSize: 24
             property string pillStyle: "default"
             property list<string> screenList: []
             property bool enableFirefoxPlayer: false
-            property list<var> barColor: [["surface", 0.0]]
-            property bool frameEnabled: false
-            property int frameThickness: 6
-            // Auto-hide settings
-            property bool pinnedOnStartup: true
-            property bool hoverToReveal: true
-            property int hoverRegionHeight: 8
-            property bool showPinButton: true
-            property bool availableOnFullscreen: false
             property bool use12hFormat: false
-            property bool containBar: false
-            property bool keepBarShadow: false
-            property bool keepBarBorder: false
         }
     }
-
-    // ============================================
-    // WORKSPACES MODULE
-    // ============================================
-    FileView {
-        id: workspacesLoader
-        path: root.configDirReady ? root.configDir + "/workspaces.json" : ""
-        atomicWrites: true
-        watchChanges: true
-        onLoaded: {
-            if (!root.workspacesReady) {
-                validateModule("workspaces", workspacesLoader, WorkspacesDefaults.data, () => {
-                    root.workspacesReady = true;
-                });
-            }
-        }
-        onLoadFailed: function(error) {
-            if (!root.workspacesReady) {
-                handleMissingConfig("workspaces", workspacesLoader, WorkspacesDefaults.data, () => {
-                    root.workspacesReady = true;
-                });
-            }
-        }
-        onFileChanged: reload()
-        onAdapterUpdated: {
-            if (root.workspacesReady) {
-                workspacesLoader.writeAdapter();
-            }
-        }
-
-        adapter: JsonAdapter {
-            property int shown: 10
-            property bool showAppIcons: true
-            property bool alwaysShowNumbers: false
-            property bool showNumbers: false
-            property bool dynamic: false
-        }
-    }
-
 
     // ============================================
     // PERFORMANCE MODULE
@@ -692,16 +632,6 @@ Singleton {
 
         adapter: JsonAdapter {
             property list<string> disks: ["/"]
-            property bool updateServiceEnabled: true
-            property JsonObject ocr: JsonObject {
-                property bool eng: true
-                property bool spa: true
-                property bool lat: false
-                property bool jpn: false
-                property bool chi_sim: false
-                property bool chi_tra: false
-                property bool kor: false
-            }
             property JsonObject pomodoro: JsonObject {
                 property int workTime: 1500
                 property int restTime: 300
@@ -835,9 +765,6 @@ Singleton {
     // Bar configuration
     property QtObject bar: barLoader.adapter
     property bool showBackground: theme.srBarBg.opacity > 0
-
-    // Workspace configuration
-    property QtObject workspaces: workspacesLoader.adapter
 
     // Performance configuration
     property QtObject performance: performanceLoader.adapter

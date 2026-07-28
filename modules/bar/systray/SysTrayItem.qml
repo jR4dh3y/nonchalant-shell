@@ -12,14 +12,12 @@ import qs.config
 MouseArea {
     id: root
 
-    required property var bar
     required property SystemTrayItem item
     property int trayItemSize: 20
     property bool isHovered: false
 
     acceptedButtons: Qt.LeftButton | Qt.RightButton
-    Layout.fillHeight: bar.orientation === "horizontal"
-    Layout.fillWidth: bar.orientation === "vertical"
+    Layout.fillHeight: true
     implicitWidth: trayItemSize
     implicitHeight: trayItemSize
 
@@ -40,7 +38,6 @@ MouseArea {
     BarPopup {
         id: systrayPopup
         anchorItem: root
-        bar: root.bar
 
         // Use a reasonable width for the menu
         contentWidth: 220
