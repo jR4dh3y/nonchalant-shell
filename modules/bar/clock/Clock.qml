@@ -27,6 +27,16 @@ Item {
     // Popup visibility state
     property bool popupOpen: clockPopup.isOpen
     readonly property bool menuOpen: dashboardPopup.isOpen
+    readonly property bool timeToolsOpen: timePopup.isOpen
+    readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
+
+    function formatDuration(seconds) {
+        const safeSeconds = Math.max(0, seconds);
+        const minutes = Math.floor(safeSeconds / 60);
+        const remainder = safeSeconds % 60;
+        return minutes.toString().padStart(2, "0") + ":"
+            + remainder.toString().padStart(2, "0");
+    }
 
     function toggleCenterMenu() {
         if (dashboardPopup.isOpen) {
@@ -56,7 +66,7 @@ Item {
     // Main button
     StyledRect {
         id: buttonBg
-        variant: root.popupOpen || root.menuOpen ? "primary" : "bg"
+        variant: root.anyPopupOpen ? "primary" : "bg"
         anchors.fill: parent
         enableShadow: root.layerEnabled
 
@@ -71,7 +81,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
-            opacity: root.popupOpen || root.menuOpen ? 0 : (root.isHovered ? 0.25 : 0)
+            opacity: root.anyPopupOpen ? 0 : (root.isHovered ? 0.25 : 0)
             radius: parent.radius ?? 0
 
             Behavior on opacity {
@@ -99,7 +109,7 @@ Item {
                     text: root.weatherAvailable
                         ? WeatherService.weatherSymbol + " " + Math.round(WeatherService.currentTemp) + "°"
                         : root.currentDayAbbrev
-                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -132,7 +142,7 @@ Item {
                     id: dateDisplay
                     anchors.centerIn: parent
                     text: root.currentFullDate
-                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.weight: Font.Medium
@@ -150,16 +160,21 @@ Item {
             }
 
             Item {
+                id: timeAnchor
                 Layout.preferredWidth: timeDisplay.implicitWidth
-                Layout.preferredHeight: 28
+                // Reach the same bar edge used by the weather/dashboard
+                // anchor so every clock popup has an identical visual gap.
+                Layout.preferredHeight: buttonBg.height
 
                 Text {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     id: timeDisplay
                     anchors.centerIn: parent
-                    text: root.currentTime
-                    color: root.popupOpen || root.menuOpen ? buttonBg.item : Colors.overBackground
+                    text: pomodoroWidget.isRunning || pomodoroWidget.alarmActive || pomodoroWidget.isResuming
+                        ? root.formatDuration(pomodoroWidget.timeLeft)
+                        : root.currentTime
+                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -167,12 +182,52 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.toggleCenterMenu()
+                    onClicked: mouse => {
+                        if (mouse.button === Qt.MiddleButton)
+                            pomodoroWidget.toggleTimer();
+                        else
+                            timePopup.toggle();
+                    }
                 }
             }
         }
 
+    }
+
+    // Compact countdown timer.
+    BarPopup {
+        id: timePopup
+        anchorItem: timeAnchor
+        grabFocus: true
+        variant: "transparent"
+        popupPadding: 0
+
+        contentWidth: timeToolsWrapper.width
+        contentHeight: timeToolsWrapper.height
+
+        onIsOpenChanged: {
+            if (isOpen)
+                Qt.callLater(() => pomodoroWidget.focusInput());
+        }
+
+        StyledRect {
+            id: timeToolsWrapper
+            variant: "popup"
+            radius: Styling.radius(8)
+            enableShadow: false
+            width: 316
+            height: pomodoroWidget.implicitHeight + 16
+
+            Pomodoro {
+                id: pomodoroWidget
+                anchors.centerIn: parent
+                width: 300
+                height: implicitHeight
+                onRequestPopupOpen: timePopup.open()
+            }
+        }
     }
 
     // Clock & Weather popup

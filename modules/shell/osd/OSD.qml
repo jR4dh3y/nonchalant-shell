@@ -24,12 +24,27 @@ PanelWindow {
     anchors.left: true
     anchors.right: true
 
-    // Shared bottom offset with the keyboard power menu.
-    WlrLayershell.margins.bottom: 48
+    readonly property int bottomOffset: 48
+    readonly property int cardHeight: 52
+    property bool osdShown: false
+    property real revealProgress: 0
+
+    Behavior on revealProgress {
+        enabled: Config.animDuration > 0
+        NumberAnimation {
+            duration: Config.animDuration
+            easing.type: GlobalStates.osdVisible ? Easing.OutCubic : Easing.InCubic
+        }
+    }
+
+    // Include the final gap in this surface so the card can actually enter
+    // from the screen boundary instead of materializing above it.
+    WlrLayershell.margins.bottom: 0
 
     color: "transparent"
+    implicitHeight: cardHeight + bottomOffset
 
-    visible: GlobalStates.osdVisible
+    visible: osdShown
 
     // Internal state for responsiveness
     property real osdValue: 0
@@ -38,15 +53,21 @@ PanelWindow {
     // Centering wrapper
     Item {
         anchors.fill: parent
+        clip: true
 
         StyledRect {
             id: osdRect
             variant: "popup"
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
+            anchors.bottomMargin: root.bottomOffset
             implicitWidth: 220
-            implicitHeight: 52
+            implicitHeight: root.cardHeight
             radius: Styling.radius(16)
+            transform: Translate {
+                y: (1 - root.revealProgress)
+                    * (osdRect.height + root.bottomOffset)
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -151,17 +172,19 @@ PanelWindow {
                     }
                 }
             }
-        }
-    }
 
-    // Close on click or hover
-    MouseArea {
-        anchors.fill: parent
-        onEntered: {
-            hideTimer.stop();
-            hideTimer.triggered();
+            // Dismiss only when the moving card itself is reached. The extra
+            // surface below it exists solely for the screen-edge animation.
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                enabled: GlobalStates.osdVisible
+                onEntered: {
+                    hideTimer.stop();
+                    hideTimer.triggered();
+                }
+            }
         }
-        hoverEnabled: true
     }
 
     Timer {
@@ -170,12 +193,37 @@ PanelWindow {
         onTriggered: GlobalStates.osdVisible = false
     }
 
+    Timer {
+        id: closeTimer
+        interval: Config.animDuration > 0 ? Config.animDuration + 40 : 40
+        onTriggered: {
+            if (!GlobalStates.osdVisible)
+                root.osdShown = false;
+        }
+    }
+
     Connections {
         target: GlobalStates
         function onOsdVisibleChanged() {
             if (GlobalStates.osdVisible) {
+                closeTimer.stop();
+                root.osdShown = true;
                 hideTimer.restart();
+                Qt.callLater(() => {
+                    if (GlobalStates.osdVisible)
+                        root.revealProgress = 1;
+                });
+            } else if (root.osdShown) {
+                root.revealProgress = 0;
+                closeTimer.restart();
             }
+        }
+    }
+
+    Component.onCompleted: {
+        if (GlobalStates.osdVisible) {
+            root.osdShown = true;
+            Qt.callLater(() => root.revealProgress = 1);
         }
     }
 

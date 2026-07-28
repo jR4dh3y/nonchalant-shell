@@ -17,7 +17,16 @@ Item {
     // Logical open state (true while open or mid-close animation).
     property bool menuOpen: false
     property bool menuShown: false
-    property real menuOpacity: 0
+    property real revealProgress: 0
+    readonly property int bottomOffset: 48
+
+    Behavior on revealProgress {
+        enabled: Config.animDuration > 0
+        NumberAnimation {
+            duration: Config.animDuration
+            easing.type: root.menuOpen ? Easing.OutCubic : Easing.InCubic
+        }
+    }
 
     readonly property bool popupOpen: menuOpen
     // Keep a tiny host for Visibilities registration; real UI is powerWindow.
@@ -42,15 +51,10 @@ Item {
         menuShown = true;
         powerWindow.visible = true;
 
-        // Start transparent, then fade in on the next frame.
-        if (menuOpacity < 0.01) {
-            menuOpacity = 0;
-        }
-
         Qt.callLater(() => {
             if (!root.menuOpen)
                 return;
-            menuOpacity = 1;
+            revealProgress = 1;
             powerMenuView.forceActiveFocus();
             powerMenuView.focusMenu();
         });
@@ -61,9 +65,9 @@ Item {
             return;
 
         menuOpen = false;
-        menuOpacity = 0;
+        revealProgress = 0;
         closeTimer.interval = Config.animDuration > 0
-            ? Math.max(Config.animDuration / 2, 80) + 40
+            ? Config.animDuration + 40
             : 40;
         closeTimer.restart();
     }
@@ -94,10 +98,10 @@ Item {
         anchors.bottom: true
         anchors.left: true
         anchors.right: true
-        WlrLayershell.margins.bottom: 48
+        WlrLayershell.margins.bottom: 0
 
         color: "transparent"
-        implicitHeight: 80
+        implicitHeight: 80 + root.bottomOffset
 
         // Click outside the pill dismisses.
         MouseArea {
@@ -114,6 +118,7 @@ Item {
 
         Item {
             anchors.fill: parent
+            clip: true
 
             StyledRect {
                 id: powerWrapper
@@ -122,17 +127,13 @@ Item {
                 enableShadow: false
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
+                anchors.bottomMargin: root.bottomOffset
                 width: powerMenuView.implicitWidth + 16
                 height: powerMenuView.implicitHeight + 16
                 visible: root.menuShown
-                opacity: root.menuOpacity
-
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration / 2
-                        easing.type: Easing.OutQuad
-                    }
+                transform: Translate {
+                    y: (1 - root.revealProgress)
+                        * (powerWrapper.height + root.bottomOffset)
                 }
 
                 // Block backdrop click-through on the pill itself.
