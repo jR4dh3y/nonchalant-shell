@@ -225,6 +225,9 @@ Singleton {
     // Monitor focus changes
     Connections {
         target: NiriService
+
+        property var lastFullscreenOutputs: []
+
         function onFocusedMonitorChanged() {
             moveActiveModuleToFocusedScreen();
         }
@@ -232,6 +235,19 @@ Singleton {
         function onOverviewOpenChanged() {
             // Overview is a full compositor surface — dismiss shell chrome.
             if (NiriService.overviewOpen) {
+                closeActiveBarPopup();
+                clearAll();
+                currentActiveModule = "";
+            }
+        }
+
+        function onFullscreenOutputsChanged() {
+            // A fullscreen window covers the Overlay-layer panel — dismiss shell
+            // chrome, but only when a screen newly enters fullscreen.
+            const outputs = NiriService.fullscreenOutputs;
+            const newlyFullscreen = outputs.some(name => lastFullscreenOutputs.indexOf(name) === -1);
+            lastFullscreenOutputs = outputs.slice();
+            if (newlyFullscreen) {
                 closeActiveBarPopup();
                 clearAll();
                 currentActiveModule = "";

@@ -13,7 +13,8 @@ Item {
 
     required property ShellScreen screen
 
-    readonly property bool reveal: !NiriService.overviewOpen
+    readonly property bool fullscreenOnScreen: NiriService.fullscreenOutputs.indexOf(root.screen.name) !== -1
+    readonly property bool reveal: !NiriService.overviewOpen && !fullscreenOnScreen
     readonly property bool bottomPosition: (Config.bar?.position ?? "top") === "bottom"
 
     readonly property real outerRadius: Styling.radius(0)

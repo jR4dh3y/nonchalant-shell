@@ -15,6 +15,10 @@ Singleton {
     // Niri compositor overview (Mod+Tab). The bar should hide while this is open.
     property bool overviewOpen: false
 
+    // Outputs whose active workspace shows a fullscreen window. Niri only
+    // auto-hides layer surfaces below Overlay, so the bar hides itself.
+    property var fullscreenOutputs: []
+
     property var rawWindows: []
     property var rawWorkspaces: []
     property var rawOutputs: ({})
@@ -166,6 +170,8 @@ Singleton {
             const scrollingPosition = layout.pos_in_scrolling_layout || [0, 0];
             const tilePosition = layout.tile_pos_in_workspace_view || [0, 0];
             const tileSize = layout.tile_size || layout.window_size || [100, 100];
+            const windowSize = layout.window_size || [0, 0];
+            const windowOffset = layout.window_offset_in_tile || [0, 0];
             const timestamp = window.focus_timestamp || { secs: 0, nanos: 0 };
 
             if (workspace)
@@ -184,12 +190,14 @@ Singleton {
                 monitor: workspace ? workspace.output : "",
                 output: workspace ? workspace.output : "",
                 floating: window.is_floating === true,
-                fullscreen: window.is_fullscreen === true,
+                fullscreen: false,
                 hidden: false,
                 mapped: true,
                 urgent: window.is_urgent === true,
                 at: tilePosition,
                 size: tileSize,
+                windowSize: windowSize,
+                windowOffset: windowOffset,
                 scrollingPosition: scrollingPosition,
                 xwayland: false,
                 is_focused: window.is_focused === true,
@@ -227,12 +235,43 @@ Singleton {
             };
         });
 
+        const clientMap = {};
+        clientValues.forEach(client => clientMap[client.id] = client);
+
+        // Niri 26.04 does not expose a fullscreen boolean through IPC. A real
+        // fullscreen window is instead distinguishable from maximized/tiled
+        // windows because both its tile and window geometry fill the complete
+        // logical output, with no border offset.
+        const fullscreenOutputs = workspaceValues
+            .filter(workspace => {
+                if (!workspace.active || !workspace.output || workspace.activeWindowId === null)
+                    return false;
+
+                const client = clientMap[Number(workspace.activeWindowId)] ?? null;
+                const monitor = monitorValues.find(value => value.name === workspace.output) ?? null;
+                if (!client || !monitor || monitor.width <= 0 || monitor.height <= 0)
+                    return false;
+
+                const epsilon = 0.5;
+                const fillsOutput = Math.abs(Number(client.size[0]) - monitor.width) <= epsilon
+                    && Math.abs(Number(client.size[1]) - monitor.height) <= epsilon
+                    && Math.abs(Number(client.windowSize[0]) - monitor.width) <= epsilon
+                    && Math.abs(Number(client.windowSize[1]) - monitor.height) <= epsilon
+                    && Math.abs(Number(client.windowOffset[0])) <= epsilon
+                    && Math.abs(Number(client.windowOffset[1])) <= epsilon;
+                client.fullscreen = fillsOutput;
+                return fillsOutput;
+            })
+            .map(workspace => workspace.output);
+
         root.workspaces.values = workspaceValues;
         root.clients.values = clientValues;
         root.monitors.values = monitorValues;
         root.focusedWorkspace = workspaceValues.find(workspace => workspace.focused) ?? workspaceValues.find(workspace => workspace.active) ?? null;
         root.focusedMonitor = monitorValues.find(monitor => monitor.focused) ?? (root.focusedWorkspace ? monitorFor(root.focusedWorkspace.output) : null);
         root.focusedClient = clientValues.find(client => client.is_focused) ?? null;
+
+        root.fullscreenOutputs = fullscreenOutputs;
     }
 
     function replaceWorkspace(id, mutate) {
