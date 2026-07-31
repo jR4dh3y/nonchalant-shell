@@ -797,7 +797,7 @@ Item {
                         ActionButton {
                             text: "About Nonchalant " + Config.version
                             icon: Icons.info
-                            onClicked: Quickshell.execDetached(["xdg-open", "https://axeni.de/nonchalant"])
+                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/jR4dh3y/nonchalant-shell"])
                         }
 
                         ActionButton {
