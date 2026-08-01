@@ -113,7 +113,7 @@ install_dependencies() {
 
     local PKGS=(
       kitty tmux fuzzel network-manager-applet blueman
-      pipewire wireplumber easyeffects playerctl
+      pipewire wireplumber playerctl
       qt6-qtbase qt6-qtdeclarative qt6-qtwayland qt6-qtsvg qt6-qttools
       qt6-qtimageformats qt6-qtmultimedia qt6-qtshadertools
       kf6-syntax-highlighting kf6-breeze-icons hicolor-icon-theme
@@ -155,7 +155,7 @@ install_dependencies() {
 
     local PKGS=(
       kitty tmux fuzzel network-manager-applet blueman
-      pipewire wireplumber pavucontrol easyeffects ffmpeg x264 playerctl
+      pipewire wireplumber pavucontrol ffmpeg x264 playerctl
       qt6-base qt6-declarative qt6-wayland qt6-svg qt6-tools qt6-imageformats qt6-multimedia qt6-shadertools
       libwebp libavif syntax-highlighting breeze-icons hicolor-icon-theme
       brightnessctl ddcutil fontconfig jq sqlite upower

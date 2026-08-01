@@ -13,7 +13,6 @@ with pkgs; [
   networkmanagerapplet
   blueman
   pavucontrol
-  easyeffects
 
   # Icons
   kdePackages.breeze-icons

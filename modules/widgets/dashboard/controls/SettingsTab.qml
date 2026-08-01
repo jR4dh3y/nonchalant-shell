@@ -16,7 +16,7 @@ Rectangle {
     color: "transparent"
     implicitWidth: 400
     implicitHeight: 300
-    // 0: Network, 1: Bluetooth, 2: Mixer, 3: AI, 4: Effects, 5: Theme, 6: System, 7: Shell
+    // 0: Network, 1: Bluetooth, 2: Mixer, 3: AI, 4: Theme, 5: System, 6: Shell
 
     property int currentSection: 0
     property int selectedIndex: GlobalStates.settingsCurrentTab
@@ -125,8 +125,8 @@ Rectangle {
         if (!subSectionId || subSectionId === "")
             return;
 
-        // Panels that support subsections: Theme(5), System(6), Shell(7)
-        if ([5, 6, 7].includes(sectionId)) {
+        // Panels that support subsections: Theme(4), System(5), Shell(6)
+        if ([4, 5, 6].includes(sectionId)) {
             if (panelLoader.item && panelLoader.status === Loader.Ready) {
                 panelLoader.item.currentSection = subSectionId;
             } else {
@@ -225,27 +225,21 @@ Rectangle {
             isIcon: true
         },
         {
-            icon: Icons.waveform,
-            label: "Effects",
-            section: 4,
-            isIcon: true
-        },
-        {
             icon: Icons.paintBrush,
             label: "Theme",
-            section: 5,
+            section: 4,
             isIcon: true
         },
         {
             icon: Icons.circuitry,
             label: "System",
-            section: 6,
+            section: 5,
             isIcon: true
         },
         {
             icon: Icons.gear,
             label: "Shell",
-            section: 7,
+            section: 6,
             isIcon: true
         }
     ]
@@ -567,20 +561,16 @@ Rectangle {
                     section: 3
                 },
                 {
-                    component: "EasyEffectsPanel.qml",
+                    component: "ThemePanel.qml",
                     section: 4
                 },
                 {
-                    component: "ThemePanel.qml",
+                    component: "SystemPanel.qml",
                     section: 5
                 },
                 {
-                    component: "SystemPanel.qml",
-                    section: 6
-                },
-                {
                     component: "ShellPanel.qml",
-                    section: 7
+                    section: 6
                 }
             ]
 
