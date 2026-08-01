@@ -7,7 +7,7 @@ Legacy tabbed hub with LRU-based lazy-loading for widgets, system controls, medi
 - **Root**: `Dashboard.qml` — Orchestrates LRU logic, tab layout, and open/close animations.
 - **Side Tabs**: Vertical navigation bar on the left for switching main views.
 - **Sub-tabs** (each a directory):
-  - `widgets/`: `WidgetsTab` — Main grid: `FullPlayer`, `Calendar`, `NotificationHistory`, weather, quick toggles.
+  - `widgets/`: `WidgetsTab` — Main grid: `Calendar`, `NotificationHistory`, weather, quick toggles (media player moved to the bar's `MediaPill`).
   - `controls/`: Settings panels — `ShellPanel` (1913 lines), `ThemePanel` (1564 lines), `BindsPanel` (1974 lines), `CompositorPanel`, `SystemPanel`, `VariantEditor`.
   - `assistant/`: `AssistantTab` (1196 lines) — AI chat interface.
   - `clipboard/`: `ClipboardTab` (3615 lines) — Searchable clipboard history with categories.

@@ -8,6 +8,7 @@ import qs.modules.components
 import qs.modules.services
 import qs.modules.globals
 import qs.modules.widgets.dashboard
+import qs.modules.bar.media
 import "../../widgets/dashboard/widgets"
 
 Item {
@@ -33,7 +34,7 @@ Item {
 
     property string currentTime: ""
     property string currentDayAbbrev: ""
-    property string currentFullDate: ""
+    property string currentShortDate: ""
 
     required property var bar
     property bool isHovered: false
@@ -44,10 +45,10 @@ Item {
     property real endRadius: radius
 
     // Popup visibility state
-    property bool popupOpen: clockPopup.isOpen
+    readonly property bool popupOpen: clockPopup.isOpen
     readonly property bool menuOpen: dashboardPopup.isOpen
     readonly property bool timeToolsOpen: timePopup.isOpen
-    readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
+    readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen || mediaPill.anyPopupOpen
 
     function formatDuration(seconds) {
         const safeSeconds = Math.max(0, seconds);
@@ -152,35 +153,8 @@ Item {
             }
 
             Item {
-                Layout.preferredWidth: dateDisplay.implicitWidth
-                Layout.preferredHeight: 28
-
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    id: dateDisplay
-                    anchors.centerIn: parent
-                    text: root.currentFullDate
-                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
-                    font.pixelSize: Config.theme.fontSize
-                    font.family: Config.theme.font
-                    font.weight: Font.Medium
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.toggleCenterMenu()
-                }
-            }
-
-            Separator {
-                vert: true
-            }
-
-            Item {
-                id: timeAnchor
-                Layout.preferredWidth: timeDisplay.implicitWidth
+                id: dateTimeAnchor
+                Layout.preferredWidth: dateTimeDisplay.implicitWidth
                 // Reach the same bar edge used by the weather/dashboard
                 // anchor so every clock popup has an identical visual gap.
                 Layout.preferredHeight: buttonBg.height
@@ -188,11 +162,11 @@ Item {
                 Text {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
-                    id: timeDisplay
+                    id: dateTimeDisplay
                     anchors.centerIn: parent
                     text: pomodoroWidget.isRunning || pomodoroWidget.alarmActive || pomodoroWidget.isResuming
                         ? root.formatDuration(pomodoroWidget.timeLeft)
-                        : root.currentTime
+                        : root.currentShortDate + ", " + root.currentTime
                     color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
@@ -205,11 +179,19 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: mouse => {
                         if (mouse.button === Qt.MiddleButton)
-                            pomodoroWidget.toggleTimer();
-                        else
                             timePopup.toggle();
+                        else
+                            root.toggleCenterMenu();
                     }
                 }
+            }
+
+            Separator {
+                vert: true
+            }
+
+            MediaPill {
+                id: mediaPill
             }
         }
 
@@ -218,7 +200,7 @@ Item {
     // Compact countdown timer.
     BarPopup {
         id: timePopup
-        anchorItem: timeAnchor
+        anchorItem: dateTimeAnchor
         grabFocus: true
         variant: "transparent"
         popupPadding: 0
@@ -635,7 +617,7 @@ Item {
         var now = new Date();
         var day = now.toLocaleDateString(Qt.locale(), "ddd");
         root.currentDayAbbrev = day.slice(0, 3).charAt(0).toUpperCase() + day.slice(1, 3);
-        root.currentFullDate = now.toLocaleDateString(Qt.locale(), "dddd, d MMMM yyyy");
+        root.currentShortDate = now.toLocaleDateString(Qt.locale(), "dd MMM");
         scheduleNextDayUpdate();
     }
 
