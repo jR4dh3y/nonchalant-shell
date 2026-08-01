@@ -30,6 +30,16 @@ Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
 - Wallpaper picker and secure `WlSessionLock` session lock
 - Isolated `nonchalant` config, state, cache, data, and IPC paths
 
+## Direct commands
+
+The shell exposes lightweight commands through its IPC runner. For example,
+`nonchalant run wallpapers` opens the wallpaper picker on the focused monitor
+and toggles it closed when invoked again. This can be bound from Niri with:
+
+```kdl
+Mod+Shift+W hotkey-overlay-title="Open Wallpapers" { spawn "nonchalant" "run" "wallpapers"; }
+```
+
 ## Run the development tree
 
 Install Quickshell and the runtime tools needed by the shell. Install fonts once,

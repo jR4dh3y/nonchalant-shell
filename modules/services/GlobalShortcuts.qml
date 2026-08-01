@@ -41,6 +41,10 @@ QtObject {
                 toggleAssistant();
                 break;
             case "system-monitor": Visibilities.toggleSystemMonitorForActive(); break;
+            case "wallpaper":
+            case "wallpapers":
+                toggleWallpapers();
+                break;
             case "powermenu": Visibilities.togglePowerMenuForActive(); break;
             case "lockscreen": LockscreenService.lock(); break;
             case "config":
@@ -82,6 +86,15 @@ QtObject {
             GlobalStates.clearProjectPickerState();
             Visibilities.setActiveModule("launcher");
         }
+    }
+
+    function toggleWallpapers() {
+        const controller = Visibilities.getDashboardControllerForActive();
+        if (!controller) {
+            console.warn("GlobalShortcuts: no dashboard controller registered for the focused monitor");
+            return;
+        }
+        controller.toggleWallpapers();
     }
 
     function toggleSettings(screenName) {

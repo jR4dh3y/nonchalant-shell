@@ -48,6 +48,7 @@ Commands:
     update                            Update Nonchalant Shell
     refresh                           Refresh local/dev profile (for developers)
     lock                              Activate lockscreen
+    run <command>                     Send a shell command (e.g. wallpapers)
     brightness <percent> [monitor]    Set brightness (0-100)
     brightness +/-<delta> [monitor]   Adjust brightness relatively
     brightness -s [monitor]           Save current brightness

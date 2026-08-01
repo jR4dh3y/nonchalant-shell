@@ -9,6 +9,7 @@ Singleton {
 
     property var screens: ({})
     property var barPanels: ({})
+    property var dashboardControllers: ({})
     property var powerMenuButtons: ({})
     property var systemMonitorButtons: ({})
     property string currentActiveModule: ""
@@ -99,6 +100,22 @@ Singleton {
 
     function getBarPanelForScreen(screenName) {
         return barPanels[screenName] || null;
+    }
+
+    function registerDashboardController(screenName, controller) {
+        dashboardControllers = _updateMap(dashboardControllers, screenName, controller);
+    }
+
+    function unregisterDashboardController(screenName, controller) {
+        if (dashboardControllers[screenName] === controller)
+            dashboardControllers = _updateMap(dashboardControllers, screenName, null);
+    }
+
+    function getDashboardControllerForActive() {
+        const focusedMonitor = NiriService.focusedMonitor;
+        if (!focusedMonitor)
+            return null;
+        return dashboardControllers[focusedMonitor.name] || null;
     }
 
     function registerPowerMenuButton(screenName, button) {

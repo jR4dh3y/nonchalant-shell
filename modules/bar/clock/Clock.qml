@@ -71,6 +71,17 @@ Item {
         dashboardPopup.open();
     }
 
+    function toggleWallpapers() {
+        if (dashboardPopup.isOpen && GlobalStates.dashboardCurrentTab === 1) {
+            dashboardPopup.close();
+            return;
+        }
+
+        GlobalStates.dashboardCurrentTab = 1;
+        dashboardLoader.active = true;
+        dashboardPopup.open();
+    }
+
     readonly property bool weatherAvailable: WeatherService.dataAvailable
 
     implicitWidth: buttonBg.implicitWidth
@@ -660,6 +671,8 @@ Item {
 
     Component.onDestruction: {
         const screenName = root.bar?.screen?.name ?? "";
+        if (screenName)
+            Visibilities.unregisterDashboardController(screenName, root);
         if (GlobalStates.dashboardPopupScreen === screenName)
             GlobalStates.dashboardPopupScreen = "";
     }
@@ -670,5 +683,9 @@ Item {
         var formatted = Qt.formatDateTime(now, format);
         root.currentTime = formatted;
         updateDay();
+
+        const screenName = root.bar?.screen?.name ?? "";
+        if (screenName)
+            Visibilities.registerDashboardController(screenName, root);
     }
 }
