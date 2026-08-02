@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.modules.theme
 import qs.modules.components
@@ -112,15 +114,7 @@ Item {
     }
 
     implicitWidth: 150
-    implicitHeight: modeListExpanded ? 48 + 4 + (40 * modes.length) + 8 : 48
-
-    Behavior on implicitHeight {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutQuart
-        }
-    }
+    implicitHeight: 48
 
     MouseArea {
         id: rootMouse
@@ -238,106 +232,100 @@ Item {
                     }
                 }
             }
+        }
+    }
 
-            ClippingRectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: modeListExpanded ? 40 * modes.length : 0
-                Layout.topMargin: modeListExpanded ? 4 : 0
-                color: Colors.surfaceContainerLow
-                radius: Styling.radius(0)
-                opacity: modeListExpanded ? 1 : 0
-                visible: Layout.preferredHeight > 0
+    PopupWindow {
+        id: modeListPopup
+        anchor.item: root
+        anchor.rect.x: 4
+        anchor.rect.y: 48
+        anchor.rect.width: 0
+        anchor.rect.height: 0
+        implicitWidth: Math.max(0, root.width - 8)
+        implicitHeight: 40 * root.modes.length
+        color: "transparent"
+        visible: root.modeListExpanded
+
+        ClippingRectangle {
+            anchors.fill: parent
+            color: Colors.surfaceContainerLow
+            radius: Styling.radius(0)
+            opacity: root.modeListExpanded ? 1 : 0
+            clip: true
+
+            ListView {
+                id: modeListView
+                anchors.fill: parent
                 clip: true
+                model: root.modes
+                currentIndex: root.selectedModeIndex
+                interactive: true
+                boundsBehavior: Flickable.StopAtBounds
+                keyNavigationEnabled: false
+                focus: false
 
-                ListView {
-                    id: modeListView
-                    anchors.fill: parent
-                    clip: true
-                    model: root.modes
-                    currentIndex: root.selectedModeIndex
-                    interactive: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    keyNavigationEnabled: false
-                    focus: false
-
-                    onCurrentIndexChanged: {
-                        if (root.modeListExpanded && currentIndex !== selectedModeIndex && currentIndex >= 0)
-                            selectedModeIndex = currentIndex;
-                    }
-
-                    delegate: Item {
-                        id: delegateRoot
-                        required property var modelData
-                        required property int index
-
-                        width: modeListView.width
-                        height: 40
-                        readonly property bool isSelected: root.selectedModeIndex === index
-
-                        StyledRect {
-                            anchors.fill: parent
-                            variant: delegateRoot.isSelected ? "primary" : "transparent"
-                            radius: Styling.radius(0)
-                            opacity: delegateRoot.isSelected ? 1 : 0
-                        }
-
-                        Text {
-                            anchors.fill: parent
-                            anchors.leftMargin: 8
-                            text: modelData.label
-                            color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
-                            font.family: Config.theme.font
-                            font.pixelSize: Config.theme.fontSize
-                            font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            preventStealing: true
-
-                            onEntered: {
-                                selectedModeIndex = index;
-                                modeListView.currentIndex = index;
-                            }
-
-                            onPressed: mouse => {
-                                modeButton.forceActiveFocus();
-                                mouse.accepted = true;
-                            }
-
-                            onClicked: applyModeAt(index)
-                        }
-                    }
+                onCurrentIndexChanged: {
+                    if (root.modeListExpanded && currentIndex !== selectedModeIndex && currentIndex >= 0)
+                        selectedModeIndex = currentIndex;
                 }
 
-                Behavior on Layout.topMargin {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
+                delegate: Item {
+                    id: delegateRoot
+                    required property var modelData
+                    required property int index
+
+                    width: modeListView.width
+                    height: 40
+                    readonly property bool isSelected: root.selectedModeIndex === index
+
+                    StyledRect {
+                        anchors.fill: parent
+                        variant: delegateRoot.isSelected ? "primary" : "transparent"
+                        radius: Styling.radius(0)
+                        opacity: delegateRoot.isSelected ? 1 : 0
+                    }
+
+                    Text {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        text: modelData.label
+                        color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
+                        font.family: Config.theme.font
+                        font.pixelSize: Config.theme.fontSize
+                        font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        preventStealing: true
+
+                        onEntered: {
+                            selectedModeIndex = index;
+                            modeListView.currentIndex = index;
+                        }
+
+                        onPressed: mouse => {
+                            modeButton.forceActiveFocus();
+                            mouse.accepted = true;
+                        }
+
+                        onClicked: applyModeAt(index)
                     }
                 }
+            }
 
-                Behavior on Layout.preferredHeight {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
-                    }
-                }
-
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
-                    }
+            Behavior on opacity {
+                enabled: Config.animDuration > 0
+                NumberAnimation {
+                    duration: Config.animDuration
+                    easing.type: Easing.OutQuart
                 }
             }
         }

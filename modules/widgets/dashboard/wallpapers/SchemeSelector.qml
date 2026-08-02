@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.modules.theme
 import qs.modules.components
@@ -176,17 +178,7 @@ Item {
     }
 
     implicitWidth: 200
-    // Expand the *whole* control so the parent layout reserves space and
-    // clicks land on list rows instead of the wallpaper grid beneath.
-    implicitHeight: schemeListExpanded ? 40 + 4 + (40 * 4) + 8 : 48
-
-    Behavior on implicitHeight {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutQuart
-        }
-    }
+    implicitHeight: 48
 
     MouseArea {
         id: rootMouse
@@ -369,110 +361,104 @@ Item {
                     }
                 }
             }
+        }
+    }
 
-            ClippingRectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: schemeListExpanded ? 40 * 4 : 0
-                Layout.topMargin: schemeListExpanded ? 4 : 0
-                color: Colors.surfaceContainerLow
-                radius: Styling.radius(0)
-                opacity: schemeListExpanded ? 1 : 0
-                visible: Layout.preferredHeight > 0
+    PopupWindow {
+        id: schemeListPopup
+        anchor.item: root
+        anchor.rect.x: 4
+        anchor.rect.y: 48
+        anchor.rect.width: 0
+        anchor.rect.height: 0
+        implicitWidth: Math.max(0, root.width - 8)
+        implicitHeight: 40 * 4
+        color: "transparent"
+        visible: root.schemeListExpanded
+
+        ClippingRectangle {
+            anchors.fill: parent
+            color: Colors.surfaceContainerLow
+            radius: Styling.radius(0)
+            opacity: root.schemeListExpanded ? 1 : 0
+            clip: true
+
+            ListView {
+                id: schemeListView
+                anchors.fill: parent
                 clip: true
+                model: combinedModel
+                currentIndex: selectedSchemeIndex
+                interactive: true
+                boundsBehavior: Flickable.StopAtBounds
+                highlightFollowsCurrentItem: true
+                keyNavigationEnabled: false
+                focus: false
 
-                ListView {
-                    id: schemeListView
-                    anchors.fill: parent
-                    clip: true
-                    model: combinedModel
-                    currentIndex: selectedSchemeIndex
-                    interactive: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    highlightFollowsCurrentItem: true
-                    keyNavigationEnabled: false
-                    focus: false
+                onCurrentIndexChanged: {
+                    if (currentIndex !== selectedSchemeIndex && currentIndex >= 0)
+                        selectedSchemeIndex = currentIndex;
+                }
 
-                    onCurrentIndexChanged: {
-                        if (currentIndex !== selectedSchemeIndex && currentIndex >= 0)
-                            selectedSchemeIndex = currentIndex;
+                delegate: Item {
+                    id: delegateRoot
+                    required property var modelData
+                    required property int index
+
+                    width: schemeListView.width
+                    height: 40
+
+                    readonly property bool isSelected: selectedSchemeIndex === index
+
+                    StyledRect {
+                        anchors.fill: parent
+                        variant: delegateRoot.isSelected ? "primary" : "transparent"
+                        radius: Styling.radius(0)
+                        opacity: delegateRoot.isSelected ? 1 : 0
                     }
 
-                    delegate: Item {
-                        id: delegateRoot
-                        required property var modelData
-                        required property int index
+                    Text {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        text: modelData.label
+                        color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
+                        font.family: Config.theme.font
+                        font.pixelSize: Config.theme.fontSize
+                        font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
 
-                        width: schemeListView.width
-                        height: 40
-
-                        readonly property bool isSelected: selectedSchemeIndex === index
-
-                        StyledRect {
-                            anchors.fill: parent
-                            variant: delegateRoot.isSelected ? "primary" : "transparent"
-                            radius: Styling.radius(0)
-                            opacity: delegateRoot.isSelected ? 1 : 0
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        // Prevent the parent Button from stealing focus on press
+                        // before we apply the selection.
+                        preventStealing: true
+                        onEntered: {
+                            selectedSchemeIndex = index;
+                            schemeListView.currentIndex = index;
                         }
-
-                        Text {
-                            anchors.fill: parent
-                            anchors.leftMargin: 8
-                            text: modelData.label
-                            color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
-                            font.family: Config.theme.font
-                            font.pixelSize: Config.theme.fontSize
-                            font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
+                        onPressed: mouse => {
+                            // Keep scheme button focused so focusCloseTimer does not fire mid-click.
+                            schemeButton.forceActiveFocus();
+                            mouse.accepted = true;
                         }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            // Prevent the parent Button from stealing focus on press
-                            // before we apply the selection.
-                            preventStealing: true
-                            onEntered: {
-                                selectedSchemeIndex = index;
-                                schemeListView.currentIndex = index;
-                            }
-                            onPressed: mouse => {
-                                // Keep scheme button focused so focusCloseTimer does not fire mid-click.
-                                schemeButton.forceActiveFocus();
-                                mouse.accepted = true;
-                            }
-                            onClicked: {
-                                applySchemeAt(index);
-                            }
+                        onClicked: {
+                            applySchemeAt(index);
                         }
                     }
                 }
+            }
 
-                Behavior on Layout.topMargin {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
-                    }
-                }
-
-                Behavior on Layout.preferredHeight {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
-                    }
-                }
-
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: Config.animDuration
-                        easing.type: Easing.OutQuart
-                    }
+            Behavior on opacity {
+                enabled: Config.animDuration > 0
+                NumberAnimation {
+                    duration: Config.animDuration
+                    easing.type: Easing.OutQuart
                 }
             }
         }

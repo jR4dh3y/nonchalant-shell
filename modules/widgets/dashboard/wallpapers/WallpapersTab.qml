@@ -203,8 +203,8 @@ FocusScope {
         anchors.fill: parent
         spacing: 8
 
-        // Header: search / wallpaper mode / scheme. Height grows with the
-        // expanded selectors so their rows stay inside this layout and remain clickable.
+        // Header: search / wallpaper mode / scheme. Selector lists render as
+        // overlays, so expanding one does not change the grid layout.
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.max(48, schemeSelector.implicitHeight, wallpaperModeSelector.implicitHeight)
@@ -474,7 +474,7 @@ FocusScope {
                 }
             }
             
-            // Wallpaper display mode
+            // Wallpaper display mode; its options render below as an overlay.
             WallpaperModeSelector {
                 id: wallpaperModeSelector
                 Layout.preferredWidth: 150
@@ -506,8 +506,8 @@ FocusScope {
                 }
             }
 
-            // Scheme selector. Height follows the control so the expanded list
-            // is part of the header hit-target (not covered by the wallpaper grid).
+            // Scheme selector; its options render below as an overlay above
+            // the wallpaper grid.
             SchemeSelector {
                 id: schemeSelector
                 Layout.preferredWidth: 220
