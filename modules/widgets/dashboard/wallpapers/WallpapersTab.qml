@@ -482,6 +482,13 @@ FocusScope {
                 Layout.alignment: Qt.AlignTop
                 z: 100
 
+                onModeListExpandedChanged: {
+                    if (modeListExpanded) {
+                        schemeSelector.keyboardNavigationActive = false;
+                        schemeSelector.schemeListExpanded = false;
+                    }
+                }
+
                 onModeSelectorClosed: {
                     wallpapersTabRoot.focusSearch();
                 }
@@ -507,6 +514,13 @@ FocusScope {
                 Layout.preferredHeight: implicitHeight
                 Layout.alignment: Qt.AlignTop
                 z: 100
+
+                onSchemeListExpandedChanged: {
+                    if (schemeListExpanded) {
+                        wallpaperModeSelector.keyboardNavigationActive = false;
+                        wallpaperModeSelector.modeListExpanded = false;
+                    }
+                }
 
                 onSchemeSelectorClosed: {
                     wallpapersTabRoot.focusSearch();
