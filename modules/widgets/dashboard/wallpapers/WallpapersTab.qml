@@ -58,17 +58,9 @@ FocusScope {
             }
         },
         {
-            id: "oledCheckbox",
+            id: "wallpaperModeSelector",
             focusFunc: function () {
-                oledCheckboxContainer.keyboardNavigationActive = true;
-                oledCheckbox.forceActiveFocus();
-            }
-        },
-        {
-            id: "tintCheckbox",
-            focusFunc: function () {
-                tintCheckboxContainer.keyboardNavigationActive = true;
-                tintCheckbox.forceActiveFocus();
+                wallpaperModeSelector.openAndFocus();
             }
         },
         {
@@ -211,11 +203,11 @@ FocusScope {
         anchors.fill: parent
         spacing: 8
 
-        // Header: OLED / search / scheme. Height grows with the scheme list so
-        // expanded rows stay inside this layout (and stay clickable).
+        // Header: search / wallpaper mode / scheme. Height grows with the
+        // expanded selectors so their rows stay inside this layout and remain clickable.
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.max(48, schemeSelector.implicitHeight)
+            Layout.preferredHeight: Math.max(48, schemeSelector.implicitHeight, wallpaperModeSelector.implicitHeight)
             spacing: 8
             z: 1000
 
@@ -482,301 +474,30 @@ FocusScope {
                 }
             }
             
-            // OLED Mode
-            Item {
-                id: oledCheckboxContainer
-                Layout.preferredWidth: 100
-                Layout.preferredHeight: 48
+            // Wallpaper display mode
+            WallpaperModeSelector {
+                id: wallpaperModeSelector
+                Layout.preferredWidth: 150
+                Layout.preferredHeight: implicitHeight
+                Layout.alignment: Qt.AlignTop
+                z: 100
 
-                property bool keyboardNavigationActive: false
+                onModeSelectorClosed: {
+                    wallpapersTabRoot.focusSearch();
+                }
 
-                StyledRect {
-                    variant: oledCheckboxContainer.keyboardNavigationActive && oledCheckbox.activeFocus ? "focus" : "pane"
-                    anchors.fill: parent
-                    radius: Styling.radius(4)
-                    opacity: oledCheckbox.enabled ? 1.0 : 0.5
+                onEscapePressedOnMode: {
+                    wallpapersTabRoot.focusSearch();
+                }
 
-                    Behavior on opacity {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: Config.animDuration / 2
-                            easing.type: Easing.OutQuart
-                        }
-                    }
+                onTabPressed: {
+                    wallpapersTabRoot.focusNextElement();
+                }
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 4
-                        spacing: 4
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            color: Colors.background
-                            radius: Styling.radius(0)
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                anchors.fill: parent
-                                text: "OLED"
-                                color: Colors.overSurface
-                                font.family: Config.theme.font
-                                font.pixelSize: Config.theme.fontSize
-                                font.weight: Font.Medium
-                                verticalAlignment: Text.AlignVCenter
-                                leftPadding: 8
-
-                                Behavior on color {
-                                    enabled: Config.animDuration > 0
-                                    ColorAnimation {
-                                        duration: Config.animDuration / 2
-                                        easing.type: Easing.OutQuart
-                                    }
-                                }
-                            }
-                        }
-
-                        Item {
-                            id: oledCheckbox
-                            Layout.preferredWidth: 40
-                            Layout.preferredHeight: 40
-
-                            property bool checked: Config.theme.oledMode
-                            property bool enabled: !Config.theme.lightMode
-
-                            onActiveFocusChanged: {
-                                if (!activeFocus) {
-                                    oledCheckboxContainer.keyboardNavigationActive = false;
-                                }
-                            }
-
-                            Keys.onPressed: event => {
-                                if (event.key === Qt.Key_Tab) {
-                                    oledCheckboxContainer.keyboardNavigationActive = false;
-                                    if (event.modifiers & Qt.ShiftModifier) {
-                                        wallpapersTabRoot.focusPreviousElement();
-                                    } else {
-                                        wallpapersTabRoot.focusNextElement();
-                                    }
-                                    event.accepted = true;
-                                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                    if (enabled) {
-                                        Config.theme.oledMode = !Config.theme.oledMode;
-                                    }
-                                    event.accepted = true;
-                                } else if (event.key === Qt.Key_Escape) {
-                                    oledCheckboxContainer.keyboardNavigationActive = false;
-                                    focusSearch();
-                                    event.accepted = true;
-                                }
-                            }
-
-                            // Update checked state when config changes
-                            Connections {
-                                target: Config.theme
-                                function onOledModeChanged() {
-                                    oledCheckbox.checked = Config.theme.oledMode;
-                                }
-                            }
-
-                            Item {
-                                anchors.fill: parent
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: Styling.radius(0)
-                                    color: Colors.background
-                                    visible: !oledCheckbox.checked
-                                }
-
-                                StyledRect {
-                                    variant: "primary"
-                                    anchors.fill: parent
-                                    radius: Styling.radius(0)
-                                    visible: oledCheckbox.checked
-                                    opacity: oledCheckbox.checked ? 1.0 : 0.0
-
-                                    Behavior on opacity {
-                                        enabled: Config.animDuration > 0
-                                        NumberAnimation {
-                                            duration: Config.animDuration / 2
-                                            easing.type: Easing.OutQuart
-                                        }
-                                    }
-
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        anchors.centerIn: parent
-                                        text: Icons.accept
-                                        color: Styling.srItem("primary")
-                                        font.family: Icons.font
-                                        font.pixelSize: 20
-                                        scale: oledCheckbox.checked ? 1.0 : 0.0
-
-                                        Behavior on scale {
-                                            enabled: Config.animDuration > 0
-                                            NumberAnimation {
-                                                duration: Config.animDuration / 2
-                                                easing.type: Easing.OutBack
-                                                easing.overshoot: 1.5
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: oledCheckbox.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                                onClicked: {
-                                    if (oledCheckbox.enabled) {
-                                        Config.theme.oledMode = !Config.theme.oledMode;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                onShiftTabPressed: {
+                    wallpapersTabRoot.focusPreviousElement();
                 }
             }
-
-            // Tint Toggle a la derecha del search
-            Item {
-                id: tintCheckboxContainer
-                Layout.preferredWidth: 100
-                Layout.preferredHeight: 48
-
-                property bool keyboardNavigationActive: false
-
-                StyledRect {
-                    variant: tintCheckboxContainer.keyboardNavigationActive && tintCheckbox.activeFocus ? "focus" : "pane"
-                    anchors.fill: parent
-                    radius: Styling.radius(4)
-                    opacity: 1.0
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 4
-                        spacing: 4
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            color: Colors.background
-                            radius: Styling.radius(0)
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                anchors.fill: parent
-                                text: "Tint"
-                                color: Colors.overSurface
-                                font.family: Config.theme.font
-                                font.pixelSize: Config.theme.fontSize
-                                font.weight: Font.Medium
-                                verticalAlignment: Text.AlignVCenter
-                                leftPadding: 8
-                            }
-                        }
-
-                        Item {
-                            id: tintCheckbox
-                            Layout.preferredWidth: 40
-                            Layout.preferredHeight: 40
-
-                            property bool checked: GlobalStates.wallpaperManager ? GlobalStates.wallpaperManager.tintEnabled : false
-
-                            onActiveFocusChanged: {
-                                if (!activeFocus) {
-                                    tintCheckboxContainer.keyboardNavigationActive = false;
-                                }
-                            }
-
-                            Keys.onPressed: event => {
-                                if (event.key === Qt.Key_Tab) {
-                                    tintCheckboxContainer.keyboardNavigationActive = false;
-                                    if (event.modifiers & Qt.ShiftModifier) {
-                                        wallpapersTabRoot.focusPreviousElement();
-                                    } else {
-                                        wallpapersTabRoot.focusNextElement();
-                                    }
-                                    event.accepted = true;
-                                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                    if (GlobalStates.wallpaperManager) {
-                                        GlobalStates.wallpaperManager.tintEnabled = !GlobalStates.wallpaperManager.tintEnabled;
-                                    }
-                                    event.accepted = true;
-                                } else if (event.key === Qt.Key_Escape) {
-                                    tintCheckboxContainer.keyboardNavigationActive = false;
-                                    focusSearch();
-                                    event.accepted = true;
-                                }
-                            }
-
-                            Item {
-                                anchors.fill: parent
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: Styling.radius(0)
-                                    color: Colors.background
-                                    visible: !tintCheckbox.checked
-                                }
-
-                                StyledRect {
-                                    variant: "primary"
-                                    anchors.fill: parent
-                                    radius: Styling.radius(0)
-                                    visible: tintCheckbox.checked
-                                    opacity: tintCheckbox.checked ? 1.0 : 0.0
-
-                                    Behavior on opacity {
-                                        enabled: Config.animDuration > 0
-                                        NumberAnimation {
-                                            duration: Config.animDuration / 2
-                                            easing.type: Easing.OutQuart
-                                        }
-                                    }
-
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        anchors.centerIn: parent
-                                        text: Icons.accept
-                                        color: Styling.srItem("primary")
-                                        font.family: Icons.font
-                                        font.pixelSize: 20
-                                        scale: tintCheckbox.checked ? 1.0 : 0.0
-
-                                        Behavior on scale {
-                                            enabled: Config.animDuration > 0
-                                            NumberAnimation {
-                                                duration: Config.animDuration / 2
-                                                easing.type: Easing.OutBack
-                                                easing.overshoot: 1.5
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (GlobalStates.wallpaperManager) {
-                                        GlobalStates.wallpaperManager.tintEnabled = !GlobalStates.wallpaperManager.tintEnabled;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Spacer
-            // Item { Layout.fillWidth: true }
 
             // Scheme selector. Height follows the control so the expanded list
             // is part of the header hit-target (not covered by the wallpaper grid).

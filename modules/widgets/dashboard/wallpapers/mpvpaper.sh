@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
 if [ -z "$1" ]; then
-	echo "Use: $0 /path/to/wallpaper [shader_path] [monitor_target]"
+	echo "Use: $0 /path/to/wallpaper [shader_path] [monitor_target] [mode]"
 	exit 1
 fi
 
 WALLPAPER="$1"
 SHADER="$2"
 MONITOR="${3:-ALL}"
+MODE="${4:-crop}"
 
 # When a specific monitor is targeted, we don't kill all mpvpaper instances,
 # just the one for that monitor if possible. However mpvpaper doesn't
@@ -25,7 +26,22 @@ else
 fi
 SOCKET="/tmp/nonchalant_mpv_socket_${MONITOR}"
 
-MPV_OPTS="no-audio loop hwdec=auto scale=bilinear interpolation=no video-sync=display-resample panscan=1.0 video-scale-x=1.0 video-scale-y=1.0 load-scripts=no input-ipc-server=$SOCKET"
+case "$MODE" in
+    fit)
+        DISPLAY_OPTS="keepaspect=yes panscan=0.0"
+        ;;
+    stretch)
+        DISPLAY_OPTS="keepaspect=no panscan=0.0"
+        ;;
+    center)
+        DISPLAY_OPTS="keepaspect=yes panscan=0.0 video-unscaled=yes video-align-x=0.5 video-align-y=0.5"
+        ;;
+    *)
+        DISPLAY_OPTS="keepaspect=yes panscan=1.0"
+        ;;
+esac
+
+MPV_OPTS="no-audio loop hwdec=auto scale=bilinear interpolation=no video-sync=display-resample $DISPLAY_OPTS video-scale-x=1.0 video-scale-y=1.0 load-scripts=no input-ipc-server=$SOCKET"
 
 # Si el shader no está vacío y el archivo existe, agregarlo a MPV_OPTS
 if [ -n "$SHADER" ] && [ -f "$SHADER" ]; then

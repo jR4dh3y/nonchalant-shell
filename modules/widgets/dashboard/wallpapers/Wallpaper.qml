@@ -38,7 +38,23 @@ PanelWindow {
     property string effectiveWallpaper: perScreenWallpapers[currentScreenName] || currentWallpaper
     property string currentScreenName: wallpaper.screen ? wallpaper.screen.name : ""
     property alias tintEnabled: wallpaperAdapter.tintEnabled
+    property alias wallpaperMode: wallpaperAdapter.wallpaperMode
     property int thumbnailsVersion: 0
+
+    readonly property var supportedWallpaperModes: ["crop", "fit", "stretch", "center"]
+
+    readonly property int wallpaperFillMode: {
+        switch (wallpaperMode) {
+        case "fit":
+            return Image.PreserveAspectFit;
+        case "stretch":
+            return Image.Stretch;
+        case "center":
+            return Image.Pad;
+        default:
+            return Image.PreserveAspectCrop;
+        }
+    }
 
     // QUICKSHELL-GIT: property string mpvShaderDir: Quickshell.cacheDir + "/mpv_shaders_" + (currentScreenName ? currentScreenName : "ALL")
     property string mpvShaderDir: Quickshell.env("HOME") + "/.cache/nonchalant/mpv_shaders_" + (currentScreenName ? currentScreenName : "ALL")
@@ -335,6 +351,22 @@ PanelWindow {
             delete perScreen[targetScreen];
             wallpaperConfig.adapter.perScreenWallpapers = perScreen;
         }
+    }
+
+    function setWallpaperMode(mode) {
+        if (GlobalStates.wallpaperManager && GlobalStates.wallpaperManager !== wallpaper) {
+            GlobalStates.wallpaperManager.setWallpaperMode(mode);
+            return;
+        }
+
+        if (supportedWallpaperModes.indexOf(mode) === -1)
+            mode = "crop";
+
+        if (wallpaperConfig.adapter.wallpaperMode === mode)
+            return;
+
+        wallpaperConfig.adapter.wallpaperMode = mode;
+        wallpaperConfig.writeAdapter();
     }
 
     function nextWallpaper() {
@@ -707,6 +739,9 @@ PanelWindow {
             if (!wallpaperConfig.adapter.matugenScheme) {
                 wallpaperConfig.adapter.matugenScheme = "scheme-tonal-spot";
             }
+            if (supportedWallpaperModes.indexOf(wallpaperConfig.adapter.wallpaperMode) === -1) {
+                wallpaperConfig.adapter.wallpaperMode = "crop";
+            }
             // Update the currentMatugenScheme property to trigger UI updates
             currentMatugenScheme = Qt.binding(function () {
                 return wallpaperConfig.adapter.matugenScheme;
@@ -721,6 +756,7 @@ PanelWindow {
             property string matugenScheme: "scheme-tonal-spot"
             property string activeColorPreset: ""
             property bool tintEnabled: false
+            property string wallpaperMode: "crop"
             property var perScreenWallpapers: ({})
 
             onActiveColorPresetChanged: {
@@ -1370,11 +1406,11 @@ PanelWindow {
                     id: rawImage
                     anchors.fill: parent
                     source: parent.sourceFile ? "file://" + parent.sourceFile : ""
-                    fillMode: Image.PreserveAspectCrop
+                    fillMode: wallpaper.wallpaperFillMode
                     asynchronous: true
                     smooth: true
-                    sourceSize.width: wallpaper.width
-                    sourceSize.height: wallpaper.height
+                    sourceSize.width: wallpaper.wallpaperMode === "center" ? 0 : wallpaper.width
+                    sourceSize.height: wallpaper.wallpaperMode === "center" ? 0 : wallpaper.height
                     layer.enabled: parent.tint
                     layer.effect: ShaderEffect {
                         property var paletteTexture: paletteTextureSource
@@ -1430,7 +1466,7 @@ PanelWindow {
                 Process {
                     id: mpvpaperProcess
                     running: false
-                    command: sourceFile && wallpaper.currentScreenName ? ["bash", scriptPath, sourceFile, (wallpaper.tintEnabled ? wallpaper.mpvShaderPath : ""), wallpaper.currentScreenName] : []
+                    command: sourceFile && wallpaper.currentScreenName ? ["bash", scriptPath, sourceFile, (wallpaper.tintEnabled ? wallpaper.mpvShaderPath : ""), wallpaper.currentScreenName, wallpaper.wallpaperMode] : []
 
                     stdout: StdioCollector {
                         onStreamFinished: {
@@ -1450,6 +1486,16 @@ PanelWindow {
 
                     onExited: function (exitCode) {
                         console.log("mpvpaper process exited with code:", exitCode);
+                    }
+                }
+
+                Connections {
+                    target: wallpaper
+                    function onWallpaperModeChanged() {
+                        if (!sourceFile)
+                            return;
+                        mpvpaperProcess.running = false;
+                        mpvpaperRestartTimer.restart();
                     }
                 }
             }
