@@ -109,6 +109,7 @@ ShellRoot {
                 // Keep compositor + OSD services hot for overview hide and media keys.
                 _ = NiriService.overviewOpen;
                 _ = Audio.value;
+                _ = AudioFormat.connected;
                 _ = Brightness.monitors;
                 // Own org.freedesktop.Notifications and load history early.
                 _ = Notifications.appNameList;

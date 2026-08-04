@@ -47,6 +47,7 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 | **Dashboard** | `modules/widgets/dashboard/` | Tabbed hub with LRU lazy-loading |
 | **Launcher** | `modules/widgets/launcher/LauncherView.qml` | Unified search: apps, clipboard, emoji |
 | **Bar Layout** | `modules/bar/BarContent.qml` | Fixed top bar and widget groups |
+| **Headphone Info** | `modules/services/AudioFormat.qml` + `modules/bar/audioformat/` | Sample rate/bit depth pill for bt/usb/wired headphones |
 | **Run Menu** | `modules/widgets/launcher/RunMenuHost.qml` | Floating launcher host inside the unified panel |
 | **Lockscreen** | `modules/lockscreen/LockScreen.qml` | PAM auth + `WlSessionLockSurface` |
 | **Notifications** | `modules/notifications/` | Popup system + delegate + history |
@@ -69,6 +70,8 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 | `NiriService` | Singleton | `modules/services/NiriService.qml` | Compositor abstraction (focus, dispatch) |
 | `StateService` | Singleton | `modules/services/StateService.qml` | JSON persistence for session state |
 | `FocusGrabManager` | Singleton | `modules/services/FocusGrabManager.qml` | Input focus coordination |
+| `AudioFormat` | Singleton | `modules/services/AudioFormat.qml` | Headphone classification (bt/usb/wired) + negotiated sample rate/bit depth via pactl |
+| `AudioFormatBadge` | Component | `modules/bar/audioformat/AudioFormatBadge.qml` | Bar pill: headphone sample rate + bit depth; collapses when nothing attached |
 
 ## CONVENTIONS
 - **Singletons**: `pragma Singleton` + `Singleton { id: root }` for all services and global state.

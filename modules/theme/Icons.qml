@@ -80,11 +80,14 @@ QtObject {
     readonly property string wifiHigh: ""
     readonly property string wifiX: ""
 
-    // Bluetooth
-    readonly property string bluetooth: ""
-    readonly property string bluetoothConnected: ""
-    readonly property string bluetoothOff: ""
-    readonly property string bluetoothX: ""
+// Bluetooth
+    readonly property string bluetooth: "\uE0DA"
+    readonly property string bluetoothConnected: "\uE0DC"
+    readonly property string bluetoothOff: "\uE0DE"
+    readonly property string bluetoothX: "\uE0E0"
+
+    // Peripherals
+    readonly property string usb: "\uE956"
 
     // Other Toggles
     readonly property string nightLight: ""

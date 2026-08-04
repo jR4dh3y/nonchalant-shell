@@ -5,6 +5,7 @@ import qs.config
 import qs.modules.bar.clock
 import qs.modules.bar.systray
 import qs.modules.bar.workspaces
+import qs.modules.bar.audioformat
 import qs.modules.services
 import qs.modules.theme
 
@@ -98,9 +99,15 @@ Item {
                         height: 36
                         spacing: 4
 
-                        SysTray {
+                        AudioFormatBadge {
                             enableShadow: root.shadowsEnabled
                             startRadius: root.outerRadius
+                            endRadius: root.innerRadius
+                        }
+
+                        SysTray {
+                            enableShadow: root.shadowsEnabled
+                            startRadius: root.innerRadius
                             endRadius: root.innerRadius
                         }
 
