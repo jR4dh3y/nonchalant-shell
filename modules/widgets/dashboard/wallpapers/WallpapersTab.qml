@@ -76,7 +76,14 @@ FocusScope {
     // Función para enfocar el campo de búsqueda
     function focusSearch() {
         currentFocusIndex = -1;
+        if (!visible || !enabled)
+            return;
+
         wallpaperSearchInput.focusInput();
+        if (!wallpaperSearchInput.inputActiveFocus) {
+            focusRetryTimer.attempts = 0;
+            focusRetryTimer.restart();
+        }
 
         // Restaurar índice válido si está en -1 y hay wallpapers
         if (selectedIndex === -1 && filteredWallpapers.length > 0) {
@@ -178,6 +185,27 @@ FocusScope {
         onTriggered: {
             centerCurrentWallpaper();
             focusSearch();
+        }
+    }
+
+    // Layer-shell keyboard ownership and Loader visibility settle on separate
+    // turns. Retry briefly until the visible field actually owns Qt focus.
+    Timer {
+        id: focusRetryTimer
+        interval: 40
+        repeat: true
+        property int attempts: 0
+
+        onTriggered: {
+            if (!wallpapersTabRoot.visible || !wallpapersTabRoot.enabled
+                    || wallpaperSearchInput.inputActiveFocus
+                    || attempts >= 15) {
+                stop();
+                return;
+            }
+
+            attempts++;
+            wallpaperSearchInput.focusInput();
         }
     }
 

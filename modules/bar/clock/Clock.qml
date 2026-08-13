@@ -584,21 +584,69 @@ Item {
         }
     }
 
-    // Dashboard popup: same bar-relative placement and open animation as weather.
-    BarPopup {
+    // Keep the dashboard on the unified layer-shell surface. Niri sends
+    // keyboard input to that surface; a child PopupWindow can paint and take
+    // pointer input while key events continue to the client underneath.
+    Item {
         id: dashboardPopup
-        anchorItem: buttonBg
-        variant: "transparent"
-        popupPadding: 0
-        keepMapped: true
+        parent: root.bar
 
-        contentWidth: dashboardWrapper.width
-        contentHeight: dashboardWrapper.height
+        property bool isOpen: false
+        property real revealProgress: 0
+        readonly property bool bottomBar: (Config.bar?.position ?? "top") === "bottom"
+
+        z: 1000
+        x: Math.round((parent.width - width) / 2)
+        y: bottomBar
+            ? parent.height - root.bar.totalBarHeight - dashboardWrapper.height - 8
+            : root.bar.totalBarHeight + 8
+        width: dashboardWrapper.width
+        height: dashboardWrapper.height * revealProgress
+        visible: isOpen || revealProgress > 0
+        clip: true
+
+        Behavior on revealProgress {
+            enabled: Config.animDuration > 0
+            NumberAnimation {
+                duration: Config.animDuration
+                easing.type: dashboardPopup.isOpen ? Easing.OutCubic : Easing.InCubic
+            }
+        }
+
+        function open() {
+            if (isOpen)
+                return;
+            Visibilities.claimBarPopup(dashboardPopup);
+            isOpen = true;
+            revealProgress = 1;
+        }
+
+        function close() {
+            if (!isOpen && revealProgress <= 0)
+                return;
+            isOpen = false;
+            Visibilities.releaseBarPopup(dashboardPopup);
+            revealProgress = 0;
+        }
+
+        function closeQuick() {
+            close();
+        }
+
+        FocusGrab {
+            active: dashboardPopup.isOpen
+            windows: []
+            onCleared: dashboardPopup.close()
+        }
 
         onIsOpenChanged: {
             const screenName = root.bar?.screen?.name ?? "";
             if (isOpen) {
                 GlobalStates.dashboardPopupScreen = screenName;
+                Qt.callLater(() => {
+                    if (dashboardPopup.isOpen && dashboardLoader.item)
+                        dashboardLoader.item.focusCurrentTab();
+                });
             } else if (GlobalStates.dashboardPopupScreen === screenName) {
                 GlobalStates.dashboardPopupScreen = "";
             }
@@ -609,6 +657,7 @@ Item {
             variant: "popup"
             radius: Styling.radius(8)
             enableShadow: false
+            y: dashboardPopup.bottomBar ? dashboardPopup.height - height : 0
             // Stable size so open animation is not a 0→full expand hitch.
             width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + 16 : 916
             height: dashboardLoader.item ? dashboardLoader.item.implicitHeight + 16 : 446

@@ -87,6 +87,19 @@ Item {
         }
     }
 
+    function focusCurrentTab() {
+        const activeLoader = root.state.currentTab === 1
+            ? wallpapersTabLoader
+            : widgetsTabLoader;
+        const activeTab = activeLoader.item;
+
+        if (activeTab && typeof activeTab.focusSearchInput === "function") {
+            activeTab.focusSearchInput();
+        } else {
+            root.forceActiveFocus();
+        }
+    }
+
     focus: true
 
     // Navegar a la pestaña seleccionada cuando se abre el dashboard
@@ -168,6 +181,7 @@ Item {
 
                 // Tab 0: widgets
                 TabLoader {
+                    id: widgetsTabLoader
                     property int index: 0
                     sourceComponent: widgetsComponent
                     z: visible ? 1 : 0
@@ -175,6 +189,7 @@ Item {
 
                 // Tab 1: Wallpapers
                 TabLoader {
+                    id: wallpapersTabLoader
                     property int index: 1
                     sourceComponent: wallpapersComponent
                     z: visible ? 1 : 0

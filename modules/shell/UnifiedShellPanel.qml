@@ -31,13 +31,13 @@ PanelWindow {
             return WlrKeyboardFocus.Exclusive;
         // Bar popups are child surfaces of this panel. The parent layer must
         // request keyboard focus or input continues to the client underneath.
-        if (barContent.timerInputActive)
+        if (barContent.timerInputActive || barContent.dashboardInputActive)
             return WlrKeyboardFocus.Exclusive;
-        // Only take the keyboard while the assistant input is actively focused.
-        // Keeping Exclusive + full-screen grab for the whole open sidebar locked
-        // the desktop when a tool call hung (no way to click other apps).
+        // Request compositor ownership before focusing the assistant input.
+        // Requiring activeFocus here is circular: the field cannot gain focus
+        // while keyboard events still belong to the client underneath.
         if (assistantSidebar && assistantSidebar.active
-                && assistantSidebar.wantsFocus && assistantSidebar.hasActiveFocus)
+                && assistantSidebar.wantsFocus)
             return WlrKeyboardFocus.Exclusive;
         return WlrKeyboardFocus.None;
     }

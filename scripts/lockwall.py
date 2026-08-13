@@ -12,7 +12,9 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 # Supported extensions for processing
-VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".avi", ".mkv"}
+# FFmpeg also decodes WebP, which is used for wallpaper playback when the
+# Qt image plugins do not provide a WebP decoder.
+VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".avi", ".mkv", ".webp"}
 GIF_EXTENSIONS = {".gif"}
 
 

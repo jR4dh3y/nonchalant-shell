@@ -148,11 +148,14 @@ PanelWindow {
     // Funciones utilitarias para tipos de archivo
     function getFileType(path) {
         var extension = path.toLowerCase().split('.').pop();
-        if (['jpg', 'jpeg', 'png', 'webp', 'tif', 'tiff', 'bmp'].includes(extension)) {
+        if (['jpg', 'jpeg', 'png', 'tif', 'tiff', 'bmp'].includes(extension)) {
             return 'image';
         } else if (['gif'].includes(extension)) {
             return 'gif';
-        } else if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(extension)) {
+        } else if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'webp'].includes(extension)) {
+            // Qt 6 on this installation has no WebP image plugin. Route WebP
+            // through the existing mpvpaper/FFmpeg path, which supports both
+            // still and animated WebP files.
             return 'video';
         }
         return 'unknown';

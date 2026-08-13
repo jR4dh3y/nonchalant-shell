@@ -1,4 +1,5 @@
 import QtQuick
+import qs.modules.globals
 import qs.modules.widgets.dashboard
 import qs.modules.services
 
@@ -11,6 +12,10 @@ Item {
     property bool popupMode: false
 
     signal closeRequested()
+
+    function focusCurrentTab() {
+        dashboardItem.focusCurrentTab();
+    }
 
     Dashboard {
         id: dashboardItem
@@ -33,8 +38,22 @@ Item {
 
         Component.onCompleted: {
             Qt.callLater(() => {
-                forceActiveFocus();
+                dashboardItem.focusCurrentTab();
             });
+        }
+
+        Connections {
+            target: GlobalStates
+
+            function onDashboardCurrentTabChanged() {
+                if (!root.popupMode)
+                    return;
+
+                Qt.callLater(() => {
+                    if (root.visible)
+                        dashboardItem.focusCurrentTab();
+                });
+            }
         }
     }
 }

@@ -18,6 +18,7 @@ StyledRect {
     property bool passwordMode: false  // Si true, muestra círculos en lugar del texto
     property bool centerText: false  // Si true, centra el texto horizontalmente
     property bool disableCursorNavigation: false  // Si true, Left/Right siempre emiten señales sin mover el cursor
+    readonly property bool inputActiveFocus: textField.activeFocus
 
     signal searchTextChanged(string text)
     signal accepted
@@ -40,7 +41,10 @@ StyledRect {
     signal endPressed
 
     function focusInput() {
+        if (!root.visible || !root.enabled)
+            return false;
         textField.forceActiveFocus();
+        return textField.activeFocus;
     }
 
     function clear() {
