@@ -38,9 +38,11 @@ WlSessionLockSurface {
             return;
 
         entryStarted = true;
-        // Let niri present the fully-covered initial state for one frame before
-        // changing animated properties. Otherwise the first rendered frame can
-        // already be the final state and the lock-in animation is skipped.
+        // Wait until the captured desktop frame is actually presented before
+        // animating in, so the lock-in transition starts from the real desktop
+        // instead of a solid backdrop. entryTimer polls with a fallback
+        // timeout in case the capture never lands.
+        entryTimer.elapsed = 0;
         entryTimer.start();
     }
 
@@ -72,10 +74,10 @@ WlSessionLockSurface {
 
     readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && desktopFrame.hasContent
 
-    // Keep the lock backdrop static while entering. Animating a full-screen
-    // asynchronously decoded image causes frame pacing jitter on lock. The
-    // foreground provides the lock-in motion; this backdrop only fades on
-    // unlock, over the captured desktop frame.
+    // The wallpaper stays static on lock, while this inexpensive themed scrim
+    // provides the lock-in motion. On entry the wallpaper stays hidden until
+    // startAnim so the captured desktop frame below is visible first (seamless
+    // lock-in); on unlock it fades out over that same captured frame.
     TintedWallpaper {
         id: wallpaperBackground
         anchors.fill: parent
@@ -94,10 +96,15 @@ WlSessionLockSurface {
 
         source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
         visible: source !== ""
-        opacity: GlobalStates.lockscreenUnlocking ? (root.revealDesktop ? 0 : 1) : 1
+        opacity: GlobalStates.lockscreenUnlocking
+            ? (root.revealDesktop ? 0 : 1)
+            : (root.startAnim || !desktopFrame.hasContent ? 1 : 0)
 
         Behavior on opacity {
+            // Snap to the desktop frame during entry; animate only the
+            // startAnim crossfade and the unlock reveal.
             enabled: Config.animDuration > 0
+                && (GlobalStates.lockscreenUnlocking || root.startAnim)
             NumberAnimation {
                 duration: root.unlockAnimMs
                 easing.type: Easing.OutQuint
@@ -105,21 +112,22 @@ WlSessionLockSurface {
         }
     }
 
-    // The wallpaper stays static on lock, while this inexpensive themed scrim
-    // fades from opaque to dim. That provides the lock-in fade without
-    // compositing the full-screen asynchronous image every frame. On unlock it
-    // keeps the existing desktop-reveal fade.
+    // The themed scrim fades in over the captured desktop once the entry
+    // animation starts. Until the desktop capture lands it stays opaque so an
+    // undefined compositor buffer can never leak through. On unlock it keeps
+    // the existing desktop-reveal fade.
     Rectangle {
         id: dimOverlay
         anchors.fill: parent
         color: Colors.background
         opacity: GlobalStates.lockscreenUnlocking
             ? (root.revealDesktop ? 0 : 0.55)
-            : (root.startAnim ? 0.55 : 1)
+            : (root.startAnim ? 0.55 : (desktopFrame.hasContent ? 0 : 1))
         z: 2
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
+                && (GlobalStates.lockscreenUnlocking || root.startAnim)
             NumberAnimation {
                 duration: root.unlockAnimMs
                 easing.type: Easing.OutQuint
@@ -630,11 +638,19 @@ WlSessionLockSurface {
     Timer {
         id: entryTimer
         interval: 16
-        repeat: false
+        repeat: true
+        property int elapsed: 0
         onTriggered: {
-            if (!root.unlocking && root.lockSecure) {
-                root.startAnim = true;
-                passwordInput.forceActiveFocus();
+            elapsed += interval;
+            // Start once the desktop capture has been presented for at least
+            // two frames so the lock-in animation is not skipped; fall back
+            // after 250ms if the capture never produces content.
+            if ((desktopFrame.hasContent && elapsed >= 32) || elapsed >= 250) {
+                stop();
+                if (!root.unlocking && root.lockSecure) {
+                    root.startAnim = true;
+                    passwordInput.forceActiveFocus();
+                }
             }
         }
     }
