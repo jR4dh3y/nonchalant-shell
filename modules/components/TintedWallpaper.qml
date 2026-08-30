@@ -75,11 +75,16 @@ Item {
             mipmap: true
             id: rawImage
             anchors.fill: parent
-            source: root.source
+            // Decode at display size: shares the desktop wallpaper's pixmap
+            // cache entry (same URL + sourceSize) so the lock surface's first
+            // frame is a cache hit instead of a fresh full-res decode.
+            sourceSize.width: root.width
+            sourceSize.height: root.height
+            source: root.source !== "" && root.width > 0 && root.height > 0 ? root.source : ""
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             smooth: true
-            
+
             // Tint layer
             layer.enabled: root.tintEnabled
             layer.effect: ShaderEffect {
@@ -93,4 +98,6 @@ Item {
             }
         }
     }
+
+    readonly property bool ready: rawImage.status === Image.Ready
 }

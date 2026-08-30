@@ -43,6 +43,28 @@ PanelWindow {
 
     readonly property var supportedWallpaperModes: ["crop", "fit", "stretch", "center"]
 
+    // Keep the lockscreen frame warm in QML's pixmap cache. The lock surface's
+    // TintedWallpaper loads the same URL with the same sourceSize, so on lock
+    // its first frame is a cache hit instead of a fresh async decode (which
+    // shows as a flash of solid color). Covers video/GIF lockscreen frames,
+    // which are not displayed anywhere else.
+    Image {
+        id: lockscreenFramePreloader
+        visible: false
+        cache: true
+        mipmap: true
+        smooth: true
+        asynchronous: true
+        fillMode: Image.PreserveAspectCrop
+        sourceSize.width: wallpaper.width
+        sourceSize.height: wallpaper.height
+        source: {
+            const frame = wallpaper.getLockscreenFramePath(wallpaper.effectiveWallpaper);
+            return frame ? "file://" + frame : "";
+        }
+    }
+
+
     readonly property int wallpaperFillMode: {
         switch (wallpaperMode) {
         case "fit":

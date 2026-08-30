@@ -38,10 +38,10 @@ WlSessionLockSurface {
             return;
 
         entryStarted = true;
-        // Wait until the captured desktop frame is actually presented before
-        // animating in, so the lock-in transition starts from the real desktop
-        // instead of a solid backdrop. entryTimer polls with a fallback
-        // timeout in case the capture never lands.
+        // Wait until the wallpaper (the frame-1 base layer) is actually
+        // presented before animating in, so the lock-in transition starts from
+        // a fully rendered lock backdrop. entryTimer polls with a fallback
+        // timeout in case the image never becomes ready.
         entryTimer.elapsed = 0;
         entryTimer.start();
     }
@@ -74,10 +74,16 @@ WlSessionLockSurface {
 
     readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && desktopFrame.hasContent
 
-    // The wallpaper stays static on lock, while this inexpensive themed scrim
-    // provides the lock-in motion. On entry the wallpaper stays hidden until
-    // startAnim so the captured desktop frame below is visible first (seamless
-    // lock-in); on unlock it fades out over that same captured frame.
+    // The wallpaper is the frame-1 base layer of the lock surface. It must be
+    // ready at first commit: niri switches the output to the locked frame as
+    // soon as this surface commits, and the screencopy capture below can never
+    // be ready that early. The wallpaper window keeps the same image warm in
+    // the pixmap cache (see lockscreenFramePreloader), so this is a cache hit.
+    readonly property bool wallpaperReady: wallpaperBackground.source === "" || wallpaperBackground.ready
+
+    // On entry the wallpaper stays fully visible (identical to the desktop
+    // background) and the dim scrim + chrome animate in on top. On unlock the
+    // wallpaper fades out over the captured desktop frame.
     TintedWallpaper {
         id: wallpaperBackground
         anchors.fill: parent
@@ -96,15 +102,10 @@ WlSessionLockSurface {
 
         source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
         visible: source !== ""
-        opacity: GlobalStates.lockscreenUnlocking
-            ? (root.revealDesktop ? 0 : 1)
-            : (root.startAnim || !desktopFrame.hasContent ? 1 : 0)
+        opacity: GlobalStates.lockscreenUnlocking ? (root.revealDesktop ? 0 : 1) : 1
 
         Behavior on opacity {
-            // Snap to the desktop frame during entry; animate only the
-            // startAnim crossfade and the unlock reveal.
             enabled: Config.animDuration > 0
-                && (GlobalStates.lockscreenUnlocking || root.startAnim)
             NumberAnimation {
                 duration: root.unlockAnimMs
                 easing.type: Easing.OutQuint
@@ -112,17 +113,17 @@ WlSessionLockSurface {
         }
     }
 
-    // The themed scrim fades in over the captured desktop once the entry
-    // animation starts. Until the desktop capture lands it stays opaque so an
-    // undefined compositor buffer can never leak through. On unlock it keeps
-    // the existing desktop-reveal fade.
+    // The themed scrim fades in over the wallpaper once the entry animation
+    // starts. If the wallpaper is not cached yet, it stays opaque as a
+    // fallback so an undefined compositor buffer can never leak through. On
+    // unlock it keeps the existing desktop-reveal fade.
     Rectangle {
         id: dimOverlay
         anchors.fill: parent
         color: Colors.background
         opacity: GlobalStates.lockscreenUnlocking
             ? (root.revealDesktop ? 0 : 0.55)
-            : (root.startAnim ? 0.55 : (desktopFrame.hasContent ? 0 : 1))
+            : (root.startAnim ? 0.55 : (root.wallpaperReady ? 0 : 1))
         z: 2
 
         Behavior on opacity {
@@ -642,10 +643,10 @@ WlSessionLockSurface {
         property int elapsed: 0
         onTriggered: {
             elapsed += interval;
-            // Start once the desktop capture has been presented for at least
-            // two frames so the lock-in animation is not skipped; fall back
-            // after 250ms if the capture never produces content.
-            if ((desktopFrame.hasContent && elapsed >= 32) || elapsed >= 250) {
+            // Start once the wallpaper has been presented for at least two
+            // frames so the lock-in animation is not skipped; fall back after
+            // 250ms if the image never becomes ready (no wallpaper, etc.).
+            if ((root.wallpaperReady && elapsed >= 32) || elapsed >= 250) {
                 stop();
                 if (!root.unlocking && root.lockSecure) {
                     root.startAnim = true;
