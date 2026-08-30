@@ -46,8 +46,13 @@ RowLayout {
         font.weight: Font.Medium
         color: Colors.overBackground
         elide: Text.ElideRight
-        // Allow the layout to shrink this below its implicit width (eliding)
-        // instead of pushing the trailing actions out of the panel.
+        // fillWidth makes this shrinkable when the panel is too narrow;
+        // maximumWidth: implicitWidth keeps it from expanding into the slack
+        // (the filler below handles that), so the status stays adjacent.
+        // Without this the RowLayout overflows and pushes the trailing
+        // actions out of the panel.
+        Layout.fillWidth: true
+        Layout.maximumWidth: implicitWidth
         Layout.minimumWidth: 0
     }
 
@@ -61,6 +66,8 @@ RowLayout {
         font.pixelSize: Styling.fontSize(-2)
         color: root.statusColor
         elide: Text.ElideRight
+        Layout.fillWidth: true
+        Layout.maximumWidth: implicitWidth
         Layout.minimumWidth: 0
     }
 
