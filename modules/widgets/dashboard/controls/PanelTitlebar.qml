@@ -45,6 +45,10 @@ RowLayout {
         font.pixelSize: Styling.fontSize(0)
         font.weight: Font.Medium
         color: Colors.overBackground
+        elide: Text.ElideRight
+        // Allow the layout to shrink this below its implicit width (eliding)
+        // instead of pushing the trailing actions out of the panel.
+        Layout.minimumWidth: 0
     }
 
     // Status text (e.g., "Connecting...", "Bypassed")
@@ -56,6 +60,8 @@ RowLayout {
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(-2)
         color: root.statusColor
+        elide: Text.ElideRight
+        Layout.minimumWidth: 0
     }
 
     Item {
