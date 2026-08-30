@@ -26,6 +26,11 @@ RowLayout {
 
     signal toggleChanged(bool checked)
 
+    // Matches the 12px content indent used by items inside the panels
+    // (WifiNetworkItem, BluetoothDeviceItem, GpuPanel, ...) so the title and
+    // the trailing controls line up with the content below them.
+    readonly property int horizontalMargin: 12
+
     Layout.fillWidth: true
     Layout.preferredHeight: 36
     spacing: 8
@@ -34,6 +39,7 @@ RowLayout {
     Text {
         renderType: Text.NativeRendering
         font.hintingPreference: Font.PreferFullHinting
+        leftPadding: root.horizontalMargin
         text: root.title
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(0)
@@ -156,5 +162,10 @@ RowLayout {
             }
         }
         background: null
+    }
+
+    // Trailing margin so the toggle/actions don't touch the panel edge
+    Item {
+        Layout.preferredWidth: root.horizontalMargin
     }
 }
