@@ -217,8 +217,9 @@ ClippingRectangle {
         bottomLeftRadius: root.bottomLeftRadius
         bottomRightRadius: root.bottomRightRadius
         color: "transparent"
-        border.color: Config.resolveColor(borderData[0])
-        border.width: borderData[1]
+        border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
+        border.width: borderData?.[1] ?? 0
+
         visible: root.enableBorder
     }
 }

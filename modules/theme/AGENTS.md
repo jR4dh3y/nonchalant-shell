@@ -29,7 +29,14 @@ Dynamic theming layer providing colors, icons, and style utilities as singletons
 | **Add app generator** | New `*Generator.qml` | Follow existing generator pattern, read from `Colors.*` |
 
 ## CONVENTIONS
-- **Color access**: Always use `Colors.<property>` (e.g., `Colors.primary`, `Colors.surface`). Never hardcode hex values.
-- **Radius**: Use `Styling.radius(offset)` where offset adjusts from base `Config.roundness`.
+- **Color access**: Always use `Colors.<property>` (e.g., `Colors.primary`, `Colors.surface`). Never hardcode hex values (`#FF0000`, etc.).
+- **Strongly Typed Helpers**: In `Styling.qml`, every helper function must have explicit parameter and return types (e.g. `function radius(offset: real = 0): real`, `function fontSize(offset: real = 0): real`, `function srItem(variant: string): color`).
+- **Radius vs Spacing**: Use `Styling.radius(offset)` ONLY for corner radii. Never use `Styling.radius()` for padding, margins, or layout clearance (these collapse to 0 when `roundness: 0`).
 - **Font size**: Use `Styling.fontSize(offset)` for consistent text scaling.
-- **Generators**: Read-only consumers of `Colors`. Write via `FileView` to app config paths.
+- **Generators**: Read-only consumers of `Colors`. Write configs via `Quickshell.Io.Process`. Ensure processes handle non-running targets gracefully (e.g. `pkill -SIGUSR1 kitty || true`) and avoid unescaped shell interpolations.
+
+## ANTI-PATTERNS
+- Hardcoding hex colors anywhere in the theme or component layer.
+- Misusing `Styling.radius()` as a substitute for padding or spacing.
+- Leaving untyped parameters or return types on styling functions.
+- Untyped `Colors.availableColorNames` (declare as `list<string>`).

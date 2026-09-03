@@ -33,16 +33,8 @@ WlSessionLockSurface {
     // can briefly show an undefined compositor buffer while they map.
     color: Colors.background
 
-    // [lockdbg] temporary instrumentation
-    property real lockdbgT0: 0
-    function lockdbg(msg) {
-        const now = Date.now();
-        if (root.lockdbgT0 === 0)
-            root.lockdbgT0 = now;
-        console.log("[lockdbg]", Math.round(now - root.lockdbgT0) + "ms", "screen:" + (root.screen ? root.screen.name : "?"), msg);
-    }
-
     function beginEntry() {
+
         if (entryStarted || !lockSecure || unlocking)
             return;
 
@@ -557,22 +549,12 @@ WlSessionLockSurface {
         }
     }
 
-    Process {
-        id: hostnameProc
-        command: ["hostname"]
-        running: true
-
-        stdout: StdioCollector {
-            id: hostnameCollector
-            waitForEnd: true
-        }
-    }
-
     // Holder temporal para la contraseña durante autenticación
     QtObject {
         id: authPasswordHolder
         property string password: ""
     }
+
 
     // Proceso para verificar tiempo de faillock
     Process {
@@ -628,19 +610,22 @@ WlSessionLockSurface {
     PamContext {
         id: pamAuth
         // Use custom PAM config for lockscreen authentication
-        configDirectory: Qt.resolvedUrl("../../config/pam").toString().replace("file://", "")
+        configDirectory: decodeURIComponent(Qt.resolvedUrl("../../config/pam").toString().replace(/^file:\/\//, ""))
         config: "password.conf"
 
         onPamMessage: {
-            console.log("PAM Message:", this.message, "Type:", this.messageType, "Required:", this.responseRequired);
             if (this.responseRequired) {
-                // pam_unix asks for password, respond with stored password
-                this.respond(authPasswordHolder.password);
+                if (this.messageType === PamMessageType.PromptEchoOff) {
+                    this.respond(authPasswordHolder.password);
+                    authPasswordHolder.password = "";
+                } else if (this.messageType === PamMessageType.PromptEchoOn) {
+                    this.respond(Quickshell.env("USER") || "");
+                }
             }
         }
 
         onCompleted: result => {
-            // Limpiar contraseña
+            // Ensure password buffer is always clear
             authPasswordHolder.password = "";
 
             if (result === PamResult.Success) {
@@ -693,19 +678,17 @@ WlSessionLockSurface {
             // fall back after 250ms if neither ever becomes ready.
             const baseReady = root.shotReady || root.wallpaperReady;
             if ((baseReady && elapsed >= 32) || elapsed >= 250) {
-                root.lockdbg("entry trigger: shotReady=" + root.shotReady + " wallpaperReady=" + root.wallpaperReady + " elapsed=" + elapsed + (elapsed >= 250 && !baseReady ? " (FALLBACK)" : ""));
                 stop();
                 if (!root.unlocking && root.lockSecure) {
                     root.startAnim = true;
-                    passwordInput.forceActiveFocus();
+                    if (root.screen === Quickshell.screens[0])
+                        passwordInput.forceActiveFocus();
                 }
             }
         }
     }
 
     Component.onCompleted: {
-        root.lockdbgT0 = LockscreenService.lockdbgT0;
-        root.lockdbg("surface completed, shot=" + root.lockshotPath + " framePath=" + wallpaperBackground.lockscreenFramePath);
         beginEntry();
     }
 }

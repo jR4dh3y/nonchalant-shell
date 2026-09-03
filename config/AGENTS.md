@@ -14,18 +14,22 @@ Reactive, file-backed configuration system built on `Quickshell.Io`. Source of t
 |------|----------|-------|
 | **Add config key** | `defaults/<domain>.js` + `Config.qml` | BOTH must be updated |
 | **Validation logic** | `ConfigValidator.js` | Recursive `validate()` with type constraints |
-| **Bootstrapping** | `Config.qml` (`Process` + `StdioCollector`) | Detects missing JSON, populates from defaults |
+| **Bootstrapping** | `Config.qml` (`Process` + `onExited`) | Detects missing JSON, populates from `defaults/*.js` |
 | **File sync** | `Config.qml` (`FileView`/`JsonAdapter` pairs) | Each domain has isolated persistence |
 | **Load gating** | `Config.qml` (`initialLoadComplete`) | Guards components needing fully-initialized config |
 
 ## CONVENTIONS
-- **Atomic defaults**: ALWAYS update `defaults/*.js` when adding new config keys.
+- **Single Source of Truth**: `defaults/*.js` is the sole blueprint. Always include `.pragma library` at line 1 of every defaults file.
+- **Atomic updates**: ALWAYS update BOTH `defaults/<domain>.js` and `Config.qml` when adding or modifying keys.
+- **Strong Typing**: Expose domain adapters using `property alias <domain>: <domain>Loader.adapter` to preserve the `JsonAdapter` contract; never erase type fidelity with generic `QtObject`.
 - **Bind to Config**: UI elements bind to `Config.<module>.<property>`. Never use local state for persistent settings.
-- **Auto-save**: `JsonObject` changes auto-persist immediately via `FileView`.
-- **Reactive defaults**: Config access may occur during load/reload. Gate with `initialLoadComplete` if needed.
-- **JSON formatting**: 4-space indent for human readability.
+- **Auto-save**: `JsonObject` property modifications auto-persist immediately via `FileView`.
+- **Null Safety**: Always guard nested property access (`Config.<domain>?.<property> ?? fallback`).
+- **Validation**: Enforce explicit valid sets for enums (e.g. `gradientType`, `position`, `sidebarPosition`, `unit`).
 
 ## ANTI-PATTERNS
 - Adding a config key without a corresponding default in `defaults/*.js`.
-- Modifying `Config` properties directly outside the `JsonAdapter` binding system.
+- Erasing adapter types with `property QtObject`.
+- Retaining dead keys or obsolete validator checks (e.g. Ambxst leftovers like `noMediaDisplay`).
 - Reading config values before `initialLoadComplete` without a null guard.
+- Direct disk mutations while the shell is running (write through reactive `Config` properties).

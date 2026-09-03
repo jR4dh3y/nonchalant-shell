@@ -43,8 +43,16 @@ PREVIEW_FILE=$(mktemp)
 trap 'rm -f "$CONTENT_FILE" "$PREVIEW_FILE"' EXIT
 printf '%s' "$PREVIEW" >"$PREVIEW_FILE"
 
+# Escape single quotes in SQL variables
+SQL_HASH="${HASH//\'/\'\'}"
+SQL_MIME_TYPE="${MIME_TYPE//\'/\'\'}"
+SQL_BINARY_PATH="${BINARY_PATH//\'/\'\'}"
+SQL_PREVIEW_FILE="${PREVIEW_FILE//\'/\'\'}"
+SQL_CONTENT_FILE="${CONTENT_FILE//\'/\'\'}"
+SQL_IS_IMAGE="${IS_IMAGE:-0}"
+SQL_SIZE="${SIZE:-0}"
+
 # Use sqlite3 with -cmd to read from files using readfile() function
-# This avoids all shell escaping issues
 sqlite3 "$DB_PATH" <<EOSQL
 .timeout 5000
 BEGIN TRANSACTION;
@@ -52,18 +60,19 @@ BEGIN TRANSACTION;
 INSERT INTO clipboard_items 
 (content_hash, mime_type, preview, full_content, is_image, binary_path, size, pinned, display_index, created_at, updated_at) 
 VALUES (
-    '${HASH}',
-    '${MIME_TYPE}',
-    readfile('${PREVIEW_FILE}'),
-    readfile('${CONTENT_FILE}'),
-    ${IS_IMAGE},
-    '${BINARY_PATH}',
-    ${SIZE},
+    '${SQL_HASH}',
+    '${SQL_MIME_TYPE}',
+    readfile('${SQL_PREVIEW_FILE}'),
+    readfile('${SQL_CONTENT_FILE}'),
+    ${SQL_IS_IMAGE},
+    '${SQL_BINARY_PATH}',
+    ${SQL_SIZE},
     0,
     0,
     ${TIMESTAMP},
     ${TIMESTAMP}
 )
+
 ON CONFLICT(content_hash) DO UPDATE SET
 updated_at = ${TIMESTAMP},
 display_index = 0;

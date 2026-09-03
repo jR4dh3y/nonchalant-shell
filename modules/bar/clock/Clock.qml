@@ -35,8 +35,9 @@ Item {
     property string currentDayAbbrev: ""
     property string currentFullDate: ""
 
-    required property var bar
+    required property Item bar
     property bool isHovered: false
+
     property bool layerEnabled: false
     
     property real radius: 0
@@ -113,7 +114,10 @@ Item {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
             opacity: root.anyPopupOpen ? 0 : (root.isHovered ? 0.25 : 0)
-            radius: parent.radius ?? 0
+            topLeftRadius: parent.topLeftRadius
+            topRightRadius: parent.topRightRadius
+            bottomLeftRadius: parent.bottomLeftRadius
+            bottomRightRadius: parent.bottomRightRadius
 
             Behavior on opacity {
                 enabled: Config.animDuration > 0
@@ -122,6 +126,7 @@ Item {
                 }
             }
         }
+
 
         RowLayout {
             id: rowLayout

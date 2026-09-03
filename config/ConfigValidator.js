@@ -21,8 +21,8 @@ function validate(current, defaults, keyName) {
             return clone(defaults);
         }
 
-        var result = {};
-        for (var key in defaults) {
+        const result = {};
+        for (const key in defaults) {
             result[key] = validate(current[key], defaults[key], key);
         }
         return result;
@@ -33,22 +33,29 @@ function validate(current, defaults, keyName) {
     }
 
     if (keyName === "gradientType") {
-        var validTypes = ["linear", "radial", "halftone"];
+        const validTypes = ["linear", "radial", "halftone"];
         if (validTypes.indexOf(current) === -1) {
             return defaults;
         }
     }
 
-    if (keyName === "noMediaDisplay") {
-        var validMediaOptions = ["userHost", "compositor", "custom"];
-        if (validMediaOptions.indexOf(current) === -1) {
+    if (keyName === "position") {
+        const validPositions = ["top", "bottom"];
+        if (validPositions.indexOf(current) === -1) {
             return defaults;
         }
     }
 
-    if (keyName === "position") {
-        var validPositions = ["top", "bottom"];
-        if (validPositions.indexOf(current) === -1) {
+    if (keyName === "sidebarPosition") {
+        const validSidebarPositions = ["left", "right"];
+        if (validSidebarPositions.indexOf(current) === -1) {
+            return defaults;
+        }
+    }
+
+    if (keyName === "unit") {
+        const validUnits = ["celsius", "fahrenheit"];
+        if (validUnits.indexOf(current) === -1) {
             return defaults;
         }
     }

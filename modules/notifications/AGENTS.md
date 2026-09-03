@@ -6,15 +6,14 @@ Notification popup system built on Quickshell.Services.Notifications. Handles di
 ## STRUCTURE
 ```
 modules/notifications/
-├── notification_utils.js          # Time formatting, body processing
-├── NotificationPopup.qml          # Scope container with PanelWindow
-├── NotificationListView.qml       # ListView model binding
-├── NotificationDelegate.qml       # Core component (471 lines)
-├── NotificationAppIcon.qml        # Icon/image with fallback chain
+├── notification_utils.js          # Time formatting, body sanitization
+├── NotificationToastStack.qml     # Active overlay toast stack (rendered inside UnifiedShellPanel)
+├── NotificationDelegate.qml       # Core notification delegate for history & popups
+├── NotificationAppIcon.qml        # App icon/image with fallback chain
 ├── NotificationAnimation.qml     # Dismiss animation (slide + fade)
 ├── NotificationDismissButton.qml # Dismiss action button
-├── NotificationActionButtons.qml # Action button repeater
-├── NotificationGroup.qml         # Grouping logic
+├── NotificationActionButtons.qml # Interactive notification action buttons
+├── NotificationGroup.qml         # Grouping logic for notification history
 └── NotificationGroupExpandButton.qml # Expand toggle
 ```
 
@@ -22,26 +21,26 @@ modules/notifications/
 
 | Task | File | Notes |
 |------|------|-------|
-| Popup container | `NotificationPopup.qml` | PanelWindow with WlrLayer.Overlay |
-| List rendering | `NotificationListView.qml` | Binds to `Notifications.popupList` or `Notifications.notifications` |
-| Core display | `NotificationDelegate.qml` | Handles both grouped and single modes |
+| Toast stack | `NotificationToastStack.qml` | Embedded in `UnifiedShellPanel.qml` |
+| Core display | `NotificationDelegate.qml` | Grouped and single mode presentation |
+| Action buttons | `NotificationActionButtons.qml` | Action invocation (`attemptInvokeAction`) |
 | Icon handling | `NotificationAppIcon.qml` | Image > appIcon > Icons fallback chain |
-| Dismissing | `NotificationAnimation.qml` | Scale + opacity + slide animation |
-| Time formatting | `notification_utils.js` | `getFriendlyNotifTimeString()`, `processNotificationBody()` |
+| Dismiss animation | `NotificationAnimation.qml` | Scale + opacity + slide |
+| Body & Time | `notification_utils.js` | Body text parsing and friendly time formatting |
 
 ## CONVENTIONS
 
-- **Urgency levels**: Use `NotificationUrgency.Normal` / `NotificationUrgency.Critical` from `Quickshell.Services.Notifications`
-- **Critical styling**: `Colors.criticalRed`, `Colors.criticalText`, `DiagonalStripePattern` component
-- **StyledRect variants**: `"primary"`, `"error"`, `"focus"`, `"common"` for button backgrounds
-- **Animation duration**: Read `Config.animDuration` (not hardcoded)
-- **Icons singleton**: `Icons.cancel`, `Icons.bell`, `Icons.alert`, `Icons.timer`
-- **Delegate modes**: `onlyNotification=true` for popup, `expanded` controls group expansion state
+- **Urgency levels**: Use `NotificationUrgency.Normal` / `NotificationUrgency.Critical` from `Quickshell.Services.Notifications`.
+- **Critical styling**: Critical toasts MUST use `Colors.error` border and `DiagonalStripePattern`.
+- **Action Invocation**: Card body click invokes default action (`Notifications.attemptInvokeAction(id, "default")`). Action buttons invoke specific keys. Never blanket-dismiss on card clicks.
+- **StyledRect containers**: All card backgrounds, action buttons, and icons must use `StyledRect`. Never use raw `Rectangle`.
+- **Animation duration**: Read `Config.animDuration` (never hardcode milliseconds).
+- **Strong Typing**: Strongly type notification properties (`Notif`, `int id`, `string summary`).
 
 ## ANTI-PATTERNS
 
-- **Raw Rectangle for backgrounds**: Use `StyledRect` with appropriate variant
-- **Hardcoded animation durations**: Use `Config.animDuration`
-- **Missing urgency checks**: Always check `urgency === NotificationUrgency.Critical` for special styling
-- **No fallback for missing icons**: Chain `image` -> `appIcon` -> `Icons.*` fallback
-- **Direct notification removal**: Use `Notifications.discardNotification(id)` through animation callback
+- Trapping clicks with full-card `MouseArea` that silently dismisses without invoking the notification's default action.
+- Using raw `Rectangle` for backgrounds or borders instead of `StyledRect`.
+- Hardcoding animation durations (e.g. `duration: 300` or `800`) instead of `Config.animDuration`.
+- Missing urgency checks for critical notifications.
+- Direct notification removal without animation callbacks.

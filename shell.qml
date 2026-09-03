@@ -53,13 +53,11 @@ ShellRoot {
 
                 // Keep exclusive zone even during niri overview so tiled
                 // windows do not reflow. Bar is only hidden visually.
-                barEnabled: {
-                    const list = (Config.bar && Config.bar.screenList !== undefined ? Config.bar.screenList : []);
-                    return (!list || list.length === 0 || list.indexOf(screen.name) !== -1);
-                }
+                barEnabled: unifiedPanel.barEnabled
                 barSize: unifiedPanel.barTargetHeight
                 barOuterMargin: unifiedPanel.barOuterMargin
-                barPosition: Config.bar.position ?? "top"
+                barPosition: Config.bar?.position ?? "top"
+
 
                 sidebarEnabled: GlobalStates.assistantAvailable
                     && GlobalStates.assistantVisible
@@ -105,7 +103,7 @@ ShellRoot {
         Component.onCompleted: {
             Qt.callLater(() => {
                 let _ = GlobalShortcuts.appId;
-                _ = LockscreenService;
+                _ = LockscreenService.prepActive;
                 // Keep compositor + OSD services hot for overview hide and media keys.
                 _ = NiriService.overviewOpen;
                 _ = Audio.value;
@@ -115,9 +113,10 @@ ShellRoot {
                 _ = Notifications.appNameList;
                 _ = StateService.initialized;
                 // ACP agents remain entirely idle when the AI feature is off.
-                if (Config.ai.enabled ?? true)
+                if (Config.ai?.enabled ?? true)
                     _ = Ai.models;
             });
         }
+
     }
 }

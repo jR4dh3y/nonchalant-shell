@@ -24,10 +24,11 @@ Singleton {
 
     property Process readProcess: Process {
         running: false
-        stdout: SplitParser {
-            onRead: data => {
+        stdout: StdioCollector {
+            waitForEnd: true
+            onStreamFinished: {
                 try {
-                    const content = data ? data.trim() : "";
+                    const content = text ? text.trim() : "";
                     if (content) {
                         root.state = JSON.parse(content);
                     } else {
@@ -42,7 +43,7 @@ Singleton {
             }
         }
         onExited: code => {
-            if (code !== 0) {
+            if (code !== 0 && !root.initialized) {
                 // File doesn't exist yet
                 root.state = {};
                 root.initialized = true;
@@ -89,12 +90,13 @@ Singleton {
 
         try {
             const json = JSON.stringify(root.state);
-            writeProcess.command = ["sh", "-c", `printf '%s' '${json}' > "${root.stateFile}"`];
+            writeProcess.command = ["sh", "-c", 'printf "%s" "$1" > "$2"', "sh", json, root.stateFile];
             writeProcess.running = true;
         } catch (e) {
             console.warn("StateService: Failed to save state:", e);
         }
     }
+
 
     /**
      * Load state from disk

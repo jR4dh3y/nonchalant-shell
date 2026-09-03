@@ -11,17 +11,18 @@ QtObject {
     readonly property int textRenderType: Text.NativeRendering
     readonly property int textHinting: Font.PreferFullHinting
 
-    function radius(offset) {
+    function radius(offset: real): real {
         return Config.roundness > 0 ? Math.max(Config.roundness + offset, 0) : 0;
     }
 
-    function fontSize(offset) {
+    function fontSize(offset: real): real {
         return Math.max(Config.theme.fontSize + offset, 8);
     }
 
-    function monoFontSize(offset) {
+    function monoFontSize(offset: real): real {
         return Math.max(Config.theme.monoFontSize + offset, 8);
     }
+
 
     function getStyledRectConfig(variant) {
         switch (variant) {

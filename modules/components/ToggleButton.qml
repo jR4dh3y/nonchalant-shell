@@ -43,7 +43,10 @@ Button {
             anchors.fill: parent
             color: parent.item || "transparent"
             opacity: root.pressed ? 0.5 : (root.hovered ? 0.25 : 0)
-            radius: parent.radius ?? 0
+            topLeftRadius: parent.topLeftRadius
+            topRightRadius: parent.topRightRadius
+            bottomLeftRadius: parent.bottomLeftRadius
+            bottomRightRadius: parent.bottomRightRadius
 
             Behavior on opacity {
                 enabled: (Config.animDuration ?? 0) > 0
@@ -53,6 +56,7 @@ Button {
             }
         }
     }
+
 
     contentItem: Item {
         // Text icon (single character)
@@ -99,7 +103,8 @@ Button {
 
     onClicked: root.onToggle()
 
-    ToolTip.visible: false
-    ToolTip.text: root.tooltipText
-    ToolTip.delay: 1000
+    StyledToolTip {
+        show: root.hovered
+        tooltipText: root.tooltipText
+    }
 }

@@ -75,40 +75,50 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 
 ## CONVENTIONS
 - **Singletons**: `pragma Singleton` + `Singleton { id: root }` for all services and global state.
+- **Strong Typing**: Always declare explicit types (`int`, `real`, `string`, `bool`, `Item`, `color`, `list<T>`, `JsonAdapter`). Avoid untyped `property var` or generic `QtObject` where concrete types exist.
 - **Imports**: `import qs.modules.*` namespace. Resolved by Quickshell's module system, not `qmldir` files.
-- **Persistence**: `FileView` watches JSON on disk; `JsonAdapter` creates bidirectional QML bindings.
+- **Persistence**: `FileView` watches JSON on disk; `JsonAdapter` creates bidirectional QML bindings. `defaults/*.js` is the sole source of truth.
 - **Formatting**: 4-space indent.
 - **Defaults**: New config keys MUST have entries in `config/defaults/*.js`.
 - **Multi-monitor**: `Variants { model: Quickshell.screens }` pattern for per-screen instances.
-- **StyledRect variants**: Use `"pane"`, `"popup"`, `"common"`, `"internalbg"`, `"focus"` for containers.
-- **Null safety**: Always null-check nested properties in QML to avoid `TypeError: Value is undefined`.
-- **Bulk config**: Use `root.pauseAutoSave` when updating multiple Config properties at once.
+- **StyledRect containers**: Use `"pane"`, `"popup"`, `"common"`, `"internalbg"`, `"focus"` for containers. Never use raw `Rectangle` as a container.
+- **Null safety**: Always null-check nested properties in QML (`object?.property ?? fallback`) to avoid `TypeError: Value is undefined`.
 - **Service init**: Critical services init on next tick via `Qt.callLater`.
 - **Async safety**: Use `Qt.callLater()` when modifying lists inside process handlers.
+- **Process lifecycle**: Always clean up created processes; reset busy flags in `onExited` (including failure cases); use `StdioCollector` for multi-line JSON.
 
 ## ANTI-PATTERNS (THIS PROJECT)
 - **Hardcoding**: NEVER hardcode colors/sizes. Use `Config.theme.*`, `Config.bar.*`, `Colors.*`, `Styling.*`.
-- **Direct Config Props**: AVOID modifying `Config` properties directly; they are bound to `JsonAdapter`.
+- **Loose Typing**: NEVER use `property var` when a concrete type (`string`, `int`, `real`, `bool`, `Item`, `list<string>`) is known.
+- **Raw Rectangle containers**: NEVER create raw `Rectangle` containers for styling. Use `StyledRect` with an appropriate variant, or `Item` for layout-only wrappers.
 - **Global Pollution**: Do not add properties to `root` in `shell.qml`. Use `GlobalStates`.
-- **Raw JS Objects**: `JSON.parse()` results have NO QML signals. Never use them in `Connections` blocks.
+- **Raw JS Objects in Connections**: `JSON.parse()` results have NO QML signals. Never use them in `Connections` blocks.
 - **Missing Defaults**: NEVER add a config key without updating `config/defaults/*.js`.
-- **StyledRect bypass**: NEVER create raw `Rectangle` containers. Use `StyledRect` with a variant.
+- **Bypassing Reactive Config**: Do not modify JSON configuration files directly on disk while running; write through the reactive `Config.<domain>.<key>` properties.
+- **Obsolete Shims**: NEVER retain legacy compatibility shims (e.g. Hyprland/axctl syntax or environment variables) in a Niri-first shell.
+
+## RADHEY FLEET STANDARDS & QUALITY BAR
+- **Simplicity**: Make complex systems as simple as possible. Remove complexity before adding new layers. Apply YAGNI.
+- **Matt Pocock & Theo Browne Quality Bar**: Use strong types. Keep products useful, direct, and lean. Challenge weak ideas.
+- **Hit Every Surface**: For any cross-cutting change, trace behavior through all entry points, clients, contracts, reverse actions (e.g. open/close, lock/unlock, undo), error states, and documents. Do not treat one repaired path as a complete feature.
+- **Verify Real Behavior**: Test changed behavior at the nearest real boundary (syntax verification, IPC messaging, process execution). State each check that passed and each important flow not tested. Never assume a static check or build proves runtime behavior.
+- **Protect Existing Work**: Preserve unrelated user changes. Stage only files that belong to the task.
+- **Protect Private Data**: Never log, print, or pass credentials, tokens, or passwords via command-line arguments (`argv`), logs, or shell aliases. Always clear secret variables immediately after authentication.
 
 ## COMMANDS
 ```bash
+# Syntax check QML files
+qmllint shell.qml
 # Run shell (requires Quickshell + Niri)
 qs -p .
 # Or via CLI wrapper:
 ./cli.sh
+# IPC command testing
+qs ipc call nonchalant run <cmd>
 ```
 
 ## NOTES
-- Large files (>1000 lines): `ClipboardTab`, `NotesTab`, `TmuxTab`, `ShellPanel`, `ThemePanel`, `LauncherView`, `AssistantTab`, `Ai.qml`.
+- Large files: Keep components modular and prune dead code aggressively.
 - The `qs.` import prefix is a Quickshell VFS construct, not a physical directory.
-- Gemini AI provider doesn't support the `system` role; handled in `services/ai/strategies/`.
-- New compositor integration must use Niri IPC or native Quickshell/Wayland APIs. Do not introduce `axctl` or Hyprland as runtime dependencies. Some inherited optional paths still contain them and should be replaced as those features are ported.
-- Keep the inherited wallpaper and `WlSessionLock` implementations during initial bring-up. Treat lock/login modularization as later work.
-
-- Some projects to keep in mind for reference:
-  - end-4 Dotfiles: https://github.com/end-4/dots-hyprland
-  - Niri: https://github.com/YaLTeR/niri
+- All compositor integration uses Niri IPC or native Quickshell/Wayland APIs. Hyprland and `axctl` dependencies are forbidden.
+- AI assistant is integrated via local ACP agent protocols.

@@ -1,4 +1,7 @@
+.pragma library
+
 var data = {
+
     "enabled": true,
     "sidebarEnabled": true,
     "defaultAgent": "opencode",

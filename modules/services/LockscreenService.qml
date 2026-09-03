@@ -12,15 +12,6 @@ import qs.modules.globals
 Singleton {
     id: root
 
-    // [lockdbg] temporary instrumentation
-    property real lockdbgT0: 0
-    function lockdbg(msg) {
-        const now = Date.now();
-        if (root.lockdbgT0 === 0)
-            root.lockdbgT0 = now;
-        console.log("[lockdbg]", Math.round(now - root.lockdbgT0) + "ms", msg);
-    }
-
     function toggle() {
         // A lock action must never become an unauthenticated unlock action.
         if (!GlobalStates.lockscreenVisible)
@@ -30,8 +21,6 @@ Singleton {
     function lock() {
         if (GlobalStates.lockscreenVisible)
             return;
-        root.lockdbgT0 = Date.now();
-        root.lockdbg("lock() requested");
         GlobalStates.lockscreenUnlocking = false;
         GlobalStates.lockscreenHandoff = false;
         // Pre-capture each screen's desktop BEFORE requesting the lock so the
@@ -43,13 +32,11 @@ Singleton {
             root.prepActive = true;
             prepTimeoutTimer.restart();
         } else {
-            root.lockdbg("no lockshot prep available, engaging immediately");
             engage();
         }
     }
 
     function engage() {
-        root.lockdbg("lock engaged");
         GlobalStates.lockscreenVisible = true;
     }
 
@@ -77,7 +64,6 @@ Singleton {
             if (!root.prepActive)
                 return;
             root.prepActive = false;
-            root.lockdbg("lockshot prep timed out, engaging anyway");
             root.engage();
         }
     }
@@ -90,7 +76,14 @@ Singleton {
         GlobalStates.lockscreenVisible = false;
         GlobalStates.lockscreenUnlocking = false;
         GlobalStates.lockscreenHandoff = false;
+        cleanupLockshotsProcess.running = true;
     }
+
+    Process {
+        id: cleanupLockshotsProcess
+        command: ["sh", "-c", 'rm -f "${XDG_RUNTIME_DIR:-/tmp}"/nonchalant-lockshot-*.png']
+    }
+
 
     IpcHandler {
         target: "lockscreen"

@@ -9,13 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 QS_BIN="${NONCHALANT_QS:-qs}"
 NIXGL_BIN="${NONCHALANT_NIXGL:-}"
 
-if [ -z "${QML2_IMPORT_PATH:-}" ]; then
-	if command -v qs >/dev/null 2>&1; then
-		true
-	fi
-fi
-
 # If QML2_IMPORT_PATH is set (by wrapper or dev shell), ensure QML_IMPORT_PATH matches
+
 if [ -n "${QML2_IMPORT_PATH:-}" ] && [ -z "${QML_IMPORT_PATH:-}" ]; then
 	export QML_IMPORT_PATH="$QML2_IMPORT_PATH"
 fi
@@ -93,7 +88,7 @@ find_nonchalant_pid() {
 
 find_nonchalant_pid_cached() {
 	# Optimized PID lookup: check cache file first, then fall back to pgrep
-	local pid_file="/tmp/nonchalant.pid"
+	local pid_file="${XDG_RUNTIME_DIR:-/tmp}/nonchalant-$UID.pid"
 	local pid=""
 
 	# Check if cache file exists and process is alive
@@ -130,9 +125,8 @@ restart_nonchalant() {
 
 case "${1:-}" in
 update)
-	echo "Updating Nonchalant..."
-	curl -fsSL get.axeni.de/nonchalant | sh
-	restart_nonchalant
+	echo "Please pull the latest git commits or update via your package manager."
+	exit 0
 	;;
 refresh)
 	echo "Refreshing Nonchalant profile..."
@@ -140,7 +134,8 @@ refresh)
 	;;
 run)
 	CMD="${2:-}"
-	PIPE="/tmp/nonchalant_ipc.pipe"
+	PIPE="${XDG_RUNTIME_DIR:-/tmp}/nonchalant_ipc_$UID.pipe"
+
 
 	if [ -z "$CMD" ]; then
 		echo "Error: No command specified for run"
@@ -226,7 +221,8 @@ brightness)
 		exit 1
 	fi
 
-	BRIGHTNESS_SAVE_FILE="/tmp/nonchalant_brightness_saved.txt"
+	BRIGHTNESS_SAVE_FILE="${XDG_RUNTIME_DIR:-/tmp}/nonchalant_brightness_saved_$UID.txt"
+
 
 	# Parse arguments
 	ARG2="${2:-}"
@@ -499,19 +495,19 @@ help | --help | -h)
 
 	# Force Qt6CT
 	export QT_QPA_PLATFORMTHEME=qt6ct
-	unset HL_INITIAL_WORKSPACE_TOKEN
 
 	# Cache this script's PID before exec (for fast PID lookups in future CLI calls)
-	echo $$ >/tmp/nonchalant.pid
+	echo $$ >"${XDG_RUNTIME_DIR:-/tmp}/nonchalant-$UID.pid"
 
 	# Launch QuickShell with the main shell.qml
 	# If NIXGL_BIN is set (NixOS/Nix setup), use it. Otherwise, just run qs directly.
 	if [ -n "$NIXGL_BIN" ]; then
 		exec "$NIXGL_BIN" "$QS_BIN" -p "${SCRIPT_DIR}/shell.qml"
 	else
-		exec qs -p "${SCRIPT_DIR}/shell.qml"
+		exec "$QS_BIN" -p "${SCRIPT_DIR}/shell.qml"
 	fi
 	;;
+
 *)
 	echo "Error: Unknown command '$1'"
 	echo "Run 'nonchalant help' for usage information"

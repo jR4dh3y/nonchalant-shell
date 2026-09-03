@@ -61,7 +61,10 @@ Item {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
             opacity: root.popupOpen ? 0 : (root.isHovered ? 0.25 : 0)
-            radius: parent.radius ?? 0
+            topLeftRadius: parent.topLeftRadius
+            topRightRadius: parent.topRightRadius
+            bottomLeftRadius: parent.bottomLeftRadius
+            bottomRightRadius: parent.bottomRightRadius
 
             Behavior on opacity {
                 enabled: Config.animDuration > 0
@@ -70,6 +73,7 @@ Item {
                 }
             }
         }
+
 
         // Circular progress indicator (only if battery available)
         Item {
@@ -164,19 +168,10 @@ Item {
                     duration: Config.animDuration / 2
                 }
             }
-
-            Connections {
-                target: Battery
-                function onIsPluggedInChanged() {
-                    batteryIcon.text = Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile);
-                }
-                function onAvailableChanged() {
-                    batteryIcon.text = Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile);
-                }
-            }
         }
 
         MouseArea {
+
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: batteryPopup.toggle()

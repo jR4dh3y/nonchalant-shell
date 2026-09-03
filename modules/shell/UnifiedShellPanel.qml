@@ -58,7 +58,8 @@ PanelWindow {
     readonly property alias barTargetHeight: barContent.barTargetHeight
     readonly property alias barOuterMargin: barContent.baseOuterMargin
     readonly property string barPosition: Config.bar?.position ?? "top"
-    readonly property var assistantSidebar: assistantSidebarLoader.item
+    readonly property Item assistantSidebar: assistantSidebarLoader.item
+
 
     Component.onCompleted: {
         Visibilities.registerBarPanel(screen.name, unifiedPanel);
@@ -120,6 +121,8 @@ PanelWindow {
 
         onClicked: {
             FocusGrabManager.clearTopGrab();
+            if (runMenu.open)
+                Visibilities.setActiveModule("");
             if (barContent.dashboardInputActive)
                 Visibilities.closeActiveBarPopup();
             if (assistantSidebar && assistantSidebar.active && assistantSidebar.wantsFocus) {
@@ -129,6 +132,7 @@ PanelWindow {
                     unifiedPanel.forceActiveFocus();
             }
         }
+
     }
 
     Item {

@@ -11,8 +11,8 @@ Singleton {
     id: root
 
     // --- Properties ---
-    property var trackedPlayer: null
-    property var filteredPlayers: {
+    property MprisPlayer trackedPlayer: null
+    property list<MprisPlayer> filteredPlayers: {
         const filtered = Mpris.players.values.filter(player => {
             const dbusName = (player.dbusName || "").toLowerCase();
             if (!Config.bar.enableFirefoxPlayer && dbusName.includes("firefox")) {
@@ -23,7 +23,8 @@ Singleton {
         return filtered;
     }
 
-    property var activePlayer: trackedPlayer ? trackedPlayer : (filteredPlayers.length > 0 ? filteredPlayers[0] : null)
+    property MprisPlayer activePlayer: trackedPlayer ? trackedPlayer : (filteredPlayers.length > 0 ? filteredPlayers[0] : null)
+
     
     property bool isInitializing: true
     property string cachedDbusName: ""
@@ -148,39 +149,36 @@ Singleton {
     // --- Components ---
     Instantiator {
         model: Mpris.players
+        delegate: QtObject {
+            required property MprisPlayer modelData
 
-        Connections {
-            required property var modelData
-            target: modelData
+            Connections {
+                target: modelData
 
-            Component.onCompleted: {
-                const dbusName = (modelData.dbusName || "").toLowerCase();
-                const shouldIgnore = !Config.bar.enableFirefoxPlayer && dbusName.includes("firefox");
+                Component.onCompleted: {
+                    const dbusName = (modelData.dbusName || "").toLowerCase();
+                    const shouldIgnore = !Config.bar.enableFirefoxPlayer && dbusName.includes("firefox");
 
-                if (!shouldIgnore && (root.trackedPlayer == null || modelData.isPlaying)) {
-                    root.trackedPlayer = modelData;
+                    if (!shouldIgnore && (root.trackedPlayer == null || modelData.isPlaying)) {
+                        root.trackedPlayer = modelData;
+                    }
                 }
-            }
 
-            Component.onDestruction: {
-                if (root.trackedPlayer === modelData) {
-                    for (let i = 0; i < root.filteredPlayers.length; i++) {
-                        const player = root.filteredPlayers[i];
-                        if (player.playbackState.isPlaying) {
-                            root.trackedPlayer = player;
-                            break;
+                Component.onDestruction: {
+                    if (root.trackedPlayer === modelData) {
+                        for (let i = 0; i < root.filteredPlayers.length; i++) {
+                            const player = root.filteredPlayers[i];
+                            if (player.isPlaying) {
+                                root.trackedPlayer = player;
+                                break;
+                            }
+                        }
+
+                        if (root.trackedPlayer === modelData) {
+                            root.trackedPlayer = root.filteredPlayers.length > 0 ? root.filteredPlayers[0] : null;
                         }
                     }
-
-                    if (root.trackedPlayer === modelData) {
-                        root.trackedPlayer = root.filteredPlayers.length > 0 ? root.filteredPlayers[0] : null;
-                    }
                 }
-            }
-
-            function onPlaybackStateChanged() {
-                // Comentado para evitar cambio automático de player
-                // if (root.trackedPlayer !== modelData) root.trackedPlayer = modelData
             }
         }
     }

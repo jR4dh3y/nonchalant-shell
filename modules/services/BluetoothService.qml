@@ -280,6 +280,11 @@ Singleton {
                 }
             }
         }
+        onExited: (code) => {
+            if (code !== 0 || !root.enabled) {
+                root.isUpdating = false;
+            }
+        }
     }
 
     Process {
@@ -294,7 +299,11 @@ Singleton {
                 root.isUpdating = false;
             }
         }
+        onExited: () => {
+            root.isUpdating = false;
+        }
     }
+
 
     function updateDevices() {
         getDevicesProcess.running = true;

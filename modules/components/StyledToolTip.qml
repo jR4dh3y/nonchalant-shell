@@ -9,7 +9,8 @@ import qs.modules.components
 ToolTip {
     id: root
     property string tooltipText: ""
-    property string desciription: ""
+    property string description: ""
+    property alias desciription: root.description
     property bool show: false
 
     text: tooltipText
@@ -25,9 +26,7 @@ ToolTip {
     contentItem: ColumnLayout {
         spacing: 0
 
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
+        StyledText {
             text: root.tooltipText
             color: Colors.overBackground
             font.pixelSize: Config.theme.fontSize
@@ -35,11 +34,9 @@ ToolTip {
             font.family: Config.theme.font
         }
 
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: root.desciription
-            visible: root.desciription.length > 0
+        StyledText {
+            text: root.description
+            visible: root.description.length > 0
             color: Colors.overBackground
             font.pixelSize: Config.theme.fontSize - 2
             font.family: Config.theme.font
