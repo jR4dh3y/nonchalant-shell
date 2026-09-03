@@ -47,7 +47,7 @@ PanelWindow {
 
     // Assistant stays open without eating the whole screen — only its hitbox
     // receives clicks (see mask regions). Run menu / grabs still go full-screen.
-    readonly property bool needsFullScreenInput: runMenu.open || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: runMenu.open || barContent.dashboardInputActive || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -85,6 +85,9 @@ PanelWindow {
                 item: barContent.visible ? barContent.barHitbox : null
             },
             Region {
+                item: barContent.dashboardHitbox
+            },
+            Region {
                 item: runMenu.hitbox
             },
             Region {
@@ -117,6 +120,8 @@ PanelWindow {
 
         onClicked: {
             FocusGrabManager.clearTopGrab();
+            if (barContent.dashboardInputActive)
+                Visibilities.closeActiveBarPopup();
             if (assistantSidebar && assistantSidebar.active && assistantSidebar.wantsFocus) {
                 assistantSidebar.wantsFocus = false;
                 // Defocus the text field so keyboard returns to the session.

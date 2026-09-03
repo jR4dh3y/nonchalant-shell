@@ -32,6 +32,7 @@ Item {
     property alias barHitbox: hitbox
     readonly property alias timerInputActive: clock.timeToolsOpen
     readonly property alias dashboardInputActive: clock.menuOpen
+    readonly property alias dashboardHitbox: clock.dashboardHitbox
 
     Item {
         id: hitbox
