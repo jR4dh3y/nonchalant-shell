@@ -12,6 +12,7 @@ Singleton {
 
     // --- Properties ---
     property MprisPlayer trackedPlayer: null
+    onTrackedPlayerChanged: root.saveLastPlayer()
     property list<MprisPlayer> filteredPlayers: {
         const filtered = Mpris.players.values.filter(player => {
             const dbusName = (player.dbusName || "").toLowerCase();
