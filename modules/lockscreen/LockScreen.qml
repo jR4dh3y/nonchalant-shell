@@ -33,11 +33,22 @@ WlSessionLockSurface {
     // can briefly show an undefined compositor buffer while they map.
     color: Colors.background
 
+    // [lockdbg] temporary instrumentation
+    property real lockdbgT0: 0
+    function lockdbg(msg) {
+        const now = Date.now();
+        if (root.lockdbgT0 === 0)
+            root.lockdbgT0 = now;
+        console.log("[lockdbg]", Math.round(now - root.lockdbgT0) + "ms", "screen:" + (root.screen ? root.screen.name : "?"), msg);
+    }
+
     function beginEntry() {
         if (entryStarted || !lockSecure || unlocking)
             return;
 
         entryStarted = true;
+        root.errorMessage = "";
+        root.lockdbg("beginEntry (secure)");
         // Wait until the wallpaper (the frame-1 base layer) is actually
         // presented before animating in, so the lock-in transition starts from
         // a fully rendered lock backdrop. entryTimer polls with a fallback
@@ -46,7 +57,21 @@ WlSessionLockSurface {
         entryTimer.start();
     }
 
-    onLockSecureChanged: beginEntry()
+    onLockSecureChanged: {
+        root.lockdbg("lockSecure=" + lockSecure);
+        beginEntry();
+    }
+
+    // Pre-lock desktop capture ("lockshot") for this screen, taken by the
+    // wallpaper window BEFORE the lock request. Frame-1 of this surface shows
+    // it: identical pixels to what the user was seeing, so niri's output
+    // switch to the locked frame is invisible - no wallpaper flash.
+    readonly property string lockshotPath: GlobalStates.lockshotPaths[root.screen ? root.screen.name : ""] || ""
+    readonly property bool shotReady: lockshotPath !== "" && shotImage.ready
+
+    onWallpaperReadyChanged: root.lockdbg("wallpaperReady=" + wallpaperReady)
+
+    onStartAnimChanged: root.lockdbg("startAnim=" + startAnim)
 
     // PAM can complete on any output. All lock surfaces must run their
     // foreground exit at the same time before the shared lock is released.
@@ -59,31 +84,42 @@ WlSessionLockSurface {
         }
     }
 
-    // Capture one native compositor frame as soon as this surface exists. It
-    // remains hidden behind the lock backdrop until PAM succeeds, when it
-    // becomes the desktop-reveal layer for the exit animation.
-    ScreencopyView {
-        id: desktopFrame
-        anchors.fill: parent
-        z: 0
-        captureSource: root.screen
-        live: false
-        paintCursor: false
-        visible: true
-    }
+    readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && shotReady
 
-    readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && desktopFrame.hasContent
-
-    // The wallpaper is the frame-1 base layer of the lock surface. It must be
-    // ready at first commit: niri switches the output to the locked frame as
-    // soon as this surface commits, and the screencopy capture below can never
-    // be ready that early. The wallpaper window keeps the same image warm in
-    // the pixmap cache (see lockscreenFramePreloader), so this is a cache hit.
+    // The wallpaper is the frame-1 fallback base layer of the lock surface. It
+    // must be ready at first commit: niri switches the output to the locked
+    // frame as soon as this surface commits. The wallpaper window keeps the
+    // same image warm in the pixmap cache (see lockscreenFramePreloader), so
+    // this is a cache hit.
     readonly property bool wallpaperReady: wallpaperBackground.source === "" || wallpaperBackground.ready
 
-    // On entry the wallpaper stays fully visible (identical to the desktop
-    // background) and the dim scrim + chrome animate in on top. On unlock the
-    // wallpaper fades out over the captured desktop frame.
+    // Frame-1 base layer: the pre-lock desktop shot. Same source + sourceSize
+    // as the wallpaper window's lockshot preloader, so this is a cache hit.
+    Image {
+        id: shotImage
+        anchors.fill: parent
+        z: 0
+        cache: true
+        mipmap: true
+        smooth: true
+        asynchronous: true
+        fillMode: Image.PreserveAspectCrop
+        visible: lockshotPath !== ""
+        source: lockshotPath !== "" ? "file://" + lockshotPath : ""
+        sourceSize.width: root.width
+        sourceSize.height: root.height
+    }
+
+    // Entry choreography:
+    // - The desktop shot was captured BEFORE the lock request (see Wallpaper.qml
+    //   lockshot prep), so frame 1 is the actual desktop the user was looking
+    //   at - niri's output switch to the locked frame is seamless.
+    // - The dim scrim hides the surface until a base layer (shot or wallpaper)
+    //   is ready. If only the wallpaper is available, it is revealed dimmed,
+    //   never at full brightness, so the clean wallpaper can never flash.
+    // - startAnim then crossfades the shot into the dimmed wallpaper while
+    //   the clock / password slide in.
+
     TintedWallpaper {
         id: wallpaperBackground
         anchors.fill: parent
@@ -102,7 +138,13 @@ WlSessionLockSurface {
 
         source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
         visible: source !== ""
-        opacity: GlobalStates.lockscreenUnlocking ? (root.revealDesktop ? 0 : 1) : 1
+        // Pre-startAnim the lockshot (if present) is the base; the wallpaper
+        // crossfades in with the entry animation so the steady-state backdrop
+        // is the wallpaper. On unlock it fades back out over the shot for the
+        // desktop reveal. Without a shot it stays visible as the fallback.
+        opacity: GlobalStates.lockscreenUnlocking
+            ? (root.revealDesktop ? 0 : 1)
+            : (root.startAnim || !root.shotReady ? 1 : 0)
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
@@ -113,17 +155,20 @@ WlSessionLockSurface {
         }
     }
 
-    // The themed scrim fades in over the wallpaper once the entry animation
-    // starts. If the wallpaper is not cached yet, it stays opaque as a
-    // fallback so an undefined compositor buffer can never leak through. On
+    // The themed scrim hides the surface until a base layer (capture or
+    // wallpaper) is ready, then fades in over it with the entry animation. On
     // unlock it keeps the existing desktop-reveal fade.
     Rectangle {
         id: dimOverlay
         anchors.fill: parent
         color: Colors.background
+        // The scrim only clears for the lockshot (identical pixels to the
+        // pre-lock desktop - seamless). Without a shot it stays opaque until
+        // startAnim dims the wallpaper in, so the clean wallpaper can never
+        // flash at full brightness.
         opacity: GlobalStates.lockscreenUnlocking
             ? (root.revealDesktop ? 0 : 0.55)
-            : (root.startAnim ? 0.55 : (root.wallpaperReady ? 0 : 1))
+            : (root.startAnim ? 0.55 : (root.shotReady ? 0 : 1))
         z: 2
 
         Behavior on opacity {
@@ -643,10 +688,12 @@ WlSessionLockSurface {
         property int elapsed: 0
         onTriggered: {
             elapsed += interval;
-            // Start once the wallpaper has been presented for at least two
-            // frames so the lock-in animation is not skipped; fall back after
-            // 250ms if the image never becomes ready (no wallpaper, etc.).
-            if ((root.wallpaperReady && elapsed >= 32) || elapsed >= 250) {
+            // Start once a base layer (lockshot or wallpaper) has been up for
+            // at least two frames so the lock-in animation is not skipped;
+            // fall back after 250ms if neither ever becomes ready.
+            const baseReady = root.shotReady || root.wallpaperReady;
+            if ((baseReady && elapsed >= 32) || elapsed >= 250) {
+                root.lockdbg("entry trigger: shotReady=" + root.shotReady + " wallpaperReady=" + root.wallpaperReady + " elapsed=" + elapsed + (elapsed >= 250 && !baseReady ? " (FALLBACK)" : ""));
                 stop();
                 if (!root.unlocking && root.lockSecure) {
                     root.startAnim = true;
@@ -657,7 +704,8 @@ WlSessionLockSurface {
     }
 
     Component.onCompleted: {
-        desktopFrame.captureFrame();
+        root.lockdbgT0 = LockscreenService.lockdbgT0;
+        root.lockdbg("surface completed, shot=" + root.lockshotPath + " framePath=" + wallpaperBackground.lockscreenFramePath);
         beginEntry();
     }
 }

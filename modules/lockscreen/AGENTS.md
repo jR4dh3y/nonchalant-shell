@@ -3,6 +3,21 @@
 ## OVERVIEW
 Lock screen UI with PAM authentication via WlSessionLockSurface.
 
+## LOCKSHOT (flash fix)
+The lock surface's frame-1 must show the *desktop as the user saw it*
+(windows included), not the clean wallpaper - otherwise niri's output switch
+to the locked frame flashes the bright wallpaper. Flow:
+1. `LockscreenService.lock()` → `GlobalStates.beginLockshotPrep()`.
+2. Each `Wallpaper.qml` window (one per screen) captures its output via a
+   hidden `ScreencopyView` + `grabToImage()`, saves to
+   `$XDG_RUNTIME_DIR/nonchalant-lockshot-<screen>.png`, preloads it into the
+   pixmap cache, and reports via `GlobalStates.notifyLockshotPrepared()`.
+3. Service engages the lock once all screens report (400ms timeout fallback).
+4. `LockScreen.qml` frame-1 shows the shot (cache hit via matching
+   source+sourceSize), then crossfades to the wallpaper on startAnim.
+If no shot exists, the wallpaper is only ever revealed dimmed - never at
+full brightness. Do not reintroduce a full-brightness wallpaper frame-1.
+
 ## STRUCTURE
 ```
 modules/lockscreen/

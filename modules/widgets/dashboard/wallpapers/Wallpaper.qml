@@ -43,6 +43,93 @@ PanelWindow {
 
     readonly property var supportedWallpaperModes: ["crop", "fit", "stretch", "center"]
 
+    // ---- Lockshot: pre-lock desktop capture -------------------------------
+    // Captures this screen's actual desktop (windows included) BEFORE the
+    // lock request reaches niri, so the lock surface's first frame is
+    // identical to what the user was seeing instead of flashing the clean
+    // wallpaper. The saved shot is also preloaded into the pixmap cache so
+    // the lock surface's Image is a cache hit. The capture view paints
+    // beneath the wallpaper content and is never visible.
+    ScreencopyView {
+        id: lockPrepCapture
+        anchors.fill: parent
+        z: -1
+        captureSource: wallpaper.screen
+        live: false
+        paintCursor: false
+    }
+
+    property bool lockPrepGrabPending: false
+
+    // Called by LockscreenService via the GlobalStates registry. Returns
+    // true if a capture was started for this screen.
+    function prepareLockshot(): bool {
+        if (!wallpaper.screen)
+            return false;
+        lockPrepGrabPending = true;
+        if (lockPrepCapture.hasContent) {
+            // Refresh the frame; grab once the new buffer has landed.
+            lockPrepCapture.captureFrame();
+            lockPrepGrabDelay.restart();
+        } else {
+            lockPrepCapture.captureFrame();
+        }
+        return true;
+    }
+
+    function grabLockshot() {
+        lockPrepCapture.grabToImage(function (result) {
+            const runtimeDir = Quickshell.env("XDG_RUNTIME_DIR") || "/tmp";
+            const path = runtimeDir + "/nonchalant-lockshot-" + wallpaper.currentScreenName + ".png";
+            if (result && result.saveToFile("file://" + path)) {
+                console.log("Lockshot captured for screen", wallpaper.currentScreenName);
+                GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, path);
+            } else {
+                console.warn("Lockshot grab failed for screen", wallpaper.currentScreenName);
+                GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, "");
+            }
+        });
+    }
+
+    // Small delay so the freshly captured buffer is painted into the item
+    // texture before the grab pass runs.
+    Timer {
+        id: lockPrepGrabDelay
+        interval: 32
+        onTriggered: wallpaper.grabLockshot()
+    }
+
+    Connections {
+        target: lockPrepCapture
+
+        function onHasContentChanged() {
+            if (!wallpaper.lockPrepGrabPending || !lockPrepCapture.hasContent)
+                return;
+            wallpaper.lockPrepGrabPending = false;
+            lockPrepGrabDelay.restart();
+        }
+    }
+
+    // Warm the pixmap cache with the saved shot (same source + sourceSize
+    // key the lock surface's Image uses) so its first frame is a cache hit.
+    Image {
+        id: lockshotPreloader
+        visible: false
+        cache: true
+        mipmap: true
+        smooth: true
+        asynchronous: true
+        fillMode: Image.PreserveAspectCrop
+        sourceSize.width: wallpaper.width
+        sourceSize.height: wallpaper.height
+        source: {
+            const shot = GlobalStates.lockshotPaths[wallpaper.currentScreenName];
+            return shot ? "file://" + shot : "";
+        }
+    }
+
+    // ---- End lockshot ------------------------------------------------------
+
     // Keep the lockscreen frame warm in QML's pixmap cache. The lock surface's
     // TintedWallpaper loads the same URL with the same sourceSize, so on lock
     // its first frame is a cache hit instead of a fresh async decode (which
@@ -61,6 +148,12 @@ PanelWindow {
         source: {
             const frame = wallpaper.getLockscreenFramePath(wallpaper.effectiveWallpaper);
             return frame ? "file://" + frame : "";
+        }
+
+        // [lockdbg] temporary instrumentation
+        onStatusChanged: {
+            if (source !== "")
+                console.log("[lockdbg] preloader status=" + status + " " + source + " " + sourceSize.width + "x" + sourceSize.height);
         }
     }
 
@@ -712,8 +805,12 @@ PanelWindow {
     }
 
     Component.onCompleted: {
-        // Only the first Wallpaper instance should manage scanning
-        // Other instances (for other screens) share the same data via GlobalStates
+        // Every instance registers its screen for lockshot prep (desktop
+        // capture before locking); only the first Wallpaper instance manages
+        // scanning. Other instances (for other screens) share the same data
+        // via GlobalStates.
+        GlobalStates.registerLockPrep(currentScreenName, wallpaper.prepareLockshot);
+
         if (GlobalStates.wallpaperManager !== null) {
             // Another instance already registered, skip initialization
             _wallpaperDirInitialized = true;
@@ -744,6 +841,8 @@ PanelWindow {
             }
         });
     }
+
+    Component.onDestruction: GlobalStates.unregisterLockPrep(currentScreenName);
 
     FileView {
         id: wallpaperConfig
