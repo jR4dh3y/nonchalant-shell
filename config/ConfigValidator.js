@@ -54,7 +54,7 @@ function validate(current, defaults, keyName) {
     }
 
     if (keyName === "unit") {
-        const validUnits = ["celsius", "fahrenheit"];
+        const validUnits = ["C", "F"];
         if (validUnits.indexOf(current) === -1) {
             return defaults;
         }

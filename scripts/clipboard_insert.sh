@@ -43,18 +43,32 @@ PREVIEW_FILE=$(mktemp)
 trap 'rm -f "$CONTENT_FILE" "$PREVIEW_FILE"' EXIT
 printf '%s' "$PREVIEW" >"$PREVIEW_FILE"
 
+# Validate numeric values
+if [ "$IS_IMAGE" != "0" ] && [ "$IS_IMAGE" != "1" ]; then
+    echo "Error: IS_IMAGE must be 0 or 1" >&2
+    exit 1
+fi
+
+if ! [[ "$SIZE" =~ ^[0-9]+$ ]]; then
+    echo "Error: SIZE must be a non-negative integer" >&2
+    exit 1
+fi
+
 # Escape single quotes in SQL variables
 SQL_HASH="${HASH//\'/\'\'}"
 SQL_MIME_TYPE="${MIME_TYPE//\'/\'\'}"
 SQL_BINARY_PATH="${BINARY_PATH//\'/\'\'}"
 SQL_PREVIEW_FILE="${PREVIEW_FILE//\'/\'\'}"
 SQL_CONTENT_FILE="${CONTENT_FILE//\'/\'\'}"
-SQL_IS_IMAGE="${IS_IMAGE:-0}"
-SQL_SIZE="${SIZE:-0}"
+SQL_IS_IMAGE="${IS_IMAGE}"
+SQL_SIZE="${SIZE}"
 
 # Use sqlite3 with -cmd to read from files using readfile() function
 sqlite3 "$DB_PATH" <<EOSQL
 .timeout 5000
+.param init
+.param set :is_image ${SQL_IS_IMAGE}
+.param set :size ${SQL_SIZE}
 BEGIN TRANSACTION;
 -- Insert or update item (unpinned items always get display_index 0)
 INSERT INTO clipboard_items 
@@ -64,9 +78,9 @@ VALUES (
     '${SQL_MIME_TYPE}',
     readfile('${SQL_PREVIEW_FILE}'),
     readfile('${SQL_CONTENT_FILE}'),
-    ${SQL_IS_IMAGE},
+    :is_image,
     '${SQL_BINARY_PATH}',
-    ${SQL_SIZE},
+    :size,
     0,
     0,
     ${TIMESTAMP},

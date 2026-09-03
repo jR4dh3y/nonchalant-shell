@@ -112,13 +112,13 @@ Singleton {
     property int lockshotPending: 0
 
     function registerLockPrep(screenName, handler) {
-        const map = lockPrepHandlers;
+        const map = Object.assign({}, lockPrepHandlers);
         map[screenName] = handler;
         lockPrepHandlers = map;
     }
 
     function unregisterLockPrep(screenName) {
-        const map = lockPrepHandlers;
+        const map = Object.assign({}, lockPrepHandlers);
         delete map[screenName];
         lockPrepHandlers = map;
     }
@@ -142,7 +142,7 @@ Singleton {
 
     function notifyLockshotPrepared(screenName, path) {
         if (path) {
-            const map = lockshotPaths;
+            const map = Object.assign({}, lockshotPaths);
             map[screenName] = path;
             lockshotPaths = map;
         }

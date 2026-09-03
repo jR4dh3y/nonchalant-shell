@@ -16,7 +16,7 @@ MODE="${4:-crop}"
 if [ "$MONITOR" = "ALL" ]; then
     pkill -x "mpvpaper" 2>/dev/null || true
 else
-    pgrep -x mpvpaper | while read -r pid; do
+    (pgrep -x mpvpaper 2>/dev/null || true) | while read -r pid; do
         if ps -p "$pid" -o args= 2>/dev/null | grep -q "$MONITOR"; then
             kill "$pid" 2>/dev/null || true
         fi

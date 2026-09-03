@@ -34,13 +34,11 @@ WlSessionLockSurface {
     color: Colors.background
 
     function beginEntry() {
-
         if (entryStarted || !lockSecure || unlocking)
             return;
 
         entryStarted = true;
         root.errorMessage = "";
-        root.lockdbg("beginEntry (secure)");
         // Wait until the wallpaper (the frame-1 base layer) is actually
         // presented before animating in, so the lock-in transition starts from
         // a fully rendered lock backdrop. entryTimer polls with a fallback
@@ -49,10 +47,7 @@ WlSessionLockSurface {
         entryTimer.start();
     }
 
-    onLockSecureChanged: {
-        root.lockdbg("lockSecure=" + lockSecure);
-        beginEntry();
-    }
+    onLockSecureChanged: beginEntry()
 
     // Pre-lock desktop capture ("lockshot") for this screen, taken by the
     // wallpaper window BEFORE the lock request. Frame-1 of this surface shows
@@ -60,10 +55,6 @@ WlSessionLockSurface {
     // switch to the locked frame is invisible - no wallpaper flash.
     readonly property string lockshotPath: GlobalStates.lockshotPaths[root.screen ? root.screen.name : ""] || ""
     readonly property bool shotReady: lockshotPath !== "" && shotImage.ready
-
-    onWallpaperReadyChanged: root.lockdbg("wallpaperReady=" + wallpaperReady)
-
-    onStartAnimChanged: root.lockdbg("startAnim=" + startAnim)
 
     // PAM can complete on any output. All lock surfaces must run their
     // foreground exit at the same time before the shared lock is released.

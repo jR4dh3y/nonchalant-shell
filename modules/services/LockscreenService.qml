@@ -19,7 +19,7 @@ Singleton {
     }
 
     function lock() {
-        if (GlobalStates.lockscreenVisible)
+        if (GlobalStates.lockscreenVisible || root.prepActive)
             return;
         GlobalStates.lockscreenUnlocking = false;
         GlobalStates.lockscreenHandoff = false;

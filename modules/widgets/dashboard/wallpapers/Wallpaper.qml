@@ -79,7 +79,12 @@ PanelWindow {
 
     function grabLockshot() {
         lockPrepCapture.grabToImage(function (result) {
-            const runtimeDir = Quickshell.env("XDG_RUNTIME_DIR") || "/tmp";
+            const runtimeDir = Quickshell.env("XDG_RUNTIME_DIR");
+            if (!runtimeDir) {
+                console.warn("Lockshot grab failed: XDG_RUNTIME_DIR is not set");
+                GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, "");
+                return;
+            }
             const path = runtimeDir + "/nonchalant-lockshot-" + wallpaper.currentScreenName + ".png";
             if (result && result.saveToFile("file://" + path)) {
                 console.log("Lockshot captured for screen", wallpaper.currentScreenName);
@@ -148,12 +153,6 @@ PanelWindow {
         source: {
             const frame = wallpaper.getLockscreenFramePath(wallpaper.effectiveWallpaper);
             return frame ? "file://" + frame : "";
-        }
-
-        // [lockdbg] temporary instrumentation
-        onStatusChanged: {
-            if (source !== "")
-                console.log("[lockdbg] preloader status=" + status + " " + source + " " + sourceSize.width + "x" + sourceSize.height);
         }
     }
 

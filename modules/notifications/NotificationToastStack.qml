@@ -297,8 +297,8 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
                     onClicked: mouse => {
-                        if (mouse.button === Qt.LeftButton && toastRoot.notificationId !== undefined) {
-                            Notifications.attemptInvokeAction(toastRoot.notificationId, "default");
+                        if (mouse.button === Qt.LeftButton && !isNaN(toastRoot.notifId)) {
+                            Notifications.attemptInvokeAction(toastRoot.notifId, "default", false);
                         }
                         toastRoot.playExit(true);
                     }
