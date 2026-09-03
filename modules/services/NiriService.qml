@@ -17,7 +17,7 @@ Singleton {
 
     // Outputs whose active workspace shows a fullscreen window. Niri only
     // auto-hides layer surfaces below Overlay, so the bar hides itself.
-    property var fullscreenOutputs: []
+    property list<string> fullscreenOutputs: []
 
     property var rawWindows: []
     property var rawWorkspaces: []
@@ -94,54 +94,6 @@ Singleton {
 
     function createProcess(command) {
         return processComponent.createObject(root, { "command": command });
-    }
-
-    function dispatch(command) {
-        if (!command)
-            return;
-
-        const firstSpace = command.indexOf(" ");
-        const action = firstSpace === -1 ? command : command.slice(0, firstSpace);
-        const rawArgs = firstSpace === -1 ? "" : command.slice(firstSpace + 1).trim();
-        const addressMatch = rawArgs.match(/address:([^\s,]+)/);
-        const windowId = addressMatch ? addressMatch[1] : rawArgs;
-
-        switch (action) {
-        case "workspace":
-            if (rawArgs === "r+1")
-                runNiriAction(["focus-workspace-down"]);
-            else if (rawArgs === "r-1")
-                runNiriAction(["focus-workspace-up"]);
-            else
-                focusWorkspace(rawArgs);
-            break;
-        case "focuswindow":
-            focusWindow(windowId);
-            break;
-        case "closewindow":
-            closeWindow(windowId);
-            break;
-        case "movetoworkspacesilent": {
-            const parts = rawArgs.split(",");
-            const workspaceId = parts[0].trim();
-            const idMatch = rawArgs.match(/address:([^\s,]+)/);
-            if (idMatch)
-                moveWindowToWorkspace(idMatch[1], workspaceId, false);
-            break;
-        }
-        case "focusmonitor":
-            focusMonitor(rawArgs);
-            break;
-        case "togglespecialworkspace":
-            console.warn("NiriService: special workspaces are not available on Niri");
-            break;
-        case "movewindowpixel":
-            // Niri owns placement inside the scrolling layout. The overview can still
-            // move windows between workspaces, but arbitrary pixel placement is ignored.
-            break;
-        default:
-            console.warn("NiriService: unsupported compositor action:", command);
-        }
     }
 
     function rebuildState() {

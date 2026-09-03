@@ -20,7 +20,7 @@ Button {
         return t.trim();
     }
 
-    property var iconSource: ""
+    property string iconSource: ""
     property bool isImageIcon: false
     property bool isSeparator: false
     property bool hasSubmenu: false

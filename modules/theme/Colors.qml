@@ -16,6 +16,7 @@ FileView {
     }
 
     property Connections oledWatcher: Connections {
+        id: oledWatcher
         target: Config
         function onOledModeChanged() {
             generationTimer.restart();
@@ -23,6 +24,7 @@ FileView {
     }
 
     property Connections themeWatcher: Connections {
+        id: themeWatcher
         target: Config.loader
         function onFileChanged() {
             generationTimer.restart();

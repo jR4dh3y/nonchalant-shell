@@ -52,9 +52,9 @@ FloatingWindow {
             const client = clients[i];
             if (client.title === settingsWindow.title) {
                 if (client.workspace?.id !== targetWorkspace) {
-                    NiriService.dispatch(`movetoworkspacesilent ${targetWorkspace}, address:${client.address}`);
+                    NiriService.moveWindowToWorkspace(client.id, targetWorkspace, false);
                 }
-                NiriService.dispatch(`focuswindow address:${client.address}`);
+                NiriService.focusWindow(client.id);
                 return true;
             }
         }

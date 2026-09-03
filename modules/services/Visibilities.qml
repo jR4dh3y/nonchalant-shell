@@ -18,7 +18,7 @@ Singleton {
     property bool playerMenuOpen: false
     // Exclusive bar popup: only one BarPopup should be open at a time.
     property var activeBarPopup: null
-    readonly property var moduleNames: ["launcher"]
+    readonly property list<string> moduleNames: ["launcher"]
 
     function claimBarPopup(popup) {
         if (!popup)

@@ -103,7 +103,7 @@ Singleton {
         property bool isPaused: false
         property real startTime: Date.now()
 
-        property var suspendConnections: Connections {
+        property Connections suspendConnections: Connections {
             target: SuspendManager
             function onWakingUp() {
                 if (!isPaused) {
@@ -113,7 +113,7 @@ Singleton {
             }
         }
 
-        property var wakeStartTimer: Timer {
+        property Timer wakeStartTimer: Timer {
             id: wakeStartTimer
             interval: 1000
             repeat: false

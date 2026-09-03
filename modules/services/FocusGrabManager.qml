@@ -16,7 +16,7 @@ Singleton {
     // Internal storage: grabId -> callback
     property var _grabs: ({})
     // Ordered list for stack behavior (last-in-first-cleared)
-    property var _grabOrder: []
+    property list<string> _grabOrder: []
 
     function requestGrab(grabId, clearCallback) {
         if (_grabs[grabId] === undefined) {

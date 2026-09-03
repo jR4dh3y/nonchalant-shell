@@ -17,7 +17,7 @@ Singleton {
     // Delayed wake state for non-essential components
     property bool wakeReady: true
 
-    property var wakeReadyTimer: Timer {
+    Timer {
         id: wakeReadyTimer
         interval: 3000 // 3s delay for stability
         repeat: false

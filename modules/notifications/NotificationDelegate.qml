@@ -93,12 +93,6 @@ Item {
                 }
             }
 
-            Rectangle {
-                anchors.fill: parent
-                radius: 8
-                color: "transparent"
-            }
-
             DiagonalStripePattern {
                 id: stripeContainer
                 anchors.fill: parent

@@ -18,7 +18,6 @@ Atomic design library for Nonchalant Shell. Every themed container in the shell 
 | `StyledSlider.qml` | Standard slider (volume, brightness, progress) |
 | `PositionSlider.qml` | Media position/seek slider (requires `MprisPlayer`) |
 | `CircularSeekBar.qml` | Circular arc seekbar for media players |
-| `SegmentedSwitch.qml` | Multi-option toggle (radio-button style) |
 | `CircularControl.qml` | Circular knob for volume/mic |
 | `ToggleButton.qml` | Icon button with tooltip and toggle state |
 
@@ -34,11 +33,9 @@ Atomic design library for Nonchalant Shell. Every themed container in the shell 
 | Component | Role |
 |-----------|------|
 | `WavyLine.qml` | Signature animated progress line rendered via 2D Canvas |
-| `CircularWavyProgress.qml` | Circular animated progress indicator |
 | `CarouselProgress.qml` | Progress wrapper |
 | `DiagonalStripePattern.qml` | Decorative pattern overlay for critical/accent states |
 | `Tinted.qml` / `TintedWallpaper.qml` | Color tint overlays with shader pipeline |
-| `UnifiedPanelEffect.qml` | Shader for panel shadows and borders |
 
 ## CONVENTIONS
 - **StyledRect variants**: Always pass `variant` as one of: `"pane"`, `"popup"`, `"common"`, `"internalbg"`, `"focus"`. Variant config comes from `Styling.getStyledRectConfig()`.

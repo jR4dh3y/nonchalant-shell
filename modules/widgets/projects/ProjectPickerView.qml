@@ -183,17 +183,15 @@ Rectangle {
                     positionViewAtIndex(currentIndex, ListView.Contain);
             }
 
-            delegate: Rectangle {
+            delegate: Item {
                 id: row
-                required property var modelData
+                required property string modelData
                 required property int index
 
                 property string projectIcon: ProjectPickerService.projectIcon(modelData)
 
                 width: resultsList.width
                 height: 48
-                radius: Styling.radius(4)
-                color: "transparent"
 
                 MouseArea {
                     anchors.fill: parent

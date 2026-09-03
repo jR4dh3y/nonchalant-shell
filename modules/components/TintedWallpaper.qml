@@ -11,7 +11,7 @@ Item {
     
     // Subset of colors for optimization (approx 25 colors vs 98)
     // Copied from Wallpaper.qml to ensure consistency
-    readonly property var optimizedPalette: [
+    readonly property list<string> optimizedPalette: [
         "background", "overBackground", "shadow",
         "surface", "surfaceBright", "surfaceDim",
         "surfaceContainer", "surfaceContainerHigh", "surfaceContainerHighest", "surfaceContainerLow", "surfaceContainerLowest",

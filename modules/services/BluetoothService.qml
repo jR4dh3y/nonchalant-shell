@@ -25,7 +25,8 @@ Singleton {
     property bool isUpdating: false
     property bool wasEnabledBeforeSleep: false
 
-    property var suspendConnections: Connections {
+    Connections {
+        id: suspendConnections
         target: SuspendManager
         function onPreparingForSleep() {
             root.wasEnabledBeforeSleep = root.enabled;
@@ -46,7 +47,7 @@ Singleton {
         }
     }
 
-    property var wakeSyncTimer: Timer {
+    Timer {
         id: wakeSyncTimer
         interval: 3000
         repeat: false

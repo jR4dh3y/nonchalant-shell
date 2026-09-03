@@ -69,10 +69,10 @@ Item {
     property real dragConfirmThreshold: 70
     property real dismissOvershoot: 20
     // ListView may attach the delegate before parents exist; never chain .parent bare.
-    property var qmlParent: (root.parent && root.parent.parent) ? root.parent.parent : null
-    property var parentDragIndex: qmlParent?.dragIndex ?? -1
-    property var parentDragDistance: qmlParent?.dragDistance ?? 0
-    property var dragIndexDiff: Math.abs(parentDragIndex - (index !== undefined ? index : 0))
+    property Item qmlParent: (root.parent && root.parent.parent) ? root.parent.parent : null
+    property int parentDragIndex: qmlParent?.dragIndex ?? -1
+    property real parentDragDistance: qmlParent?.dragDistance ?? 0
+    property real dragIndexDiff: Math.abs(parentDragIndex - (index !== undefined ? index : 0))
     property real xOffset: dragIndexDiff == 0 ? Math.max(0, parentDragDistance) : parentDragDistance > dragConfirmThreshold ? 0 : dragIndexDiff == 1 ? Math.max(0, parentDragDistance * 0.3) : dragIndexDiff == 2 ? Math.max(0, parentDragDistance * 0.1) : 0
 
     function destroyWithAnimation(isDiscardAll = false) {

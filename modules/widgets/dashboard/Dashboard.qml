@@ -118,12 +118,9 @@ Item {
         anchors.fill: parent
 
         // Content area
-        Rectangle {
+        Item {
             id: viewWrapper
-
-            color: "transparent"
             anchors.fill: parent
-
             clip: true
 
             // Custom Tab View with Lazy Loading + Persistence

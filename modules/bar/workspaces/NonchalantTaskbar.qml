@@ -12,7 +12,7 @@ import qs.modules.theme
 Item {
     id: root
 
-    required property var bar
+    required property Item bar
 
     readonly property var visibleWorkspaces: NiriService.workspaces.values
         .filter(workspace => {

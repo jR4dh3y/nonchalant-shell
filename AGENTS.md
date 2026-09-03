@@ -1,9 +1,3 @@
-# PROJECT KNOWLEDGE BASE
-
-**Generated:** 2026-03-01
-**Framework:** QtQuick / Quickshell
-**Language:** QML / JavaScript
-
 ## OVERVIEW
 Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built with Quickshell. The lean runtime provides a wallpaper, one unified bar, a floating run menu, and a lockscreen, driven by a reactive JSON configuration system. Multi-monitor support uses `Variants` on `Quickshell.screens`.
 

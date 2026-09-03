@@ -10,7 +10,7 @@ Item {
 
     Layout.fillHeight: true
 
-    required property var player
+    required property MprisPlayer player
 
     onPlayerChanged: {
         if (!player) {

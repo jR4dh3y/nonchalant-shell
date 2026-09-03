@@ -16,14 +16,14 @@ Item {
     readonly property var screenVisibilities: Visibilities.getForScreen(screen.name)
     readonly property bool open: screenVisibilities ? screenVisibilities.launcher : false
     readonly property Item hitbox: menuShown ? cardReveal : null
-    readonly property var barPanel: Visibilities.getBarPanelForScreen(screen.name)
-    readonly property int contentPadding: Styling.radius(3)
-    readonly property int edgeGap: Styling.radius(2)
+    property PanelWindow barPanel: Visibilities.getBarPanelForScreen(screen.name)
+    readonly property int contentPadding: 8
+    readonly property int edgeGap: 8
     readonly property bool bottomEdge: (Config.bar?.position ?? "top") === "bottom"
     readonly property real barClearance: {
         if (!barPanel || !barPanel.barEnabled)
-            return Styling.radius(4);
-        return barPanel.barTargetHeight + barPanel.barOuterMargin + edgeGap;
+            return edgeGap;
+        return (barPanel.totalBarHeight > 0 ? barPanel.totalBarHeight : (barPanel.barTargetHeight + barPanel.barOuterMargin)) + edgeGap;
     }
 
     // Keep the card mounted while its edge clip closes.

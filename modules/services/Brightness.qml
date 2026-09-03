@@ -17,14 +17,15 @@ Singleton {
 
     signal brightnessChanged(real value, var screen)
 
-    property var ddcMonitors: []
+    property list<var> ddcMonitors: []
     readonly property list<BrightnessMonitor> monitors: Quickshell.screens.map(screen => monitorComp.createObject(root, {
             screen
         }))
 
     property bool syncBrightness: StateService.get("syncBrightness", false)
 
-    property var suspendConnections: Connections {
+    Connections {
+        id: suspendConnections
         target: SuspendManager
         function onWakingUp() {
             // Re-initialize monitors on wake with a delay
@@ -232,7 +233,7 @@ Singleton {
         }
 
         // We need a delay for DDC monitors because they can be quite slow and might act weird with rapid changes
-        property var setTimer: Timer {
+        property Timer setTimer: Timer {
             id: setTimer
             interval: monitor.isDdc ? 300 : 0
             onTriggered: {

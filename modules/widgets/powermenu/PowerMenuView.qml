@@ -48,8 +48,11 @@ Item {
     }
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape && root.popupMode) {
-            root.closeRequested();
+        if (event.key === Qt.Key_Escape) {
+            if (root.popupMode)
+                root.closeRequested();
+            else
+                Visibilities.setActiveModule("");
             event.accepted = true;
         }
     }
