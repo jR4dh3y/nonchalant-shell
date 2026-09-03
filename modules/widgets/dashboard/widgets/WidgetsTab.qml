@@ -18,11 +18,6 @@ Rectangle {
         anchors.fill: parent
         spacing: 8
 
-        FullPlayer {
-            Layout.preferredWidth: 216
-            Layout.fillHeight: true
-        }
-
         ClippingRectangle {
             id: widgetsContainer
             Layout.preferredWidth: quickControls.implicitWidth

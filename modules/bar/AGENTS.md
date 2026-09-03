@@ -9,7 +9,8 @@ pinned and reserves space through `ReservationWindows`.
   - `BarContent.qml`: Orchestrates the top-bar widget groups.
   - `BarBg.qml`: Background and content padding.
 - **Widgets**:
-  - `clock/`: Time, date, weather integration (`Clock.qml` — 672 lines).
+  - `clock/`: Time, date, weather integration (`Clock.qml`).
+  - `media/`: `MediaPill.qml` — auto-hiding media info section of the center pill.
   - `systray/`: SNI-based system tray.
   - `workspaces/`: Compositor workspace visualization and navigation.
   - `IntegratedDock.qml`: Taskbar-style dock embedded directly into bar layout.
