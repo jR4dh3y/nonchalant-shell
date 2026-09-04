@@ -172,6 +172,7 @@ Item {
                 }
 
                 StyledRect {
+                    id: toastCard
                     anchors.fill: parent
                     variant: "popup"
                     radius: Styling.radius(8)

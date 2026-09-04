@@ -147,12 +147,21 @@ Item {
                     NumberAnimation { id: animInOpacity; duration: tabTransitionAnim.duration; easing.type: Easing.OutCubic; to: 1 }
 
                     onFinished: {
-                        widgetsTabLoader.visible = (root.state.currentTab === 0);
-                        wallpapersTabLoader.visible = (root.state.currentTab === 1);
-                        widgetsTabLoader.x = 0;
-                        wallpapersTabLoader.x = 0;
+                        root.restoreTabBindings();
                         root.focusCurrentTab();
                     }
+                }
+
+                // Animated switches imperatively override visible/opacity below,
+                // which replaces their declarative bindings. Re-establish them
+                // on settle so later direct currentTab writes keep working.
+                function restoreTabBindings() {
+                    widgetsTabLoader.visible = Qt.binding(() => root.state.currentTab === 0);
+                    widgetsTabLoader.opacity = Qt.binding(() => root.state.currentTab === 0 ? 1 : 0);
+                    wallpapersTabLoader.visible = Qt.binding(() => root.state.currentTab === 1);
+                    wallpapersTabLoader.opacity = Qt.binding(() => root.state.currentTab === 1 ? 1 : 0);
+                    widgetsTabLoader.x = 0;
+                    wallpapersTabLoader.x = 0;
                 }
 
                 // Function to navigate to a specific tab
@@ -199,13 +208,7 @@ Item {
                             tabTransitionAnim.restart();
                         } else {
                             tabTransitionAnim.stop();
-                            fromLoader.x = 0;
-                            fromLoader.opacity = 0;
-                            fromLoader.visible = false;
-
-                            toLoader.x = 0;
-                            toLoader.opacity = 1;
-                            toLoader.visible = true;
+                            root.restoreTabBindings();
                             root.focusCurrentTab();
                         }
                     }
