@@ -40,7 +40,10 @@ StyledRect {
         anchors.fill: parent
         color: Styling.srItem("overprimary")
         opacity: root.isHovered ? 0.25 : 0
-        radius: parent.radius ?? 0
+        topLeftRadius: parent.topLeftRadius
+        topRightRadius: parent.topRightRadius
+        bottomLeftRadius: parent.bottomLeftRadius
+        bottomRightRadius: parent.bottomRightRadius
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
@@ -56,7 +59,7 @@ StyledRect {
         anchors.margins: 8
         spacing: 6
 
-        Text {
+        StyledText {
             text: AudioFormat.kindIcon
             font.family: Icons.font
             font.pixelSize: 14
@@ -71,8 +74,8 @@ StyledRect {
     }
 
     StyledToolTip {
-        visible: root.isHovered
+        show: root.isHovered
         tooltipText: AudioFormat.tooltipTitle
-        desciription: AudioFormat.tooltipDetail
+        description: AudioFormat.tooltipDetail
     }
 }

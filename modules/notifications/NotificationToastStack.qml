@@ -296,8 +296,14 @@ Item {
                     enabled: !toastRoot.closing
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-                    onClicked: toastRoot.playExit(true)
+                    onClicked: mouse => {
+                        if (mouse.button === Qt.LeftButton && !isNaN(toastRoot.notifId)) {
+                            Notifications.attemptInvokeAction(toastRoot.notifId, "default", false);
+                        }
+                        toastRoot.playExit(true);
+                    }
                 }
+
 
                 HoverHandler {
                     enabled: !toastRoot.closing

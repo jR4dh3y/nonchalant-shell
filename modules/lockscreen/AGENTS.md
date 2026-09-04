@@ -3,44 +3,55 @@
 ## OVERVIEW
 Lock screen UI with PAM authentication via WlSessionLockSurface.
 
+## LOCKSHOT (flash fix)
+The lock surface's frame-1 must show the *desktop as the user saw it*
+(windows included), not the clean wallpaper - otherwise niri's output switch
+to the locked frame flashes the bright wallpaper. Flow:
+1. `LockscreenService.lock()` → `GlobalStates.beginLockshotPrep()`.
+2. Each `Wallpaper.qml` window (one per screen) captures its output via a
+   hidden `ScreencopyView` + `grabToImage()`, saves to
+   `$XDG_RUNTIME_DIR/nonchalant-lockshot-<screen>.png`, preloads it into the
+   pixmap cache, and reports via `GlobalStates.notifyLockshotPrepared()`.
+3. Service engages the lock once all screens report (400ms timeout fallback).
+4. `LockScreen.qml` frame-1 shows the shot (cache hit via matching
+   source+sourceSize), then crossfades to the wallpaper on startAnim.
+If no shot exists, the wallpaper is only ever revealed dimmed - never at
+full brightness. Do not reintroduce a full-brightness wallpaper frame-1.
+
 ## STRUCTURE
 ```
 modules/lockscreen/
-├── LockScreen.qml       # Main component (750 lines)
-├── nonchalant-auth          # Helper script (if any)
-└── config/pam/          # PAM configuration
-    └── password.conf    # Custom PAM rules for lockscreen
+└── LockScreen.qml       # Main WlSessionLockSurface component
+config/pam/
+└── password.conf        # Custom PAM rules for lockscreen
 ```
 Related: `modules/widgets/dashboard/widgets/LockPlayer.qml` (music player on lock screen).
 
 ## WHERE TO LOOK
 | Symbol | Location | Role |
 |--------|----------|------|
-| `WlSessionLockSurface` | `LockScreen.qml:18` | Root; handles Wayland session lock protocol |
-| `PamContext` | `LockScreen.qml:666` | PAM authentication via Quickshell.Services.Pam |
-| `ScreencopyView` | `LockScreen.qml:84` | Captures frozen screen background on lock |
-| `TintedWallpaper` | `LockScreen.qml:30` | Wallpaper with blur effect layer |
-| `failLockSecondsLeft` | `LockScreen.qml:24` | Tracks account lockout after failed attempts |
-| `authPasswordHolder` | `LockScreen.qml:620` | Temp holder for password during PAM auth |
-| `wrongPasswordAnim` | `LockScreen.qml:541` | Shake animation on auth failure |
-| `unlockTimer` | `LockScreen.qml:588` | Triggers GlobalStates.lockscreenVisible = false after exit animation |
+| `WlSessionLockSurface` | `LockScreen.qml` | Root; handles Wayland session lock protocol |
+| `PamContext` | `LockScreen.qml` | PAM authentication via `Quickshell.Services.Pam` |
+| `shotImage` | `LockScreen.qml` | Displays pre-captured frame-1 desktop lockshot |
+| `TintedWallpaper` | `LockScreen.qml` | Wallpaper with blur and dimming layer |
+| `authPasswordHolder` | `LockScreen.qml` | Transient memory holder for password |
+| `wrongPasswordAnim` | `LockScreen.qml` | Shake animation on auth failure |
+| `unlockTimer` | `LockScreen.qml` | Sets `GlobalStates.lockscreenVisible = false` after exit animation |
 
 Key behaviors:
-- On lock: capture screen (`screencopyBackground.captureFrame()`), start entry animations, force focus to password field
-- On auth: store password in temp holder, `pamAuth.start()`, respond to PAM messages via `onPamMessage`
-- On success: trigger exit animation (zoom + fade), start unlockTimer, set lockscreenVisible=false
-- On failure: shake animation, clear password, update failLock countdown
+- On lock: pre-capture lockshot via Wallpaper screencopy, engage lock, start entry animation, focus password input on primary screen.
+- On auth: verify PAM message type: send password ONLY on `PamMessageType.PromptEchoOff`, send username on `PromptEchoOn`. Clear password immediately.
+- On unlock: crossfade, trigger unlock animation, and unlink lockshot files from `$XDG_RUNTIME_DIR`.
+- On failure: shake animation, clear password, provide immediate visual error feedback.
 
 ## CONVENTIONS
-Same as root AGENTS.md with additions:
-- Use `Quickshell.Services.Pam` module for authentication
-- Use `WlSessionLockSurface` as root component for lock surfaces
-- Store sensitive data (password) in temporary QtObject, clear immediately after auth
-- Use Process for system commands (`whoami`, `hostname`, `faillock`)
-- Handle PAM message responses in `onPamMessage` signal
+- **PAM Message Safety**: ALWAYS check `messageType === PamMessageType.PromptEchoOff` before transmitting password. Never echo passwords into username or info prompts.
+- **Immediate Credential Wipe**: Set `authPasswordHolder.password = ""` immediately after `pamAuth.respond()`.
+- **Lockshot Cleanup**: Unlink lockshot image captures in `$XDG_RUNTIME_DIR` when unlocking to prevent persistent unencrypted desktop images on disk.
+- **Multi-Monitor Focus**: Only grant active focus to the password field on the primary screen (`root.screen === Quickshell.screens[0]`) to prevent focus fighting across displays.
 
 ## ANTI-PATTERNS
-- Never log passwords or send them to debug output
-- Don't modify authPasswordHolder after PAM completion (should be cleared)
-- Don't call pamAuth.start() while already authenticating (check authenticating flag)
-- Don't forget to clear password on both success and failure paths
+- Never log passwords, tokens, or raw PAM prompt responses.
+- Retaining plaintext password in memory after sending PAM response.
+- Feeding passwords to `PromptEchoOn` prompts (causes passwords to be logged as usernames in `/var/log/auth.log`).
+- Leaving unencrypted desktop screenshots in `$XDG_RUNTIME_DIR` after unlocking.

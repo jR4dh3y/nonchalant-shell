@@ -242,37 +242,43 @@ Singleton {
             }
         }
         onExited: (exitCode, exitStatus) => {
-            const lines = updateConnectionType.buffer.trim().split('\n');
-            const connectivity = lines.pop();
-            let hasEthernet = false;
-            let hasWifi = false;
-            let wifiStatus = "disconnected";
-            lines.forEach(line => {
-                if (line.includes("ethernet") && line.includes("connected"))
-                    hasEthernet = true;
-                else if (line.includes("wifi:")) {
-                    if (line.includes("disconnected")) {
-                        wifiStatus = "disconnected";
-                    } else if (line.includes("connected")) {
-                        hasWifi = true;
-                        wifiStatus = "connected";
-                        if (connectivity === "limited") {
-                            hasWifi = false;
-                            wifiStatus = "limited";
+            try {
+                const lines = updateConnectionType.buffer.trim().split('\n');
+                const connectivity = lines.pop();
+                let hasEthernet = false;
+                let hasWifi = false;
+                let wifiStatus = "disconnected";
+                lines.forEach(line => {
+                    if (line.includes("ethernet") && line.includes("connected"))
+                        hasEthernet = true;
+                    else if (line.includes("wifi:")) {
+                        if (line.includes("disconnected")) {
+                            wifiStatus = "disconnected";
+                        } else if (line.includes("connected")) {
+                            hasWifi = true;
+                            wifiStatus = "connected";
+                            if (connectivity === "limited") {
+                                hasWifi = false;
+                                wifiStatus = "limited";
+                            }
+                        } else if (line.includes("connecting")) {
+                            wifiStatus = "connecting";
+                        } else if (line.includes("unavailable")) {
+                            wifiStatus = "disabled";
                         }
-                    } else if (line.includes("connecting")) {
-                        wifiStatus = "connecting";
-                    } else if (line.includes("unavailable")) {
-                        wifiStatus = "disabled";
                     }
-                }
-            });
-            root.wifiStatus = wifiStatus;
-            root.ethernet = hasEthernet;
-            root.wifi = hasWifi;
-            root.isUpdating = false;
+                });
+                root.wifiStatus = wifiStatus;
+                root.ethernet = hasEthernet;
+                root.wifi = hasWifi;
+            } catch (e) {
+                console.warn("NetworkService: Error parsing connection status:", e);
+            } finally {
+                root.isUpdating = false;
+            }
         }
     }
+
 
     Process {
         id: updateNetworkName

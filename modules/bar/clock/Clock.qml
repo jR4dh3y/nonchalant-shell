@@ -35,8 +35,9 @@ Item {
     property string currentDayAbbrev: ""
     property string currentFullDate: ""
 
-    required property var bar
+    required property Item bar
     property bool isHovered: false
+
     property bool layerEnabled: false
     
     property real radius: 0
@@ -46,6 +47,7 @@ Item {
     // Popup visibility state
     property bool popupOpen: clockPopup.isOpen
     readonly property bool menuOpen: dashboardPopup.isOpen
+    readonly property Item dashboardHitbox: dashboardPopup.menuShown ? dashboardPopup.cardRevealItem : null
     readonly property bool timeToolsOpen: timePopup.isOpen
     readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
 
@@ -112,7 +114,10 @@ Item {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
             opacity: root.anyPopupOpen ? 0 : (root.isHovered ? 0.25 : 0)
-            radius: parent.radius ?? 0
+            topLeftRadius: parent.topLeftRadius
+            topRightRadius: parent.topRightRadius
+            bottomLeftRadius: parent.bottomLeftRadius
+            bottomRightRadius: parent.bottomRightRadius
 
             Behavior on opacity {
                 enabled: Config.animDuration > 0
@@ -121,6 +126,7 @@ Item {
                 }
             }
         }
+
 
         RowLayout {
             id: rowLayout
@@ -592,18 +598,21 @@ Item {
         parent: root.bar
 
         property bool isOpen: false
+        property bool menuShown: false
         property real revealProgress: 0
         readonly property bool bottomBar: (Config.bar?.position ?? "top") === "bottom"
+        readonly property int contentPadding: 8
+        readonly property int edgeGap: 8
+        readonly property real barClearance: root.bar.totalBarHeight + edgeGap
+        readonly property alias cardRevealItem: cardReveal
 
         z: 1000
-        x: Math.round((parent.width - width) / 2)
-        y: bottomBar
-            ? parent.height - root.bar.totalBarHeight - dashboardWrapper.height - 8
-            : root.bar.totalBarHeight + 8
-        width: dashboardWrapper.width
-        height: dashboardWrapper.height * revealProgress
-        visible: isOpen || revealProgress > 0
+        x: 0
+        y: bottomBar ? 0 : barClearance
+        width: parent.width
+        height: Math.max(0, parent.height - barClearance)
         clip: true
+        visible: menuShown || isOpen || revealProgress > 0
 
         Behavior on revealProgress {
             enabled: Config.animDuration > 0
@@ -616,9 +625,17 @@ Item {
         function open() {
             if (isOpen)
                 return;
+            closeTimer.stop();
             Visibilities.claimBarPopup(dashboardPopup);
             isOpen = true;
-            revealProgress = 1;
+            menuShown = true;
+            Qt.callLater(() => {
+                if (!dashboardPopup.isOpen)
+                    return;
+                revealProgress = 1;
+                if (dashboardLoader.item)
+                    dashboardLoader.item.focusCurrentTab();
+            });
         }
 
         function close() {
@@ -627,10 +644,26 @@ Item {
             isOpen = false;
             Visibilities.releaseBarPopup(dashboardPopup);
             revealProgress = 0;
+            closeTimer.restart();
         }
 
         function closeQuick() {
-            close();
+            if (!isOpen && revealProgress <= 0)
+                return;
+            closeTimer.stop();
+            isOpen = false;
+            Visibilities.releaseBarPopup(dashboardPopup);
+            revealProgress = 0;
+            menuShown = false;
+        }
+
+        Timer {
+            id: closeTimer
+            interval: Config.animDuration > 0 ? Config.animDuration + 40 : 40
+            onTriggered: {
+                if (!dashboardPopup.isOpen)
+                    dashboardPopup.menuShown = false;
+            }
         }
 
         FocusGrab {
@@ -643,40 +676,48 @@ Item {
             const screenName = root.bar?.screen?.name ?? "";
             if (isOpen) {
                 GlobalStates.dashboardPopupScreen = screenName;
-                Qt.callLater(() => {
-                    if (dashboardPopup.isOpen && dashboardLoader.item)
-                        dashboardLoader.item.focusCurrentTab();
-                });
             } else if (GlobalStates.dashboardPopupScreen === screenName) {
                 GlobalStates.dashboardPopupScreen = "";
             }
         }
 
-        StyledRect {
-            id: dashboardWrapper
-            variant: "popup"
-            radius: Styling.radius(8)
-            enableShadow: false
+        Item {
+            id: cardReveal
+
+            visible: dashboardPopup.menuShown
+            width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + dashboardPopup.contentPadding * 2 : 916
+            height: (dashboardLoader.item
+                ? dashboardLoader.item.implicitHeight + dashboardPopup.contentPadding * 2
+                : 360) * dashboardPopup.revealProgress
+            x: Math.round((dashboardPopup.width - width) / 2)
             y: dashboardPopup.bottomBar ? dashboardPopup.height - height : 0
-            // Stable size so open animation is not a 0→full expand hitch.
-            width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + 16 : 916
-            height: dashboardLoader.item ? dashboardLoader.item.implicitHeight + 16 : 446
+            clip: true
 
-            Loader {
-                id: dashboardLoader
-                // Always warm: weather→dashboard must not hitch on first create.
-                active: true
-                anchors.fill: parent
-                anchors.margins: 8
-                // Avoid painting a heavy tree while closed.
-                opacity: dashboardPopup.isOpen || dashboardPopup.visible ? 1 : 0
-                enabled: dashboardPopup.isOpen || dashboardPopup.visible
+            StyledRect {
+                id: dashboardWrapper
 
-                sourceComponent: Component {
-                    DashboardView {
-                        screenName: root.bar?.screen?.name ?? ""
-                        popupMode: true
-                        onCloseRequested: dashboardPopup.close()
+                variant: "popup"
+                radius: Styling.radius(8)
+                enableShadow: false
+                width: cardReveal.width
+                height: dashboardLoader.item
+                    ? dashboardLoader.item.implicitHeight + dashboardPopup.contentPadding * 2
+                    : 360
+                y: dashboardPopup.bottomBar ? cardReveal.height - height : 0
+
+                Loader {
+                    id: dashboardLoader
+                    // Always warm: weather→dashboard must not hitch on first create.
+                    active: true
+                    anchors.fill: parent
+                    anchors.margins: dashboardPopup.contentPadding
+
+                    sourceComponent: Component {
+                        DashboardView {
+                            screenName: root.bar?.screen?.name ?? ""
+                            popupMode: true
+                            onCloseRequested: dashboardPopup.close()
+                        }
                     }
                 }
             }

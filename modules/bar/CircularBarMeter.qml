@@ -10,8 +10,9 @@ import qs.config
 Item {
     id: root
 
-    required property var bar
+    required property Item bar
     property bool layerEnabled: false
+
     property real startRadius: Styling.radius(0)
     property real endRadius: Styling.radius(0)
     property real value: 0
@@ -48,13 +49,17 @@ Item {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
             opacity: root.isHovered ? 0.2 : 0
-            radius: parent.radius ?? 0
+            topLeftRadius: parent.topLeftRadius
+            topRightRadius: parent.topRightRadius
+            bottomLeftRadius: parent.bottomLeftRadius
+            bottomRightRadius: parent.bottomRightRadius
 
             Behavior on opacity {
                 enabled: Config.animDuration > 0
                 NumberAnimation { duration: Config.animDuration / 2 }
             }
         }
+
 
         Item {
             id: progressMeter

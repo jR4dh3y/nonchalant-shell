@@ -19,11 +19,53 @@ Singleton {
     }
 
     function lock() {
-        if (GlobalStates.lockscreenVisible)
+        if (GlobalStates.lockscreenVisible || root.prepActive)
             return;
         GlobalStates.lockscreenUnlocking = false;
         GlobalStates.lockscreenHandoff = false;
+        // Pre-capture each screen's desktop BEFORE requesting the lock so the
+        // lock surface's first frame matches the on-screen content (windows
+        // included) instead of flashing the clean wallpaper. Falls back to
+        // engaging immediately if no screen can capture.
+        const pending = GlobalStates.beginLockshotPrep();
+        if (pending > 0) {
+            root.prepActive = true;
+            prepTimeoutTimer.restart();
+        } else {
+            engage();
+        }
+    }
+
+    function engage() {
         GlobalStates.lockscreenVisible = true;
+    }
+
+    // Engages the lock once every screen has a lockshot (or gave up).
+    property bool prepActive: false
+
+    Connections {
+        target: GlobalStates
+
+        function onLockshotPendingChanged() {
+            if (!root.prepActive)
+                return;
+            if (GlobalStates.lockshotPending > 0)
+                return;
+            root.prepActive = false;
+            prepTimeoutTimer.stop();
+            root.engage();
+        }
+    }
+
+    Timer {
+        id: prepTimeoutTimer
+        interval: 400
+        onTriggered: {
+            if (!root.prepActive)
+                return;
+            root.prepActive = false;
+            root.engage();
+        }
     }
 
     // Called only by LockScreen after PAM succeeds. Keeping this separate from
@@ -34,7 +76,14 @@ Singleton {
         GlobalStates.lockscreenVisible = false;
         GlobalStates.lockscreenUnlocking = false;
         GlobalStates.lockscreenHandoff = false;
+        cleanupLockshotsProcess.running = true;
     }
+
+    Process {
+        id: cleanupLockshotsProcess
+        command: ["sh", "-c", 'rm -f "${XDG_RUNTIME_DIR:-/tmp}"/nonchalant-lockshot-*.png']
+    }
+
 
     IpcHandler {
         target: "lockscreen"
@@ -49,3 +98,5 @@ Singleton {
 
     }
 }
+
+

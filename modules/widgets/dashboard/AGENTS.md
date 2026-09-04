@@ -1,42 +1,41 @@
 # DASHBOARD KNOWLEDGE BASE
 
 ## OVERVIEW
-Legacy tabbed hub with LRU-based lazy-loading for widgets, system controls, media, AI tools, clipboard, notes, and tmux management. It is not part of the lean shell startup path.
+Popup dashboard hosted inside the bar clock popup (`Clock.qml`). It provides a compact hub containing two views:
+1. `WidgetsTab`: Media player (`FullPlayer`), calendar, quick controls, and notification history.
+2. `WallpapersTab`: Wallpaper selection gallery with search and monitor targeting.
+
+Note: Standalone configuration panels (`controls/`) are used by `modules/widgets/config/SettingsWindow.qml`. Hardware resource meters (`metrics/`) are used by `modules/bar/SystemMonitorButton.qml`.
 
 ## STRUCTURE
-- **Root**: `Dashboard.qml` — Orchestrates LRU logic, tab layout, and open/close animations.
-- **Side Tabs**: Vertical navigation bar on the left for switching main views.
-- **Sub-tabs** (each a directory):
-  - `widgets/`: `WidgetsTab` — Main grid: `FullPlayer`, `Calendar`, `NotificationHistory`, weather, quick toggles.
-  - `controls/`: Settings panels — `ShellPanel` (1913 lines), `ThemePanel` (1564 lines), `BindsPanel` (1974 lines), `CompositorPanel`, `SystemPanel`, `VariantEditor`.
-  - `assistant/`: `AssistantTab` (1196 lines) — AI chat interface.
-  - `clipboard/`: `ClipboardTab` (3615 lines) — Searchable clipboard history with categories.
-  - `notes/`: `NotesTab` (3505 lines) — Rich text editor with file management.
-  - `tmux/`: `TmuxTab` (2250 lines) — Tmux session manager.
-  - `emoji/`: `EmojiTab` (934 lines) — Emoji picker with search.
-  - `metrics/`: `MetricsTab` (987 lines) — Real-time CPU/RAM/GPU/disk monitoring.
-  - `wallpapers/`: `WallpapersTab` / `Wallpaper.qml` — Wallpaper browser and manager.
-  - `kanban/`: Kanban board for task management.
+- **Root**: `Dashboard.qml` — Container for `WidgetsTab` (tab 0) and `WallpapersTab` (tab 1).
+- **View Wrapper**: `DashboardView.qml` — Provides keyboard navigation and tab switching.
+- **Widgets View**:
+  - `widgets/WidgetsTab.qml`: Main grid: `FullPlayer`, `Calendar`, `NotificationHistory`, `QuickControls`.
+  - `widgets/FullPlayer.qml`: MPRIS media player with cover art and seekbar.
+  - `widgets/QuickControls.qml`: Wi-Fi, Bluetooth, Night Light, and GPU quick toggles with drawers.
+  - `widgets/NotificationHistory.qml`: Notification history list with clear actions.
+  - `widgets/calendar/`: Monthly calendar view.
+- **Wallpapers View**:
+  - `wallpapers/WallpapersTab.qml`: Wallpaper gallery with search and screen targeting.
 
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
-| **Tab loading** | `Dashboard.qml` | `TabLoader` + `shouldTabBeLoaded(index)` LRU logic |
-| **System settings** | `controls/ShellPanel.qml` | Shell configuration UI |
-| **Theme settings** | `controls/ThemePanel.qml` | Colors, gradients, fonts, opacity |
-| **Keybindings** | `controls/BindsPanel.qml` | Compositor keybind editor |
-| **AI chat** | `assistant/AssistantTab.qml` | Multi-provider chat with streaming |
-| **Clipboard** | `clipboard/ClipboardTab.qml` | Largest file (3615 lines). Category filtering |
-| **Notes** | `notes/NotesTab.qml` | Rich text, file tree, search |
+| **Dashboard Host** | `modules/bar/clock/Clock.qml` | Instantiates `DashboardView` as a flyout popup |
+| **Media Player** | `widgets/FullPlayer.qml` | MPRIS metadata, playback controls, seekbar |
+| **Quick Toggles** | `widgets/QuickControls.qml` | Network, Bluetooth, Night Light, GPU drawers |
+| **Wallpapers** | `wallpapers/WallpapersTab.qml` | Wallpaper gallery and picker |
+| **System Settings** | `modules/widgets/config/SettingsWindow.qml` | Full-screen settings window |
 
 ## CONVENTIONS
-- **LRU management**: Use `shouldTabBeLoaded(index)` for conditional `Loader.active`. Tabs evicted when exceeding cache limit.
-- **Keyboard flow**: Components implement `focusSearchInput()` so root can forward focus on open.
-- **UI primitives**: ALWAYS use `StyledRect` variants (`"pane"`, `"internalbg"`, `"focus"`) for containers.
-- **Service bindings**: Connect directly to service singletons (`NetworkService`, `Audio`). No prop-drilling.
-- **Large files**: Most tabs exceed 900 lines. Edit with care; use targeted line ranges.
+- **UI primitives**: ALWAYS use `StyledRect` variants (`"pane"`, `"internalbg"`, `"focus"`) for themed containers. Never use raw `Rectangle`.
+- **Layout containers**: Use `Item` (never `Rectangle { color: "transparent" }`) for layout wrappers.
+- **Service bindings**: Connect directly to service singletons (`NetworkService`, `BluetoothService`, `MprisController`, `Audio`). No prop-drilling.
+- **Strong Typing**: Strongly type properties (`int`, `real`, `string`, `bool`, `date`). Avoid untyped `property var`.
 
 ## ANTI-PATTERNS
-- Creating tab content without LRU integration via `TabLoader`.
+- Using raw `Rectangle` instead of `StyledRect` for any visual container.
+- Using `Rectangle { color: "transparent" }` where an `Item` belongs.
 - Prop-drilling service state through parent components instead of importing singletons directly.
-- Using `Rectangle` instead of `StyledRect` for any container.
+- Hardcoding animation durations or hex colors.

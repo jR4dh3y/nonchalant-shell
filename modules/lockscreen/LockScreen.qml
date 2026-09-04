@@ -38,13 +38,23 @@ WlSessionLockSurface {
             return;
 
         entryStarted = true;
-        // Let niri present the fully-covered initial state for one frame before
-        // changing animated properties. Otherwise the first rendered frame can
-        // already be the final state and the lock-in animation is skipped.
+        root.errorMessage = "";
+        // Wait until the wallpaper (the frame-1 base layer) is actually
+        // presented before animating in, so the lock-in transition starts from
+        // a fully rendered lock backdrop. entryTimer polls with a fallback
+        // timeout in case the image never becomes ready.
+        entryTimer.elapsed = 0;
         entryTimer.start();
     }
 
     onLockSecureChanged: beginEntry()
+
+    // Pre-lock desktop capture ("lockshot") for this screen, taken by the
+    // wallpaper window BEFORE the lock request. Frame-1 of this surface shows
+    // it: identical pixels to what the user was seeing, so niri's output
+    // switch to the locked frame is invisible - no wallpaper flash.
+    readonly property string lockshotPath: GlobalStates.lockshotPaths[root.screen ? root.screen.name : ""] || ""
+    readonly property bool shotReady: lockshotPath !== "" && shotImage.ready
 
     // PAM can complete on any output. All lock surfaces must run their
     // foreground exit at the same time before the shared lock is released.
@@ -57,25 +67,42 @@ WlSessionLockSurface {
         }
     }
 
-    // Capture one native compositor frame as soon as this surface exists. It
-    // remains hidden behind the lock backdrop until PAM succeeds, when it
-    // becomes the desktop-reveal layer for the exit animation.
-    ScreencopyView {
-        id: desktopFrame
+    readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && shotReady
+
+    // The wallpaper is the frame-1 fallback base layer of the lock surface. It
+    // must be ready at first commit: niri switches the output to the locked
+    // frame as soon as this surface commits. The wallpaper window keeps the
+    // same image warm in the pixmap cache (see lockscreenFramePreloader), so
+    // this is a cache hit.
+    readonly property bool wallpaperReady: wallpaperBackground.source === "" || wallpaperBackground.ready
+
+    // Frame-1 base layer: the pre-lock desktop shot. Same source + sourceSize
+    // as the wallpaper window's lockshot preloader, so this is a cache hit.
+    Image {
+        id: shotImage
         anchors.fill: parent
         z: 0
-        captureSource: root.screen
-        live: false
-        paintCursor: false
-        visible: true
+        cache: true
+        mipmap: true
+        smooth: true
+        asynchronous: true
+        fillMode: Image.PreserveAspectCrop
+        visible: lockshotPath !== ""
+        source: lockshotPath !== "" ? "file://" + lockshotPath : ""
+        sourceSize.width: root.width
+        sourceSize.height: root.height
     }
 
-    readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && desktopFrame.hasContent
+    // Entry choreography:
+    // - The desktop shot was captured BEFORE the lock request (see Wallpaper.qml
+    //   lockshot prep), so frame 1 is the actual desktop the user was looking
+    //   at - niri's output switch to the locked frame is seamless.
+    // - The dim scrim hides the surface until a base layer (shot or wallpaper)
+    //   is ready. If only the wallpaper is available, it is revealed dimmed,
+    //   never at full brightness, so the clean wallpaper can never flash.
+    // - startAnim then crossfades the shot into the dimmed wallpaper while
+    //   the clock / password slide in.
 
-    // Keep the lock backdrop static while entering. Animating a full-screen
-    // asynchronously decoded image causes frame pacing jitter on lock. The
-    // foreground provides the lock-in motion; this backdrop only fades on
-    // unlock, over the captured desktop frame.
     TintedWallpaper {
         id: wallpaperBackground
         anchors.fill: parent
@@ -94,7 +121,13 @@ WlSessionLockSurface {
 
         source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
         visible: source !== ""
-        opacity: GlobalStates.lockscreenUnlocking ? (root.revealDesktop ? 0 : 1) : 1
+        // Pre-startAnim the lockshot (if present) is the base; the wallpaper
+        // crossfades in with the entry animation so the steady-state backdrop
+        // is the wallpaper. On unlock it fades back out over the shot for the
+        // desktop reveal. Without a shot it stays visible as the fallback.
+        opacity: GlobalStates.lockscreenUnlocking
+            ? (root.revealDesktop ? 0 : 1)
+            : (root.startAnim || !root.shotReady ? 1 : 0)
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
@@ -105,21 +138,25 @@ WlSessionLockSurface {
         }
     }
 
-    // The wallpaper stays static on lock, while this inexpensive themed scrim
-    // fades from opaque to dim. That provides the lock-in fade without
-    // compositing the full-screen asynchronous image every frame. On unlock it
-    // keeps the existing desktop-reveal fade.
+    // The themed scrim hides the surface until a base layer (capture or
+    // wallpaper) is ready, then fades in over it with the entry animation. On
+    // unlock it keeps the existing desktop-reveal fade.
     Rectangle {
         id: dimOverlay
         anchors.fill: parent
         color: Colors.background
+        // The scrim only clears for the lockshot (identical pixels to the
+        // pre-lock desktop - seamless). Without a shot it stays opaque until
+        // startAnim dims the wallpaper in, so the clean wallpaper can never
+        // flash at full brightness.
         opacity: GlobalStates.lockscreenUnlocking
             ? (root.revealDesktop ? 0 : 0.55)
-            : (root.startAnim ? 0.55 : 1)
+            : (root.startAnim ? 0.55 : (root.shotReady ? 0 : 1))
         z: 2
 
         Behavior on opacity {
             enabled: Config.animDuration > 0
+                && (GlobalStates.lockscreenUnlocking || root.startAnim)
             NumberAnimation {
                 duration: root.unlockAnimMs
                 easing.type: Easing.OutQuint
@@ -503,22 +540,12 @@ WlSessionLockSurface {
         }
     }
 
-    Process {
-        id: hostnameProc
-        command: ["hostname"]
-        running: true
-
-        stdout: StdioCollector {
-            id: hostnameCollector
-            waitForEnd: true
-        }
-    }
-
     // Holder temporal para la contraseña durante autenticación
     QtObject {
         id: authPasswordHolder
         property string password: ""
     }
+
 
     // Proceso para verificar tiempo de faillock
     Process {
@@ -574,19 +601,22 @@ WlSessionLockSurface {
     PamContext {
         id: pamAuth
         // Use custom PAM config for lockscreen authentication
-        configDirectory: Qt.resolvedUrl("../../config/pam").toString().replace("file://", "")
+        configDirectory: decodeURIComponent(Qt.resolvedUrl("../../config/pam").toString().replace(/^file:\/\//, ""))
         config: "password.conf"
 
         onPamMessage: {
-            console.log("PAM Message:", this.message, "Type:", this.messageType, "Required:", this.responseRequired);
             if (this.responseRequired) {
-                // pam_unix asks for password, respond with stored password
-                this.respond(authPasswordHolder.password);
+                if (this.messageType === PamMessageType.PromptEchoOff) {
+                    this.respond(authPasswordHolder.password);
+                    authPasswordHolder.password = "";
+                } else if (this.messageType === PamMessageType.PromptEchoOn) {
+                    this.respond(Quickshell.env("USER") || "");
+                }
             }
         }
 
         onCompleted: result => {
-            // Limpiar contraseña
+            // Ensure password buffer is always clear
             authPasswordHolder.password = "";
 
             if (result === PamResult.Success) {
@@ -630,17 +660,26 @@ WlSessionLockSurface {
     Timer {
         id: entryTimer
         interval: 16
-        repeat: false
+        repeat: true
+        property int elapsed: 0
         onTriggered: {
-            if (!root.unlocking && root.lockSecure) {
-                root.startAnim = true;
-                passwordInput.forceActiveFocus();
+            elapsed += interval;
+            // Start once a base layer (lockshot or wallpaper) has been up for
+            // at least two frames so the lock-in animation is not skipped;
+            // fall back after 250ms if neither ever becomes ready.
+            const baseReady = root.shotReady || root.wallpaperReady;
+            if ((baseReady && elapsed >= 32) || elapsed >= 250) {
+                stop();
+                if (!root.unlocking && root.lockSecure) {
+                    root.startAnim = true;
+                    if (root.screen === Quickshell.screens[0])
+                        passwordInput.forceActiveFocus();
+                }
             }
         }
     }
 
     Component.onCompleted: {
-        desktopFrame.captureFrame();
         beginEntry();
     }
 }

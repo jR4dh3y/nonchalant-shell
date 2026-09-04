@@ -1,23 +1,23 @@
 # COMPONENTS KNOWLEDGE BASE
 
 ## OVERVIEW
-Atomic design library for the Nonchalant shell. 26 QML components + 29 GLSL shaders (`.frag`/`.vert`/`.qsb`). Every themed container in the shell ultimately uses `StyledRect`. Shader-driven UI for gradients, wavy animations, and panel blur effects.
+Atomic design library for Nonchalant Shell. Every themed container in the shell ultimately uses `StyledRect`. Components enforce theme reactivity, native font rendering, and strong typing.
 
 ## STRUCTURE
 ### Layout & Containers
 | Component | Role |
 |-----------|------|
-| `StyledRect.qml` | **THE** base container. 300+ usages. `variant` prop selects style from `Styling.qml` |
-| `PaneRect.qml` | Simplified pane-specific container |
+| `StyledRect.qml` | **THE** base themed container. `variant` selects style from `Styling.qml`. Handles borders, gradients, and radii |
 | `Separator.qml` | Visual divider between sections |
 | `ActionGrid.qml` | Flexible button grid (row or grid layout). Used by PowerMenu, ToolsMenu |
 
 ### Input
 | Component | Role |
 |-----------|------|
-| `SearchInput.qml` | Text entry with icon, prefix, escape-to-clear |
+| `SearchInput.qml` | Text entry with icon, prefix, clear on escape control |
 | `StyledSlider.qml` | Standard slider (volume, brightness, progress) |
-| `PositionSlider.qml` | Media position/seek slider |
+| `PositionSlider.qml` | Media position/seek slider (requires `MprisPlayer`) |
+| `CircularSeekBar.qml` | Circular arc seekbar for media players |
 | `SegmentedSwitch.qml` | Multi-option toggle (radio-button style) |
 | `CircularControl.qml` | Circular knob for volume/mic |
 | `ToggleButton.qml` | Icon button with tooltip and toggle state |
@@ -26,37 +26,30 @@ Atomic design library for the Nonchalant shell. 26 QML components + 29 GLSL shad
 | Component | Role |
 |-----------|------|
 | `StyledText.qml` | Shared `Text` with `NativeRendering` + full hinting (avoids DF soft halo) |
-| `StyledToolTip.qml` | Themed tooltip |
-| `BarPopup.qml` | Base for bar flyout popups. Requires `anchorItem` + `bar` ref |
-| `ContextMenu.qml` | Right-click context menu |
+| `StyledToolTip.qml` | Themed tooltip with `show` and `description` API |
+| `BarPopup.qml` | Base for bar flyout popups. Requires `anchorItem` |
 | `OptionsMenu.qml` | Dropdown option selector |
 
 ### Animation & Visuals
 | Component | Role |
 |-----------|------|
-| `WavyLine.qml` | Signature animated progress line (custom shader) |
+| `WavyLine.qml` | Signature animated progress line rendered via 2D Canvas |
 | `CircularWavyProgress.qml` | Circular animated progress indicator |
-| `CarouselProgress.qml` | Step-based progress dots |
-| `DiagonalStripePattern.qml` | Decorative pattern overlay |
-| `BgShadow.qml` / `Shadow.qml` | Intentionally inert (MultiEffect on text parents softens glyphs) |
-| `Outline.qml` | Intentionally inert outline-via-shadow path |
-| `Tinted.qml` / `TintedWallpaper.qml` | Color tint overlays |
-
-### Utility & Core
-| Component | Role |
-|-----------|------|
-| `GradientCache.qml` | **Singleton**. Shares GPU gradient textures across `StyledRect` instances |
-| `GradientCanvas.qml` | Canvas-based gradient renderer |
-| `UnifiedPanelEffect.qml` | Complex shader for panel shadows + borders |
+| `CarouselProgress.qml` | Progress wrapper |
+| `DiagonalStripePattern.qml` | Decorative pattern overlay for critical/accent states |
+| `Tinted.qml` / `TintedWallpaper.qml` | Color tint overlays with shader pipeline |
+| `UnifiedPanelEffect.qml` | Shader for panel shadows and borders |
 
 ## CONVENTIONS
 - **StyledRect variants**: Always pass `variant` as one of: `"pane"`, `"popup"`, `"common"`, `"internalbg"`, `"focus"`. Variant config comes from `Styling.getStyledRectConfig()`.
-- **Property aliasing**: Components expose internal state via `property alias` for clean external APIs.
-- **Reactive styling**: All components use `Config.resolveColor()` and `Styling.radius()`. Changing a JSON preset updates the entire library instantly.
-- **BarPopup pattern**: Flyouts require an `anchorItem` and `bar` reference to anchor correctly to the shell panel.
-- **Shader binaries**: `.qsb` files are pre-compiled shaders. Regenerate with `qsb` tool if `.frag`/`.vert` sources change.
+- **Strong Typing**: Components must declare explicit types (`required property Item anchorItem`, `required property MprisPlayer player`). Never use untyped `property var` for object references.
+- **Null Safety**: In `StyledRect`, guard access to variant border configurations (`borderData?.[0]`, `borderData?.[1]`).
+- **Reactive styling**: All components use `Config.resolveColor()` and `Styling.radius()`.
+- **BarPopup pattern**: Requires an `anchorItem` to position relative to the shell panel.
+- **Tooltips**: Use `StyledToolTip` with properties `show` and `description`.
 
 ## ANTI-PATTERNS
-- Using raw `Rectangle` instead of `StyledRect` for any container.
+- Using raw `Rectangle` instead of `StyledRect` for containers or highlights.
 - Hardcoding colors, radii, or font sizes instead of using `Colors.*`, `Styling.radius()`, `Styling.fontSize()`.
-- Creating popups without the `anchorItem`/`bar` reference pattern from `BarPopup`.
+- Declaring untyped `property var` when `Item`, `MprisPlayer`, or primitive types are known.
+- Retaining inert, non-functional shims (`BgShadow`, `Shadow`, `Outline`).

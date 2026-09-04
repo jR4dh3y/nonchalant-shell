@@ -102,6 +102,54 @@ Singleton {
     property bool lockscreenHandoff: false
     property real lockscreenHandoffOpacity: 1
 
+    // Lockshot prep: per-screen desktop captures taken just BEFORE the lock
+    // request so the lock surface's first frame matches the on-screen content
+    // (windows included) instead of flashing the clean wallpaper. Each
+    // Wallpaper window registers a prep handler; LockscreenService waits for
+    // all of them (with a timeout) before engaging the lock.
+    property var lockPrepHandlers: ({})
+    property var lockshotPaths: ({})
+    property int lockshotPending: 0
+
+    function registerLockPrep(screenName, handler) {
+        const map = Object.assign({}, lockPrepHandlers);
+        map[screenName] = handler;
+        lockPrepHandlers = map;
+    }
+
+    function unregisterLockPrep(screenName) {
+        const map = Object.assign({}, lockPrepHandlers);
+        delete map[screenName];
+        lockPrepHandlers = map;
+    }
+
+    // Kick off a capture on every registered screen. Returns how many
+    // prep handlers actually started.
+    function beginLockshotPrep(): int {
+        let started = 0;
+        lockshotPaths = {};
+        for (const name in lockPrepHandlers) {
+            try {
+                if (lockPrepHandlers[name]())
+                    started++;
+            } catch (e) {
+                console.warn("Lockshot prep failed for screen", name, e);
+            }
+        }
+        lockshotPending = started;
+        return started;
+    }
+
+    function notifyLockshotPrepared(screenName, path) {
+        if (path) {
+            const map = Object.assign({}, lockshotPaths);
+            map[screenName] = path;
+            lockshotPaths = map;
+        }
+        if (lockshotPending > 0)
+            lockshotPending--;
+    }
+
     // OSD state
     property bool osdVisible: false
     property string osdIndicator: "volume" // volume, mic, brightness

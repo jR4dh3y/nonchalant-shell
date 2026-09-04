@@ -525,10 +525,11 @@ Singleton {
             property bool windowPreview: true
             property bool wavyLine: true
             property bool rotateCoverArt: true
-            property bool dashboardPersistTabs: true
+            property bool dashboardPersistTabs: false
             property int dashboardMaxPersistentTabs: 2
         }
     }
+
 
     // ============================================
     // WEATHER MODULE
@@ -743,7 +744,7 @@ Singleton {
 
     // Exposed properties
     // Theme configuration
-    property QtObject theme: themeLoader.adapter
+    property alias theme: themeLoader.adapter
     property bool oledMode: lightMode ? false : theme.oledMode
     property bool lightMode: theme.lightMode
 
@@ -765,24 +766,25 @@ Singleton {
     }
 
     // Bar configuration
-    property QtObject bar: barLoader.adapter
+    property alias bar: barLoader.adapter
     property bool showBackground: theme.srBarBg.opacity > 0
 
     // Performance configuration
-    property QtObject performance: performanceLoader.adapter
+    property alias performance: performanceLoader.adapter
     property bool blurTransition: performance.blurTransition
 
     // Weather configuration
-    property QtObject weather: weatherLoader.adapter
+    property alias weather: weatherLoader.adapter
 
     // Lockscreen configuration
-    property QtObject lockscreen: lockscreenLoader.adapter
+    property alias lockscreen: lockscreenLoader.adapter
 
     // System configuration
-    property QtObject system: systemLoader.adapter
+    property alias system: systemLoader.adapter
 
     // AI configuration
-    property QtObject ai: aiLoader.adapter
+    property alias ai: aiLoader.adapter
+
 
     function setAiWorkingDirectory(path) {
         aiLoader.adapter.workingDirectory = path || "";

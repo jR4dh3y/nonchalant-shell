@@ -11,9 +11,8 @@ import qs.modules.services
 import qs.modules.widgets.projects
 import qs.config
 
-Rectangle {
+Item {
     id: root
-    color: "transparent"
     
     implicitWidth: 464
     implicitHeight: 320
@@ -79,12 +78,12 @@ Rectangle {
     }
 
     // App launcher / run menu.
-    Rectangle {
+    Item {
         id: appLauncher
         anchors.fill: parent
-        color: "transparent"
         visible: GlobalStates.launcherMode === "apps"
         enabled: visible
+
 
         property string searchText: GlobalStates.launcherSearchText
         property bool showResults: searchText.length > 0
@@ -260,9 +259,10 @@ Rectangle {
                 itemY += 48; // All items before are collapsed (base height)
             }
 
-            // Calculate expanded item height - always 3 options (Launch, Pin/Unpin, Create Shortcut)
-            var listHeight = 36 * 3;
+            // Calculate expanded item height - 2 options (Launch, Create Shortcut)
+            var listHeight = 36 * 2;
             var expandedHeight = 48 + 4 + listHeight + 8;
+
 
             // Calculate max valid scroll position
             var maxContentY = Math.max(0, resultsList.contentHeight - resultsList.height);
@@ -305,8 +305,10 @@ Rectangle {
                 placeholderText: "Search applications..."
                 iconText: ""
                 handleTabNavigation: true
+                clearOnEscape: false
 
                 onSearchTextChanged: text => {
+
                     GlobalStates.launcherSearchText = text;
                     appLauncher.searchText = text;
 
@@ -393,6 +395,8 @@ Rectangle {
                         appLauncher.expandedItemIndex = -1;
                         appLauncher.selectedOptionIndex = 0;
                         appLauncher.keyboardNavigation = false;
+                    } else if (searchInput.text.length > 0) {
+                        searchInput.text = "";
                     } else {
                         Visibilities.setActiveModule("");
                     }
@@ -400,12 +404,13 @@ Rectangle {
 
                 onDownPressed: {
                     if (appLauncher.expandedItemIndex >= 0) {
-                        // Navigate options when menu is expanded - always 3 options
-                        if (appLauncher.selectedOptionIndex < 2) {
+                        // Navigate options when menu is expanded (2 options)
+                        if (appLauncher.selectedOptionIndex < 1) {
                             appLauncher.selectedOptionIndex++;
                             appLauncher.keyboardNavigation = true;
                         }
                     } else if (resultsList.count > 0) {
+
                         if (appLauncher.selectedIndex === -1) {
                             GlobalStates.launcherSelectedIndex = 0;
                             appLauncher.selectedIndex = 0;
@@ -545,7 +550,7 @@ Rectangle {
                     }
                 }
 
-                delegate: Rectangle {
+                delegate: Item {
                     required property string appId
                     required property string appName
                     required property string appIcon
@@ -561,13 +566,12 @@ Rectangle {
                     height: {
                         let baseHeight = 48;
                         if (isExpanded) {
-                            var listHeight = 36 * 3;
+                            var listHeight = 36 * 2;
                             return baseHeight + 4 + listHeight + 8;
                         }
                         return baseHeight;
                     }
-                    color: "transparent"
-                    radius: 16
+
 
                     Behavior on height {
                         enabled: Config.animDuration > 0
@@ -822,11 +826,11 @@ Rectangle {
                                     width: optionsListView.width
                                     height: 36
 
-                                    Rectangle {
+                                    Item {
                                         anchors.fill: parent
-                                        color: "transparent"
 
                                         RowLayout {
+
                                             anchors.fill: parent
                                             anchors.margins: 8
                                             spacing: 8
@@ -911,7 +915,7 @@ Rectangle {
                     height: {
                         let baseHeight = 48;
                         if (resultsList.currentIndex === appLauncher.expandedItemIndex) {
-                            var listHeight = 36 * 3;
+                            var listHeight = 36 * 2;
                             return baseHeight + 4 + listHeight + 8;
                         }
                         return baseHeight;
@@ -923,13 +927,14 @@ Rectangle {
                         for (var i = 0; i < resultsList.currentIndex && i < appsModel.count; i++) {
                             var itemHeight = 48;
                             if (i === appLauncher.expandedItemIndex) {
-                                var listHeight = 36 * 3;
+                                var listHeight = 36 * 2;
                                 itemHeight = 48 + 4 + listHeight + 8;
                             }
                             yPos += itemHeight;
                         }
                         return yPos;
                     }
+
 
                     Behavior on y {
                         enabled: Config.animDuration > 0

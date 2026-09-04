@@ -21,13 +21,20 @@ The launcher is a unified application and project run menu. It is rendered as a 
 ## CONVENTIONS
 
 - Keep the host floating with `StyledRect` variant `"popup"` and rounded edges on every side.
-- Derive spacing and radius from `Styling`; do not hardcode popup geometry.
-- Load `LauncherView` only while the run menu is open.
+- Use explicit spacing constants for layout padding and gaps (never misuse `Styling.radius()`, which zeroes out on square corner themes).
+- **Keyboard & Reverse Action Flow**:
+  - `Tab`: Toggles between Apps and Projects modes without closing the run menu.
+  - `Shift+Enter` or `Right Click`: Expands application action menu.
+  - `Escape`: Must collapse expanded action menu FIRST before dismissing the run menu.
+  - `Backdrop click`: Clicking outside the card on `UnifiedShellPanel` must dismiss the run menu (`Visibilities.setActiveModule("")`).
+- **Options Menu Bound Constraint**: The expanded options menu height and keyboard navigation bounds must dynamically match or strictly equal the actual item count (e.g. `count * 36`). Never hardcode a 3-item navigation limit when only 2 actions exist.
 - Use `Qt.callLater()` when transferring focus after the loader becomes ready.
-- Record usage before closing after an app launch.
+- Record usage (`UsageTracker.recordUsage(appId)`) before closing after an app launch.
 
 ## ANTI-PATTERNS
 
+- Using raw `Rectangle` elements as containers instead of `Item`.
 - Reintroducing notch, cutout, screen-edge, or notification-host behavior.
 - Adding dashboard tabs or prefix routing back into the run menu.
 - Executing apps without updating `UsageTracker`.
+- Prematurely wiping search queries when the user presses Escape to close a sub-menu.

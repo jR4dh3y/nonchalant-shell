@@ -14,11 +14,11 @@ Item {
     property bool forceVisible: false
     property bool isVisible: forceVisible || GlobalStates.dashboardOpen
 
-    opacity: isVisible ? 1 : 0
+    opacity: forceVisible ? 1 : (isVisible ? 1 : 0)
     visible: forceVisible || opacity > 0
 
     Behavior on opacity {
-        enabled: Config.animDuration > 0
+        enabled: !root.forceVisible && Config.animDuration > 0
         NumberAnimation {
             duration: Config.animDuration / 2
             easing.type: Easing.OutQuad
@@ -161,22 +161,6 @@ Item {
                     
                     // Visibility handles the "switching"
                     visible: root.state.currentTab === index
-                    
-                    // Transitions
-                    opacity: visible ? 1 : 0
-                    transform: Translate {
-                        y: visible ? 0 : (root.state.currentTab > index ? -20 : 20)
-                        Behavior on y {
-                             enabled: Config.animDuration > 0
-                             NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } 
-                        }
-                    }
-
-                    Behavior on opacity {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
-                    }
-
                 }
 
                 // Tab 0: widgets
@@ -225,34 +209,6 @@ Item {
         }
     }
 
-    // Animated size properties for smooth transitions
-    property real animatedWidth: implicitWidth
-    property real animatedHeight: implicitHeight
-
-    width: animatedWidth
-    height: animatedHeight
-
-    // Update animated properties when implicit properties change
-    onImplicitWidthChanged: animatedWidth = implicitWidth
-    onImplicitHeightChanged: animatedHeight = implicitHeight
-
-    Behavior on animatedWidth {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.1
-        }
-    }
-
-    Behavior on animatedHeight {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutBack
-            easing.overshoot: 1.1
-        }
-    }
 
     // Component definitions for better performance (defined once, reused)
     Component {
