@@ -9,7 +9,7 @@ import qs.modules.widgets.dashboard.metrics
 ToggleButton {
     id: root
 
-    required property var bar
+    required property Item bar
     readonly property bool popupOpen: monitorPopup.isOpen
 
     buttonIcon: Icons.circuitry

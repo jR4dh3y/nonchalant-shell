@@ -9,11 +9,11 @@ import qs.config
 
 Item {
     id: root
-    property var appIcon: ""
+    property string appIcon: ""
     property string appName: ""
-    property var summary: ""
-    property var urgency: NotificationUrgency.Normal
-    property var image: ""
+    property string summary: ""
+    property int urgency: NotificationUrgency.Normal
+    property string image: ""
     property real scale: 1
     property real size: 48 * scale
     property real appIconScale: scale

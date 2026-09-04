@@ -348,7 +348,7 @@ Item {
         z: 3
         preventStealing: true
         propagateComposedEvents: false
-        property var activeLayout: !root.vertical ? horizontalLayout : verticalLayout
+        property Item activeLayout: !root.vertical ? horizontalLayout : verticalLayout
         property real layoutStart: !root.vertical ? activeLayout.x : activeLayout.y
         property real layoutSize: !root.vertical ? activeLayout.width : activeLayout.height
 

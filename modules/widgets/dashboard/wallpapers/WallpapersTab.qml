@@ -791,10 +791,9 @@ FocusScope {
                 }
 
                 // Delegado para cada elemento de la cuadrícula con lazy loading optimizado.
-                delegate: Rectangle {
+                delegate: Item {
                     width: wallpaperGrid.cellWidth
                     height: wallpaperGrid.cellHeight
-                    color: "transparent"
 
                     property bool isCurrentWallpaper: {
                         if (!GlobalStates.wallpaperManager)
@@ -906,14 +905,7 @@ FocusScope {
                         }
                     }
 
-                    // Animaciones de color y escala.
-                    Behavior on color {
-                        enabled: Config.animDuration > 0
-                        ColorAnimation {
-                            duration: Config.animDuration / 2
-                            easing.type: Easing.OutCubic
-                        }
-                    }
+                    // Animaciones de escala.
 
                     Behavior on scale {
                         enabled: Config.animDuration > 0

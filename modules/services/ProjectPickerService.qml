@@ -19,14 +19,14 @@ Singleton {
     }
     readonly property string recentFile: stateDir + "/recent"
     readonly property string editorFile: stateDir + "/editor"
-    readonly property var roots: [home + "/code", home + "/random"]
+    readonly property list<string> roots: [home + "/code", home + "/random"]
     readonly property int maxRecent: 100
 
-    property var allProjects: []
+    property list<string> allProjects: []
     property var projectIcons: ({})
-    property var recentProjects: []
+    property list<string> recentProjects: []
     property string editor: "code"
-    property var availableEditors: []
+    property list<string> availableEditors: []
     property bool scanning: false
     property bool ready: false
     property bool stateLoaded: false

@@ -12,6 +12,7 @@ Singleton {
 
     // --- Properties ---
     property MprisPlayer trackedPlayer: null
+    onTrackedPlayerChanged: root.saveLastPlayer()
     property list<MprisPlayer> filteredPlayers: {
         const filtered = Mpris.players.values.filter(player => {
             const dbusName = (player.dbusName || "").toLowerCase();
@@ -35,7 +36,7 @@ Singleton {
     property bool canGoNext: activePlayer ? activePlayer.canGoNext : false
     property bool canChangeVolume: activePlayer && activePlayer.volumeSupported && activePlayer.canControl
     property bool loopSupported: activePlayer && activePlayer.loopSupported && activePlayer.canControl
-    property var loopState: activePlayer ? activePlayer.loopState : (typeof MprisLoopState !== 'undefined' ? MprisLoopState.None : 0)
+    property int loopState: activePlayer ? activePlayer.loopState : (typeof MprisLoopState !== 'undefined' ? MprisLoopState.None : 0)
     property bool shuffleSupported: activePlayer && activePlayer.shuffleSupported && activePlayer.canControl
     property bool hasShuffle: activePlayer ? activePlayer.shuffle : false
 
@@ -152,8 +153,17 @@ Singleton {
         delegate: QtObject {
             required property MprisPlayer modelData
 
-            Connections {
+            property Connections playerConnections: Connections {
                 target: modelData
+
+                function onPlaybackStateChanged() {
+                    const dbusName = (modelData.dbusName || "").toLowerCase();
+                    const shouldIgnore = !Config.bar.enableFirefoxPlayer && dbusName.includes("firefox");
+
+                    if (!shouldIgnore && modelData.isPlaying) {
+                        root.trackedPlayer = modelData;
+                    }
+                }
 
                 Component.onCompleted: {
                     const dbusName = (modelData.dbusName || "").toLowerCase();

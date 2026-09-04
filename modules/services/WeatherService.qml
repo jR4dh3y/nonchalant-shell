@@ -44,7 +44,8 @@ Singleton {
     property bool wasCancelled: false
     property bool refreshPending: false
 
-    property var suspendConnections: Connections {
+    Connections {
+        id: suspendConnections
         target: SuspendManager
         function onPreparingForSleep() {
             root.refreshPending = false;
@@ -52,36 +53,39 @@ Singleton {
                 root.wasCancelled = true;
                 weatherProcess.running = false;
             }
-            if (retryTimer) retryTimer.stop();
+            retryTimer.stop();
         }
         function onWakingUp() {
             // Delay refresh on wake to allow network to stabilize
-            if (wakeRefreshTimer) wakeRefreshTimer.restart();
+            wakeRefreshTimer.restart();
         }
     }
 
-    property var wakeRefreshTimer: Timer {
+    Timer {
         id: wakeRefreshTimer
         interval: 5000
         repeat: false
         onTriggered: root.updateWeather()
     }
 
-    property Timer refreshTimer: Timer {
+    Timer {
+        id: refreshTimer
         interval: 600000  // 10 minutes
         running: !SuspendManager.isSuspending
         repeat: true
         onTriggered: root.updateWeather()
     }
 
-    property Timer sunPositionTimer: Timer {
+    Timer {
+        id: sunPositionTimer
         interval: 60000  // 1 minute
         running: !SuspendManager.isSuspending && (GlobalStates.dashboardOpen || GlobalStates.launcherOpen)
         repeat: true
         onTriggered: root.calculateSunPosition()
     }
 
-    property Timer retryTimer: Timer {
+    Timer {
+        id: retryTimer
         interval: 3000
         repeat: false
         onTriggered: root.updateWeather()

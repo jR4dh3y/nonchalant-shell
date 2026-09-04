@@ -40,12 +40,12 @@ Related: `modules/widgets/dashboard/widgets/LockPlayer.qml` (music player on loc
 
 Key behaviors:
 - On lock: pre-capture lockshot via Wallpaper screencopy, engage lock, start entry animation, focus password input on primary screen.
-- On auth: verify PAM message type: send password ONLY on `PamMessageType.PromptEchoOff`, send username on `PromptEchoOn`. Clear password immediately.
+- On auth: verify PAM response requirements: send password ONLY when `!pamAuth.responseVisible` (echo off), send username when `pamAuth.responseVisible` (echo on). Clear password immediately.
 - On unlock: crossfade, trigger unlock animation, and unlink lockshot files from `$XDG_RUNTIME_DIR`.
 - On failure: shake animation, clear password, provide immediate visual error feedback.
 
 ## CONVENTIONS
-- **PAM Message Safety**: ALWAYS check `messageType === PamMessageType.PromptEchoOff` before transmitting password. Never echo passwords into username or info prompts.
+- **PAM Message Safety**: ALWAYS check `!pamAuth.responseVisible` before transmitting password. Never echo passwords into username or info prompts.
 - **Immediate Credential Wipe**: Set `authPasswordHolder.password = ""` immediately after `pamAuth.respond()`.
 - **Lockshot Cleanup**: Unlink lockshot image captures in `$XDG_RUNTIME_DIR` when unlocking to prevent persistent unencrypted desktop images on disk.
 - **Multi-Monitor Focus**: Only grant active focus to the password field on the primary screen (`root.screen === Quickshell.screens[0]`) to prevent focus fighting across displays.

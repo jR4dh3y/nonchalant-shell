@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-QtObject {
+Singleton {
     id: root
 
     property bool active: true
@@ -23,7 +23,8 @@ QtObject {
 
     property bool _initialized: false
 
-    property var suspendConnections: Connections {
+    Connections {
+        id: suspendConnections
         target: SuspendManager
         function onWakingUp() {
             // Small delay to allow wl-paste to work again after wake
@@ -31,7 +32,7 @@ QtObject {
         }
     }
 
-    property var wakeRestartTimer: Timer {
+    Timer {
         id: wakeRestartTimer
         interval: 2000
         repeat: false
@@ -46,7 +47,8 @@ QtObject {
     signal listCompleted()
 
     // Clipboard watcher using custom script that monitors changes
-    property Process clipboardWatcher: Process {
+    Process {
+        id: clipboardWatcher
         running: root._initialized && !SuspendManager.isSuspending
         command: [watchScriptPath, checkScriptPath, dbPath, insertScriptPath, binaryDataDir]
         
@@ -842,7 +844,8 @@ QtObject {
         }
     }
     
-    property Timer emojiTypeTimer: Timer {
+    Timer {
+        id: emojiTypeTimer
         interval: 250
         repeat: false
         onTriggered: {
@@ -855,10 +858,7 @@ QtObject {
     // Function to copy and paste emoji via Ctrl+V
     function copyAndTypeEmoji(emojiText) {
         // Copy to clipboard
-        var copyCmd = ["bash", "-c", "echo -n '" + emojiText.replace(/'/g, "'\\''") + "' | wl-copy"];
-        var copyProc = Qt.createQmlObject('import Quickshell.Io; Process {}', root);
-        copyProc.command = copyCmd;
-        copyProc.running = true;
+        Quickshell.execDetached(["bash", "-c", "echo -n '" + emojiText.replace(/'/g, "'\\''") + "' | wl-copy"]);
         
         // Schedule Ctrl+V paste
         emojiTypeTimer.start();

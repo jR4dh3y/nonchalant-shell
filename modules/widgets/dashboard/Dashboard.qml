@@ -118,12 +118,9 @@ Item {
         anchors.fill: parent
 
         // Content area
-        Rectangle {
+        Item {
             id: viewWrapper
-
-            color: "transparent"
             anchors.fill: parent
-
             clip: true
 
             // Custom Tab View with Lazy Loading + Persistence
@@ -139,44 +136,106 @@ Item {
                     }
                 }
 
+                ParallelAnimation {
+                    id: tabTransitionAnim
+                    property real distance: 35
+                    property int duration: Config.animDuration > 0 ? Math.min(Config.animDuration, 240) : 0
+
+                    NumberAnimation { id: animOutX; duration: tabTransitionAnim.duration; easing.type: Easing.OutCubic }
+                    NumberAnimation { id: animOutOpacity; duration: tabTransitionAnim.duration; easing.type: Easing.OutCubic; to: 0 }
+                    NumberAnimation { id: animInX; duration: tabTransitionAnim.duration; easing.type: Easing.OutCubic; to: 0 }
+                    NumberAnimation { id: animInOpacity; duration: tabTransitionAnim.duration; easing.type: Easing.OutCubic; to: 1 }
+
+                    onFinished: {
+                        root.restoreTabBindings();
+                        root.focusCurrentTab();
+                    }
+                }
+
+                // Animated switches imperatively override visible/opacity below,
+                // which replaces their declarative bindings. Re-establish them
+                // on settle so later direct currentTab writes keep working.
+                function restoreTabBindings() {
+                    widgetsTabLoader.visible = Qt.binding(() => root.state.currentTab === 0);
+                    widgetsTabLoader.opacity = Qt.binding(() => root.state.currentTab === 0 ? 1 : 0);
+                    wallpapersTabLoader.visible = Qt.binding(() => root.state.currentTab === 1);
+                    wallpapersTabLoader.opacity = Qt.binding(() => root.state.currentTab === 1 ? 1 : 0);
+                    widgetsTabLoader.x = 0;
+                    wallpapersTabLoader.x = 0;
+                }
+
                 // Function to navigate to a specific tab
                 function navigateToTab(index) {
                     if (index >= 0 && index < root.tabCount && index !== root.state.currentTab) {
+                        const oldIndex = root.state.currentTab;
                         root.state.currentTab = index;
                         GlobalStates.dashboardCurrentTab = index;
-                        
+
                         // Update LRU when tab is accessed
                         root.updateLRUAccess(index);
 
                         if (index === 0)
                             Notifications.hideAllPopups();
+
+                        const fromLoader = (oldIndex === 0) ? widgetsTabLoader : wallpapersTabLoader;
+                        const toLoader = (index === 0) ? widgetsTabLoader : wallpapersTabLoader;
+
+                        if (tabTransitionAnim.duration > 0 && root.isVisible) {
+                            tabTransitionAnim.stop();
+
+                            const forward = index > oldIndex;
+                            const offset = tabTransitionAnim.distance;
+
+                            toLoader.visible = true;
+                            fromLoader.visible = true;
+
+                            toLoader.x = forward ? offset : -offset;
+                            toLoader.opacity = 0;
+
+                            animOutX.target = fromLoader;
+                            animOutX.property = "x";
+                            animOutX.to = forward ? -offset : offset;
+
+                            animOutOpacity.target = fromLoader;
+                            animOutOpacity.property = "opacity";
+
+                            animInX.target = toLoader;
+                            animInX.property = "x";
+
+                            animInOpacity.target = toLoader;
+                            animInOpacity.property = "opacity";
+
+                            tabTransitionAnim.restart();
+                        } else {
+                            tabTransitionAnim.stop();
+                            root.restoreTabBindings();
+                            root.focusCurrentTab();
+                        }
                     }
                 }
 
-                // Generic Tab Loader Component
-                component TabLoader : Loader {
-                    anchors.fill: parent
-                    // Load based on LRU strategy or if currently active
-                    active: root.shouldTabBeLoaded(index) || root.state.currentTab === index
-                    
-                    // Visibility handles the "switching"
-                    visible: root.state.currentTab === index
-                }
-
                 // Tab 0: widgets
-                TabLoader {
+                Loader {
                     id: widgetsTabLoader
-                    property int index: 0
+                    width: parent.width
+                    height: parent.height
+                    active: root.shouldTabBeLoaded(0) || root.state.currentTab === 0 || opacity > 0
                     sourceComponent: widgetsComponent
-                    z: visible ? 1 : 0
+                    visible: root.state.currentTab === 0
+                    opacity: root.state.currentTab === 0 ? 1 : 0
+                    z: root.state.currentTab === 0 ? 2 : 1
                 }
 
                 // Tab 1: Wallpapers
-                TabLoader {
+                Loader {
                     id: wallpapersTabLoader
-                    property int index: 1
+                    width: parent.width
+                    height: parent.height
+                    active: root.shouldTabBeLoaded(1) || root.state.currentTab === 1 || opacity > 0
                     sourceComponent: wallpapersComponent
-                    z: visible ? 1 : 0
+                    visible: root.state.currentTab === 1
+                    opacity: root.state.currentTab === 1 ? 1 : 0
+                    z: root.state.currentTab === 1 ? 2 : 1
                 }
 
             }

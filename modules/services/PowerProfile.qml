@@ -8,7 +8,7 @@ import qs.modules.theme
 Singleton {
     id: root
 
-    property var availableProfiles: []
+    property list<string> availableProfiles: []
     property string currentProfile: ""
     property bool isAvailable: false
     property string backendType: "" // "powerprofilesctl" atau "tlp"

@@ -251,9 +251,9 @@ StyledRect {
                         asynchronous: true
 
                         // Placeholder (with WavyLine)
-                        Rectangle {
+                        StyledRect {
+                            variant: "pane"
                             anchors.fill: parent
-                            color: Colors.surface
                             visible: !player.hasArtwork && player.wallpaperPath === ""
 
                             Loader {
@@ -560,7 +560,7 @@ StyledRect {
         // Scrim
         Rectangle {
             anchors.fill: parent
-            color: "black"
+            color: Colors.shadow
             opacity: 0.4
             radius: player.radius
 

@@ -172,6 +172,7 @@ Item {
                 }
 
                 StyledRect {
+                    id: toastCard
                     anchors.fill: parent
                     variant: "popup"
                     radius: Styling.radius(8)
@@ -180,7 +181,7 @@ Item {
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: parent.radius
+                        radius: toastCard.radius
                         color: "transparent"
                         border.width: toastRoot.isCritical ? 2 : 0
                         border.color: Colors.error

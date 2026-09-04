@@ -15,12 +15,13 @@ Singleton {
 
     property bool wifiEnabled: false
     property bool wifiScanning: false
-    property var lastScanTime: 0
+    property real lastScanTime: 0
     property bool wifiConnecting: isUpdating && wifiStatus === "connecting"
     property bool isUpdating: false
     property bool wasEnabledBeforeSleep: false
 
-    property var suspendConnections: Connections {
+    Connections {
+        id: suspendConnections
         target: SuspendManager
         function onPreparingForSleep() {
             root.wasEnabledBeforeSleep = root.wifiEnabled;

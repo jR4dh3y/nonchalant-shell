@@ -6,11 +6,11 @@ import qs.config
 
 Item {
     id: root
-    property var sourceItem: null  // The icon item to tint
+    property Item sourceItem: null  // The icon item to tint
     property bool fullTint: false  // If true, apply solid primary color instead of shader
 
     // Subset of colors for optimization (consistent with TintedWallpaper.qml)
-    readonly property var optimizedPalette: [
+    readonly property list<string> optimizedPalette: [
         "background", "overBackground", "shadow",
         "surface", "surfaceBright", "surfaceDim",
         "surfaceContainer", "surfaceContainerHigh", "surfaceContainerHighest", "surfaceContainerLow", "surfaceContainerLowest",

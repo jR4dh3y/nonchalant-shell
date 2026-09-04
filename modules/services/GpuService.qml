@@ -23,12 +23,13 @@ Singleton {
             return "Paused";
         return vmState;
     }
+    property bool hasVirsh: false
     readonly property string gpuSwitchScript: Quickshell.env("HOME") + "/.config/scripts/waybar-gpu-switch.sh"
 
     function refresh() {
         if (!statusProcess.running)
             statusProcess.running = true;
-        if (!vmStatusProcess.running)
+        if (root.hasVirsh && !vmStatusProcess.running)
             vmStatusProcess.running = true;
     }
 
@@ -158,6 +159,20 @@ Singleton {
         }
     }
 
+    Process {
+        id: probeVirshProcess
+        command: ["sh", "-c", "command -v virsh >/dev/null 2>&1"]
+        onExited: exitCode => {
+            root.hasVirsh = (exitCode === 0);
+            if (root.hasVirsh) {
+                if (!vmStatusProcess.running)
+                    vmStatusProcess.running = true;
+            } else {
+                root.vmState = "unavailable";
+            }
+        }
+    }
+
     Timer {
         id: refreshTimer
         interval: 1000
@@ -172,5 +187,8 @@ Singleton {
         onTriggered: root.refresh()
     }
 
-    Component.onCompleted: root.refresh()
+    Component.onCompleted: {
+        probeVirshProcess.running = true;
+        root.refresh();
+    }
 }

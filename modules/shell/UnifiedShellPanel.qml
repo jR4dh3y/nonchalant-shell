@@ -57,6 +57,7 @@ PanelWindow {
 
     readonly property alias barTargetHeight: barContent.barTargetHeight
     readonly property alias barOuterMargin: barContent.baseOuterMargin
+    readonly property alias totalBarHeight: barContent.totalBarHeight
     readonly property string barPosition: Config.bar?.position ?? "top"
     readonly property Item assistantSidebar: assistantSidebarLoader.item
 
@@ -165,6 +166,7 @@ PanelWindow {
             id: runMenu
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
+            barPanel: unifiedPanel
             z: 2
         }
 

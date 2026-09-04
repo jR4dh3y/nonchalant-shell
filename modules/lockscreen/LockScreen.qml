@@ -605,13 +605,27 @@ WlSessionLockSurface {
         config: "password.conf"
 
         onPamMessage: {
-            if (this.responseRequired) {
-                if (this.messageType === PamMessageType.PromptEchoOff) {
-                    this.respond(authPasswordHolder.password);
+            if (pamAuth.responseRequired) {
+                if (!pamAuth.responseVisible) {
+                    pamAuth.respond(authPasswordHolder.password);
                     authPasswordHolder.password = "";
-                } else if (this.messageType === PamMessageType.PromptEchoOn) {
-                    this.respond(Quickshell.env("USER") || "");
+                } else {
+                    pamAuth.respond(Quickshell.env("USER") || "");
                 }
+            }
+        }
+
+        onError: error => {
+            authPasswordHolder.password = "";
+            errorMessage = "Authentication error";
+            console.warn("PAM auth error:", error);
+            if (Config.animDuration > 0) {
+                wrongPasswordAnim.start();
+            } else {
+                passwordInput.text = "";
+                authenticating = false;
+                passwordInputBox.showError = true;
+                errorResetTimer.restart();
             }
         }
 
