@@ -35,7 +35,7 @@ Item {
     readonly property int triggerHeight: 4
     readonly property real cornerRadius: Styling.radius(4)
 
-    // Current morphing state: "collapsed" | "dashboard" | "power" | "sound" | "wifi" | "stats" | "apps" | "projects"
+    // Current morphing state: "collapsed" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
     property string currentMode: "collapsed"
     readonly property bool isExpanded: currentMode !== "collapsed"
     readonly property bool islandActive: isExpanded
@@ -108,6 +108,8 @@ Item {
             return powerView.implicitHeight;
         case "sound":
             return soundView.implicitHeight;
+        case "mic":
+            return micView.implicitHeight;
         case "wifi":
             return wifiView.implicitHeight;
         case "bluetooth":
@@ -499,6 +501,7 @@ Item {
 
                 onOpenPower: root.currentMode = "power"
                 onOpenSound: root.currentMode = "sound"
+                onOpenMic: root.currentMode = "mic"
                 onOpenWifi: root.currentMode = "wifi"
                 onOpenBluetooth: root.currentMode = "bluetooth"
                 onOpenStats: root.currentMode = "stats"
@@ -549,6 +552,29 @@ Item {
                     NumberAnimation {
                         duration: root.currentMode === "sound" ? Math.round(root.morphDuration * 0.75) : 100
                         easing.type: root.currentMode === "sound" ? Easing.OutCubic : Easing.OutQuad
+                    }
+                }
+
+                onBackRequested: root.currentMode = "dashboard"
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // EXPANDED STATE 3.5: MICROPHONE PANEL
+            // ═══════════════════════════════════════════════════════════════
+            IslandMicPanel {
+                id: micView
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
+                visible: root.currentMode === "mic" || opacity > 0
+                opacity: root.currentMode === "mic" ? 1.0 : 0.0
+
+                Behavior on opacity {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "mic" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "mic" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
 

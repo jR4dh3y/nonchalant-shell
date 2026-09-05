@@ -102,7 +102,7 @@ Singleton {
 
     function devices(isSink) {
         return Pipewire.nodes.values.filter(node => {
-            return root.correctType(node, isSink) && !node.isStream;
+            return root.correctType(node, isSink) && !node.isStream && (!node.name || !node.name.endsWith(".monitor"));
         });
     }
 
@@ -201,10 +201,20 @@ Singleton {
 
     function setDefaultSink(node) {
         Pipewire.preferredDefaultAudioSink = node;
+        if (node?.id) {
+            Quickshell.execDetached(["wpctl", "set-default", String(node.id)]);
+        } else if (node?.name) {
+            Quickshell.execDetached(["pactl", "set-default-sink", node.name]);
+        }
     }
 
     function setDefaultSource(node) {
         Pipewire.preferredDefaultAudioSource = node;
+        if (node?.id) {
+            Quickshell.execDetached(["wpctl", "set-default", String(node.id)]);
+        } else if (node?.name) {
+            Quickshell.execDetached(["pactl", "set-default-source", node.name]);
+        }
     }
 
     // Icon helper

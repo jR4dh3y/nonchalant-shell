@@ -18,22 +18,22 @@ Item {
 
     signal backRequested()
 
-    readonly property real volume: Audio.sink?.audio?.volume ?? 0.0
-    readonly property bool isMuted: Audio.sink?.audio?.muted ?? false
-    readonly property string activeSinkId: Audio.sink?.id ? String(Audio.sink.id) : ""
+    readonly property real micVolume: Audio.source?.audio?.volume ?? 0.0
+    readonly property bool isMuted: Audio.source?.audio?.muted ?? false
+    readonly property string activeSourceId: Audio.source?.id ? String(Audio.source.id) : ""
 
-    readonly property var outputDevices: {
+    readonly property var inputDevices: {
         const nodes = Pipewire.nodes.values;
         if (!nodes)
             return [];
-        return nodes.filter(node => node && node.isSink && !node.isStream && node.audio);
+        return nodes.filter(node => node && !node.isSink && !node.isStream && node.audio && (!node.name || !node.name.endsWith(".monitor")));
     }
 
     readonly property var appNodes: {
         const nodes = Pipewire.nodes.values;
         if (!nodes)
             return [];
-        return nodes.filter(node => node && node.isSink && node.isStream && node.audio);
+        return nodes.filter(node => node && !node.isSink && node.isStream && node.audio);
     }
 
     ColumnLayout {
@@ -44,7 +44,7 @@ Item {
         anchors.margins: 14
         spacing: 10
 
-        // Header: Back button + Title + Audio Format Badge
+        // Header: Back button + Title
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
@@ -82,7 +82,7 @@ Item {
             Text {
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting
-                text: "Sound"
+                text: "Microphone"
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(1)
                 font.bold: true
@@ -90,43 +90,9 @@ Item {
             }
 
             Item { Layout.fillWidth: true }
-
-            // Audio Format / Bitrate Badge (Sample rate & bit depth)
-            StyledRect {
-                visible: AudioFormat.connected
-                implicitHeight: 26
-                implicitWidth: fmtRow.implicitWidth + 16
-                radius: 13
-                variant: "internalbg"
-
-                RowLayout {
-                    id: fmtRow
-                    anchors.centerIn: parent
-                    spacing: 6
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: AudioFormat.kindIcon
-                        font.family: Icons.font
-                        font.pixelSize: 13
-                        color: Colors.primary
-                    }
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: AudioFormat.formatSummary
-                        font.family: Config.theme.monoFont
-                        font.pixelSize: Styling.fontSize(-2)
-                        font.bold: true
-                        color: Colors.overBackground
-                    }
-                }
-            }
         }
 
-        // Master Volume Slider row
+        // Master Mic Volume Slider row
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -140,7 +106,7 @@ Item {
                     anchors.centerIn: parent
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
-                    text: root.isMuted ? Icons.speakerSlash : (root.volume > 0.5 ? Icons.speakerHigh : (root.volume > 0 ? Icons.speakerLow : Icons.speakerSlash))
+                    text: root.isMuted ? Icons.micSlash : Icons.mic
                     font.family: Icons.font
                     font.pixelSize: 18
                     color: root.isMuted ? Colors.red : Colors.overBackground
@@ -149,20 +115,20 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Audio.toggleMute()
+                    onClicked: Audio.toggleMicMute()
                 }
             }
 
             // Slider track
             StyledSlider {
-                id: volSlider
+                id: micSlider
                 Layout.fillWidth: true
                 Layout.preferredHeight: 18
-                value: root.volume
+                value: root.micVolume
                 progressColor: root.isMuted ? Colors.outlineVariant : Colors.primary
                 onValueChanged: {
-                    if (Audio.sink?.audio && Math.abs(value - root.volume) > 0.01) {
-                        Audio.sink.audio.volume = value;
+                    if (Audio.source?.audio && Math.abs(value - root.micVolume) > 0.01) {
+                        Audio.setMicVolume(value);
                     }
                 }
             }
@@ -170,7 +136,7 @@ Item {
             Text {
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting
-                text: Math.round(root.volume * 100) + "%"
+                text: Math.round(root.micVolume * 100) + "%"
                 font.family: Config.theme.monoFont
                 font.pixelSize: Styling.fontSize(0)
                 font.bold: true
@@ -178,7 +144,7 @@ Item {
             }
         }
 
-        // Scrollable content area for devices and app mixer
+        // Scrollable content area for input devices and recording apps
         Item {
             Layout.fillWidth: true
             implicitHeight: Math.min(320, scrollContent.implicitHeight)
@@ -194,11 +160,11 @@ Item {
                     width: parent.width
                     spacing: 8
 
-                    // Section 1: Output Devices
+                    // Section 1: Input Devices
                     Text {
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
-                        text: "OUTPUT DEVICE"
+                        text: "INPUT DEVICE"
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-2)
                         font.bold: true
@@ -207,7 +173,7 @@ Item {
                     }
 
                     Repeater {
-                        model: root.outputDevices
+                        model: root.inputDevices
 
                         delegate: Item {
                             id: delegateRoot
@@ -220,7 +186,7 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: 38
 
-                            readonly property bool isCurrent: delegateRoot.modelData === Audio.sink || String(delegateRoot.modelData.id) === root.activeSinkId
+                            readonly property bool isCurrent: delegateRoot.modelData === Audio.source || String(delegateRoot.modelData.id) === root.activeSourceId
 
                             StyledRect {
                                 anchors.fill: parent
@@ -237,7 +203,7 @@ Item {
                                     Text {
                                         renderType: Text.NativeRendering
                                         font.hintingPreference: Font.PreferFullHinting
-                                        text: Icons.speakerHigh
+                                        text: Icons.mic
                                         font.family: Icons.font
                                         font.pixelSize: 16
                                         color: delegateRoot.isCurrent ? Colors.overPrimary : Colors.overBackground
@@ -272,7 +238,7 @@ Item {
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
-                                        Audio.setDefaultSink(delegateRoot.modelData);
+                                        Audio.setDefaultSource(delegateRoot.modelData);
                                     }
                                 }
                             }
@@ -280,12 +246,12 @@ Item {
                     }
 
                     Text {
-                        visible: root.outputDevices.length === 0
+                        visible: root.inputDevices.length === 0
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
-                        text: "No output devices found"
+                        text: "No input devices found"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
                         color: Colors.overSurfaceVariant
@@ -294,11 +260,11 @@ Item {
                         Layout.bottomMargin: 2
                     }
 
-                    // Section 2: Application Audio Streams
+                    // Section 2: Application Recording Streams
                     Text {
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
-                        text: "APPLICATIONS"
+                        text: "APPLICATIONS USING MIC"
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-2)
                         font.bold: true
@@ -349,7 +315,7 @@ Item {
                                                 anchors.centerIn: parent
                                                 renderType: Text.NativeRendering
                                                 font.hintingPreference: Font.PreferFullHinting
-                                                text: appDelegate.isAppMuted ? Icons.speakerSlash : (appDelegate.appVolume > 0.5 ? Icons.speakerHigh : (appDelegate.appVolume > 0 ? Icons.speakerLow : Icons.speakerSlash))
+                                                text: appDelegate.isAppMuted ? Icons.micSlash : Icons.mic
                                                 font.family: Icons.font
                                                 font.pixelSize: 13
                                                 color: appDelegate.isAppMuted ? Colors.red : Colors.overBackground
@@ -397,7 +363,7 @@ Item {
                                         progressColor: appDelegate.isAppMuted ? Colors.outlineVariant : Colors.primary
                                         onValueChanged: {
                                             if (appDelegate.modelData?.audio && Math.abs(value - appDelegate.appVolume) > 0.01) {
-                                                Audio.setNodeVolume(appDelegate.modelData, value);
+                                                appDelegate.modelData.audio.volume = value;
                                             }
                                         }
                                     }
@@ -412,7 +378,7 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
-                        text: "No applications playing audio"
+                        text: "No applications using microphone"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
                         color: Colors.overSurfaceVariant

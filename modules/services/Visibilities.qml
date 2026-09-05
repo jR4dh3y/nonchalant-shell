@@ -274,6 +274,12 @@ Singleton {
                     currentActiveModule = "sound";
                     island.expand("sound");
                     return;
+                } else if (moduleName === "mic" || moduleName === "microphone") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "mic";
+                    island.expand("mic");
+                    return;
                 } else if (moduleName === "battery" || moduleName === "powerprofile") {
                     closeActiveBarPopup();
                     clearAll();

@@ -63,6 +63,10 @@ QtObject {
             case "audio":
                 Visibilities.setActiveModule("sound");
                 break;
+            case "mic":
+            case "microphone":
+                Visibilities.setActiveModule("mic");
+                break;
             case "wifi":
             case "network":
                 Visibilities.setActiveModule("wifi");

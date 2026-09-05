@@ -37,6 +37,7 @@ OPTIONAL_FILES=(
     "modules/bar/island/IslandDashboard.qml"
     "modules/bar/island/IslandPowerPanel.qml"
     "modules/bar/island/IslandSoundPanel.qml"
+    "modules/bar/island/IslandMicPanel.qml"
     "modules/bar/island/IslandWifiPanel.qml"
     "modules/bar/island/IslandBluetoothPanel.qml"
     "modules/bar/island/IslandStatsPanel.qml"

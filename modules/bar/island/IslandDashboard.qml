@@ -19,6 +19,7 @@ Item {
 
     signal openPower()
     signal openSound()
+    signal openMic()
     signal openWifi()
     signal openBluetooth()
     signal openStats()
@@ -467,6 +468,9 @@ Item {
 
             // 1. Sound (Vol)
             IslandGaugeButton {
+                showArc: true
+                value: root.audioMuted ? 0 : root.audioVolume
+                arcColor: root.audioMuted ? Colors.outlineVariant : Colors.primary
                 icon: root.audioMuted ? Icons.speakerSlash : (root.audioVolume > 0.5 ? Icons.speakerHigh : (root.audioVolume > 0 ? Icons.speakerLow : Icons.speakerSlash))
                 iconColor: root.audioMuted ? Colors.red : Colors.overBackground
                 onClicked: (mouse) => {
@@ -485,11 +489,18 @@ Item {
             // 2. Microphone
             IslandGaugeButton {
                 readonly property bool micMuted: Audio.source?.audio?.muted ?? false
-                readonly property real micVol: Audio.source?.audio?.volume ?? 0.8
+                readonly property real micVol: Audio.source?.audio?.volume ?? 0.0
+                showArc: true
+                value: micMuted ? 0 : micVol
+                arcColor: micMuted ? Colors.outlineVariant : Colors.primary
                 icon: micMuted ? Icons.micSlash : Icons.mic
                 iconColor: micMuted ? Colors.red : Colors.overBackground
                 onClicked: (mouse) => {
-                    Audio.toggleMicMute();
+                    if (mouse.button === Qt.RightButton) {
+                        Audio.toggleMicMute();
+                    } else {
+                        root.openMic();
+                    }
                 }
                 onWheelScrolled: (delta) => {
                     if (delta > 0) Audio.setMicVolume(Math.min(1.0, micVol + 0.05));
@@ -499,6 +510,9 @@ Item {
 
             // 3. Battery
             IslandGaugeButton {
+                showArc: Battery.available
+                value: Battery.available ? (Battery.percentage / 100) : 0
+                arcColor: Battery.statusColor()
                 icon: Battery.isPluggedIn ? Icons.plug : Battery.getBatteryIcon()
                 iconColor: Battery.isPluggedIn ? Colors.green : (Battery.percentage <= 20 ? Colors.red : Colors.overBackground)
                 onClicked: (mouse) => root.openBattery()
