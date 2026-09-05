@@ -16,10 +16,6 @@ Item {
 
     signal backRequested()
 
-    Component.onCompleted: {
-        GlobalStates.islandStatsOpen = true;
-    }
-
     Component.onDestruction: {
         GlobalStates.islandStatsOpen = false;
     }

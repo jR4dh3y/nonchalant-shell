@@ -11,8 +11,8 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: 480
-    implicitHeight: 125
+    implicitWidth: 420
+    implicitHeight: mainColumn.implicitHeight + 28
 
     signal backRequested()
     signal actionTriggered()
@@ -73,7 +73,10 @@ Item {
     }
 
     ColumnLayout {
-        anchors.fill: parent
+        id: mainColumn
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.margins: 14
         spacing: 12
 

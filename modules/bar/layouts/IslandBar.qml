@@ -90,9 +90,12 @@ Item {
     readonly property bool isFullyRetracted: !shouldBeRevealed && (islandContainer.y <= -islandHeight + 0.5)
     readonly property bool hitboxExpanded: root.isExpanded || shouldBeRevealed || !isFullyRetracted
 
+    readonly property int morphDuration: Config.animDuration > 0 ? Math.max(220, Math.round(Config.animDuration * 0.9)) : 0
+    readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(180, Math.round(Config.animDuration * 0.75)) : 0
+
     readonly property int targetWidth: {
         if (root.isExpanded) {
-            return Math.min(400, root.width - 32);
+            return Math.min(420, root.width - 32);
         }
         return Math.min(Math.max(collapsedRow.implicitWidth + 28, 200), Math.min(Math.max(0, root.width - 16), 740));
     }
@@ -121,7 +124,7 @@ Item {
             return weatherView.implicitHeight;
         case "apps":
         case "projects":
-            return launcherViewWrapper.implicitHeight + 16;
+            return launcherViewWrapper.implicitHeight;
         default:
             return root.islandHeight;
         }
@@ -224,8 +227,8 @@ Item {
         id: activeBarHitbox
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        width: islandContainer.width
-        height: root.isExpanded ? islandContainer.height : (root.hitboxExpanded ? root.islandHeight : root.triggerHeight)
+        width: root.targetWidth
+        height: root.isExpanded ? root.targetHeight : (root.hitboxExpanded ? root.islandHeight : root.triggerHeight)
     }
 
     // Slim top-edge trigger hitbox along upper bezel
@@ -233,7 +236,7 @@ Item {
         id: triggerStrip
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        width: islandContainer.width
+        width: root.targetWidth
         height: root.triggerHeight
 
         HoverHandler {
@@ -252,7 +255,7 @@ Item {
         Behavior on y {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: root.shouldBeRevealed ? 220 : 180
+                duration: root.shouldBeRevealed ? 240 : 180
                 easing.type: root.shouldBeRevealed ? Easing.OutCubic : Easing.InCubic
             }
         }
@@ -260,7 +263,7 @@ Item {
         Behavior on width {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: 220
+                duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
                 easing.type: Easing.OutCubic
             }
         }
@@ -268,7 +271,7 @@ Item {
         Behavior on height {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: 220
+                duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
                 easing.type: Easing.OutCubic
             }
         }
@@ -311,13 +314,19 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             Item {
                 id: collapsedView
-                anchors.fill: parent
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width
+                height: root.islandHeight
                 visible: !root.isExpanded || opacity > 0
                 opacity: root.currentMode === "collapsed" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.isExpanded ? 100 : Math.round(root.morphCollapseDuration * 0.7)
+                        easing.type: root.isExpanded ? Easing.OutQuad : Easing.OutCubic
+                    }
                 }
 
                 RowLayout {
@@ -474,15 +483,18 @@ Item {
                 id: dashboardView
                 screen: root.screen
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "dashboard" || opacity > 0
                 opacity: root.currentMode === "dashboard" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "dashboard" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "dashboard" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onOpenPower: root.currentMode = "power"
@@ -502,15 +514,18 @@ Item {
             IslandPowerPanel {
                 id: powerView
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "power" || opacity > 0
                 opacity: root.currentMode === "power" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "power" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "power" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -523,15 +538,18 @@ Item {
             IslandSoundPanel {
                 id: soundView
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "sound" || opacity > 0
                 opacity: root.currentMode === "sound" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "sound" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "sound" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -543,15 +561,18 @@ Item {
             IslandWifiPanel {
                 id: wifiView
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "wifi" || opacity > 0
                 opacity: root.currentMode === "wifi" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "wifi" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "wifi" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -563,15 +584,18 @@ Item {
             IslandBluetoothPanel {
                 id: bluetoothView
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "bluetooth" || opacity > 0
                 opacity: root.currentMode === "bluetooth" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "bluetooth" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "bluetooth" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -583,15 +607,18 @@ Item {
             IslandStatsPanel {
                 id: statsView
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "stats" || opacity > 0
                 opacity: root.currentMode === "stats" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "stats" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "stats" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -603,15 +630,18 @@ Item {
             IslandAlertsPanel {
                 id: alertsView
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "alerts" || opacity > 0
                 opacity: root.currentMode === "alerts" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "alerts" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "alerts" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -624,15 +654,18 @@ Item {
                 id: wallpapersView
                 screen: root.screen
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "wallpapers" || opacity > 0
                 opacity: root.currentMode === "wallpapers" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "wallpapers" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "wallpapers" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -644,15 +677,18 @@ Item {
             IslandBatteryPanel {
                 id: batteryView
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "battery" || opacity > 0
                 opacity: root.currentMode === "battery" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "battery" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "battery" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -664,15 +700,18 @@ Item {
             IslandWeatherPanel {
                 id: weatherView
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: parent.height
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
                 visible: root.currentMode === "weather" || opacity > 0
                 opacity: root.currentMode === "weather" ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: root.currentMode === "weather" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "weather" ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
@@ -684,21 +723,25 @@ Item {
             Item {
                 id: launcherViewWrapper
                 anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.margins: 8
-                implicitHeight: launcherView.implicitHeight
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
+                implicitHeight: launcherView.implicitHeight + 16
                 visible: (root.currentMode === "apps" || root.currentMode === "projects") || opacity > 0
                 opacity: (root.currentMode === "apps" || root.currentMode === "projects") ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
-                    NumberAnimation { duration: 150 }
+                    NumberAnimation {
+                        duration: (root.currentMode === "apps" || root.currentMode === "projects") ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: (root.currentMode === "apps" || root.currentMode === "projects") ? Easing.OutCubic : Easing.OutQuad
+                    }
                 }
 
                 LauncherView {
                     id: launcherView
                     anchors.fill: parent
+                    anchors.margins: 8
                 }
             }
         }

@@ -15,7 +15,7 @@ Item {
     id: root
 
     implicitWidth: 400
-    implicitHeight: mainColumn.implicitHeight + 24
+    implicitHeight: mainColumn.implicitHeight + 28
 
     signal openPower()
     signal openSound()
@@ -83,7 +83,9 @@ Item {
 
     ColumnLayout {
         id: mainColumn
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.margins: 14
         spacing: 12
 
