@@ -97,6 +97,7 @@ Rectangle {
 
         SearchInput {
             id: searchInput
+            variant: "internalbg"
             Layout.fillWidth: true
             text: GlobalStates.projectPickerSearchText
             placeholderText: "Search projects..."

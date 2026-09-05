@@ -157,7 +157,7 @@ Item {
             StyledRect {
                 implicitHeight: 32
                 implicitWidth: weatherRow.implicitWidth + 14
-                radius: Styling.radius(2)
+                radius: height / 2
                 variant: weatherMouse.containsMouse ? "focus" : "internalbg"
 
                 RowLayout {
@@ -170,7 +170,7 @@ Item {
                         font.hintingPreference: Font.PreferFullHinting
                         text: WeatherService.weatherSymbol || Icons.sun
                         font.family: Icons.font
-                        font.pixelSize: 16
+                        font.pixelSize: 15
                         color: Colors.yellow
                     }
 
@@ -197,8 +197,8 @@ Item {
             // Alerts / Notifications button
             StyledRect {
                 implicitHeight: 32
-                implicitWidth: alertsRow.implicitWidth + 14
-                radius: Styling.radius(2)
+                implicitWidth: root.alertsCount > 0 ? alertsRow.implicitWidth + 14 : 32
+                radius: root.alertsCount > 0 ? height / 2 : width / 2
                 variant: alertsMouse.containsMouse ? "focus" : "internalbg"
 
                 RowLayout {
@@ -249,7 +249,7 @@ Item {
             StyledRect {
                 implicitHeight: 32
                 implicitWidth: 32
-                radius: Styling.radius(2)
+                radius: width / 2
                 variant: settingsMouse.containsMouse ? "focus" : "internalbg"
 
                 Text {
@@ -275,11 +275,12 @@ Item {
             StyledRect {
                 implicitHeight: 32
                 implicitWidth: 32
-                radius: Styling.radius(2)
+                radius: width / 2
                 variant: powerMouse.containsMouse ? "error" : "internalbg"
 
                 Text {
                     anchors.centerIn: parent
+                    anchors.verticalCenterOffset: 2
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     text: Icons.shutdown

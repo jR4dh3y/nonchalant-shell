@@ -17,6 +17,61 @@ Item {
     signal backRequested()
     signal actionTriggered()
 
+    // Keyboard selection: -1 = none. IslandBar routes Left/Right/Return here.
+    property int selectedIndex: -1
+    readonly property int actionCount: 5
+
+    function resetSelection() {
+        selectedIndex = -1;
+    }
+
+    function moveSelection(delta: int) {
+        selectedIndex = (((selectedIndex + delta) % actionCount) + actionCount) % actionCount;
+    }
+
+    function activateSelected() {
+        if (selectedIndex === 0)
+            doSuspend();
+        else if (selectedIndex === 1)
+            doLock();
+        else if (selectedIndex === 2)
+            doLogout();
+        else if (selectedIndex === 3)
+            doReboot();
+        else if (selectedIndex === 4)
+            doShutdown();
+    }
+
+    function doSuspend() {
+        Quickshell.execDetached(["systemctl", "suspend"]);
+        root.actionTriggered();
+    }
+
+    function doLock() {
+        LockscreenService.lock();
+        root.actionTriggered();
+    }
+
+    function doLogout() {
+        Quickshell.execDetached(["niri", "msg", "action", "quit", "--skip-confirmation"]);
+        root.actionTriggered();
+    }
+
+    function doReboot() {
+        Quickshell.execDetached(["systemctl", "reboot"]);
+        root.actionTriggered();
+    }
+
+    function doShutdown() {
+        Quickshell.execDetached(["systemctl", "poweroff"]);
+        root.actionTriggered();
+    }
+
+    onVisibleChanged: {
+        if (!visible)
+            resetSelection();
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 14
@@ -65,7 +120,7 @@ Item {
             Item { Layout.fillWidth: true }
         }
 
-        // Action Buttons Row (Sleep, Lock, Log out, Restart, Shut down)
+        // Action Buttons Row (icon-only, arrow-key navigable)
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
@@ -74,33 +129,18 @@ Item {
             StyledRect {
                 id: sleepBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 68
+                Layout.preferredHeight: 52
                 radius: Styling.radius(2)
-                variant: sleepMouse.containsMouse ? "focus" : "internalbg"
+                variant: (sleepMouse.containsMouse || root.selectedIndex === 0) ? "focus" : "internalbg"
 
-                ColumnLayout {
+                Text {
                     anchors.centerIn: parent
-                    spacing: 4
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.suspend
-                        font.family: Icons.font
-                        font.pixelSize: 20
-                        color: Colors.overBackground
-                    }
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Sleep"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.overSurfaceVariant
-                    }
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: Icons.suspend
+                    font.family: Icons.font
+                    font.pixelSize: 20
+                    color: Colors.overBackground
                 }
 
                 MouseArea {
@@ -108,10 +148,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        Quickshell.execDetached(["systemctl", "suspend"]);
-                        root.actionTriggered();
-                    }
+                    onClicked: root.doSuspend()
                 }
             }
 
@@ -119,33 +156,18 @@ Item {
             StyledRect {
                 id: lockBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 68
+                Layout.preferredHeight: 52
                 radius: Styling.radius(2)
-                variant: lockMouse.containsMouse ? "focus" : "internalbg"
+                variant: (lockMouse.containsMouse || root.selectedIndex === 1) ? "focus" : "internalbg"
 
-                ColumnLayout {
+                Text {
                     anchors.centerIn: parent
-                    spacing: 4
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.lock
-                        font.family: Icons.font
-                        font.pixelSize: 20
-                        color: Colors.overBackground
-                    }
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Lock"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.overSurfaceVariant
-                    }
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: Icons.lock
+                    font.family: Icons.font
+                    font.pixelSize: 20
+                    color: Colors.overBackground
                 }
 
                 MouseArea {
@@ -153,10 +175,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        LockscreenService.lock();
-                        root.actionTriggered();
-                    }
+                    onClicked: root.doLock()
                 }
             }
 
@@ -164,33 +183,18 @@ Item {
             StyledRect {
                 id: logoutBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 68
+                Layout.preferredHeight: 52
                 radius: Styling.radius(2)
-                variant: logoutMouse.containsMouse ? "focus" : "internalbg"
+                variant: (logoutMouse.containsMouse || root.selectedIndex === 2) ? "focus" : "internalbg"
 
-                ColumnLayout {
+                Text {
                     anchors.centerIn: parent
-                    spacing: 4
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.logout
-                        font.family: Icons.font
-                        font.pixelSize: 20
-                        color: Colors.overBackground
-                    }
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Log out"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.overSurfaceVariant
-                    }
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: Icons.logout
+                    font.family: Icons.font
+                    font.pixelSize: 20
+                    color: Colors.overBackground
                 }
 
                 MouseArea {
@@ -198,10 +202,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        Quickshell.execDetached(["niri", "msg", "action", "quit", "--skip-confirmation"]);
-                        root.actionTriggered();
-                    }
+                    onClicked: root.doLogout()
                 }
             }
 
@@ -209,33 +210,18 @@ Item {
             StyledRect {
                 id: rebootBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 68
+                Layout.preferredHeight: 52
                 radius: Styling.radius(2)
-                variant: rebootMouse.containsMouse ? "focus" : "internalbg"
+                variant: (rebootMouse.containsMouse || root.selectedIndex === 3) ? "focus" : "internalbg"
 
-                ColumnLayout {
+                Text {
                     anchors.centerIn: parent
-                    spacing: 4
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.reboot
-                        font.family: Icons.font
-                        font.pixelSize: 20
-                        color: Colors.overBackground
-                    }
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Restart"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.overSurfaceVariant
-                    }
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: Icons.reboot
+                    font.family: Icons.font
+                    font.pixelSize: 20
+                    color: Colors.overBackground
                 }
 
                 MouseArea {
@@ -243,10 +229,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        Quickshell.execDetached(["systemctl", "reboot"]);
-                        root.actionTriggered();
-                    }
+                    onClicked: root.doReboot()
                 }
             }
 
@@ -254,33 +237,18 @@ Item {
             StyledRect {
                 id: shutdownBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 68
+                Layout.preferredHeight: 52
                 radius: Styling.radius(2)
-                variant: shutdownMouse.containsMouse ? "focus" : "internalbg"
+                variant: (shutdownMouse.containsMouse || root.selectedIndex === 4) ? "focus" : "internalbg"
 
-                ColumnLayout {
+                Text {
                     anchors.centerIn: parent
-                    spacing: 4
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.shutdown
-                        font.family: Icons.font
-                        font.pixelSize: 20
-                        color: Colors.red
-                    }
-
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "Shut down"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.red
-                    }
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: Icons.shutdown
+                    font.family: Icons.font
+                    font.pixelSize: 20
+                    color: Colors.red
                 }
 
                 MouseArea {
@@ -288,10 +256,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        Quickshell.execDetached(["systemctl", "poweroff"]);
-                        root.actionTriggered();
-                    }
+                    onClicked: root.doShutdown()
                 }
             }
         }

@@ -41,6 +41,20 @@ Singleton {
         return Icons.batteryEmpty;
     }
 
+    // Interpolated charge color: red (<=15%) through green (>=85%).
+    // Shared by the default bar indicator and the island.
+    function statusColor() {
+        if (!root.available)
+            return Colors.overBackground;
+        const pct = root.percentage;
+        if (pct <= 15)
+            return Colors.red;
+        if (pct >= 85)
+            return Colors.green;
+        const ratio = (pct - 15) / (85 - 15);
+        return Qt.rgba(Colors.red.r + (Colors.green.r - Colors.red.r) * ratio, Colors.red.g + (Colors.green.g - Colors.red.g) * ratio, Colors.red.b + (Colors.green.b - Colors.red.b) * ratio, 1);
+    }
+
     function evaluateBatteryAlert() {
         if (!available || isPluggedIn) {
             lastBatteryAlertThreshold = 0;

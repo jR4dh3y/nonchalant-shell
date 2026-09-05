@@ -13,24 +13,16 @@ Item {
     id: root
 
     required property Item bar
+    // The island embeds the switcher on its own surface, so it hides this.
+    property bool showBackground: true
 
-    readonly property var visibleWorkspaces: NiriService.workspaces.values
-        .filter(workspace => {
-            if (workspace.output !== root.bar.screen.name)
-                return false;
-            return workspace.isNamed || workspace.active || root.windowsForWorkspace(workspace.id).length > 0;
-        })
-        .sort((left, right) => left.idx - right.idx)
+    readonly property var visibleWorkspaces: NiriService.workspacesForOutput(root.bar.screen.name)
     readonly property int activeWorkspaceIndex: visibleWorkspaces.findIndex(workspace => workspace.active)
     readonly property Item activeWorkspaceButton: {
         const count = workspaceRepeater.count;
         return activeWorkspaceIndex >= 0 && activeWorkspaceIndex < count
             ? workspaceRepeater.itemAt(activeWorkspaceIndex)
             : null;
-    }
-
-    function windowsForWorkspace(workspaceId) {
-        return NiriService.clients.values.filter(window => window.workspace.id === workspaceId);
     }
 
     function iconForWindow(window) {
@@ -42,6 +34,7 @@ Item {
     implicitHeight: 36
 
     StyledRect {
+        visible: root.showBackground
         anchors.fill: parent
         variant: "bg"
         radius: Styling.radius(7)
@@ -102,7 +95,7 @@ Item {
                 required property var modelData
                 readonly property var workspace: modelData
                 readonly property bool active: workspace.active
-                readonly property var windows: root.windowsForWorkspace(workspace.id)
+                readonly property var windows: NiriService.windowsForWorkspace(workspace.id)
                 readonly property bool occupied: windows.length > 0
                 readonly property string displayName: workspace.isNamed ? workspace.name : String(workspace.idx)
                 readonly property bool showLabel: !active || !occupied

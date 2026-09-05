@@ -151,7 +151,7 @@ Item {
                             }
 
                             StyledRect {
-                                visible: Battery.available
+                                visible: Battery.available && !(Battery.isPluggedIn && !Battery.isCharging)
                                 implicitWidth: stateText.implicitWidth + 10
                                 implicitHeight: 18
                                 radius: 9
@@ -179,7 +179,7 @@ Item {
                                 if (Battery.isCharging) {
                                     return Battery.timeToFull !== "" ? "Full in " + Battery.timeToFull : "Charging...";
                                 }
-                                if (Battery.isPluggedIn) return "Fully charged • Plugged in";
+                                if (Battery.isPluggedIn) return "Fully charged";
                                 return Battery.timeToEmpty !== "" ? Battery.timeToEmpty + " remaining" : "Estimating time remaining...";
                             }
                             font.family: Config.theme.font

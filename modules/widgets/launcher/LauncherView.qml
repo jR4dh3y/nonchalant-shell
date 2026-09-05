@@ -299,6 +299,7 @@ Item {
             // Search input
             SearchInput {
                 id: searchInput
+                variant: "internalbg"
                 width: parent.width
                 anchors.top: parent.top
                 text: GlobalStates.launcherSearchText

@@ -8,6 +8,7 @@ import qs.config
 import qs.modules.bar.clock
 import qs.modules.bar.systray
 import qs.modules.bar.audioformat
+import qs.modules.bar.workspaces
 import qs.modules.components
 import qs.modules.services
 import qs.modules.globals
@@ -32,7 +33,6 @@ Item {
 
     readonly property int islandHeight: 36
     readonly property int triggerHeight: 4
-    readonly property real earRadius: Math.min(14, islandHeight * 0.45)
     readonly property real cornerRadius: Styling.radius(4)
 
     // Current morphing state: "collapsed" | "dashboard" | "power" | "sound" | "wifi" | "stats" | "apps" | "projects"
@@ -71,13 +71,6 @@ Item {
     readonly property int activeWorkspaceWindows: activeWorkspace?.windows ?? 0
     readonly property bool hasActiveWindows: activeWorkspaceWindows > 0
 
-    readonly property var screenWorkspaces: {
-        const list = NiriService.workspaces.values;
-        if (!list)
-            return [];
-        return list.filter(ws => ws.output === root.screen.name);
-    }
-
     readonly property bool isHovered: triggerHoverHandler.hovered || islandHoverHandler.hovered
     property bool debounceActive: false
 
@@ -101,7 +94,7 @@ Item {
         if (root.isExpanded) {
             return Math.min(400, root.width - 32);
         }
-        return Math.min(Math.max(collapsedRow.implicitWidth + 28, 200), Math.min(Math.max(0, root.width - (root.earRadius * 2 + 16)), 740));
+        return Math.min(Math.max(collapsedRow.implicitWidth + 28, 200), Math.min(Math.max(0, root.width - 16), 740));
     }
 
     readonly property int targetHeight: {
@@ -200,7 +193,21 @@ Item {
 
     // Keyboard handling when expanded
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape) {
+        if (root.currentMode === "power") {
+            if (event.key === Qt.Key_Left) {
+                powerView.moveSelection(-1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Right) {
+                powerView.moveSelection(1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                powerView.activateSelected();
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Escape) {
+                root.currentMode = "dashboard";
+                event.accepted = true;
+            }
+        } else if (event.key === Qt.Key_Escape) {
             if (root.currentMode === "apps" || root.currentMode === "projects") {
                 root.collapse();
             } else if (root.currentMode !== "dashboard" && root.currentMode !== "collapsed") {
@@ -234,7 +241,7 @@ Item {
         }
     }
 
-    // Island body and attached fillets
+    // Island body
     Item {
         id: islandContainer
         anchors.horizontalCenter: parent.horizontalCenter
@@ -277,26 +284,6 @@ Item {
 
         HoverHandler {
             id: islandHoverHandler
-        }
-
-        // Left inverted corner ear fillet
-        IslandEar {
-            id: leftEar
-            side: "left"
-            earRadius: root.earRadius
-            earColor: islandBody.color
-            anchors.right: islandBody.left
-            anchors.top: islandBody.top
-        }
-
-        // Right inverted corner ear fillet
-        IslandEar {
-            id: rightEar
-            side: "right"
-            earRadius: root.earRadius
-            earColor: islandBody.color
-            anchors.left: islandBody.right
-            anchors.top: islandBody.top
         }
 
         // Island body container
@@ -359,7 +346,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.bold: true
-                            color: Colors.overBackground
+                            color: (MprisController.isPlaying && MprisController.activePlayer) ? Colors.primary : Colors.overBackground
                             elide: Text.ElideRight
                             verticalAlignment: Text.AlignVCenter
                             renderType: Text.NativeRendering
@@ -383,54 +370,7 @@ Item {
                         renderType: Text.NativeRendering
                     }
 
-                    // Weather pill (clickable)
-                    Item {
-                        Layout.alignment: Qt.AlignVCenter
-                        implicitHeight: weatherRow.implicitHeight
-                        implicitWidth: weatherRow.implicitWidth
-
-                        RowLayout {
-                            id: weatherRow
-                            anchors.fill: parent
-                            spacing: 4
-
-                            Text {
-                                text: WeatherService.weatherSymbol || Icons.sun
-                                font.family: WeatherService.weatherSymbol ? Config.theme.font : Icons.font
-                                font.pixelSize: 14
-                                color: Colors.yellow
-                                renderType: Text.NativeRendering
-                            }
-
-                            Text {
-                                text: WeatherService.currentTemp > 0 ? (Math.round(WeatherService.currentTemp) + "°") : "—"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-1)
-                                color: weatherBarMouse.containsMouse ? Colors.primary : Colors.overBackground
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                            }
-                        }
-
-                        MouseArea {
-                            id: weatherBarMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.expand("weather")
-                        }
-                    }
-
-                    // Separator
-                    Text {
-                        text: "|"
-                        color: Colors.overSurfaceVariant
-                        opacity: 0.5
-                        font.pixelSize: Styling.fontSize(-2)
-                        renderType: Text.NativeRendering
-                    }
-
-                    // Date & Time clickable (clean, seamless - no sub-section pill)
+                    // Time clickable (clean, seamless - no sub-section pill)
                     Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitHeight: dateTimeRow.implicitHeight
@@ -440,14 +380,6 @@ Item {
                             id: dateTimeRow
                             anchors.fill: parent
                             spacing: 6
-
-                            Text {
-                                text: Qt.formatDate(new Date(), "dddd, d MMM")
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
-                                color: dateMouse.containsMouse ? Colors.overBackground : Colors.overSurfaceVariant
-                                renderType: Text.NativeRendering
-                            }
 
                             Text {
                                 text: Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm ap" : "HH:mm")
@@ -477,35 +409,11 @@ Item {
                         renderType: Text.NativeRendering
                     }
 
-                    // Workspaces Indicator Pills
-                    Row {
-                        spacing: 4
+                    // Workspaces switcher shared with the default bar
+                    NonchalantTaskbar {
                         Layout.alignment: Qt.AlignVCenter
-
-                        Repeater {
-                            model: root.screenWorkspaces
-
-                            StyledRect {
-                                id: wsPill
-                                required property var modelData
-                                width: modelData.active ? 20 : 6
-                                height: 6
-                                radius: 3
-                                variant: modelData.active ? "primary" : "common"
-                                opacity: modelData.active ? 1.0 : 0.45
-
-                                Behavior on width {
-                                    enabled: Config.animDuration > 0
-                                    NumberAnimation { duration: 150 }
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: NiriService.focusWorkspace(wsPill.modelData.id)
-                                }
-                            }
-                        }
+                        bar: root
+                        showBackground: false
                     }
 
                     // Separator before battery
@@ -534,7 +442,7 @@ Item {
                                 text: Battery.getBatteryIcon()
                                 font.family: Icons.font
                                 font.pixelSize: 13
-                                color: (Battery.percentage <= 20 && !Battery.isPluggedIn) ? Colors.red : (batteryBarMouse.containsMouse ? Colors.primary : Colors.overBackground)
+                                color: Battery.statusColor()
                                 renderType: Text.NativeRendering
                             }
 
@@ -543,7 +451,7 @@ Item {
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-2)
                                 font.bold: true
-                                color: batteryBarMouse.containsMouse ? Colors.primary : Colors.overBackground
+                                color: Battery.statusColor()
                                 renderType: Text.NativeRendering
                             }
                         }

@@ -11,8 +11,8 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: 480
-    implicitHeight: 460
+    implicitWidth: 420
+    implicitHeight: 14 + headerRow.implicitHeight + 10 + statsContentColumn.implicitHeight + 14
 
     signal backRequested()
 
@@ -45,7 +45,7 @@ Item {
         spacing: 10
 
         // ═══════════════════════════════════════════════════════════════
-        // UNIFIED HEADER: Back + Title + Live Status Pill
+        // UNIFIED HEADER: Back + Title
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             id: headerRow
@@ -90,47 +90,14 @@ Item {
             }
 
             Item { Layout.fillWidth: true }
-
-            // Live status badge
-            StyledRect {
-                implicitWidth: statusRow.implicitWidth + 14
-                implicitHeight: 22
-                radius: 11
-                variant: "common"
-
-                RowLayout {
-                    id: statusRow
-                    anchors.centerIn: parent
-                    spacing: 5
-
-                    StyledRect {
-                        implicitWidth: 6
-                        implicitHeight: 6
-                        radius: 3
-                        variant: "primary"
-                    }
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: "LIVE"
-                        font.family: Config.theme.monoFont
-                        font.pixelSize: Styling.fontSize(-4)
-                        font.bold: true
-                        color: Colors.overBackground
-                    }
-                }
-            }
         }
 
         // ═══════════════════════════════════════════════════════════════
         // NATIVE METRICS BODY
         // ═══════════════════════════════════════════════════════════════
-        StyledRect {
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: Styling.radius(2)
-            variant: "internalbg"
             clip: true
 
             Flickable {

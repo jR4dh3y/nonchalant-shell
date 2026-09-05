@@ -49,6 +49,24 @@ Singleton {
         return workspace.name || String(workspace.idx);
     }
 
+    function windowsForWorkspace(workspaceId) {
+        return root.clients.values.filter(window => window.workspace.id === workspaceId);
+    }
+
+    // Workspaces worth showing for an output: named, active, or holding
+    // windows — sorted by index. Shared by the default bar taskbar and the
+    // island indicator so both agree on what exists.
+    function workspacesForOutput(outputName) {
+        const list = root.workspaces.values;
+        if (!list)
+            return [];
+        return list.filter(workspace => {
+            if (workspace.output !== outputName)
+                return false;
+            return workspace.isNamed || workspace.active || windowsForWorkspace(workspace.id).length > 0;
+        }).sort((left, right) => left.idx - right.idx);
+    }
+
     function monitorFor(screen) {
         if (!screen)
             return null;
