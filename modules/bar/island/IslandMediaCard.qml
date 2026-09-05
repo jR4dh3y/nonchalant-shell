@@ -16,7 +16,7 @@ StyledRect {
     id: root
 
     implicitWidth: 460
-    implicitHeight: 110
+    implicitHeight: 114
     variant: "pane"
     radius: Styling.radius(2)
     clip: true
@@ -242,7 +242,7 @@ StyledRect {
         // Bottom row: Interactive Waveform progress bar
         IslandWaveformBar {
             Layout.fillWidth: true
-            Layout.preferredHeight: 36
+            Layout.preferredHeight: 38
         }
     }
 }

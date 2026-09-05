@@ -645,7 +645,7 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         IslandMediaCard {
             Layout.fillWidth: true
-            Layout.preferredHeight: 110
+            Layout.preferredHeight: 114
         }
 
         // ═══════════════════════════════════════════════════════════════
