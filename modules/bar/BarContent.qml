@@ -1,147 +1,62 @@
+pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import qs.config
-import qs.modules.bar.clock
-import qs.modules.bar.systray
-import qs.modules.bar.workspaces
-import qs.modules.bar.audioformat
-import qs.modules.services
-import qs.modules.theme
+import "layouts"
 
 Item {
     id: root
 
     required property ShellScreen screen
 
-    readonly property bool fullscreenOnScreen: NiriService.fullscreenOutputs.indexOf(root.screen.name) !== -1
-    readonly property bool reveal: !NiriService.overviewOpen && !fullscreenOnScreen
-    readonly property bool bottomPosition: (Config.bar?.position ?? "top") === "bottom"
+    readonly property string barStyle: Config.bar?.style ?? "default"
+    readonly property bool isIsland: barStyle === "island"
 
-    readonly property real outerRadius: Styling.radius(0)
-    readonly property real innerRadius: outerRadius
-    readonly property int barPadding: barBg.padding
-    readonly property int barTargetHeight: horizontalContent.implicitHeight + 2 * barPadding
-    readonly property int totalBarHeight: barTargetHeight + barBg.outerMargin
-
-    // Keep one floating gap at the screen edge and another below the bar so
-    // tiled windows do not touch the pills.
-    readonly property int baseOuterMargin: barBg.outerMargin * 2
-    readonly property bool shadowsEnabled: false
-
-    property alias barHitbox: hitbox
-    readonly property alias timerInputActive: clock.timeToolsOpen
-    readonly property alias dashboardInputActive: clock.menuOpen
-    readonly property alias dashboardHitbox: clock.dashboardHitbox
-
+    // Stable fallback hitbox so UnifiedShellPanel.mask never references undefined
     Item {
-        id: hitbox
-        width: root.width
-        height: root.reveal ? root.totalBarHeight : 0
-        y: root.bottomPosition ? root.height - height : 0
+        id: fallbackHitbox
+        width: 0
+        height: 0
+        visible: false
+    }
 
-        Item {
-            id: bar
-            x: barBg.outerMargin
-            y: root.bottomPosition ? 0 : barBg.outerMargin
-            width: parent.width - barBg.outerMargin * 2
-            height: root.barTargetHeight
-            opacity: root.reveal ? 1 : 0
+    readonly property int barTargetHeight: layoutLoader.item ? layoutLoader.item.barTargetHeight : (root.isIsland ? 36 : 44)
+    readonly property int baseOuterMargin: layoutLoader.item ? layoutLoader.item.baseOuterMargin : (root.isIsland ? 0 : 8)
+    readonly property int totalBarHeight: layoutLoader.item ? layoutLoader.item.totalBarHeight : (root.isIsland ? 36 : 44)
 
-            Behavior on opacity {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 2
-                    easing.type: Easing.OutCubic
-                }
-            }
+    readonly property bool timerInputActive: layoutLoader.item ? layoutLoader.item.timerInputActive : false
+    readonly property bool dashboardInputActive: layoutLoader.item ? layoutLoader.item.dashboardInputActive : false
 
-            BarBg {
-                id: barBg
-                anchors.fill: parent
+    readonly property Item barHitbox: (layoutLoader.item && layoutLoader.item.barHitbox) ? layoutLoader.item.barHitbox : fallbackHitbox
+    readonly property Item dashboardHitbox: (layoutLoader.item && layoutLoader.item.dashboardHitbox) ? layoutLoader.item.dashboardHitbox : fallbackHitbox
 
-                Item {
-                    id: horizontalContent
-                    anchors.fill: parent
-                    implicitHeight: 36
+    readonly property bool islandActive: (root.isIsland && layoutLoader.item) ? (layoutLoader.item.islandActive ?? false) : false
 
-                    NonchalantTaskbar {
-                        id: nonchalantTaskbar
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: implicitWidth
-                        height: implicitHeight
-                        bar: root
-                    }
+    function collapseIsland() {
+        if (root.isIsland && layoutLoader.item && typeof layoutLoader.item.collapse === "function") {
+            layoutLoader.item.collapse();
+        }
+    }
 
-                    SystemMonitorButton {
-                        anchors.left: nonchalantTaskbar.right
-                        anchors.leftMargin: 4
-                        anchors.verticalCenter: parent.verticalCenter
-                        bar: root
-                        startRadius: root.outerRadius
-                        endRadius: root.outerRadius
-                        enableShadow: root.shadowsEnabled
-                    }
+    Loader {
+        id: layoutLoader
+        anchors.fill: parent
+        sourceComponent: root.isIsland ? islandComponent : defaultComponent
+    }
 
-                    Clock {
-                        id: clock
-                        anchors.centerIn: parent
-                        width: implicitWidth
-                        height: implicitHeight
-                        bar: root
-                        layerEnabled: root.shadowsEnabled
-                        startRadius: root.outerRadius
-                        endRadius: root.outerRadius
-                    }
+    Component {
+        id: defaultComponent
+        DefaultBar {
+            anchors.fill: parent
+            screen: root.screen
+        }
+    }
 
-                    RowLayout {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        height: 36
-                        spacing: 4
-
-                        AudioFormatBadge {
-                            enableShadow: root.shadowsEnabled
-                            startRadius: root.outerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        SysTray {
-                            enableShadow: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        VolumeSlider {
-                            bar: root
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        MicSlider {
-                            bar: root
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        BrightnessSlider {
-                            bar: root
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.innerRadius
-                        }
-
-                        BatteryIndicator {
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.innerRadius
-                            endRadius: root.outerRadius
-                        }
-                    }
-                }
-            }
+    Component {
+        id: islandComponent
+        IslandBar {
+            anchors.fill: parent
+            screen: root.screen
         }
     }
 }

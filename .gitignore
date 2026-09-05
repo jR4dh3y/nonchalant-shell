@@ -2,3 +2,4 @@
 .ruff_cache/
 scripts/__pycache__
 .sisyphus
+.agents/

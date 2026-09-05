@@ -13,7 +13,9 @@ import qs.config
 StyledRect {
     id: root
 
-    variant: "bg"
+    property bool flat: false
+
+    variant: flat ? "transparent" : "bg"
     visible: AudioFormat.connected
 
     property real radius: 0
@@ -25,9 +27,12 @@ StyledRect {
     bottomLeftRadius: startRadius
     bottomRightRadius: endRadius
 
-    Layout.preferredWidth: visible ? rowLayout.implicitWidth + 16 : 0
+    enableBorder: !flat
+    enableShadow: !flat && root.enableShadow
+
+    Layout.preferredWidth: visible ? (flat ? rowLayout.implicitWidth : rowLayout.implicitWidth + 16) : 0
     implicitWidth: Layout.preferredWidth
-    implicitHeight: visible ? rowLayout.implicitHeight + 16 : 0
+    implicitHeight: visible ? (flat ? rowLayout.implicitHeight : rowLayout.implicitHeight + 16) : 0
 
     property bool isHovered: false
 
@@ -39,7 +44,7 @@ StyledRect {
     Rectangle {
         anchors.fill: parent
         color: Styling.srItem("overprimary")
-        opacity: root.isHovered ? 0.25 : 0
+        opacity: (!root.flat && root.isHovered) ? 0.25 : 0
         topLeftRadius: parent.topLeftRadius
         topRightRadius: parent.topRightRadius
         bottomLeftRadius: parent.bottomLeftRadius
@@ -56,19 +61,20 @@ StyledRect {
     RowLayout {
         id: rowLayout
         anchors.fill: parent
-        anchors.margins: 8
+        anchors.margins: root.flat ? 0 : 8
         spacing: 6
 
         StyledText {
             text: AudioFormat.kindIcon
             font.family: Icons.font
             font.pixelSize: 14
-            color: Colors.overBackground
+            color: root.flat && root.isHovered ? Colors.primary : Colors.overBackground
             Layout.alignment: Qt.AlignVCenter
         }
 
         StyledText {
             text: AudioFormat.formatSummary
+            color: root.flat && root.isHovered ? Colors.primary : Colors.overBackground
             Layout.alignment: Qt.AlignVCenter
         }
     }

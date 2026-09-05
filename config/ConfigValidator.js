@@ -46,6 +46,13 @@ function validate(current, defaults, keyName) {
         }
     }
 
+    if (keyName === "style") {
+        const validStyles = ["default", "island"];
+        if (validStyles.indexOf(current) === -1) {
+            return defaults;
+        }
+    }
+
     if (keyName === "sidebarPosition") {
         const validSidebarPositions = ["left", "right"];
         if (validSidebarPositions.indexOf(current) === -1) {

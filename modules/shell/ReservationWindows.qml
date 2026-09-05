@@ -42,6 +42,7 @@ Item {
         WlrLayershell.namespace: "nonchalant:reservation:top"
 
         exclusiveZone: Config.barReady && root.barEnabled && root.barPosition === "top"
+            && (Config.bar?.style ?? "default") !== "island"
             ? root.barSize + root.barOuterMargin
             : 0
         exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore
@@ -66,6 +67,7 @@ Item {
         WlrLayershell.namespace: "nonchalant:reservation:bottom"
 
         exclusiveZone: Config.barReady && root.barEnabled && root.barPosition === "bottom"
+            && (Config.bar?.style ?? "default") !== "island"
             ? root.barSize + root.barOuterMargin
             : 0
         exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore

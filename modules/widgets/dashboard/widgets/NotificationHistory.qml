@@ -181,10 +181,19 @@ Item {
                     radius: Styling.radius(0)
 
                     Flickable {
+                        id: flickable
                         anchors.fill: parent
                         contentWidth: width
                         contentHeight: notificationList.contentHeight
                         clip: true
+
+                        WheelHandler {
+                            target: flickable
+                            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                            onWheel: event => {
+                                flickable.contentY = Math.max(0, Math.min(Math.max(0, flickable.contentHeight - flickable.height), flickable.contentY - event.angleDelta.y));
+                            }
+                        }
 
                         ListView {
                             id: notificationList

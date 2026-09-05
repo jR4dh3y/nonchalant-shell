@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.modules.globals
 import qs.modules.services
+import qs.config
 import Quickshell.Io
 
 QtObject {
@@ -40,12 +41,42 @@ QtObject {
             case "dashboard-assistant":
                 toggleAssistant();
                 break;
-            case "system-monitor": Visibilities.toggleSystemMonitorForActive(); break;
+            case "system-monitor":
+            case "stats":
+            case "resources":
+                Visibilities.toggleSystemMonitorForActive();
+                break;
             case "wallpaper":
             case "wallpapers":
                 toggleWallpapers();
                 break;
-            case "powermenu": Visibilities.togglePowerMenuForActive(); break;
+            case "powermenu":
+            case "power":
+                Visibilities.togglePowerMenuForActive();
+                break;
+            case "alerts":
+            case "notifications":
+                toggleAlerts();
+                break;
+            case "dashboard": toggleDashboard(); break;
+            case "sound":
+            case "audio":
+                Visibilities.setActiveModule("sound");
+                break;
+            case "wifi":
+            case "network":
+                Visibilities.setActiveModule("wifi");
+                break;
+            case "bluetooth":
+                Visibilities.setActiveModule("bluetooth");
+                break;
+            case "battery":
+            case "powerprofile":
+                Visibilities.setActiveModule("battery");
+                break;
+            case "weather":
+                Visibilities.setActiveModule("weather");
+                break;
             case "lockscreen": LockscreenService.lock(); break;
             case "config":
             case "settings":
@@ -65,6 +96,20 @@ QtObject {
     }
 
     function toggleLauncher() {
+        if ((Config.bar?.style ?? "default") === "island") {
+            const island = Visibilities.getIslandForActive();
+            if (island) {
+                if (island.isExpanded && island.currentMode === "apps") {
+                    island.collapse();
+                } else {
+                    GlobalStates.launcherMode = "apps";
+                    GlobalStates.clearLauncherState();
+                    island.expand("apps");
+                }
+                return;
+            }
+        }
+
         const isActive = Visibilities.currentActiveModule === "launcher"
             && GlobalStates.launcherMode === "apps";
         if (isActive) {
@@ -77,6 +122,20 @@ QtObject {
     }
 
     function toggleProjects() {
+        if ((Config.bar?.style ?? "default") === "island") {
+            const island = Visibilities.getIslandForActive();
+            if (island) {
+                if (island.isExpanded && island.currentMode === "projects") {
+                    island.collapse();
+                } else {
+                    GlobalStates.launcherMode = "projects";
+                    GlobalStates.clearProjectPickerState();
+                    island.expand("projects");
+                }
+                return;
+            }
+        }
+
         const isActive = Visibilities.currentActiveModule === "launcher"
             && GlobalStates.launcherMode === "projects";
         if (isActive) {
@@ -89,12 +148,66 @@ QtObject {
     }
 
     function toggleWallpapers() {
+        if ((Config.bar?.style ?? "default") === "island") {
+            const island = Visibilities.getIslandForActive();
+            if (island) {
+                if (island.isExpanded && island.currentMode === "wallpapers") {
+                    island.collapse();
+                } else {
+                    Visibilities.clearAll();
+                    Visibilities.currentActiveModule = "wallpapers";
+                    island.expand("wallpapers");
+                }
+                return;
+            }
+        }
+
         const controller = Visibilities.getDashboardControllerForActive();
         if (!controller) {
             console.warn("GlobalShortcuts: no dashboard controller registered for the focused monitor");
             return;
         }
         controller.toggleWallpapers();
+    }
+
+    function toggleAlerts() {
+        if ((Config.bar?.style ?? "default") === "island") {
+            const island = Visibilities.getIslandForActive();
+            if (island) {
+                if (island.isExpanded && island.currentMode === "alerts") {
+                    island.collapse();
+                } else {
+                    Visibilities.clearAll();
+                    Visibilities.currentActiveModule = "alerts";
+                    island.expand("alerts");
+                }
+                return;
+            }
+        }
+        Visibilities.setActiveModule("alerts");
+    }
+
+    function toggleDashboard() {
+        if ((Config.bar?.style ?? "default") === "island") {
+            const island = Visibilities.getIslandForActive();
+            if (island) {
+                if (island.isExpanded && island.currentMode === "dashboard") {
+                    island.collapse();
+                } else {
+                    Visibilities.clearAll();
+                    Visibilities.currentActiveModule = "dashboard";
+                    island.expand("dashboard");
+                }
+                return;
+            }
+        }
+
+        const controller = Visibilities.getDashboardControllerForActive();
+        if (!controller) {
+            console.warn("GlobalShortcuts: no dashboard controller registered for the focused monitor");
+            return;
+        }
+        controller.toggleCenterMenu();
     }
 
     function toggleSettings(screenName) {

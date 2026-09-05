@@ -27,7 +27,7 @@ PanelWindow {
     color: "transparent"
 
     WlrLayershell.keyboardFocus: {
-        if (runMenu.open)
+        if (runMenu.open || barContent.islandActive)
             return WlrKeyboardFocus.Exclusive;
         // Bar popups are child surfaces of this panel. The parent layer must
         // request keyboard focus or input continues to the client underneath.
@@ -47,7 +47,7 @@ PanelWindow {
 
     // Assistant stays open without eating the whole screen — only its hitbox
     // receives clicks (see mask regions). Run menu / grabs still go full-screen.
-    readonly property bool needsFullScreenInput: runMenu.open || barContent.dashboardInputActive || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: runMenu.open || barContent.dashboardInputActive || barContent.islandActive || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -126,6 +126,8 @@ PanelWindow {
                 Visibilities.setActiveModule("");
             if (barContent.dashboardInputActive)
                 Visibilities.closeActiveBarPopup();
+            if (barContent.islandActive)
+                barContent.collapseIsland();
             if (assistantSidebar && assistantSidebar.active && assistantSidebar.wantsFocus) {
                 assistantSidebar.wantsFocus = false;
                 // Defocus the text field so keyboard returns to the session.

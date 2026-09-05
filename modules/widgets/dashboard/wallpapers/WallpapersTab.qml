@@ -839,7 +839,7 @@ FocusScope {
                                     anchors.fill: parent
                                     sourceComponent: staticImageComponent
                                     property string sourceFile: modelData
-                                    active: isInViewport && wallpapersTabRoot.visible && GlobalStates.dashboardOpen
+                                    active: isInViewport && wallpapersTabRoot.visible && (GlobalStates.dashboardOpen || GlobalStates.islandOpen)
                                     asynchronous: true
 
                                 // Placeholder mientras carga

@@ -14,7 +14,7 @@ Item {
     required property ShellScreen screen
 
     readonly property var screenVisibilities: Visibilities.getForScreen(screen.name)
-    readonly property bool open: screenVisibilities ? screenVisibilities.launcher : false
+    readonly property bool open: (Config.bar?.style !== "island") && (screenVisibilities ? screenVisibilities.launcher : false)
     readonly property Item hitbox: menuShown ? cardReveal : null
     property PanelWindow barPanel: Visibilities.getBarPanelForScreen(screen.name)
     readonly property int contentPadding: 8

@@ -105,13 +105,16 @@ QtObject {
     readonly property string pause: ""
     readonly property string stop: ""
     readonly property string previous: ""
+    readonly property string skipBack: previous
     readonly property string rewind: ""
     readonly property string forward: ""
     readonly property string next: ""
+    readonly property string skipForward: next
     readonly property string shuffle: ""
     readonly property string repeat: ""
     readonly property string repeatOnce: ""
     readonly property string player: ""
+    readonly property string disc: player
     readonly property string spotify: "<font face='Symbols Nerd Font Mono'>󰓇</font>"
     readonly property string firefox: "<font face='Symbols Nerd Font Mono'>󰈹</font>"
     readonly property string chromium: "<font face='Symbols Nerd Font Mono'></font>"
@@ -138,7 +141,7 @@ QtObject {
 
     // Power-profiles
     readonly property string powerSave: ""
-    readonly property string power: ""
+    readonly property string power: shutdown
     readonly property string balanced: ""
     readonly property string performance: ""
 
@@ -154,6 +157,7 @@ QtObject {
 
     // Misc
     readonly property string accept: ""
+    readonly property string check: accept
     readonly property string cancel: ""
     readonly property string plus: ""
     readonly property string minus: ""
@@ -242,6 +246,8 @@ QtObject {
     readonly property string magicWand: ""
 
     // Aliases for missing icons
+    readonly property string magnifyingGlass: "\uE30C"
+    readonly property string arrowsClockwise: sync
     readonly property string palette: paintBrush
     readonly property string cornersOut: arrowsOut
     readonly property string drop: sparkle

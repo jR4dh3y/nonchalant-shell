@@ -678,6 +678,28 @@ Item {
                         }
 
                         SelectorRow {
+                            label: "Style"
+                            options: [
+                                {
+                                    label: "Default",
+                                    value: "default",
+                                    icon: Icons.layout
+                                },
+                                {
+                                    label: "Island",
+                                    value: "island",
+                                    icon: Icons.circle
+                                }
+                            ]
+                            value: Config.bar?.style ?? "default"
+                            onValueSelected: newValue => {
+                                if (newValue !== Config.bar?.style) {
+                                    Config.bar.style = newValue;
+                                }
+                            }
+                        }
+
+                        SelectorRow {
                             label: "Position"
                             options: [
                                 {

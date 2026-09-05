@@ -91,9 +91,14 @@ Singleton {
         return active ? active.launcher : false;
     }
 
-    readonly property bool launcherOpen: getActiveLauncher()
-    readonly property bool dashboardOpen: dashboardPopupScreen !== ""
-    readonly property bool systemMonitorOpen: systemMonitorPopupScreen !== ""
+    // Dynamic Island state flags
+    property bool islandOpen: false
+    property bool islandLauncherOpen: false
+    property bool islandStatsOpen: false
+
+    readonly property bool launcherOpen: getActiveLauncher() || islandLauncherOpen
+    readonly property bool dashboardOpen: (dashboardPopupScreen !== "") || islandOpen
+    readonly property bool systemMonitorOpen: (systemMonitorPopupScreen !== "") || islandStatsOpen
 
     // Lockscreen state
     property bool lockscreenVisible: false

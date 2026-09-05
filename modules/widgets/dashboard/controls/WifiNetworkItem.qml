@@ -25,9 +25,11 @@ Item {
         }
     }
 
+    property string baseVariant: "common"
+
     StyledRect {
         anchors.fill: parent
-        variant: mouseArea.containsMouse ? "focus" : "common"
+        variant: mouseArea.containsMouse ? "focus" : root.baseVariant
         radius: Styling.radius(4)
     }
 

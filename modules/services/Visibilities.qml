@@ -3,12 +3,15 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.modules.services
+import qs.modules.globals
+import qs.config
 
 Singleton {
     id: root
 
     property var screens: ({})
     property var barPanels: ({})
+    property var islands: ({})
     property var dashboardControllers: ({})
     property var powerMenuButtons: ({})
     property var systemMonitorButtons: ({})
@@ -102,6 +105,29 @@ Singleton {
         return barPanels[screenName] || null;
     }
 
+    function registerIsland(screenName, island) {
+        islands = _updateMap(islands, screenName, island);
+    }
+
+    function unregisterIsland(screenName, island) {
+        if (islands[screenName] === island)
+            islands = _updateMap(islands, screenName, null);
+    }
+
+    function getIslandForScreen(screenName) {
+        return islands[screenName] || null;
+    }
+
+    function getIslandForActive() {
+        const focusedMonitor = NiriService.focusedMonitor;
+        if (!focusedMonitor) {
+            if (Quickshell.screens.length > 0)
+                return islands[Quickshell.screens[0].name] || null;
+            return null;
+        }
+        return islands[focusedMonitor.name] || null;
+    }
+
     function registerDashboardController(screenName, controller) {
         dashboardControllers = _updateMap(dashboardControllers, screenName, controller);
     }
@@ -132,6 +158,20 @@ Singleton {
         if (!focusedMonitor)
             return;
 
+        if ((Config.bar?.style ?? "default") === "island") {
+            const island = getIslandForActive();
+            if (island) {
+                if (island.isExpanded && island.currentMode === "power") {
+                    island.collapse();
+                } else {
+                    clearAll();
+                    currentActiveModule = "powermenu";
+                    island.expand("power");
+                }
+                return;
+            }
+        }
+
         const button = powerMenuButtons[focusedMonitor.name] || null;
         if (!button) {
             console.warn("Visibilities: no power menu button registered for", focusedMonitor.name);
@@ -157,6 +197,20 @@ Singleton {
         if (!focusedMonitor)
             return;
 
+        if ((Config.bar?.style ?? "default") === "island") {
+            const island = getIslandForActive();
+            if (island) {
+                if (island.isExpanded && island.currentMode === "stats") {
+                    island.collapse();
+                } else {
+                    clearAll();
+                    currentActiveModule = "system-monitor";
+                    island.expand("stats");
+                }
+                return;
+            }
+        }
+
         const button = systemMonitorButtons[focusedMonitor.name] || null;
         if (!button) {
             console.warn("Visibilities: no system monitor button registered for", focusedMonitor.name);
@@ -172,6 +226,84 @@ Singleton {
         if (moduleName === "powermenu") {
             togglePowerMenuForActive();
             return;
+        }
+
+        if ((Config.bar?.style ?? "default") === "island") {
+            const island = getIslandForActive();
+            if (island) {
+                if (moduleName === "launcher") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "launcher";
+                    const mode = GlobalStates.launcherMode === "projects" ? "projects" : "apps";
+                    island.expand(mode);
+                    return;
+                } else if (moduleName === "dashboard") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "dashboard";
+                    island.expand("dashboard");
+                    return;
+                } else if (moduleName === "wallpapers" || moduleName === "wallpaper") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "wallpapers";
+                    island.expand("wallpapers");
+                    return;
+                } else if (moduleName === "alerts" || moduleName === "notifications") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "alerts";
+                    island.expand("alerts");
+                    return;
+                } else if (moduleName === "stats" || moduleName === "system-monitor") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "stats";
+                    island.expand("stats");
+                    return;
+                } else if (moduleName === "power" || moduleName === "powermenu") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "powermenu";
+                    island.expand("power");
+                    return;
+                } else if (moduleName === "sound" || moduleName === "audio") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "sound";
+                    island.expand("sound");
+                    return;
+                } else if (moduleName === "battery" || moduleName === "powerprofile") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "battery";
+                    island.expand("battery");
+                    return;
+                } else if (moduleName === "wifi" || moduleName === "network") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "wifi";
+                    island.expand("wifi");
+                    return;
+                } else if (moduleName === "bluetooth") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "bluetooth";
+                    island.expand("bluetooth");
+                    return;
+                } else if (moduleName === "weather") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "weather";
+                    island.expand("weather");
+                    return;
+                } else if (!moduleName) {
+                    currentActiveModule = "";
+                    island.collapse();
+                    return;
+                }
+            }
         }
 
         // Prefer niri's focused monitor; fall back to the first Quickshell screen
@@ -227,6 +359,14 @@ Singleton {
                 screenProps[moduleNames[i]] = false;
             }
         }
+        if ((Config.bar?.style ?? "default") === "island") {
+            for (const screenName in islands) {
+                const island = islands[screenName];
+                if (island && island.isExpanded) {
+                    island.collapse();
+                }
+            }
+        }
     }
 
     function applyActiveModuleToScreen(screenName) {
@@ -255,10 +395,17 @@ Singleton {
                 closeActiveBarPopup();
                 clearAll();
                 currentActiveModule = "";
+                const island = getIslandForActive();
+                if (island)
+                    island.collapse();
             }
         }
 
         function onFullscreenOutputsChanged() {
+            // In island style, windows naturally occupy full output without top reservation.
+            if ((Config.bar?.style ?? "default") === "island")
+                return;
+
             // A fullscreen window covers the Overlay-layer panel — dismiss shell
             // chrome, but only when a screen newly enters fullscreen.
             const outputs = NiriService.fullscreenOutputs;
@@ -268,6 +415,9 @@ Singleton {
                 closeActiveBarPopup();
                 clearAll();
                 currentActiveModule = "";
+                const island = getIslandForActive();
+                if (island)
+                    island.collapse();
             }
         }
     }
