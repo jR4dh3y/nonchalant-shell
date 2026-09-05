@@ -18,9 +18,7 @@ Item {
     readonly property real length: Math.max(1.0, MprisController.activePlayer?.length ?? 1.0)
     readonly property real progress: Math.min(1.0, Math.max(0.0, root.position / root.length))
 
-    readonly property int barCount: 36
-    readonly property real barSpacing: 2
-    readonly property real barWidth: Math.max(2, (waveformArea.width - (root.barCount - 1) * root.barSpacing) / root.barCount)
+    readonly property bool isPlaying: MprisController.isPlaying
 
     function formatTime(seconds: real): string {
         const totalSecs = Math.max(0, Math.floor(seconds));
@@ -51,7 +49,7 @@ Item {
         anchors.fill: parent
         spacing: 4
 
-        // Waveform bars area
+        // Wavy progress line area
         Item {
             id: waveformArea
             Layout.fillWidth: true
@@ -76,48 +74,43 @@ Item {
                 }
             }
 
-            Row {
-                anchors.centerIn: parent
-                spacing: root.barSpacing
+            // Unplayed track
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                x: 0
+                width: parent.width
+                height: 2
+                radius: 1
+                color: Colors.surfaceBright
+            }
 
-                Repeater {
-                    model: root.barCount
+            // Played portion: wavy line clipped to progress
+            Item {
+                anchors.verticalCenter: parent.verticalCenter
+                x: 0
+                width: Math.max(0, parent.width * root.progress)
+                height: 16
+                clip: true
 
-                    Item {
-                        id: barItem
-                        required property int index
-
-                        width: root.barWidth
-                        height: waveformArea.height
-
-                        // Simulated audio waveform profile: higher in middle, subtle harmonics
-                        readonly property real profile: {
-                            const normalized = index / (root.barCount - 1);
-                            const sinVal = Math.sin(normalized * Math.PI);
-                            const harmonic = 0.3 * Math.sin(normalized * Math.PI * 4);
-                            return Math.max(0.25, Math.min(1.0, sinVal * 0.75 + harmonic + 0.2));
-                        }
-
-                        readonly property real barHeight: Math.max(4, height * profile)
-                        readonly property bool isPlayed: (index / root.barCount) <= root.progress
-
-                        StyledRect {
-                            anchors.centerIn: parent
-                            width: root.barWidth
-                            height: barItem.barHeight
-                            radius: width / 2
-                            variant: barItem.isPlayed ? "primary" : "common"
-                            opacity: barItem.isPlayed ? 1.0 : (waveMouseArea.containsMouse ? 0.45 : 0.25)
-
-                            Behavior on opacity {
-                                enabled: Config.animDuration > 0
-                                NumberAnimation {
-                                    duration: 100
-                                }
-                            }
-                        }
-                    }
+                CarouselProgress {
+                    anchors.fill: parent
+                    frequency: root.isPlaying ? 8 : 0
+                    color: Colors.primary
+                    amplitudeMultiplier: root.isPlaying ? 1 : 0.0
+                    dotSize: 2
+                    fullLength: waveformArea.width
+                    running: root.isPlaying
                 }
+            }
+
+            // Playhead handle
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                x: Math.max(0, Math.min(parent.width - width, parent.width * root.progress - width / 2))
+                width: waveMouseArea.containsMouse || waveMouseArea.pressed ? 2 : 4
+                height: waveMouseArea.containsMouse || waveMouseArea.pressed ? 20 : 16
+                radius: 2
+                color: Colors.overBackground
             }
         }
 

@@ -26,6 +26,7 @@ StyledRect {
     readonly property string trackTitle: MprisController.activePlayer?.trackTitle || "No media playing"
     readonly property string trackArtist: MprisController.activePlayer?.trackArtists || ""
     readonly property string trackArt: MprisController.activePlayer?.trackArtUrl || ""
+    readonly property bool hasArtwork: root.trackArt !== ""
     readonly property string wallpaperUrl: {
         const mgr = GlobalStates.wallpaperManager;
         if (!mgr) return "";
@@ -34,15 +35,23 @@ StyledRect {
         return frame ? "file://" + frame : (path ? "file://" + path : "");
     }
 
-    // Wallpaper background with darkening overlay
+    // Background: blurred album art while media has artwork, plain wallpaper otherwise
     Image {
-        id: bgWallpaper
+        id: bgArt
         anchors.fill: parent
-        source: root.wallpaperUrl
+        source: root.hasArtwork ? root.trackArt : root.wallpaperUrl
         fillMode: Image.PreserveAspectCrop
-        visible: root.wallpaperUrl !== ""
         asynchronous: true
-        opacity: 0.35
+        visible: false
+    }
+
+    MultiEffect {
+        anchors.fill: parent
+        source: bgArt
+        blurEnabled: root.hasArtwork
+        blurMax: 32
+        blur: 0.75
+        opacity: root.hasArtwork ? 1.0 : (root.wallpaperUrl !== "" ? 0.35 : 0.0)
     }
 
     // Gradient overlay for contrast
