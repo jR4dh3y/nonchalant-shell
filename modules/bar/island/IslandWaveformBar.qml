@@ -74,9 +74,11 @@ Item {
         && root.width > 0
 
     FrameAnimation {
+        id: waveAnim
         running: root.shouldAnimate
         onTriggered: {
-            root.phase = (root.phase + 0.08) % (Math.PI * 2);
+            const dt = waveAnim.frameTime > 0 && waveAnim.frameTime < 0.1 ? waveAnim.frameTime : 0.016;
+            root.phase = (root.phase + 2.6 * dt) % (Math.PI * 2);
             canvas.requestPaint();
         }
     }
