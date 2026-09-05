@@ -573,6 +573,8 @@ Item {
                 Text {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
+                    Layout.preferredWidth: 38
+                    horizontalAlignment: Text.AlignRight
                     text: Math.round(root.brightnessVal * 100) + "%"
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-1)
@@ -590,7 +592,9 @@ Item {
                 StyledRect {
                     id: nightLightPill
                     implicitHeight: 30
-                    implicitWidth: nlContentRow.implicitWidth + 14
+                    implicitWidth: 72
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 72
                     radius: Styling.radius(2)
                     variant: NightLightService.active ? "primary" : (nlMouse.containsMouse ? "focus" : "common")
 
@@ -611,6 +615,8 @@ Item {
                         Text {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
+                            Layout.preferredWidth: 38
+                            horizontalAlignment: Text.AlignHCenter
                             text: NightLightService.active
                                 ? Math.round((1.0 - NightLightService.normalizedTemperature) * 100) + "%"
                                 : "Night"
