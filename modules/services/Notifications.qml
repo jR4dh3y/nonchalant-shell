@@ -138,6 +138,28 @@ Singleton {
     }
 
     property bool silent: false
+    property alias dnd: root.silent
+    property alias dndEnabled: root.silent
+
+    function toggleSilent() {
+        root.setSilent(!root.silent);
+    }
+
+    function toggleDnd() {
+        root.toggleSilent();
+    }
+
+    function setSilent(value: bool) {
+        if (root.silent === value) return;
+        root.silent = value;
+    }
+
+    onSilentChanged: {
+        if (root.silent) {
+            root.dismissAllPopups();
+        }
+    }
+
     property list<Notif> list: []
     // Explicit list reassigned in rebuildGroups so toast ListViews rebind.
     property var popupList: []
