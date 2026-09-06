@@ -38,6 +38,7 @@ Item {
 
     // Current morphing state: "collapsed" | "notification" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
     property string currentMode: "collapsed"
+    property string previousMode: "collapsed"
     readonly property bool isExpanded: currentMode !== "collapsed"
     readonly property bool islandActive: isExpanded && currentMode !== "notification"
 
@@ -51,6 +52,9 @@ Item {
     }
 
     function expand(mode: string) {
+        if (root.currentMode !== mode) {
+            root.previousMode = root.currentMode;
+        }
         root.currentMode = mode || "dashboard";
         if (root.currentMode === "dashboard") {
             BluetoothService.updateStatus();
@@ -814,16 +818,41 @@ Item {
                 height: implicitHeight
                 visible: root.currentMode === "stats" || opacity > 0
                 opacity: root.currentMode === "stats" ? 1.0 : 0.0
+                scale: root.currentMode === "stats" ? 1.0 : 0.94
+                y: root.currentMode === "stats" ? 0 : -8
+                transformOrigin: Item.Top
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "stats" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "stats" ? root.morphDuration : root.morphCollapseDuration
                         easing.type: root.currentMode === "stats" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                Behavior on scale {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "stats" ? root.morphDuration : root.morphCollapseDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Behavior on y {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "stats" ? root.morphDuration : root.morphCollapseDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                onBackRequested: {
+                    if (root.previousMode === "dashboard") {
+                        root.currentMode = "dashboard";
+                    } else {
+                        root.collapse();
+                    }
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -907,16 +936,41 @@ Item {
                 height: implicitHeight
                 visible: root.currentMode === "weather" || opacity > 0
                 opacity: root.currentMode === "weather" ? 1.0 : 0.0
+                scale: root.currentMode === "weather" ? 1.0 : 0.94
+                y: root.currentMode === "weather" ? 0 : -8
+                transformOrigin: Item.Top
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "weather" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "weather" ? root.morphDuration : root.morphCollapseDuration
                         easing.type: root.currentMode === "weather" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                Behavior on scale {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "weather" ? root.morphDuration : root.morphCollapseDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Behavior on y {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "weather" ? root.morphDuration : root.morphCollapseDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                onBackRequested: {
+                    if (root.previousMode === "dashboard") {
+                        root.currentMode = "dashboard";
+                    } else {
+                        root.collapse();
+                    }
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -930,6 +984,9 @@ Item {
                 height: implicitHeight
                 visible: root.currentMode === "media" || opacity > 0
                 opacity: root.currentMode === "media" ? 1.0 : 0.0
+                scale: root.currentMode === "media" ? 1.0 : 0.94
+                y: root.currentMode === "media" ? 0 : -8
+                transformOrigin: Item.Top
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -939,8 +996,29 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
-                onCloseRequested: root.collapse()
+                Behavior on scale {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "media" ? root.morphDuration : root.morphCollapseDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Behavior on y {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "media" ? root.morphDuration : root.morphCollapseDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                onBackRequested: {
+                    if (root.previousMode === "dashboard") {
+                        root.currentMode = "dashboard";
+                    } else {
+                        root.collapse();
+                    }
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
