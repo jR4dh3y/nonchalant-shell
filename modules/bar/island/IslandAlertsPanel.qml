@@ -30,6 +30,90 @@ Item {
         return count;
     }
 
+    property var cascadeItems: []
+    property int cascadeIndex: 0
+    property bool isClearing: false
+
+    function discardAllWithAnimation() {
+        if (isClearing) return;
+
+        const children = notificationList.contentItem.children;
+        if (!children || children.length === 0) {
+            Notifications.discardAllNotifications();
+            return;
+        }
+
+        cascadeItems = [];
+        for (let i = 0; i < children.length; i++) {
+            if (children[i] && children[i].destroyWithAnimation) {
+                cascadeItems.push(children[i]);
+            }
+        }
+
+        if (cascadeItems.length === 0) {
+            Notifications.discardAllNotifications();
+            return;
+        }
+
+        isClearing = true;
+        cascadeIndex = 0;
+
+        // Animate first item immediately
+        const first = cascadeItems[0];
+        if (first && first.destroyWithAnimation) {
+            first.destroyWithAnimation(true);
+        }
+        cascadeIndex = 1;
+
+        if (cascadeItems.length > 1) {
+            cascadeTimer.restart();
+        } else {
+            discardAllTimer.interval = Math.max(Config.animDuration || 240, 150) + 40;
+            discardAllTimer.restart();
+        }
+    }
+
+    Timer {
+        id: cascadeTimer
+        interval: 45
+        repeat: true
+        onTriggered: {
+            if (cascadeIndex < cascadeItems.length) {
+                const item = cascadeItems[cascadeIndex];
+                if (item && item.destroyWithAnimation) {
+                    item.destroyWithAnimation(true);
+                }
+                cascadeIndex++;
+            } else {
+                stop();
+                const totalDelay = Math.max(Config.animDuration || 240, 150) + 40;
+                discardAllTimer.interval = totalDelay;
+                discardAllTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: discardAllTimer
+        interval: Math.max(Config.animDuration || 240, 150) + 40
+        repeat: false
+        onTriggered: {
+            Notifications.discardAllNotifications();
+            isClearing = false;
+            cascadeItems = [];
+        }
+    }
+
+    onVisibleChanged: {
+        if (!visible && isClearing) {
+            cascadeTimer.stop();
+            discardAllTimer.stop();
+            Notifications.discardAllNotifications();
+            isClearing = false;
+            cascadeItems = [];
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 14
@@ -135,7 +219,7 @@ Item {
                 implicitWidth: 32
                 implicitHeight: 28
                 radius: Styling.radius(2)
-                variant: broomMouse.containsMouse ? "error" : "common"
+                variant: root.isClearing ? "focus" : (broomMouse.containsMouse ? "error" : "common")
 
                 Text {
                     anchors.centerIn: parent
@@ -144,15 +228,16 @@ Item {
                     text: Icons.broom
                     font.family: Icons.font
                     font.pixelSize: 15
-                    color: broomMouse.containsMouse ? Colors.overError : Colors.overBackground
+                    color: root.isClearing ? Colors.overSurfaceVariant : (broomMouse.containsMouse ? Colors.overError : Colors.overBackground)
                 }
 
                 MouseArea {
                     id: broomMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Notifications.discardAllNotifications()
+                    enabled: !root.isClearing
+                    cursorShape: root.isClearing ? Qt.ArrowCursor : Qt.PointingHandCursor
+                    onClicked: root.discardAllWithAnimation()
                 }
             }
         }

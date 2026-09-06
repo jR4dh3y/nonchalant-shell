@@ -12,17 +12,20 @@ import qs.modules.globals
 Item {
     id: root
     property var cascadeItems: []
-    property int cascadeIndex: -1
+    property int cascadeIndex: 0
+    property bool isClearing: false
 
     Shortcut {
         sequence: "Ctrl+L"
-        enabled: GlobalStates.dashboardOpen && GlobalStates.dashboardCurrentTab === 0
+        enabled: GlobalStates.dashboardOpen && GlobalStates.dashboardCurrentTab === 0 && !isClearing
         onActivated: discardAllWithAnimation()
     }
 
     function discardAllWithAnimation() {
+        if (isClearing) return;
+
         const children = notificationList.contentItem.children;
-        if (children.length === 0) {
+        if (!children || children.length === 0) {
             Notifications.discardAllNotifications();
             return;
         }
@@ -40,26 +43,39 @@ Item {
             return;
         }
 
-        cascadeIndex = cascadeItems.length - 1; // Start from last
-        cascadeTimer.restart();
+        isClearing = true;
+        cascadeIndex = 0;
+
+        // Animate first item immediately
+        const first = cascadeItems[0];
+        if (first && first.destroyWithAnimation) {
+            first.destroyWithAnimation(true);
+        }
+        cascadeIndex = 1;
+
+        if (cascadeItems.length > 1) {
+            cascadeTimer.restart();
+        } else {
+            const totalDelay = Math.max(Config.animDuration || 240, 150) + 40;
+            discardAllTimer.interval = totalDelay;
+            discardAllTimer.restart();
+        }
     }
 
     Timer {
         id: cascadeTimer
-        interval: 100 // 0.1 seconds delay between each animation
+        interval: 45
         repeat: true
         onTriggered: {
-            if (cascadeIndex >= 0) {
+            if (cascadeIndex < cascadeItems.length) {
                 const item = cascadeItems[cascadeIndex];
                 if (item && item.destroyWithAnimation) {
                     item.destroyWithAnimation(true);
                 }
-                cascadeIndex--;
+                cascadeIndex++;
             } else {
-                // All animations started, schedule final discard
                 stop();
-                cascadeItems = []; // Clear
-                const totalDelay = Config.animDuration + 50;
+                const totalDelay = Math.max(Config.animDuration || 240, 150) + 40;
                 discardAllTimer.interval = totalDelay;
                 discardAllTimer.restart();
             }
@@ -68,9 +84,23 @@ Item {
 
     Timer {
         id: discardAllTimer
-        interval: Config.animDuration + 50 // Animation duration + small buffer
+        interval: Math.max(Config.animDuration || 240, 150) + 40
         repeat: false
-        onTriggered: Notifications.discardAllNotifications()
+        onTriggered: {
+            Notifications.discardAllNotifications();
+            isClearing = false;
+            cascadeItems = [];
+        }
+    }
+
+    onVisibleChanged: {
+        if (!visible && isClearing) {
+            cascadeTimer.stop();
+            discardAllTimer.stop();
+            Notifications.discardAllNotifications();
+            isClearing = false;
+            cascadeItems = [];
+        }
     }
 
     ColumnLayout {
@@ -146,12 +176,12 @@ Item {
 
                     StyledRect {
                         id: clearButton
-                        variant: broomHover.pressed ? "error" : (broomHover.containsMouse ? "focus" : "internalbg")
+                        variant: root.isClearing ? "focus" : (broomHover.pressed ? "error" : (broomHover.containsMouse ? "focus" : "internalbg"))
                         Layout.preferredWidth: 32
                         Layout.fillHeight: true
                         radius: Styling.radius(0)
 
-                        readonly property color clearItem: broomHover.pressed ? itemColor : Styling.srItem("overerror")
+                        readonly property color clearItem: root.isClearing ? Colors.overSurfaceVariant : (broomHover.pressed ? itemColor : Styling.srItem("overerror"))
 
                         Text {
                             renderType: Text.NativeRendering
@@ -167,9 +197,10 @@ Item {
                         MouseArea {
                             id: broomHover
                             anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
+                            cursorShape: root.isClearing ? Qt.ArrowCursor : Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: discardAllWithAnimation()
+                            enabled: !root.isClearing
+                            onClicked: root.discardAllWithAnimation()
                         }
                     }
                 }
