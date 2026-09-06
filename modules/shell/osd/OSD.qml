@@ -77,7 +77,16 @@ PanelWindow {
                 anchors.bottomMargin: 8
                 spacing: 14
 
+                DynamicSunIcon {
+                    visible: GlobalStates.osdIndicator === "brightness"
+                    size: 24
+                    value: root.osdValue
+                    color: Colors.overBackground
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
                 Text {
+                    visible: GlobalStates.osdIndicator !== "brightness"
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     id: iconText
@@ -86,33 +95,13 @@ PanelWindow {
                             return Audio.volumeIcon(root.osdValue, root.osdMuted);
                         } else if (GlobalStates.osdIndicator === "mic") {
                             return root.osdMuted ? Icons.micSlash : Icons.mic;
-                        } else {
-                            return Icons.sun;
                         }
+                        return "";
                     }
                     font.family: Icons.font
                     font.pixelSize: 22
                     color: Colors.overBackground
                     Layout.alignment: Qt.AlignVCenter
-
-                    rotation: GlobalStates.osdIndicator === "brightness" ? (root.osdValue * 180) : 0
-                    scale: GlobalStates.osdIndicator === "brightness" ? (0.8 + (root.osdValue * 0.2)) : 1
-
-                    Behavior on rotation {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: Config.animDuration
-                            easing.type: Easing.OutQuart
-                        }
-                    }
-
-                    Behavior on scale {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation {
-                            duration: Config.animDuration
-                            easing.type: Easing.OutQuart
-                        }
-                    }
                 }
 
                 ColumnLayout {
