@@ -327,10 +327,12 @@ Item {
 
             // 1. Wi-Fi Capsule
             StyledRect {
+                id: wifiCapsule
                 Layout.fillWidth: true
                 Layout.preferredHeight: 52
                 radius: 26
-                variant: root.wifiConnected ? "primary" : (wifiMouse.containsMouse ? "focus" : "internalbg")
+                readonly property bool isHovered: wifiMouse.containsMouse || wifiIconMouse.containsMouse
+                variant: NetworkService.wifiEnabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
 
                 RowLayout {
                     anchors.fill: parent
@@ -351,11 +353,13 @@ Item {
                             text: root.wifiConnected ? Icons.wifiHigh : (NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.wifiOff)
                             font.family: Icons.font
                             font.pixelSize: 22
-                            color: root.wifiConnected ? Colors.overPrimary : Colors.overBackground
+                            color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
                         }
 
                         MouseArea {
+                            id: wifiIconMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: NetworkService.toggleWifi()
                         }
@@ -366,7 +370,7 @@ Item {
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 22
                         Layout.alignment: Qt.AlignVCenter
-                        color: root.wifiConnected ? Qt.rgba(0, 0, 0, 0.18) : Qt.rgba(1, 1, 1, 0.15)
+                        color: NetworkService.wifiEnabled ? Qt.rgba(0, 0, 0, 0.18) : Qt.rgba(1, 1, 1, 0.15)
                     }
 
                     // Right: Text (click opens Wi-Fi panel)
@@ -384,7 +388,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: root.wifiConnected ? Colors.overPrimary : Colors.overBackground
+                            color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
                             elide: Text.ElideRight
                         }
 
@@ -401,10 +405,12 @@ Item {
 
             // 2. Bluetooth Capsule
             StyledRect {
+                id: btCapsule
                 Layout.fillWidth: true
                 Layout.preferredHeight: 52
                 radius: 26
-                variant: root.btConnected ? "primary" : (btMouse.containsMouse ? "focus" : "internalbg")
+                readonly property bool isHovered: btMouse.containsMouse || btIconMouse.containsMouse
+                variant: BluetoothService.enabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
 
                 RowLayout {
                     anchors.fill: parent
@@ -425,11 +431,13 @@ Item {
                             text: root.btConnected ? Icons.bluetoothConnected : (BluetoothService.enabled ? Icons.bluetooth : Icons.bluetoothOff)
                             font.family: Icons.font
                             font.pixelSize: 22
-                            color: root.btConnected ? Colors.overPrimary : Colors.overBackground
+                            color: BluetoothService.enabled ? Colors.overPrimary : Colors.overBackground
                         }
 
                         MouseArea {
+                            id: btIconMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: BluetoothService.toggle()
                         }
@@ -440,7 +448,7 @@ Item {
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 22
                         Layout.alignment: Qt.AlignVCenter
-                        color: root.btConnected ? Qt.rgba(0, 0, 0, 0.18) : Qt.rgba(1, 1, 1, 0.15)
+                        color: BluetoothService.enabled ? Qt.rgba(0, 0, 0, 0.18) : Qt.rgba(1, 1, 1, 0.15)
                     }
 
                     // Right: Text (click opens Bluetooth panel)
@@ -458,7 +466,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: root.btConnected ? Colors.overPrimary : Colors.overBackground
+                            color: BluetoothService.enabled ? Colors.overPrimary : Colors.overBackground
                             elide: Text.ElideRight
                         }
 
