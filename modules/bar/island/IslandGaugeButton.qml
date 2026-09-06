@@ -9,14 +9,16 @@ import qs.config
 StyledRect {
     id: root
 
-    implicitWidth: 52
-    implicitHeight: 52
-    Layout.preferredWidth: 52
-    Layout.preferredHeight: 52
-    radius: 26
+    property real buttonSize: 56
+
+    implicitWidth: buttonSize
+    implicitHeight: buttonSize
+    Layout.preferredWidth: buttonSize
+    Layout.preferredHeight: buttonSize
+    radius: width / 2
 
     property string icon: ""
-    property int iconSize: showArc ? 18 : 22
+    property int iconSize: 22
     property bool active: false
     property color iconColor: active ? Colors.overPrimary : Colors.overBackground
     variant: active ? "primary" : (mouseArea.containsMouse ? "focus" : "internalbg")
@@ -27,6 +29,7 @@ StyledRect {
     property color trackColor: Qt.rgba(1, 1, 1, 0.14)
     property bool showArc: false
     property bool isMuted: false
+    property string tooltipText: ""
 
     signal clicked(var mouse)
     signal wheelScrolled(int delta)
@@ -41,8 +44,8 @@ StyledRect {
         readonly property real totalAngleDeg: 360 - 2 * gapAngle
         readonly property real normalizedValue: Math.max(0, Math.min(1, root.value))
         property real currentAngleDeg: normalizedValue * totalAngleDeg
-        readonly property real meterRadius: (root.width / 2) - 6
         readonly property real lineWidth: 3.5
+        readonly property real meterRadius: (root.width - lineWidth) / 2 - 1.5
 
         Behavior on currentAngleDeg {
             enabled: Config.animDuration > 0
@@ -89,6 +92,7 @@ StyledRect {
             Connections {
                 target: progressMeter
                 function onCurrentAngleDegChanged() { canvas.requestPaint(); }
+                function onMeterRadiusChanged() { canvas.requestPaint(); }
             }
 
             Connections {
@@ -97,6 +101,8 @@ StyledRect {
                 function onTrackColorChanged() { canvas.requestPaint(); }
                 function onShowArcChanged() { canvas.requestPaint(); }
                 function onValueChanged() { canvas.requestPaint(); }
+                function onWidthChanged() { canvas.requestPaint(); }
+                function onHeightChanged() { canvas.requestPaint(); }
             }
 
             Component.onCompleted: canvas.requestPaint()
@@ -122,5 +128,10 @@ StyledRect {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: (mouse) => root.clicked(mouse)
         onWheel: (wheel) => root.wheelScrolled(wheel.angleDelta.y)
+    }
+
+    StyledToolTip {
+        show: mouseArea.containsMouse && root.tooltipText !== ""
+        tooltipText: root.tooltipText
     }
 }

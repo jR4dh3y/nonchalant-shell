@@ -127,6 +127,15 @@ StyledRect {
                 ControlButton {
                     Layout.preferredWidth: 48
                     Layout.preferredHeight: 48
+                    iconName: Notifications.silent ? Icons.bellSlash : Icons.bell
+                    isActive: Notifications.silent
+                    tooltipText: Notifications.silent ? "Do Not Disturb: On" : "Do Not Disturb: Off"
+                    onClicked: Notifications.toggleSilent()
+                }
+
+                ControlButton {
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
                     iconName: Icons.gpu
                     isActive: GpuService.nvidiaActive
                     tooltipText: "GPU: " + GpuService.modeLabel + " · Left: switch · Right: menu"

@@ -87,6 +87,7 @@ Item {
     }
 
     readonly property int alertsCount: {
+        if (Notifications.silent) return 0;
         let count = 0;
         const list = Notifications.appNameList;
         for (let i = 0; i < list.length; i++) {
@@ -474,20 +475,23 @@ Item {
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // ROW 2: 5 QUICK TILES (Sound, Mic, Battery, Stats, Wallpapers)
+        // ROW 2: 6 QUICK TILES (Sound, Mic, Battery, DND, Stats, Wallpapers)
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             id: quickTilesRow
             Layout.fillWidth: true
-            spacing: Math.max(8, Math.round((quickTilesRow.width - (5 * 52)) / 4))
+            readonly property real tileButtonSize: 56
+            spacing: mainColumn.width > 0 ? Math.max(6, (mainColumn.width - (6 * tileButtonSize)) / 5) : 11
 
             // 1. Sound (Vol)
             IslandGaugeButton {
+                buttonSize: quickTilesRow.tileButtonSize
                 showArc: true
                 value: root.audioMuted ? 0 : root.audioVolume
                 arcColor: root.audioMuted ? Colors.outlineVariant : Colors.primary
                 icon: root.audioMuted ? Icons.speakerSlash : (root.audioVolume > 0.5 ? Icons.speakerHigh : (root.audioVolume > 0 ? Icons.speakerLow : Icons.speakerSlash))
-                iconColor: root.audioMuted ? Colors.red : Colors.overBackground
+                iconColor: root.audioMuted ? Colors.error : Colors.overBackground
+                tooltipText: (root.audioMuted ? "Muted " : "Volume ") + Math.round(root.audioVolume * 100) + "%"
                 onClicked: (mouse) => {
                     if (mouse.button === Qt.RightButton) {
                         Audio.toggleMute();
@@ -503,13 +507,15 @@ Item {
 
             // 2. Microphone
             IslandGaugeButton {
+                buttonSize: quickTilesRow.tileButtonSize
                 readonly property bool micMuted: Audio.source?.audio?.muted ?? false
                 readonly property real micVol: Audio.source?.audio?.volume ?? 0.0
                 showArc: true
                 value: micMuted ? 0 : micVol
                 arcColor: micMuted ? Colors.outlineVariant : Colors.primary
                 icon: micMuted ? Icons.micSlash : Icons.mic
-                iconColor: micMuted ? Colors.red : Colors.overBackground
+                iconColor: micMuted ? Colors.error : Colors.overBackground
+                tooltipText: (micMuted ? "Mic Muted " : "Mic ") + Math.round(micVol * 100) + "%"
                 onClicked: (mouse) => {
                     if (mouse.button === Qt.RightButton) {
                         Audio.toggleMicMute();
@@ -525,23 +531,39 @@ Item {
 
             // 3. Battery
             IslandGaugeButton {
+                buttonSize: quickTilesRow.tileButtonSize
                 showArc: Battery.available
                 value: Battery.available ? (Battery.percentage / 100) : 0
                 arcColor: Battery.statusColor()
                 icon: Battery.isPluggedIn ? Icons.plug : Battery.getBatteryIcon()
-                iconColor: Battery.isPluggedIn ? Colors.green : (Battery.percentage <= 20 ? Colors.red : Colors.overBackground)
+                iconColor: Battery.isPluggedIn ? Colors.primary : (Battery.percentage <= 20 ? Colors.error : Colors.overBackground)
+                tooltipText: Battery.available ? `${Battery.percentage}%${Battery.isPluggedIn ? " (Charging)" : ""}` : "No Battery"
                 onClicked: (mouse) => root.openBattery()
             }
 
-            // 4. Sysmonitor / Stats
+            // 4. Do Not Disturb
             IslandGaugeButton {
+                buttonSize: quickTilesRow.tileButtonSize
+                active: Notifications.silent
+                icon: Notifications.silent ? Icons.bellSlash : Icons.bell
+                iconColor: Notifications.silent ? Colors.overPrimary : Colors.overBackground
+                tooltipText: Notifications.silent ? "Do Not Disturb: On" : "Do Not Disturb: Off"
+                onClicked: (mouse) => Notifications.toggleSilent()
+            }
+
+            // 5. Sysmonitor / Stats
+            IslandGaugeButton {
+                buttonSize: quickTilesRow.tileButtonSize
                 icon: Icons.cpu
+                tooltipText: "System Monitor"
                 onClicked: (mouse) => root.openStats()
             }
 
-            // 5. Wallpapers
+            // 6. Wallpapers
             IslandGaugeButton {
+                buttonSize: quickTilesRow.tileButtonSize
                 icon: Icons.image
+                tooltipText: "Wallpapers"
                 onClicked: (mouse) => root.openWallpapers()
             }
         }
@@ -562,13 +584,11 @@ Item {
                 spacing: 10
 
                 // Sun icon
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.sun
-                    font.family: Icons.font
-                    font.pixelSize: 18
+                DynamicSunIcon {
+                    size: 20
+                    value: brightSlider.value
                     color: Colors.overBackground
+                    Layout.alignment: Qt.AlignVCenter
                 }
 
                 // Brightness slider
