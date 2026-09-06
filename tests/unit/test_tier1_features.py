@@ -588,6 +588,80 @@ class TestFeature13_IslandBarControlsLayout(unittest.TestCase):
         self.assertEqual(start_radius, 18)
         self.assertEqual(end_radius, 18)
 
+    def test_audio_format_badge_not_in_island_bar(self):
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            island_content = f.read()
+        self.assertNotIn("AudioFormatBadge", island_content, "AudioFormatBadge must NOT be present in IslandBar")
+
+        with open("modules/bar/layouts/DefaultBar.qml", "r", encoding="utf-8") as f:
+            default_content = f.read()
+        self.assertIn("AudioFormatBadge", default_content, "AudioFormatBadge belongs exclusively to DefaultBar")
+
+
+class TestFeature14_IslandBatteryAndNotificationFocusNonStealing(unittest.TestCase):
+    """Feature 14: Battery Panel Clean Layout & Notification Focus Non-Stealing"""
+
+    def test_battery_panel_power_profile_order(self):
+        # Order must be: 1. Power Saver, 2. Balanced, 3. Performance
+        import re
+        battery_panel_path = "modules/bar/island/IslandBatteryPanel.qml"
+        with open(battery_panel_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        saver_idx = content.find('PowerProfile.setProfile("power-saver")')
+        balanced_idx = content.find('PowerProfile.setProfile("balanced")')
+        perf_idx = content.find('PowerProfile.setProfile("performance")')
+
+        self.assertNotEqual(saver_idx, -1, "Power saver profile button must exist")
+        self.assertNotEqual(balanced_idx, -1, "Balanced profile button must exist")
+        self.assertNotEqual(perf_idx, -1, "Performance profile button must exist")
+
+        self.assertTrue(saver_idx < balanced_idx, "Power Saver must appear before Balanced")
+        self.assertTrue(balanced_idx < perf_idx, "Balanced must appear before Performance")
+
+    def test_battery_panel_charging_badge_removed_from_percentage(self):
+        # Ensure the charging pill/badge next to percentage is removed
+        battery_panel_path = "modules/bar/island/IslandBatteryPanel.qml"
+        with open(battery_panel_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertNotIn("stateText", content, "stateText badge next to percentage must be removed")
+        self.assertNotIn('text: Battery.isCharging ? "Charging"', content, "Inline Charging badge must be removed")
+
+    def test_notification_mode_does_not_steal_focus_or_fullscreen(self):
+        def simulate_panel_input_states(current_mode, run_menu_open=False, timer_input=False, grab_active=False):
+            is_expanded = current_mode != "collapsed"
+            island_active = is_expanded and current_mode != "notification"
+            dashboard_input_active = island_active and current_mode == "dashboard"
+            island_open = is_expanded and current_mode != "notification"
+
+            keyboard_focus = "Exclusive" if (run_menu_open or island_active or timer_input or dashboard_input_active) else "None"
+            needs_fullscreen_input = run_menu_open or dashboard_input_active or island_active or grab_active
+
+            return {
+                "island_active": island_active,
+                "dashboard_input_active": dashboard_input_active,
+                "island_open": island_open,
+                "keyboard_focus": keyboard_focus,
+                "needs_fullscreen_input": needs_fullscreen_input,
+            }
+
+        # Notification mode must NEVER take exclusive keyboard focus or full-screen input
+        notif_state = simulate_panel_input_states("notification")
+        self.assertFalse(notif_state["island_active"], "islandActive must be False for notification")
+        self.assertFalse(notif_state["dashboard_input_active"], "dashboardInputActive must be False for notification")
+        self.assertFalse(notif_state["island_open"], "islandOpen must be False for notification")
+        self.assertEqual(notif_state["keyboard_focus"], "None", "Keyboard focus must be None during notification")
+        self.assertFalse(notif_state["needs_fullscreen_input"], "Notification must not trigger full-screen input grab")
+
+        # Interactive modes DO take exclusive keyboard focus & full-screen input
+        for mode in ["apps", "projects", "dashboard", "power"]:
+            interactive_state = simulate_panel_input_states(mode)
+            self.assertTrue(interactive_state["island_active"], f"islandActive must be True for {mode}")
+            self.assertEqual(interactive_state["keyboard_focus"], "Exclusive", f"Keyboard focus must be Exclusive for {mode}")
+            self.assertTrue(interactive_state["needs_fullscreen_input"], f"Fullscreen input must be True for {mode}")
+
 
 if __name__ == '__main__':
     unittest.main()
+
