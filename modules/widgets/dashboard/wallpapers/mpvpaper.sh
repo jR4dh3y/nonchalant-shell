@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "${1:-}" = "stop" ] || [ "${1:-}" = "kill" ]; then
+    MONITOR="${2:-ALL}"
+    if [ "$MONITOR" = "ALL" ] || [ -z "$MONITOR" ]; then
+        pkill -x "mpvpaper" 2>/dev/null || true
+    else
+        (pgrep -x mpvpaper 2>/dev/null || true) | while read -r pid; do
+            if ps -p "$pid" -o args= 2>/dev/null | grep -q "$MONITOR"; then
+                kill "$pid" 2>/dev/null || true
+            fi
+        done
+    fi
+    exit 0
+fi
+
 if [ -z "${1:-}" ]; then
-	echo "Usage: $0 /path/to/wallpaper [shader_path] [monitor_target] [mode]"
+	echo "Usage: $0 [/path/to/wallpaper|stop|kill] [shader_path|monitor] [monitor_target] [mode]"
 	exit 1
 fi
 

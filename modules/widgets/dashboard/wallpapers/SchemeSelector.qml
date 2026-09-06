@@ -366,89 +366,101 @@ Item {
 
     PopupWindow {
         id: schemeListPopup
-        anchor.item: root
-        anchor.rect.x: 4
-        anchor.rect.y: 48
-        anchor.rect.width: 0
+        anchor.item: schemeButton
+        anchor.rect.x: 0
+        anchor.rect.y: schemeButton.height + 4
+        anchor.rect.width: schemeButton.width
         anchor.rect.height: 0
-        implicitWidth: Math.max(0, root.width - 8)
-        implicitHeight: 40 * 4
+        implicitWidth: schemeButton.width
+        implicitHeight: 38 * 4 + 8
         color: "transparent"
         visible: root.schemeListExpanded
 
-        ClippingRectangle {
+        StyledRect {
             anchors.fill: parent
-            color: Colors.surfaceContainerLow
-            radius: Styling.radius(0)
+            variant: "popup"
+            radius: Styling.radius(-12)
             opacity: root.schemeListExpanded ? 1 : 0
-            clip: true
 
-            ListView {
-                id: schemeListView
+            ClippingRectangle {
                 anchors.fill: parent
+                anchors.margins: 4
+                color: "transparent"
+                radius: Styling.radius(-14)
                 clip: true
-                model: combinedModel
-                currentIndex: selectedSchemeIndex
-                interactive: true
-                boundsBehavior: Flickable.StopAtBounds
-                highlightFollowsCurrentItem: true
-                keyNavigationEnabled: false
-                focus: false
 
-                onCurrentIndexChanged: {
-                    if (currentIndex !== selectedSchemeIndex && currentIndex >= 0)
-                        selectedSchemeIndex = currentIndex;
-                }
+                ListView {
+                    id: schemeListView
+                    anchors.fill: parent
+                    clip: true
+                    model: combinedModel
+                    currentIndex: selectedSchemeIndex
+                    interactive: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    highlightFollowsCurrentItem: true
+                    keyNavigationEnabled: false
+                    focus: false
 
-                delegate: Item {
-                    id: delegateRoot
-                    required property var modelData
-                    required property int index
-
-                    width: schemeListView.width
-                    height: 40
-
-                    readonly property bool isSelected: selectedSchemeIndex === index
-
-                    StyledRect {
-                        anchors.fill: parent
-                        variant: delegateRoot.isSelected ? "primary" : "transparent"
-                        radius: Styling.radius(0)
-                        opacity: delegateRoot.isSelected ? 1 : 0
+                    onCurrentIndexChanged: {
+                        if (currentIndex !== selectedSchemeIndex && currentIndex >= 0)
+                            selectedSchemeIndex = currentIndex;
                     }
 
-                    Text {
-                        anchors.fill: parent
-                        anchors.leftMargin: 8
-                        text: modelData.label
-                        color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
-                        font.family: Config.theme.font
-                        font.pixelSize: Config.theme.fontSize
-                        font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                    }
+                    delegate: Item {
+                        id: delegateRoot
+                        required property var modelData
+                        required property int index
 
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        // Prevent the parent Button from stealing focus on press
-                        // before we apply the selection.
-                        preventStealing: true
-                        onEntered: {
-                            selectedSchemeIndex = index;
-                            schemeListView.currentIndex = index;
+                        width: schemeListView.width
+                        height: 38
+
+                        readonly property bool isSelected: selectedSchemeIndex === index
+
+                        StyledRect {
+                            anchors.fill: parent
+                            anchors.leftMargin: 4
+                            anchors.rightMargin: 4
+                            anchors.topMargin: 2
+                            anchors.bottomMargin: 2
+                            variant: delegateRoot.isSelected ? "primary" : "transparent"
+                            radius: Styling.radius(-14)
+                            opacity: delegateRoot.isSelected ? 1 : 0
                         }
-                        onPressed: mouse => {
-                            // Keep scheme button focused so focusCloseTimer does not fire mid-click.
-                            schemeButton.forceActiveFocus();
-                            mouse.accepted = true;
+
+                        Text {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 8
+                            text: modelData.label
+                            color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
+                            font.family: Config.theme.font
+                            font.pixelSize: Config.theme.fontSize
+                            font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
                         }
-                        onClicked: {
-                            applySchemeAt(index);
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            // Prevent the parent Button from stealing focus on press
+                            // before we apply the selection.
+                            preventStealing: true
+                            onEntered: {
+                                selectedSchemeIndex = index;
+                                schemeListView.currentIndex = index;
+                            }
+                            onPressed: mouse => {
+                                // Keep scheme button focused so focusCloseTimer does not fire mid-click.
+                                schemeButton.forceActiveFocus();
+                                mouse.accepted = true;
+                            }
+                            onClicked: {
+                                applySchemeAt(index);
+                            }
                         }
                     }
                 }

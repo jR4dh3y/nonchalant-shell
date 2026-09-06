@@ -9,13 +9,14 @@ import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
 import qs.modules.globals
+import qs.modules.widgets.dashboard.wallpapers
 import qs.config
 
 Item {
     id: root
 
-    implicitWidth: 480
-    implicitHeight: 460
+    implicitWidth: 540
+    implicitHeight: 520
 
     signal backRequested()
 
@@ -25,12 +26,31 @@ Item {
     readonly property ShellScreen targetScreen: (allScreens && allScreens.length > 0) ? allScreens[selectedScreenIndex % allScreens.length] : root.screen
     readonly property string currentScreenName: targetScreen?.name ?? (root.screen?.name ?? (NiriService.focusedMonitor ? NiriService.focusedMonitor.name : ""))
 
+    property bool isPerScreen: {
+        if (!GlobalStates.wallpaperManager || currentScreenName === "") return false;
+        let perScreen = GlobalStates.wallpaperManager.perScreenWallpapers || {};
+        return perScreen[currentScreenName] !== undefined;
+    }
+
+    function togglePerScreenMode() {
+        if (!GlobalStates.wallpaperManager || currentScreenName === "") return;
+        
+        if (isPerScreen) {
+            GlobalStates.wallpaperManager.clearPerScreenWallpaper(currentScreenName);
+        } else {
+            let currentWall = GlobalStates.wallpaperManager.currentWallpaper;
+            if (currentWall) {
+                GlobalStates.wallpaperManager.setWallpaper(currentWall, currentScreenName);
+            }
+        }
+    }
+
     property string searchText: ""
 
     readonly property string currentWallpaper: {
         if (!GlobalStates.wallpaperManager) return "";
         let perScreen = GlobalStates.wallpaperManager.perScreenWallpapers || {};
-        if (root.currentScreenName !== "" && perScreen[root.currentScreenName] !== undefined) {
+        if (root.isPerScreen && root.currentScreenName !== "" && perScreen[root.currentScreenName] !== undefined) {
             return perScreen[root.currentScreenName];
         }
         return GlobalStates.wallpaperManager.currentWallpaper || "";
@@ -212,6 +232,119 @@ Item {
         }
 
         // ═══════════════════════════════════════════════════════════════
+        // OPTIONS TOOLBAR: Per-Screen Toggle + Mode Selector + Scheme Selector
+        // ═══════════════════════════════════════════════════════════════
+        RowLayout {
+            id: controlsRow
+            Layout.fillWidth: true
+            Layout.preferredHeight: 48
+            spacing: 8
+            z: 100
+
+            // Per-Screen Monitor toggle
+            Item {
+                id: perScreenCheckboxContainer
+                Layout.preferredWidth: 120
+                Layout.preferredHeight: 48
+                Layout.alignment: Qt.AlignVCenter
+
+                StyledRect {
+                    anchors.fill: parent
+                    radius: Styling.radius(4)
+                    variant: perScreenMouse.containsMouse ? "focus" : "pane"
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        spacing: 4
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: Colors.background
+                            radius: Styling.radius(0)
+
+                            Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                anchors.centerIn: parent
+                                text: root.currentScreenName || "Screen"
+                                color: Colors.overSurface
+                                font.family: Config.theme.font
+                                font.pixelSize: Config.theme.fontSize
+                                font.weight: Font.Medium
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        StyledRect {
+                            Layout.preferredWidth: 40
+                            Layout.preferredHeight: 40
+                            radius: Styling.radius(0)
+                            variant: root.isPerScreen ? "primary" : "transparent"
+
+                            Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                anchors.centerIn: parent
+                                text: Icons.accept
+                                color: root.isPerScreen ? Styling.srItem("primary") : Colors.overSurfaceVariant
+                                font.family: Icons.font
+                                font.pixelSize: 20
+                                opacity: root.isPerScreen ? 1.0 : 0.2
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: perScreenMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.togglePerScreenMode()
+                    }
+                }
+
+                StyledToolTip {
+                    show: perScreenMouse.containsMouse
+                    tooltipText: root.isPerScreen ? `Targeting ${root.currentScreenName} only (click for global)` : `Applying globally (click to target ${root.currentScreenName} only)`
+                }
+            }
+
+            // Wallpaper display mode selector (crop / fit / stretch / center)
+            WallpaperModeSelector {
+                id: wallpaperModeSelector
+                Layout.preferredWidth: 140
+                Layout.preferredHeight: implicitHeight
+                Layout.alignment: Qt.AlignVCenter
+                z: 101
+
+                onModeListExpandedChanged: {
+                    if (modeListExpanded) {
+                        schemeSelector.keyboardNavigationActive = false;
+                        schemeSelector.schemeListExpanded = false;
+                    }
+                }
+            }
+
+            // Color scheme selector + Light/Dark mode switch
+            SchemeSelector {
+                id: schemeSelector
+                Layout.fillWidth: true
+                Layout.preferredHeight: implicitHeight
+                Layout.alignment: Qt.AlignVCenter
+                z: 101
+
+                onSchemeListExpandedChanged: {
+                    if (schemeListExpanded) {
+                        wallpaperModeSelector.keyboardNavigationActive = false;
+                        wallpaperModeSelector.modeListExpanded = false;
+                    }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
         // WALLPAPERS GRID (Balanced 4-column edge-to-edge grid)
         // ═══════════════════════════════════════════════════════════════
         StyledRect {
@@ -338,7 +471,7 @@ Item {
                             onExited: delegateItem.isHovered = false
                             onClicked: {
                                 if (GlobalStates.wallpaperManager) {
-                                    if (root.currentScreenName !== "") {
+                                    if (root.isPerScreen && root.currentScreenName !== "") {
                                         GlobalStates.wallpaperManager.setWallpaper(delegateItem.modelData, root.currentScreenName);
                                     } else {
                                         GlobalStates.wallpaperManager.setWallpaper(delegateItem.modelData);

@@ -424,6 +424,9 @@ PanelWindow {
         initialLoadCompleted = true;
         var pathIndex = wallpaperPaths.indexOf(path);
         if (pathIndex !== -1) {
+            if (getFileType(path) !== 'video') {
+                stopMpvpaper(targetScreen);
+            }
             if (targetScreen) {
                 // If targeting a specific screen, save to perScreenWallpapers instead of currentWall
                 let perScreen = Object.assign({}, wallpaperConfig.adapter.perScreenWallpapers || {});
@@ -551,6 +554,18 @@ PanelWindow {
 
     // property string mpvSocket: "/tmp/nonchalant_mpv_socket"
     property string mpvSocket: "/tmp/nonchalant_mpv_socket_" + (currentScreenName ? currentScreenName : "ALL")
+
+    Process {
+        id: globalKillMpvpaperProcess
+        running: false
+        property string targetMonitor: "ALL"
+        command: ["bash", decodeURIComponent(Qt.resolvedUrl("mpvpaper.sh").toString().replace("file://", "")), "stop", targetMonitor]
+    }
+
+    function stopMpvpaper(targetScreen) {
+        globalKillMpvpaperProcess.targetMonitor = targetScreen || currentScreenName || "ALL";
+        globalKillMpvpaperProcess.running = true;
+    }
 
     function runMatugenForCurrentWallpaper() {
         // Prefer the adapter value — the bound property can lag one tick after
@@ -1399,10 +1414,10 @@ PanelWindow {
         Process {
             id: killMpvpaperProcess
             running: false
-            command: ["pkill", "-f", wallpaper.mpvSocket]
+            command: ["bash", decodeURIComponent(Qt.resolvedUrl("mpvpaper.sh").toString().replace("file://", "")), "stop", wallpaper.currentScreenName ? wallpaper.currentScreenName : "ALL"]
 
             onExited: function (exitCode) {
-                console.log("Killed mpvpaper processes on socket", wallpaper.mpvSocket, ", exit code:", exitCode);
+                console.log("Killed mpvpaper processes for screen", wallpaper.currentScreenName, ", exit code:", exitCode);
             }
         }
 
@@ -1415,10 +1430,10 @@ PanelWindow {
             }
             previousSource = source;
 
-            // Kill mpvpaper if switching to a static image
+            // Kill mpvpaper if switching to any non-video wallpaper
             if (source) {
                 var fileType = getFileType(source);
-                if (fileType === 'image') {
+                if (fileType !== 'video') {
                     killMpvpaperProcess.running = true;
                 }
             }
@@ -1582,9 +1597,9 @@ PanelWindow {
                     }
                 }
 
-                Component.onDestruction:
-                // mpvpaper script handles killing previous instances
-                {}
+                Component.onDestruction: {
+                    wallpaper.stopMpvpaper(wallpaper.currentScreenName);
+                }
 
                 Process {
                     id: mpvpaperProcess
