@@ -50,7 +50,11 @@ OPTIONAL_FILES=(
     "modules/bar/island/IslandWaveformBar.qml"
     "modules/bar/island/IslandMediaCenterPanel.qml"
     "modules/bar/island/IslandNotificationBanner.qml"
+    "modules/bar/island/IslandStatusIcons.qml"
     "modules/components/FluidTextProgress.qml"
+    "modules/components/DynamicSunIcon.qml"
+    "modules/components/DynamicVolumeIcon.qml"
+    "modules/components/DynamicBatteryIcon.qml"
 )
 
 FILES_TO_LINT=()

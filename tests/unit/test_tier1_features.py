@@ -780,6 +780,194 @@ class TestFeature16_WeatherDetailsAndMediaCenter(unittest.TestCase):
         self.assertIn('onExpandRequested: root.openMedia()', dash_content)
 
 
+class TestFeature17_DynamicStatusIcons(unittest.TestCase):
+    """Verifies dynamic Material Symbols status icons replacing bulky speedometer meters."""
+
+    def test_island_status_icons_component(self):
+        import os
+        self.assertTrue(os.path.exists("modules/bar/island/IslandStatusIcons.qml"))
+
+        with open("modules/bar/island/IslandStatusIcons.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Material Symbols font
+        self.assertIn("Material Symbols Rounded", content)
+
+        # Dynamic Sun brightness icon (rotates and rays grow/shrink with brightness)
+        self.assertIn("DynamicSunIcon", content)
+        self.assertIn("Brightness.getMonitorForScreen", content)
+
+        # Volume dynamic icon
+        self.assertIn("DynamicVolumeIcon", content)
+        self.assertIn("volBtn.volumeVal", content)
+        self.assertIn("volBtn.isMuted", content)
+        self.assertIn("Audio.sink", content)
+
+        # Battery dynamic icon
+        self.assertIn("DynamicBatteryIcon", content)
+        self.assertIn("batBtn.percent", content)
+        self.assertIn("batBtn.charging", content)
+        self.assertIn("Battery.percent", content)
+        self.assertIn("Battery.charging", content)
+
+    def test_dynamic_sun_icon_component(self):
+        import os
+        self.assertTrue(os.path.exists("modules/components/DynamicSunIcon.qml"))
+
+        with open("modules/components/DynamicSunIcon.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Check geometry, rays, and rotation
+        self.assertIn("clampedValue", content)
+        self.assertIn("maxRayLength", content)
+        self.assertIn("rayLength", content)
+        self.assertIn("rotationMultiplier", content)
+        self.assertIn("model: 8", content)
+        self.assertIn("ringDiameter", content)
+
+    def test_dynamic_volume_icon_component(self):
+        import os
+        self.assertTrue(os.path.exists("modules/components/DynamicVolumeIcon.qml"))
+
+        with open("modules/components/DynamicVolumeIcon.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("useMaterialFont", content)
+        self.assertIn("iconGlyph", content)
+        self.assertIn("Material Symbols Rounded", content)
+        self.assertIn("vectorCanvas", content)
+        self.assertIn("clampedValue", content)
+
+    def test_dynamic_battery_icon_component(self):
+        import os
+        self.assertTrue(os.path.exists("modules/components/DynamicBatteryIcon.qml"))
+
+        with open("modules/components/DynamicBatteryIcon.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn('"power"', content)
+        self.assertIn("clampedPct", content)
+        self.assertIn("bodyWidth", content)
+        self.assertIn("maxFillW", content)
+
+    def test_island_bar_uses_status_icons(self):
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("IslandStatusIcons", content)
+        self.assertNotIn("BrightnessSlider", content)
+        self.assertNotIn("VolumeSlider", content)
+
+    def test_osd_uses_dynamic_sun_icon(self):
+        with open("modules/shell/osd/OSD.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("DynamicSunIcon", content)
+        self.assertIn('GlobalStates.osdIndicator === "brightness"', content)
+
+
+class TestFeature18_WallpaperParityAndLifecycle(unittest.TestCase):
+    """Verifies wallpaper panel feature parity and mpvpaper process cleanup."""
+
+    def test_island_wallpaper_panel_parity(self):
+        import os
+        self.assertTrue(os.path.exists("modules/bar/island/IslandWallpaperPanel.qml"))
+
+        with open("modules/bar/island/IslandWallpaperPanel.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Imports dashboard wallpapers
+        self.assertIn("import qs.modules.widgets.dashboard.wallpapers", content)
+
+        # Options row components
+        self.assertIn("WallpaperModeSelector", content)
+        self.assertIn("SchemeSelector", content)
+        self.assertIn("perScreenCheckboxContainer", content)
+
+        # Per-screen logic
+        self.assertIn("isPerScreen", content)
+        self.assertIn("togglePerScreenMode", content)
+        self.assertIn("clearPerScreenWallpaper", content)
+
+        # Target width in IslandBar for wallpapers
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            bar_content = f.read()
+        self.assertIn('root.currentMode === "wallpapers"', bar_content)
+        self.assertIn("Math.min(540, root.width - 32)", bar_content)
+
+    def test_mpvpaper_cleanup_lifecycle(self):
+        with open("modules/widgets/dashboard/wallpapers/mpvpaper.sh", "r", encoding="utf-8") as f:
+            sh_content = f.read()
+
+        self.assertIn('"stop"', sh_content)
+        self.assertIn('"kill"', sh_content)
+        self.assertIn('pkill -x "mpvpaper"', sh_content)
+
+        with open("modules/widgets/dashboard/wallpapers/Wallpaper.qml", "r", encoding="utf-8") as f:
+            qml_content = f.read()
+
+        self.assertIn("stopMpvpaper", qml_content)
+        self.assertIn("killMpvpaperProcess", qml_content)
+        self.assertIn('getFileType(path) !== \'video\'', qml_content)
+
+
+class TestFeature20_DropdownStylingPaletteColorsAndDND(unittest.TestCase):
+    """Verifies Scheme/Mode dropdown styling, theme palette status icon colors, and Do Not Disturb quick setting."""
+
+    def test_dropdown_popup_anchoring_and_subtle_radii(self):
+        with open("modules/widgets/dashboard/wallpapers/SchemeSelector.qml", "r", encoding="utf-8") as f:
+            scheme_content = f.read()
+
+        self.assertIn("anchor.item: schemeButton", scheme_content)
+        self.assertIn('variant: "popup"', scheme_content)
+        self.assertIn("radius: Styling.radius(-12)", scheme_content)
+        self.assertIn("radius: Styling.radius(-14)", scheme_content)
+
+        with open("modules/widgets/dashboard/wallpapers/WallpaperModeSelector.qml", "r", encoding="utf-8") as f:
+            mode_content = f.read()
+
+        self.assertIn("anchor.item: modeButton", mode_content)
+        self.assertIn('variant: "popup"', mode_content)
+        self.assertIn("radius: Styling.radius(-12)", mode_content)
+        self.assertIn("radius: Styling.radius(-14)", mode_content)
+
+    def test_status_icons_palette_colors(self):
+        with open("modules/bar/island/IslandStatusIcons.qml", "r", encoding="utf-8") as f:
+            status_content = f.read()
+
+        # No hardcoded yellow/green rainbow colors assigned to bar icons
+        self.assertNotIn("Colors.yellow", status_content)
+        self.assertNotIn("Colors.green", status_content)
+        self.assertIn("Colors.overBackground", status_content)
+        self.assertIn("Colors.primary", status_content)
+        self.assertIn("Colors.error", status_content)
+
+    def test_dnd_and_alerts_suppression(self):
+        with open("modules/services/Notifications.qml", "r", encoding="utf-8") as f:
+            notif_content = f.read()
+
+        self.assertIn("property bool silent: false", notif_content)
+        self.assertIn("property alias dnd: root.silent", notif_content)
+        self.assertIn("function toggleSilent()", notif_content)
+        self.assertIn("function toggleDnd()", notif_content)
+        self.assertIn("onSilentChanged", notif_content)
+
+        with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
+            dash_content = f.read()
+
+        self.assertIn("if (Notifications.silent) return 0;", dash_content)
+        self.assertIn("Icons.bellSlash", dash_content)
+        self.assertIn("Do Not Disturb", dash_content)
+        self.assertIn("Notifications.toggleSilent()", dash_content)
+
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            bar_content = f.read()
+
+        self.assertIn("!Notifications.silent && Notifications.popupList", bar_content)
+        self.assertIn("if (Notifications.silent) return 0;", bar_content)
+        self.assertIn("visible: !Notifications.silent", bar_content)
+
+
 if __name__ == '__main__':
     unittest.main()
 
