@@ -670,15 +670,17 @@ class TestFeature15_IslandMediaTitlePaletteColoring(unittest.TestCase):
         self.assertFalse(os.path.exists("scripts/media_color.py"), "scripts/media_color.py must not exist")
         self.assertFalse(os.path.exists("modules/services/MediaColor.qml"), "modules/services/MediaColor.qml must not exist")
 
-    def test_island_bar_media_title_palette_coloring_and_progress_bar(self):
+    def test_island_bar_inline_media_text_progress_bar(self):
         with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Context title should use Colors.primary when playing and active, otherwise Colors.overBackground
-        self.assertIn("(MprisController.isPlaying && MprisController.activePlayer) ? Colors.primary : Colors.overBackground", content)
+        # Text progress overlay clips to MprisController.progress with Colors.primary
+        self.assertIn("id: textProgressClip", content, "IslandBar must contain textProgressClip overlay")
+        self.assertIn("MprisController.progress", content, "textProgressClip must bind to MprisController.progress")
+        self.assertIn("Colors.overBackground", content, "Base text must use Colors.overBackground")
+        self.assertIn("color: Colors.primary", content, "Progress text must use Colors.primary")
         self.assertNotIn("MediaColor", content, "IslandBar must not reference MediaColor")
-        self.assertIn("id: islandMediaProgress", content, "IslandBar must contain slim media progress bar")
-        self.assertIn("MprisController.progress", content, "IslandBar progress bar must bind to MprisController.progress")
+        self.assertNotIn("id: islandMediaProgress", content, "IslandBar must not have separate whole-bar progress bar")
 
     def test_mpris_controller_progress_and_ticker(self):
         with open("modules/services/MprisController.qml", "r", encoding="utf-8") as f:

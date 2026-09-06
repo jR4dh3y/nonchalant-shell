@@ -168,8 +168,10 @@ Item {
         return null;
     }
 
+    readonly property bool isMediaPlaying: MprisController.isPlaying && MprisController.activePlayer !== null
+
     readonly property string contextLabel: {
-        if (MprisController.isPlaying && MprisController.activePlayer) {
+        if (root.isMediaPlaying) {
             return MprisController.trackTitle || "Playing";
         }
         return root.screenFocusedClient?.title || "Desktop";
@@ -441,61 +443,6 @@ Item {
                     }
                 }
 
-                // Slim media progress bar along the bottom of the collapsed island bar
-                Item {
-                    id: islandMediaProgress
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 1
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
-                    height: 2
-                    visible: MprisController.isPlaying && MprisController.activePlayer !== null && root.currentMode === "collapsed" && MprisController.length > 0
-                    opacity: visible ? 0.95 : 0.0
-                    clip: true
-
-                    Behavior on opacity {
-                        enabled: Config.animDuration > 0
-                        NumberAnimation { duration: 250 }
-                    }
-
-                    // Background track
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 1
-                        color: Qt.rgba(1, 1, 1, 0.15)
-                    }
-
-                    // Active progress fill
-                    Rectangle {
-                        height: parent.height
-                        width: Math.max(0, Math.min(parent.width, parent.width * MprisController.progress))
-                        radius: 1
-                        color: Colors.primary
-
-                        Behavior on width {
-                            enabled: Config.animDuration > 0
-                            NumberAnimation { duration: 250 }
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.topMargin: -4
-                        anchors.bottomMargin: -2
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: mouse => {
-                            if (MprisController.activePlayer && MprisController.length > 0) {
-                                const frac = Math.max(0.0, Math.min(1.0, mouse.x / width));
-                                if (MprisController.activePlayer.canSeek ?? true) {
-                                    MprisController.activePlayer.position = frac * MprisController.length;
-                                }
-                            }
-                        }
-                    }
-                }
-
                 RowLayout {
                     id: collapsedRow
                     anchors.fill: parent
@@ -503,13 +450,15 @@ Item {
                     anchors.rightMargin: 14
                     spacing: 8
 
-                    // Context info: Window / Media title (text only, no outside bar image)
+                    // Context info: Window / Media title with inline progress text fill
                     Item {
+                        id: contextContainer
                         Layout.alignment: Qt.AlignVCenter
                         Layout.maximumWidth: 200
                         implicitWidth: Math.min(contextText.implicitWidth, 200)
                         implicitHeight: Math.max(contextText.implicitHeight, 20)
 
+                        // 1. Base text (white / overBackground for unplayed portion)
                         Text {
                             id: contextText
                             anchors.fill: parent
@@ -517,15 +466,44 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.bold: true
-                            color: (MprisController.isPlaying && MprisController.activePlayer) ? Colors.primary : Colors.overBackground
+                            color: (root.isMediaPlaying && MprisController.length <= 0) ? Colors.primary : Colors.overBackground
                             elide: Text.ElideRight
                             verticalAlignment: Text.AlignVCenter
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
+                        }
 
-                            Behavior on color {
+                        // 2. Played portion overlay (colored with Colors.primary, clipped to playback progress)
+                        Item {
+                            id: textProgressClip
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            width: (root.isMediaPlaying && MprisController.length > 0)
+                                ? Math.max(0, Math.min(parent.width, parent.width * MprisController.progress))
+                                : 0
+                            clip: true
+                            visible: root.isMediaPlaying && MprisController.length > 0
+
+                            Behavior on width {
                                 enabled: Config.animDuration > 0
-                                ColorAnimation { duration: 250 }
+                                NumberAnimation { duration: 250 }
+                            }
+
+                            Text {
+                                x: 0
+                                y: 0
+                                width: Math.max(contextContainer.width, 1)
+                                height: Math.max(contextContainer.height, 1)
+                                text: contextText.text
+                                font.family: contextText.font.family
+                                font.pixelSize: contextText.font.pixelSize
+                                font.bold: contextText.font.bold
+                                color: Colors.primary
+                                elide: contextText.elide
+                                verticalAlignment: contextText.verticalAlignment
+                                renderType: contextText.renderType
+                                font.hintingPreference: contextText.font.hintingPreference
                             }
                         }
 
@@ -534,7 +512,7 @@ Item {
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
                             onClicked: {
-                                if (MprisController.isPlaying && MprisController.activePlayer)
+                                if (root.isMediaPlaying)
                                     root.expand("dashboard");
                                 else
                                     root.expand("apps");
