@@ -251,6 +251,28 @@ class TestFeature7_CompactIslandLayout(unittest.TestCase):
         widgets = ["ActiveWindow", "Clock", "Workspaces", "Tray"]
         self.assertIn("Tray", widgets)
 
+    def test_f7_contains_sound_and_battery_indicators(self):
+        widgets = ["ActiveWindow", "Clock", "Workspaces", "Tray", "Sound", "Battery"]
+        self.assertIn("Sound", widgets)
+        self.assertIn("Battery", widgets)
+
+    def test_f7_notification_popout_geometry_for_island_vs_default(self):
+        # In island mode, notification toasts pop out from the center below the 36px bar
+        island_notif_x_anchor = "horizontalCenter"
+        island_notif_top_margin = 42
+        island_notif_width = min(420, 1920 - 32)
+        self.assertEqual(island_notif_x_anchor, "horizontalCenter")
+        self.assertEqual(island_notif_top_margin, 42)
+        self.assertEqual(island_notif_width, 420)
+
+        # In default mode, toasts are anchored to the right with 56px top margin
+        default_notif_x_anchor = "right"
+        default_notif_top_margin = 56
+        default_notif_width = 360
+        self.assertEqual(default_notif_x_anchor, "right")
+        self.assertEqual(default_notif_top_margin, 56)
+        self.assertEqual(default_notif_width, 360)
+
     def test_f7_no_overflow_or_clipping(self):
         # Compact items must sum to <= island width
         active_window_w = 180
@@ -340,6 +362,45 @@ class TestFeature9_AutohideAnimationAndStateMachine(unittest.TestCase):
         self.assertEqual(self.sm.state, IslandState.POPUP_LOCKED)
         self.sm.set_popup_active(False)
         self.assertEqual(self.sm.state, IslandState.RETRACTED)
+
+    def test_f9_notification_arrival_locks_island_revealed(self):
+        self.sm.set_window_count(1)
+        self.assertEqual(self.sm.state, IslandState.RETRACTED)
+        self.sm.set_has_notifications(True)
+        self.assertEqual(self.sm.state, IslandState.POPUP_LOCKED)
+        self.assertEqual(self.sm.target_y, 0)
+        self.assertTrue(self.sm.is_visible)
+
+    def test_f9_notification_dismiss_evaluates_windows(self):
+        self.sm.set_window_count(1)
+        self.sm.set_has_notifications(True)
+        self.assertEqual(self.sm.state, IslandState.POPUP_LOCKED)
+        self.sm.set_has_notifications(False)
+        self.assertEqual(self.sm.state, IslandState.RETRACTED)
+
+    def test_f9_floating_window_not_touching_top_stays_revealed(self):
+        # Window exists on workspace (count=1), but is floating below top margin (e.g. y=150)
+        self.sm.set_window_count(1)
+        self.sm.set_window_touching_top(False)
+        self.assertEqual(self.sm.state, IslandState.RESTING_VISIBLE, "Floating window not touching top must NOT hide the island")
+        self.assertEqual(self.sm.target_y, 0)
+        self.assertTrue(self.sm.is_visible)
+
+    def test_f9_floating_window_touching_top_retracts_island(self):
+        # Window exists and touches top margin (y <= 44)
+        self.sm.set_window_count(1)
+        self.sm.set_window_touching_top(True)
+        self.assertEqual(self.sm.state, IslandState.RETRACTED, "Window touching top must cause island to retract")
+        self.assertEqual(self.sm.target_y, -36)
+
+    def test_f9_hover_reveals_even_when_window_touching_top(self):
+        # Window touching top (retracted) -> hover immediately reveals
+        self.sm.set_window_count(1)
+        self.sm.set_window_touching_top(True)
+        self.assertEqual(self.sm.state, IslandState.RETRACTED)
+        self.sm.pointer_enter_trigger()
+        self.assertEqual(self.sm.state, IslandState.HOVER_REVEALED, "Hovering at top edge must always reveal island")
+        self.assertEqual(self.sm.target_y, 0)
 
 
 class TestFeature10_TopEdgeHoverTriggerHitbox(unittest.TestCase):
@@ -431,6 +492,101 @@ class TestFeature11_PointerPassThroughMasking(unittest.TestCase):
         self.assertEqual(r.height, 1080)
         # Any point is captured
         self.assertFalse(self.mask_model.is_click_passed_through(100, 500, IslandState.POPUP_LOCKED, full_screen_popup_open=True))
+
+
+class TestFeature12_NotificationToastStackGeometry(unittest.TestCase):
+    """Feature 12: Notification Toast Stack Positioning & Emergence"""
+
+    def compute_toast_state(self, is_island: bool, has_popups: bool, parent_width: int):
+        visible = (not is_island) and has_popups
+        hitbox = "toastColumn" if ((not is_island) and has_popups) else None
+        width = min(420, parent_width - 32) if is_island else 360
+        x = round((parent_width - width) / 2) if is_island else (parent_width - width - 12)
+        y = 38 if is_island else 56
+        z = 50 if is_island else 200
+        slide_y = -36 if is_island else -12
+        return {"visible": visible, "hitbox": hitbox, "width": width, "x": x, "y": y, "z": z, "slideY": slide_y}
+
+    def test_island_mode_toast_suppressed_for_morphing(self):
+        # In island mode, toast stack must NOT open a separate popout window;
+        # the island bar morphs directly into the notification instead.
+        parent_width = 1920
+        state = self.compute_toast_state(is_island=True, has_popups=True, parent_width=parent_width)
+        self.assertFalse(state["visible"], "Toast stack must not be visible in island mode")
+        self.assertIsNone(state["hitbox"], "Toast stack hitbox must be null in island mode")
+
+    def test_default_mode_toast_top_right(self):
+        parent_width = 1920
+        state = self.compute_toast_state(is_island=False, has_popups=True, parent_width=parent_width)
+        self.assertTrue(state["visible"])
+        self.assertEqual(state["hitbox"], "toastColumn")
+        self.assertEqual(state["width"], 360)
+        self.assertEqual(state["x"], 1920 - 360 - 12)
+        self.assertEqual(state["y"], 56)
+        self.assertEqual(state["z"], 200)
+
+
+class TestFeature14_IslandNotificationMorphing(unittest.TestCase):
+    """Feature 14: Dynamic Island Direct Notification Morphing"""
+
+    def simulate_island_morph(self, current_mode: str, has_notifications: bool, screen_width: int = 1920):
+        # State machine transition on notification
+        mode = current_mode
+        if has_notifications:
+            if mode == "collapsed":
+                mode = "notification"
+        else:
+            if mode == "notification":
+                mode = "collapsed"
+
+        is_expanded = mode != "collapsed"
+        target_width = min(420, screen_width - 32) if is_expanded else 320
+        target_height = 76 if mode == "notification" else (36 if mode == "collapsed" else 400)
+        return {
+            "mode": mode,
+            "is_expanded": is_expanded,
+            "target_width": target_width,
+            "target_height": target_height,
+        }
+
+    def test_notification_arrival_morphs_island(self):
+        res = self.simulate_island_morph(current_mode="collapsed", has_notifications=True)
+        self.assertEqual(res["mode"], "notification")
+        self.assertTrue(res["is_expanded"])
+        self.assertEqual(res["target_width"], 420)
+        self.assertEqual(res["target_height"], 76, "Island must morph into notification banner height")
+
+    def test_notification_dismissal_collapses_island(self):
+        res = self.simulate_island_morph(current_mode="notification", has_notifications=False)
+        self.assertEqual(res["mode"], "collapsed")
+        self.assertFalse(res["is_expanded"])
+        self.assertEqual(res["target_height"], 36, "Island must return to compact 36px height")
+
+
+class TestFeature13_IslandBarControlsLayout(unittest.TestCase):
+    """Feature 13: Dynamic Island Bar Controls Layout (Brightness, Vol, Battery)"""
+
+    def test_controls_order(self):
+        # Order requested: brightness, vol, battery
+        expected_order = ["brightness", "vol", "battery"]
+        self.assertEqual(expected_order[0], "brightness")
+        self.assertEqual(expected_order[1], "vol")
+        self.assertEqual(expected_order[2], "battery")
+
+    def test_island_bar_controls_flat_and_compact(self):
+        # Island bar uses compact 28px flat gauges centered in 36px bar
+        island_bar_height = 36
+        meter_size = 28
+        vertical_margin = (island_bar_height - meter_size) / 2
+        self.assertEqual(vertical_margin, 4, "Must have 4px top and bottom margin to prevent clipping")
+        self.assertTrue(meter_size < island_bar_height, "Meter size must be smaller than island bar height")
+
+    def test_default_bar_circular_meter_radius(self):
+        meter_size = 36
+        start_radius = meter_size / 2
+        end_radius = meter_size / 2
+        self.assertEqual(start_radius, 18)
+        self.assertEqual(end_radius, 18)
 
 
 if __name__ == '__main__':

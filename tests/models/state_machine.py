@@ -29,6 +29,8 @@ class DynamicIslandStateMachine:
         self.is_pointer_in_trigger: bool = False
         self.is_pointer_in_island: bool = False
         self.popup_active: bool = False
+        self.has_notifications: bool = False
+        self.window_touching_top: Optional[bool] = None
 
         self._debounce_remaining_ms: int = 0
         self._in_debounce: bool = False
@@ -73,6 +75,10 @@ class DynamicIslandStateMachine:
         self.window_count = max(0, count)
         self._evaluate_state()
 
+    def set_window_touching_top(self, touching: Optional[bool]):
+        self.window_touching_top = touching
+        self._evaluate_state()
+
     def pointer_enter_trigger(self):
         self.is_pointer_in_trigger = True
         self._in_debounce = False
@@ -103,6 +109,10 @@ class DynamicIslandStateMachine:
         self.popup_active = active
         self._evaluate_state()
 
+    def set_has_notifications(self, has_notifs: bool):
+        self.has_notifications = has_notifs
+        self._evaluate_state()
+
     def tick(self, delta_ms: int):
         """Simulate passage of time in milliseconds."""
         if self._in_debounce:
@@ -122,13 +132,14 @@ class DynamicIslandStateMachine:
             self._transition_to(IslandState.RESTING_VISIBLE)
             return
 
-        # 1. Popup priority: if child popup or dashboard is active, island MUST stay locked visible
-        if self.popup_active:
+        # 1. Popup priority or active notifications: island MUST stay locked visible
+        if self.popup_active or self.has_notifications:
             self._transition_to(IslandState.POPUP_LOCKED)
             return
 
-        # 2. If no windows present on active workspace, island rests visible
-        if self.window_count == 0:
+        # 2. If no windows present on active workspace (or none touching top), island rests visible
+        has_touching = self.window_touching_top if self.window_touching_top is not None else (self.window_count > 0)
+        if not has_touching:
             self._in_debounce = False
             self._debounce_remaining_ms = 0
             self._transition_to(IslandState.RESTING_VISIBLE)
