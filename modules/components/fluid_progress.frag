@@ -33,25 +33,30 @@ void main() {
     float x = qt_TexCoord0.x;
     float y = qt_TexCoord0.y;
 
-    // Fluid wave at progress edge (undulating fluid meniscus)
-    float waveScale = smoothstep(0.0, 0.05, ubuf.progress) * (1.0 - smoothstep(0.96, 1.0, ubuf.progress));
-    float waveAmp = 0.022 * waveScale;
-    float waveFreq = 18.0;
-    float fluidBoundary = ubuf.progress + sin(y * waveFreq + ubuf.phase) * waveAmp;
+    // 1. Prominent liquid wave boundary (meniscus)
+    float waveFreq = 8.0;
+    float waveAmp = 0.065 * smoothstep(0.0, 0.04, ubuf.progress) * (1.0 - smoothstep(0.96, 1.0, ubuf.progress));
+    float fluidBoundary = ubuf.progress + sin(y * waveFreq + ubuf.phase * 2.0) * waveAmp;
 
-    // Smoothstep edge for anti-aliasing the liquid wave front
-    float edgeWidth = 0.008;
+    // 2. Smooth liquid wave front
+    float edgeWidth = 0.012;
     float fillAmount = 1.0 - smoothstep(fluidBoundary - edgeWidth, fluidBoundary + edgeWidth, x);
 
-    // Live fluid wave/shimmer through the liquid fill
-    float wave1 = sin(x * 22.0 - ubuf.phase * 2.4 + y * 6.0);
-    float wave2 = cos(x * 12.0 - ubuf.phase * 1.5 - y * 4.0);
-    float shimmer = 0.5 + 0.3 * wave1 + 0.2 * wave2;
+    // 3. Radiant, glowing specular meniscus right at the liquid crest
+    float distToBoundary = abs(x - fluidBoundary);
+    float meniscus = exp(-distToBoundary * distToBoundary / 0.0006) * fillAmount;
 
-    vec3 activeLiquidColor = mix(ubuf.fillColor.rgb, ubuf.highlightColor.rgb, clamp(shimmer, 0.0, 1.0) * 0.45);
+    // 4. Vibrant traveling fluid wave / specular light surge
+    float wave1 = sin(x * 12.0 - ubuf.phase * 3.2 + y * 3.5);
+    float wave2 = cos(x * 6.0 - ubuf.phase * 1.8 - y * 2.5);
+    float surge = pow(max(0.0, 0.5 + 0.5 * (wave1 * 0.65 + wave2 * 0.35)), 2.0);
 
-    // Blend between active liquid color and base white text
-    vec3 finalRgb = mix(ubuf.baseColor.rgb, activeLiquidColor, fillAmount);
+    // Bright specular highlight (gleaming light)
+    vec3 brightHighlight = mix(ubuf.fillColor.rgb, vec3(1.0, 1.0, 1.0), 0.90);
+    vec3 liquidColor = mix(ubuf.fillColor.rgb, brightHighlight, surge * 0.65);
+    liquidColor = mix(liquidColor, vec3(1.0, 1.0, 1.0), meniscus * 0.95);
+
+    vec3 finalRgb = mix(ubuf.baseColor.rgb, liquidColor, fillAmount);
     float finalA = textAlpha * ubuf.qt_Opacity;
 
     fragColor = vec4(finalRgb * finalA, finalA);
