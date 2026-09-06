@@ -138,8 +138,17 @@ Singleton {
             const workspace = workspaceMap[Number(window.workspace_id)] ?? null;
             const layout = window.layout || {};
             const scrollingPosition = layout.pos_in_scrolling_layout || [0, 0];
-            const tilePosition = layout.tile_pos_in_workspace_view || [0, 0];
-            const tileSize = layout.tile_size || layout.window_size || [100, 100];
+            const tilePosition = layout.tile_pos_in_workspace_view
+                || (Array.isArray(window.floating_window_position) ? window.floating_window_position : null)
+                || (window.floating_window_position ? [window.floating_window_position.x, window.floating_window_position.y] : null)
+                || (window.metadata ? [window.metadata.x, window.metadata.y] : null)
+                || [0, 0];
+            const tileSize = layout.tile_size
+                || layout.window_size
+                || (Array.isArray(window.floating_window_size) ? window.floating_window_size : null)
+                || (window.floating_window_size ? [window.floating_window_size.width, window.floating_window_size.height] : null)
+                || (window.metadata ? [window.metadata.width, window.metadata.height] : null)
+                || [100, 100];
             const timestamp = window.focus_timestamp || { secs: 0, nanos: 0 };
 
             if (workspace)
@@ -290,7 +299,14 @@ Singleton {
             const changed = event.WindowOpenedOrChanged.window;
             const exists = root.rawWindows.some(window => Number(window.id) === Number(changed.id));
             root.rawWindows = exists
-                ? root.rawWindows.map(window => Number(window.id) === Number(changed.id) ? changed : window)
+                ? root.rawWindows.map(window => {
+                    if (Number(window.id) !== Number(changed.id))
+                        return window;
+                    const merged = Object.assign({}, window, changed);
+                    if (window.is_focused !== undefined && changed.is_focused === undefined)
+                        merged.is_focused = window.is_focused;
+                    return merged;
+                })
                 : root.rawWindows.concat([changed]);
         } else if (event.WindowClosed) {
             const closedId = Number(event.WindowClosed.id);
