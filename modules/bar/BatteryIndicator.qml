@@ -10,8 +10,11 @@ import qs.config
 Item {
     id: root
 
+    property Item bar: null
     property bool isHovered: false
     property bool layerEnabled: false
+    property bool flat: false
+    property int meterSize: 36
 
     property real radius: 0
     property real startRadius: radius
@@ -19,15 +22,22 @@ Item {
 
     // Popup visibility state
     property bool popupOpen: batteryPopup.isOpen
+    property bool usePopup: true
+
+    signal activated
 
     // Function to interpolate color between green and red based on battery percentage
     function getBatteryColor() {
         return Battery.statusColor();
     }
 
-    Layout.preferredWidth: 36
-    Layout.preferredHeight: 36
-    Layout.fillHeight: true
+    Layout.preferredWidth: meterSize
+    Layout.preferredHeight: meterSize
+    Layout.fillHeight: !flat
+    Layout.alignment: Qt.AlignVCenter
+
+    implicitWidth: meterSize
+    implicitHeight: meterSize
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
@@ -36,24 +46,26 @@ Item {
     // Main button with circular progress
     StyledRect {
         id: buttonBg
-        variant: root.popupOpen ? "primary" : "bg"
+        variant: root.flat ? "transparent" : (root.popupOpen ? "primary" : "bg")
         anchors.fill: parent
-        enableShadow: root.layerEnabled
+        enableShadow: !root.flat && root.layerEnabled
+        enableBorder: !root.flat
 
-        topLeftRadius: root.startRadius
-        topRightRadius: root.endRadius
-        bottomLeftRadius: root.startRadius
-        bottomRightRadius: root.endRadius
+        topLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
+        topRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
+        bottomLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
+        bottomRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
 
         // Background highlight on hover
         Rectangle {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
-            opacity: root.popupOpen ? 0 : (root.isHovered ? 0.25 : 0)
-            topLeftRadius: parent.topLeftRadius
-            topRightRadius: parent.topRightRadius
-            bottomLeftRadius: parent.bottomLeftRadius
-            bottomRightRadius: parent.bottomRightRadius
+            opacity: root.popupOpen ? 0 : (root.isHovered ? (root.flat ? 0.12 : 0.25) : 0)
+            radius: root.flat ? (width / 2) : parent.topLeftRadius
+            topLeftRadius: root.flat ? (width / 2) : parent.topLeftRadius
+            topRightRadius: root.flat ? (width / 2) : parent.topRightRadius
+            bottomLeftRadius: root.flat ? (width / 2) : parent.bottomLeftRadius
+            bottomRightRadius: root.flat ? (width / 2) : parent.bottomRightRadius
 
             Behavior on opacity {
                 enabled: Config.animDuration > 0
@@ -63,18 +75,17 @@ Item {
             }
         }
 
-
         // Circular progress indicator (only if battery available)
         Item {
             id: progressCanvas
             anchors.centerIn: parent
-            width: 32
-            height: 32
+            width: root.flat ? (root.meterSize - 2) : 32
+            height: width
             visible: Battery.available
 
             property real angle: (Battery.percentage / 100) * (360 - 2 * gapAngle)
-            property real radius: 12
-            property real lineWidth: 3
+            property real radius: root.flat ? (root.meterSize / 2 - 4.5) : 12
+            property real lineWidth: root.flat ? 2.2 : 3
             property real gapAngle: 45
 
             Canvas {
@@ -100,7 +111,7 @@ Item {
                     // Draw background track (remaining part)
                     let totalAngleRad = (360 - 2 * progressCanvas.gapAngle) * Math.PI / 180;
 
-                    ctx.strokeStyle = Colors.outlineVariant;
+                    ctx.strokeStyle = root.flat ? Qt.rgba(1, 1, 1, 0.14) : Colors.outlineVariant;
                     ctx.lineWidth = lineWidth;
                     ctx.beginPath();
                     ctx.arc(centerX, centerY, radius, baseStartAngle + progressAngleRad, baseStartAngle + totalAngleRad, false);
@@ -148,7 +159,7 @@ Item {
             anchors.centerIn: parent
             text: Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
             font.family: Icons.font
-            font.pixelSize: Battery.available ? 14 : 18
+            font.pixelSize: root.flat ? (Battery.available ? 11 : 14) : (Battery.available ? 14 : 18)
             color: root.popupOpen ? buttonBg.item : Colors.overBackground
 
             Behavior on color {
@@ -160,10 +171,13 @@ Item {
         }
 
         MouseArea {
-
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: batteryPopup.toggle()
+            onClicked: {
+                root.activated();
+                if (root.usePopup)
+                    batteryPopup.toggle();
+            }
         }
 
         StyledToolTip {

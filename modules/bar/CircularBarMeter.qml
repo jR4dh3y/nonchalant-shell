@@ -12,6 +12,8 @@ Item {
 
     required property Item bar
     property bool layerEnabled: false
+    property bool flat: false
+    property int meterSize: 36
 
     property real startRadius: Styling.radius(0)
     property real endRadius: Styling.radius(0)
@@ -24,12 +26,17 @@ Item {
 
     signal adjusted(real value)
     signal activated
+    signal secondaryActivated
 
     readonly property real normalizedValue: Math.max(0, Math.min(1, value))
 
-    Layout.preferredWidth: 36
-    Layout.preferredHeight: 36
-    Layout.fillHeight: true
+    Layout.preferredWidth: meterSize
+    Layout.preferredHeight: meterSize
+    Layout.fillHeight: !flat
+    Layout.alignment: Qt.AlignVCenter
+
+    implicitWidth: meterSize
+    implicitHeight: meterSize
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
@@ -38,21 +45,23 @@ Item {
     StyledRect {
         id: buttonBg
         anchors.fill: parent
-        variant: "bg"
-        enableShadow: root.layerEnabled
-        topLeftRadius: root.startRadius
-        topRightRadius: root.endRadius
-        bottomLeftRadius: root.startRadius
-        bottomRightRadius: root.endRadius
+        variant: root.flat ? "transparent" : "bg"
+        enableShadow: !root.flat && root.layerEnabled
+        enableBorder: !root.flat
+        topLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
+        topRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
+        bottomLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
+        bottomRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
 
         Rectangle {
             anchors.fill: parent
             color: Styling.srItem("overprimary")
-            opacity: root.isHovered ? 0.2 : 0
-            topLeftRadius: parent.topLeftRadius
-            topRightRadius: parent.topRightRadius
-            bottomLeftRadius: parent.bottomLeftRadius
-            bottomRightRadius: parent.bottomRightRadius
+            opacity: root.isHovered ? (root.flat ? 0.12 : 0.2) : 0
+            radius: root.flat ? (width / 2) : parent.topLeftRadius
+            topLeftRadius: root.flat ? (width / 2) : parent.topLeftRadius
+            topRightRadius: root.flat ? (width / 2) : parent.topRightRadius
+            bottomLeftRadius: root.flat ? (width / 2) : parent.bottomLeftRadius
+            bottomRightRadius: root.flat ? (width / 2) : parent.bottomRightRadius
 
             Behavior on opacity {
                 enabled: Config.animDuration > 0
@@ -60,16 +69,15 @@ Item {
             }
         }
 
-
         Item {
             id: progressMeter
             anchors.centerIn: parent
-            width: 32
-            height: 32
+            width: root.flat ? (root.meterSize - 2) : 32
+            height: width
 
             property real angle: root.normalizedValue * (360 - 2 * gapAngle)
-            property real meterRadius: 12
-            property real lineWidth: 3
+            property real meterRadius: root.flat ? (root.meterSize / 2 - 4.5) : 12
+            property real lineWidth: root.flat ? 2.2 : 3
             property real gapAngle: 45
 
             Canvas {
@@ -88,7 +96,7 @@ Item {
 
                     ctx.lineCap = "round";
                     ctx.lineWidth = progressMeter.lineWidth;
-                    ctx.strokeStyle = Colors.outlineVariant;
+                    ctx.strokeStyle = root.flat ? Qt.rgba(1, 1, 1, 0.14) : Colors.outlineVariant;
                     ctx.beginPath();
                     ctx.arc(centerX, centerY, progressMeter.meterRadius, start + progress, start + total, false);
                     ctx.stroke();
@@ -127,15 +135,21 @@ Item {
             anchors.centerIn: parent
             text: root.icon
             font.family: Icons.font
-            font.pixelSize: 14
+            font.pixelSize: root.flat ? 11 : 14
             color: Colors.overBackground
         }
 
         MouseArea {
             anchors.fill: parent
-            acceptedButtons: root.clickEnabled ? Qt.LeftButton : Qt.NoButton
+            acceptedButtons: root.clickEnabled ? (Qt.LeftButton | Qt.RightButton) : Qt.NoButton
             cursorShape: root.clickEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: root.activated()
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    root.secondaryActivated();
+                } else {
+                    root.activated();
+                }
+            }
             onWheel: wheel => {
                 const direction = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x;
                 if (direction === 0)
