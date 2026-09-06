@@ -30,33 +30,34 @@ void main() {
         return;
     }
 
-    float x = qt_TexCoord0.x;
-    float y = qt_TexCoord0.y;
+    float w = max(1.0, ubuf.canvasWidth);
+    float h = max(1.0, ubuf.canvasHeight);
+    float px = qt_TexCoord0.x * w;
+    float py = qt_TexCoord0.y * h;
 
-    // 1. Prominent liquid wave boundary (meniscus)
-    float waveFreq = 8.0;
-    float waveAmp = 0.065 * smoothstep(0.0, 0.04, ubuf.progress) * (1.0 - smoothstep(0.96, 1.0, ubuf.progress));
-    float fluidBoundary = ubuf.progress + sin(y * waveFreq + ubuf.phase * 2.0) * waveAmp;
+    // 1. Fluid wavy boundary (undulating meniscus in pixel space)
+    // 6px wave amplitude, frequency tuned to font height
+    float waveAmp = 5.0 * smoothstep(0.0, 0.03, ubuf.progress) * (1.0 - smoothstep(0.97, 1.0, ubuf.progress));
+    float fluidEdgePx = (ubuf.progress * w) + sin(py * 0.45 + ubuf.phase * 2.8) * waveAmp;
 
-    // 2. Smooth liquid wave front
-    float edgeWidth = 0.012;
-    float fillAmount = 1.0 - smoothstep(fluidBoundary - edgeWidth, fluidBoundary + edgeWidth, x);
+    // 2. Liquid fill mask with smooth 1.5px antialiased edge
+    float fillAmount = 1.0 - smoothstep(fluidEdgePx - 1.5, fluidEdgePx + 1.5, px);
 
-    // 3. Radiant, glowing specular meniscus right at the liquid crest
-    float distToBoundary = abs(x - fluidBoundary);
-    float meniscus = exp(-distToBoundary * distToBoundary / 0.0006) * fillAmount;
+    // 3. Glowing meniscus right at the liquid crest
+    float distToCrest = abs(px - fluidEdgePx);
+    float meniscus = exp(-distToCrest * distToCrest / 14.0) * fillAmount;
 
-    // 4. Vibrant traveling fluid wave / specular light surge
-    float wave1 = sin(x * 12.0 - ubuf.phase * 3.2 + y * 3.5);
-    float wave2 = cos(x * 6.0 - ubuf.phase * 1.8 - y * 2.5);
-    float surge = pow(max(0.0, 0.5 + 0.5 * (wave1 * 0.65 + wave2 * 0.35)), 2.0);
+    // 4. Traveling liquid caustics / specular ripples flowing through the letters
+    float wave1 = sin(px * 0.22 - ubuf.phase * 3.5 + py * 0.2);
+    float wave2 = cos(px * 0.12 - ubuf.phase * 2.0 - py * 0.15);
+    float surge = pow(clamp(0.5 + 0.5 * (wave1 * 0.7 + wave2 * 0.3), 0.0, 1.0), 2.2);
 
-    // Bright specular highlight (gleaming light)
-    vec3 brightHighlight = mix(ubuf.fillColor.rgb, vec3(1.0, 1.0, 1.0), 0.90);
-    vec3 liquidColor = mix(ubuf.fillColor.rgb, brightHighlight, surge * 0.65);
-    liquidColor = mix(liquidColor, vec3(1.0, 1.0, 1.0), meniscus * 0.95);
+    // Dynamic fluid color: blend base theme color with bright highlight / gleam
+    vec3 gleamColor = mix(ubuf.fillColor.rgb, vec3(1.0, 1.0, 1.0), 0.75);
+    vec3 activeLiquid = mix(ubuf.fillColor.rgb, gleamColor, surge * 0.55);
+    activeLiquid = mix(activeLiquid, vec3(1.0, 1.0, 1.0), meniscus * 0.90);
 
-    vec3 finalRgb = mix(ubuf.baseColor.rgb, liquidColor, fillAmount);
+    vec3 finalRgb = mix(ubuf.baseColor.rgb, activeLiquid, fillAmount);
     float finalA = textAlpha * ubuf.qt_Opacity;
 
     fragColor = vec4(finalRgb * finalA, finalA);
