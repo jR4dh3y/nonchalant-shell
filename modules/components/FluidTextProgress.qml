@@ -113,19 +113,32 @@ Item {
                 const wavelength = 12.0;
                 const k = (2 * Math.PI) / wavelength;
                 const amp = 1.6;
+                const taperLen = Math.min(10.0, playedX * 0.4);
 
                 for (let x = 0; x <= playedX; x += 1.0) {
-                    const waveY = centerY + amp * Math.sin(x * k - root.phase * 2.0);
+                    let envelope = 1.0;
+                    if (taperLen > 0.001) {
+                        const distStart = x;
+                        const distEnd = playedX - x;
+                        if (distStart < taperLen) {
+                            envelope = Math.min(envelope, 0.5 * (1.0 - Math.cos(Math.PI * distStart / taperLen)));
+                        }
+                        if (distEnd < taperLen) {
+                            envelope = Math.min(envelope, 0.5 * (1.0 - Math.cos(Math.PI * distEnd / taperLen)));
+                        }
+                    }
+
+                    const waveY = centerY + amp * envelope * Math.sin(x * k - root.phase * 2.0);
                     if (x === 0) ctx.moveTo(x, waveY);
                     else ctx.lineTo(x, waveY);
                 }
+                ctx.lineTo(playedX, centerY);
                 ctx.stroke();
 
-                // Live glowing playhead bead
+                // Live playhead bead stays stationary at centerY
                 ctx.beginPath();
                 ctx.fillStyle = root.baseColor;
-                const beadY = centerY + amp * Math.sin(playedX * k - root.phase * 2.0);
-                ctx.arc(playedX, beadY, 2.0, 0, Math.PI * 2);
+                ctx.arc(playedX, centerY, 2.0, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
