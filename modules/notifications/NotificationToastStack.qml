@@ -14,17 +14,17 @@ Item {
 
     readonly property int popupCount: Notifications.popupList ? Notifications.popupList.length : 0
     readonly property bool hasPopups: popupCount > 0
-    readonly property Item hitbox: hasPopups ? toastColumn : null
+    readonly property Item hitbox: (!isIsland && hasPopups) ? toastColumn : null
     readonly property int animMs: Config.animDuration > 0 ? Config.animDuration : 0
+    readonly property bool isIsland: (Config.bar?.style ?? "default") === "island"
+    readonly property real cornerRadius: Styling.radius(4)
 
-    visible: hasPopups || exitingCount > 0
-    width: 360
+    visible: !isIsland && (hasPopups || exitingCount > 0)
+    width: isIsland ? Math.min(420, (parent ? parent.width - 32 : 420)) : 360
     height: Math.max(toastColumn.implicitHeight, 1)
-    anchors.top: parent.top
-    anchors.right: parent.right
-    anchors.topMargin: 56
-    anchors.rightMargin: 12
-    z: 200
+    x: isIsland ? (parent ? Math.round((parent.width - width) / 2) : 0) : (parent ? parent.width - width - 12 : 0)
+    y: isIsland ? 38 : 56
+    z: isIsland ? 50 : 200
 
     property int exitingCount: 0
 
@@ -60,7 +60,7 @@ Item {
                 property bool closing: false
                 property bool entered: false
                 property real toastOpacity: 0
-                property real slideY: -12
+                property real slideY: root.isIsland ? -36 : -12
 
                 // Match app launcher / system monitor content inset.
                 readonly property int contentPad: Math.max(Styling.radius(3), 12)
@@ -121,7 +121,7 @@ Item {
                     NumberAnimation {
                         target: toastRoot
                         property: "slideY"
-                        from: -12
+                        from: root.isIsland ? -36 : -12
                         to: 0
                         duration: root.animMs
                         easing.type: Easing.OutCubic
@@ -129,7 +129,7 @@ Item {
 
                     onStarted: {
                         toastRoot.toastOpacity = 0;
-                        toastRoot.slideY = -12;
+                        toastRoot.slideY = root.isIsland ? -36 : -12;
                     }
                     onFinished: toastRoot.entered = true
                 }
@@ -149,7 +149,7 @@ Item {
                     NumberAnimation {
                         target: toastRoot
                         property: "slideY"
-                        to: -10
+                        to: root.isIsland ? -36 : -10
                         duration: root.animMs
                         easing.type: Easing.InCubic
                     }
@@ -175,8 +175,9 @@ Item {
                     id: toastCard
                     anchors.fill: parent
                     variant: "popup"
-                    radius: Styling.radius(8)
+                    radius: root.isIsland ? root.cornerRadius : Styling.radius(8)
                     enableShadow: false
+                    enableBorder: true
                     enabled: false
 
                     Rectangle {

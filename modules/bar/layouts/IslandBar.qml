@@ -15,6 +15,7 @@ import qs.modules.globals
 import qs.modules.theme
 import qs.modules.widgets.launcher
 import "../island"
+import ".."
 
 Item {
     id: root
@@ -32,15 +33,18 @@ Item {
     }
 
     readonly property int islandHeight: 36
-    readonly property int triggerHeight: 4
+    readonly property int triggerHeight: 8
     readonly property real cornerRadius: Styling.radius(4)
 
-    // Current morphing state: "collapsed" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
+    // Current morphing state: "collapsed" | "notification" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
     property string currentMode: "collapsed"
     readonly property bool isExpanded: currentMode !== "collapsed"
     readonly property bool islandActive: isExpanded
 
     function collapse() {
+        if (root.currentMode === "notification") {
+            notificationView.dismissCurrent();
+        }
         root.currentMode = "collapsed";
         GlobalStates.clearLauncherState();
         GlobalStates.clearProjectPickerState();
@@ -53,8 +57,17 @@ Item {
         root.currentMode = mode || "dashboard";
     }
 
-    readonly property bool fullscreenOnScreen: false
-    readonly property bool compositorHide: NiriService.overviewOpen
+    function isWindowTouchingTop(win: var): bool {
+        if (!win)
+            return false;
+        if (win.floating) {
+            const y = (win.at && win.at.length > 1) ? Number(win.at[1]) : 0;
+            const h = (win.size && win.size.length > 1) ? Number(win.size[1]) : 0;
+            return (y + h > 0) && (y <= (root.islandHeight + 8));
+        }
+        // Tiled windows in Niri attach to the top of the workspace view
+        return true;
+    }
 
     readonly property var activeWorkspace: {
         const list = NiriService.workspaces.values;
@@ -68,8 +81,99 @@ Item {
         return null;
     }
 
-    readonly property int activeWorkspaceWindows: activeWorkspace?.windows ?? 0
+    readonly property int activeWorkspaceWindows: {
+        if (!activeWorkspace)
+            return 0;
+        return NiriService.windowsForWorkspace(activeWorkspace.id).length;
+    }
     readonly property bool hasActiveWindows: activeWorkspaceWindows > 0
+    readonly property bool hasWindowTouchingTop: {
+        if (!activeWorkspace)
+            return false;
+        const windows = NiriService.windowsForWorkspace(activeWorkspace.id);
+        if (!windows || windows.length === 0)
+            return false;
+        for (let i = 0; i < windows.length; i++) {
+            if (isWindowTouchingTop(windows[i]))
+                return true;
+        }
+        return false;
+    }
+    readonly property bool hasNotifications: Notifications.popupList && Notifications.popupList.length > 0
+
+    onHasNotificationsChanged: {
+        if (hasNotifications) {
+            if (root.currentMode === "collapsed") {
+                root.currentMode = "notification";
+            }
+        } else {
+            if (root.currentMode === "notification") {
+                root.collapse();
+            }
+        }
+    }
+
+    property string formattedTime: ""
+
+    Timer {
+        id: clockTimer
+        interval: 1000
+        running: !SuspendManager.isSuspending
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            const now = new Date();
+            const format = Config.bar?.use12hFormat ? "hh:mm ap" : "HH:mm";
+            root.formattedTime = Qt.formatTime(now, format);
+        }
+    }
+
+    readonly property string batteryIcon: {
+        let _ = Battery.percentage;
+        let __ = Battery.isPluggedIn;
+        let ___ = Battery.chargeState;
+        return Battery.getBatteryIcon();
+    }
+    readonly property color batteryColor: {
+        let _ = Battery.percentage;
+        let __ = Battery.isPluggedIn;
+        return Battery.statusColor();
+    }
+
+    readonly property bool audioMuted: Audio.sink?.audio?.muted ?? false
+    readonly property real audioVolume: Audio.sink?.audio?.volume ?? 0.0
+
+    readonly property int alertsCount: {
+        let count = 0;
+        const list = Notifications.appNameList;
+        if (!list) return 0;
+        for (let i = 0; i < list.length; i++) {
+            const grp = Notifications.groupsByAppName[list[i]];
+            if (grp?.notifications)
+                count += grp.notifications.length;
+        }
+        return count;
+    }
+
+    readonly property var screenFocusedClient: {
+        if (NiriService.focusedClient && (NiriService.focusedClient.output === root.screen.name || NiriService.focusedClient.monitor === root.screen.name))
+            return NiriService.focusedClient;
+        if (root.activeWorkspace && root.activeWorkspace.activeWindowId !== null) {
+            const list = NiriService.clients.values;
+            if (list) {
+                const found = list.find(c => Number(c.id) === Number(root.activeWorkspace.activeWindowId));
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    readonly property string contextLabel: {
+        if (MprisController.isPlaying && MprisController.activePlayer) {
+            return MprisController.trackTitle || "Playing";
+        }
+        return root.screenFocusedClient?.title || "Desktop";
+    }
 
     readonly property bool isHovered: triggerHoverHandler.hovered || islandHoverHandler.hovered
     property bool debounceActive: false
@@ -77,11 +181,13 @@ Item {
     readonly property bool shouldBeRevealed: {
         if (root.isExpanded)
             return true;
-        if (compositorHide)
+        if (NiriService.overviewOpen)
             return false;
-        if (!hasActiveWindows)
+        if (hasNotifications)
             return true;
         if (isHovered || debounceActive)
+            return true;
+        if (!hasWindowTouchingTop)
             return true;
         return false;
     }
@@ -102,6 +208,8 @@ Item {
 
     readonly property int targetHeight: {
         switch (root.currentMode) {
+        case "notification":
+            return notificationView.implicitHeight;
         case "dashboard":
             return dashboardView.implicitHeight;
         case "power":
@@ -190,7 +298,7 @@ Item {
         if (isHovered) {
             exitDebounceTimer.stop();
             root.debounceActive = false;
-        } else if (root.hasActiveWindows && !root.isExpanded) {
+        } else if (root.hasWindowTouchingTop && !root.isExpanded) {
             root.debounceActive = true;
             exitDebounceTimer.restart();
         }
@@ -214,6 +322,9 @@ Item {
             }
         } else if (event.key === Qt.Key_Escape) {
             if (root.currentMode === "apps" || root.currentMode === "projects") {
+                root.collapse();
+            } else if (root.currentMode === "notification") {
+                notificationView.dismissCurrent();
                 root.collapse();
             } else if (root.currentMode !== "dashboard" && root.currentMode !== "collapsed") {
                 root.currentMode = "dashboard";
@@ -348,12 +459,7 @@ Item {
                         Text {
                             id: contextText
                             anchors.fill: parent
-                            text: {
-                                if (MprisController.isPlaying && MprisController.activePlayer) {
-                                    return MprisController.activePlayer.trackTitle || "Playing";
-                                }
-                                return NiriService.focusedClient?.title || "Desktop";
-                            }
+                            text: root.contextLabel
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.bold: true
@@ -368,7 +474,12 @@ Item {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: root.expand("apps")
+                            onClicked: {
+                                if (MprisController.isPlaying && MprisController.activePlayer)
+                                    root.expand("dashboard");
+                                else
+                                    root.expand("apps");
+                            }
                         }
                     }
 
@@ -393,7 +504,7 @@ Item {
                             spacing: 6
 
                             Text {
-                                text: Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm ap" : "HH:mm")
+                                text: root.formattedTime
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.bold: true
@@ -427,9 +538,14 @@ Item {
                         showBackground: false
                     }
 
-                    // Separator before battery
+                    // DAC sample rate / bit depth pill (collapses when disconnected)
+                    AudioFormatBadge {
+                        Layout.alignment: Qt.AlignVCenter
+                        flat: true
+                    }
+
+                    // Separator before controls
                     Text {
-                        visible: Battery.available
                         text: "|"
                         color: Colors.overSurfaceVariant
                         opacity: 0.5
@@ -437,43 +553,104 @@ Item {
                         renderType: Text.NativeRendering
                     }
 
-                    // Battery indicator (flat, when available)
-                    Item {
+                    // Brightness circular meter
+                    BrightnessSlider {
+                        bar: root
+                        flat: true
+                        meterSize: 28
+                    }
+
+                    // Volume circular meter
+                    VolumeSlider {
+                        bar: root
+                        flat: true
+                        meterSize: 28
+                        onSecondaryActivated: root.expand("sound")
+                    }
+
+                    // Battery circular meter
+                    BatteryIndicator {
                         visible: Battery.available
+                        bar: root
+                        flat: true
+                        meterSize: 28
+                        usePopup: false
+                        onActivated: root.expand("battery")
+                    }
+
+                    // Separator before alerts
+                    Text {
+                        visible: root.alertsCount > 0 || root.hasNotifications
+                        text: "|"
+                        color: Colors.overSurfaceVariant
+                        opacity: 0.5
+                        font.pixelSize: Styling.fontSize(-2)
+                        renderType: Text.NativeRendering
+                    }
+
+                    // Alerts indicator
+                    Item {
+                        visible: root.alertsCount > 0 || root.hasNotifications
                         Layout.alignment: Qt.AlignVCenter
-                        implicitWidth: batteryRow.implicitWidth
-                        implicitHeight: batteryRow.implicitHeight
+                        implicitWidth: alertsRow.implicitWidth
+                        implicitHeight: alertsRow.implicitHeight
 
                         RowLayout {
-                            id: batteryRow
+                            id: alertsRow
                             anchors.fill: parent
                             spacing: 4
 
                             Text {
-                                text: Battery.getBatteryIcon()
+                                text: Icons.bell
                                 font.family: Icons.font
                                 font.pixelSize: 13
-                                color: Battery.statusColor()
+                                color: root.hasNotifications ? Colors.primary : (alertsMouse.containsMouse ? Colors.primary : Colors.overBackground)
                                 renderType: Text.NativeRendering
                             }
 
                             Text {
-                                text: Math.round(Battery.percentage) + "%"
+                                text: String(root.alertsCount)
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-2)
                                 font.bold: true
-                                color: Battery.statusColor()
+                                color: root.hasNotifications ? Colors.primary : (alertsMouse.containsMouse ? Colors.primary : Colors.overBackground)
                                 renderType: Text.NativeRendering
                             }
                         }
 
                         MouseArea {
-                            id: batteryBarMouse
+                            id: alertsMouse
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.expand("battery")
+                            onClicked: root.expand("alerts")
                         }
+                    }
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // EXPANDED STATE 0: LIVE NOTIFICATION BANNER (Dynamic Island Morph)
+            // ═══════════════════════════════════════════════════════════════
+            IslandNotificationBanner {
+                id: notificationView
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                visible: root.currentMode === "notification" || opacity > 0
+                opacity: root.currentMode === "notification" ? 1.0 : 0.0
+
+                Behavior on opacity {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "notification" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "notification" ? Easing.OutCubic : Easing.OutQuad
+                    }
+                }
+
+                onDismissRequested: {
+                    if (!root.hasNotifications) {
+                        root.collapse();
                     }
                 }
             }

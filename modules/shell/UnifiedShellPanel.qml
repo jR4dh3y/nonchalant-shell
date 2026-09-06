@@ -146,7 +146,7 @@ PanelWindow {
             id: barContent
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
-            z: 1
+            z: 100
             visible: unifiedPanel.barEnabled
         }
 
@@ -160,7 +160,7 @@ PanelWindow {
         PowerMenuHost {
             id: powerMenuHost
             panel: unifiedPanel
-            z: 3
+            z: 300
         }
 
         // Detached popup; it never joins the screen edge or reserves space.
@@ -169,7 +169,7 @@ PanelWindow {
             anchors.fill: parent
             screen: unifiedPanel.targetScreen
             barPanel: unifiedPanel
-            z: 2
+            z: 200
         }
 
         Loader {

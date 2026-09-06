@@ -39,6 +39,8 @@ Singleton {
     property int loopState: activePlayer ? activePlayer.loopState : (typeof MprisLoopState !== 'undefined' ? MprisLoopState.None : 0)
     property bool shuffleSupported: activePlayer && activePlayer.shuffleSupported && activePlayer.canControl
     property bool hasShuffle: activePlayer ? activePlayer.shuffle : false
+    readonly property string trackTitle: activePlayer ? (activePlayer.trackTitle || "") : ""
+    readonly property string trackArtists: activePlayer ? (activePlayer.trackArtists || "") : ""
 
     // --- Handlers ---
     onFilteredPlayersChanged: {
