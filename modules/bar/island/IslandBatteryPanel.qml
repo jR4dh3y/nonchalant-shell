@@ -137,38 +137,14 @@ Item {
                         Layout.fillWidth: true
                         spacing: 2
 
-                        RowLayout {
-                            spacing: 8
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Battery.available ? Math.round(Battery.percentage) + "%" : "AC Power"
-                                font.family: Config.theme.monoFont
-                                font.pixelSize: Styling.fontSize(3)
-                                font.bold: true
-                                color: Colors.overBackground
-                            }
-
-                            StyledRect {
-                                visible: Battery.available && !(Battery.isPluggedIn && !Battery.isCharging)
-                                implicitWidth: stateText.implicitWidth + 10
-                                implicitHeight: 18
-                                radius: 9
-                                variant: Battery.isCharging ? "primary" : "common"
-
-                                Text {
-                                    id: stateText
-                                    anchors.centerIn: parent
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: Battery.isCharging ? "Charging" : (Battery.isPluggedIn ? "Full" : "Discharging")
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(-4)
-                                    font.bold: true
-                                    color: Battery.isCharging ? Colors.overPrimary : Colors.overBackground
-                                }
-                            }
+                        Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: Battery.available ? Math.round(Battery.percentage) + "%" : "AC Power"
+                            font.family: Config.theme.monoFont
+                            font.pixelSize: Styling.fontSize(3)
+                            font.bold: true
+                            color: Colors.overBackground
                         }
 
                         Text {
@@ -238,13 +214,13 @@ Item {
                     Layout.fillWidth: true
                     spacing: 8
 
-                    // 1. Performance
+                    // 1. Power Saver
                     StyledRect {
-                        id: perfBtn
+                        id: saverBtn
                         Layout.fillWidth: true
                         Layout.preferredHeight: 38
                         radius: Styling.radius(1)
-                        variant: PowerProfile.currentProfile === "performance" ? "primary" : (perfMouse.containsMouse ? "focus" : "common")
+                        variant: PowerProfile.currentProfile === "power-saver" ? "primary" : (saverMouse.containsMouse ? "focus" : "common")
 
                         RowLayout {
                             anchors.centerIn: parent
@@ -253,29 +229,29 @@ Item {
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.performance
+                                text: Icons.powerSave
                                 font.family: Icons.font
                                 font.pixelSize: 14
-                                color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
+                                color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
                             }
 
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: "Performance"
+                                text: "Power Saver"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-2)
-                                font.bold: PowerProfile.currentProfile === "performance"
-                                color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
+                                font.bold: PowerProfile.currentProfile === "power-saver"
+                                color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
                             }
                         }
 
                         MouseArea {
-                            id: perfMouse
+                            id: saverMouse
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: PowerProfile.setProfile("performance")
+                            onClicked: PowerProfile.setProfile("power-saver")
                         }
                     }
 
@@ -320,13 +296,13 @@ Item {
                         }
                     }
 
-                    // 3. Power Saver
+                    // 3. Performance
                     StyledRect {
-                        id: saverBtn
+                        id: perfBtn
                         Layout.fillWidth: true
                         Layout.preferredHeight: 38
                         radius: Styling.radius(1)
-                        variant: PowerProfile.currentProfile === "power-saver" ? "primary" : (saverMouse.containsMouse ? "focus" : "common")
+                        variant: PowerProfile.currentProfile === "performance" ? "primary" : (perfMouse.containsMouse ? "focus" : "common")
 
                         RowLayout {
                             anchors.centerIn: parent
@@ -335,29 +311,29 @@ Item {
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.powerSave
+                                text: Icons.performance
                                 font.family: Icons.font
                                 font.pixelSize: 14
-                                color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
+                                color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
                             }
 
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: "Power Saver"
+                                text: "Performance"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-2)
-                                font.bold: PowerProfile.currentProfile === "power-saver"
-                                color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
+                                font.bold: PowerProfile.currentProfile === "performance"
+                                color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
                             }
                         }
 
                         MouseArea {
-                            id: saverMouse
+                            id: perfMouse
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: PowerProfile.setProfile("power-saver")
+                            onClicked: PowerProfile.setProfile("performance")
                         }
                     }
                 }
