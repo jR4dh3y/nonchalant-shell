@@ -54,9 +54,23 @@ Item {
     readonly property bool audioMuted: Audio.sink?.audio?.muted ?? false
     readonly property real audioVolume: Audio.sink?.audio?.volume ?? 0.0
 
+    Component.onCompleted: {
+        BluetoothService.updateStatus();
+        if (BluetoothService.enabled)
+            BluetoothService.updateDevices();
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            BluetoothService.updateStatus();
+            if (BluetoothService.enabled)
+                BluetoothService.updateDevices();
+        }
+    }
+
     readonly property bool wifiConnected: NetworkService.wifiEnabled && (NetworkService.networkName !== "" || NetworkService.active !== null || NetworkService.wifiStatus === "connected")
     readonly property string wifiSsid: NetworkService.networkName || NetworkService.active?.ssid || ""
-    readonly property bool btConnected: BluetoothService.enabled && BluetoothService.connected
+    readonly property bool btConnected: BluetoothService.enabled && (BluetoothService.connected || BluetoothService.connectedDevices > 0 || (BluetoothService.friendlyDeviceList && BluetoothService.friendlyDeviceList.some(d => d.connected)))
     readonly property string btDeviceName: {
         if (!btConnected) return "Bluetooth";
         const list = BluetoothService.friendlyDeviceList;
@@ -64,9 +78,9 @@ Item {
             for (let i = 0; i < list.length; i++) {
                 if (list[i]?.connected && list[i]?.name) return list[i].name;
             }
-            if (list.length > 0 && list[0]?.name) {
-                return list[0].name;
-            }
+        }
+        if (BluetoothService.firstConnectedDeviceName) {
+            return BluetoothService.firstConnectedDeviceName;
         }
         return "Bluetooth";
     }

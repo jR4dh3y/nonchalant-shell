@@ -13,6 +13,7 @@ Singleton {
     property bool discovering: false
     property bool connected: false
     property int connectedDevices: 0
+    property string firstConnectedDeviceName: ""
     
     readonly property list<BluetoothDevice> devices: []
     
@@ -70,6 +71,30 @@ Singleton {
             // Then by name
             return (a.name || "").localeCompare(b.name || "");
         });
+
+        // Also cross-check connected status from devices list
+        let connectedCount = 0;
+        let firstName = "";
+        for (let i = 0; i < devices.length; i++) {
+            const d = devices[i];
+            if (d && d.connected) {
+                connectedCount++;
+                if (!firstName && d.name) {
+                    firstName = d.name;
+                }
+            }
+        }
+        if (connectedCount > 0) {
+            root.connected = true;
+            root.connectedDevices = Math.max(root.connectedDevices, connectedCount);
+            if (firstName) {
+                root.firstConnectedDeviceName = firstName;
+            }
+        }
+    }
+
+    function onDeviceInfoUpdated(): void {
+        updateFriendlyList();
     }
 
     // Batch process info updates with delay between each
@@ -228,9 +253,19 @@ Singleton {
 
     Timer {
         id: updateDebouncer
-        interval: 200
+        interval: 150
         repeat: false
         onTriggered: root.performUpdate()
+    }
+
+    Timer {
+        id: devicesDebouncer
+        interval: 300
+        repeat: false
+        onTriggered: {
+            if (root.enabled)
+                root.updateDevices();
+        }
     }
 
     function updateStatus() {
@@ -240,17 +275,37 @@ Singleton {
     function performUpdate() {
         if (isUpdating) return;
         isUpdating = true;
-        checkPowerProcess.running = true;
+        checkStatusProcess.buffer = "";
+        checkStatusProcess.running = true;
     }
 
-    // Timers
+    // Live DBus signal monitor: instant response when devices connect/disconnect or adapter power changes
+    Process {
+        id: dbusMonitorProcess
+        command: ["stdbuf", "-oL", "gdbus", "monitor", "--system", "-d", "org.bluez"]
+        running: !SuspendManager.isSuspending
+        stdout: SplitParser {
+            onRead: (data) => {
+                if (data && (data.includes("Connected") || data.includes("Powered") || data.includes("PropertiesChanged") || data.includes("InterfacesAdded") || data.includes("InterfacesRemoved"))) {
+                    updateDebouncer.restart();
+                    devicesDebouncer.restart();
+                }
+            }
+        }
+    }
+
+    // Periodic poll every 3 seconds
     Timer {
         id: updateTimer
-        interval: 5000
-        // Only poll when interface is visible
-        running: root.enabled && !SuspendManager.isSuspending && (GlobalStates.dashboardOpen || GlobalStates.launcherOpen || GlobalStates.islandOpen)
+        interval: 3000
+        running: !SuspendManager.isSuspending
         repeat: true
-        onTriggered: root.updateDevices()
+        onTriggered: {
+            root.updateStatus();
+            if (root.enabled) {
+                root.updateDevices();
+            }
+        }
     }
 
     Timer {
@@ -261,47 +316,45 @@ Singleton {
         onTriggered: root.stopDiscovery()
     }
 
-    // Processes
+    // Unified single-process status and connected device extraction
     Process {
-        id: checkPowerProcess
-        command: ["bash", "-c", "bluetoothctl show | grep 'Powered:' | awk '{print $2}'"]
+        id: checkStatusProcess
+        command: ["bash", "-c", "bluetoothctl show | grep -q 'Powered: yes' && echo 'powered' || echo 'off'; echo '---'; bluetoothctl devices Connected"]
         running: false
+        property string buffer: ""
         stdout: SplitParser {
             onRead: (data) => {
-                const output = data ? data.trim() : "";
-                root.enabled = output === "yes";
-                
-                if (root.enabled) {
-                    checkConnectedProcess.running = true;
-                } else {
-                    root.connected = false;
-                    root.connectedDevices = 0;
-                    root.discovering = false;
-                    root.isUpdating = false;
-                }
+                checkStatusProcess.buffer += data + "\n";
             }
         }
         onExited: (code) => {
-            if (code !== 0 || !root.enabled) {
-                root.isUpdating = false;
-            }
-        }
-    }
-
-    Process {
-        id: checkConnectedProcess
-        command: ["bash", "-c", "bluetoothctl devices Connected | wc -l"]
-        running: false
-        stdout: SplitParser {
-            onRead: (data) => {
-                const output = data ? data.trim() : "0";
-                root.connectedDevices = parseInt(output) || 0;
-                root.connected = root.connectedDevices > 0;
-                root.isUpdating = false;
-            }
-        }
-        onExited: () => {
+            const text = checkStatusProcess.buffer.trim();
+            checkStatusProcess.buffer = "";
             root.isUpdating = false;
+            if (code !== 0 || !text)
+                return;
+            const parts = text.split("---");
+            const powerPart = parts[0].trim();
+            root.enabled = (powerPart === "powered");
+            if (!root.enabled) {
+                root.connected = false;
+                root.connectedDevices = 0;
+                root.firstConnectedDeviceName = "";
+                root.discovering = false;
+                return;
+            }
+            const connectedLines = parts.length > 1
+                ? parts[1].trim().split("\n").filter(l => l.startsWith("Device "))
+                : [];
+            root.connectedDevices = connectedLines.length;
+            root.connected = connectedLines.length > 0;
+            if (connectedLines.length > 0) {
+                const devParts = connectedLines[0].split(" ");
+                root.firstConnectedDeviceName = devParts.slice(2).join(" ") || "Connected";
+            } else {
+                root.firstConnectedDeviceName = "";
+            }
+            root.updateFriendlyList();
         }
     }
 
@@ -366,6 +419,7 @@ Singleton {
                             address: data.address,
                             name: data.name
                         });
+                        newDevice.infoUpdated.connect(root.onDeviceInfoUpdated);
                         rDevices.push(newDevice);
                         root.queueInfoUpdate(newDevice);
                     }

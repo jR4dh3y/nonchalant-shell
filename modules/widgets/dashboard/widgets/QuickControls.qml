@@ -82,7 +82,7 @@ StyledRect {
                     iconName: {
                         if (!BluetoothService.enabled)
                             return Icons.bluetoothOff;
-                        if (BluetoothService.connected)
+                        if (BluetoothService.connected || BluetoothService.connectedDevices > 0)
                             return Icons.bluetoothConnected;
                         return Icons.bluetooth;
                     }
@@ -90,8 +90,8 @@ StyledRect {
                     tooltipText: {
                         if (!BluetoothService.enabled)
                             return "Bluetooth: Off";
-                        if (BluetoothService.connected)
-                            return "Bluetooth: Connected";
+                        if (BluetoothService.connected || BluetoothService.connectedDevices > 0)
+                            return "Bluetooth: Connected (" + (BluetoothService.firstConnectedDeviceName || "1 device") + ")";
                         return "Bluetooth: On";
                     }
                     onClicked: BluetoothService.toggle()
