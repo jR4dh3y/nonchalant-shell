@@ -662,6 +662,35 @@ class TestFeature14_IslandBatteryAndNotificationFocusNonStealing(unittest.TestCa
             self.assertTrue(interactive_state["needs_fullscreen_input"], f"Fullscreen input must be True for {mode}")
 
 
+class TestFeature15_IslandMediaTitlePaletteColoring(unittest.TestCase):
+    """Feature 15: Clean Theme Palette Coloring for Island Media Title (No Python/Extractors)"""
+
+    def test_no_python_media_color_script_or_service(self):
+        import os
+        self.assertFalse(os.path.exists("scripts/media_color.py"), "scripts/media_color.py must not exist")
+        self.assertFalse(os.path.exists("modules/services/MediaColor.qml"), "modules/services/MediaColor.qml must not exist")
+
+    def test_island_bar_media_title_palette_coloring(self):
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Context title should use Colors.primary when playing and active, otherwise Colors.overBackground
+        self.assertIn("(MprisController.isPlaying && MprisController.activePlayer) ? Colors.primary : Colors.overBackground", content)
+        self.assertNotIn("MediaColor", content, "IslandBar must not reference MediaColor")
+        self.assertNotIn("islandMediaProgress", content, "IslandBar must not have extra progress bar overlay")
+
+    def test_waveform_and_media_card_no_color_extraction(self):
+        with open("modules/bar/island/IslandWaveformBar.qml", "r", encoding="utf-8") as f:
+            waveform_content = f.read()
+        self.assertNotIn("MediaColor", waveform_content, "IslandWaveformBar must not reference MediaColor")
+
+        with open("modules/bar/island/IslandMediaCard.qml", "r", encoding="utf-8") as f:
+            card_content = f.read()
+        self.assertNotIn("MediaColor", card_content, "IslandMediaCard must not reference MediaColor")
+
+
 if __name__ == '__main__':
     unittest.main()
+
+
 

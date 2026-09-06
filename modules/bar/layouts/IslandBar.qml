@@ -467,6 +467,11 @@ Item {
                             verticalAlignment: Text.AlignVCenter
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
+
+                            Behavior on color {
+                                enabled: Config.animDuration > 0
+                                ColorAnimation { duration: 250 }
+                            }
                         }
 
                         MouseArea {
