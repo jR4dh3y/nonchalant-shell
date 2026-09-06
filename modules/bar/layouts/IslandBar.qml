@@ -103,7 +103,7 @@ Item {
         }
         return false;
     }
-    readonly property bool hasNotifications: Notifications.popupList && Notifications.popupList.length > 0
+    readonly property bool hasNotifications: !Notifications.silent && Notifications.popupList && Notifications.popupList.length > 0
 
     onHasNotificationsChanged: {
         if (hasNotifications) {
@@ -148,6 +148,7 @@ Item {
     readonly property real audioVolume: Audio.sink?.audio?.volume ?? 0.0
 
     readonly property int alertsCount: {
+        if (Notifications.silent) return 0;
         let count = 0;
         const list = Notifications.appNameList;
         if (!list) return 0;
@@ -207,6 +208,9 @@ Item {
 
     readonly property int targetWidth: {
         if (root.isExpanded) {
+            if (root.currentMode === "wallpapers") {
+                return Math.min(540, root.width - 32);
+            }
             return Math.min(420, root.width - 32);
         }
         return Math.min(Math.max(collapsedRow.implicitWidth + 28, 200), Math.min(Math.max(0, root.width - 16), 740));
@@ -271,6 +275,15 @@ Item {
         function onLauncherModeChanged() {
             if (root.currentMode === "apps" || root.currentMode === "projects") {
                 root.currentMode = GlobalStates.launcherMode;
+            }
+        }
+    }
+
+    Connections {
+        target: Notifications
+        function onSilentChanged() {
+            if (Notifications.silent && root.currentMode === "notification") {
+                root.collapse();
             }
         }
     }
@@ -557,34 +570,14 @@ Item {
                         renderType: Text.NativeRendering
                     }
 
-                    // Brightness circular meter
-                    BrightnessSlider {
+                    // Dynamic Material Symbols status icons (Volume, Brightness, Battery)
+                    IslandStatusIcons {
                         bar: root
-                        flat: true
-                        meterSize: 28
-                    }
-
-                    // Volume circular meter
-                    VolumeSlider {
-                        bar: root
-                        flat: true
-                        meterSize: 28
-                        onSecondaryActivated: root.expand("sound")
-                    }
-
-                    // Battery circular meter
-                    BatteryIndicator {
-                        visible: Battery.available
-                        bar: root
-                        flat: true
-                        meterSize: 28
-                        usePopup: false
-                        onActivated: root.expand("battery")
                     }
 
                     // Separator before alerts
                     Text {
-                        visible: root.alertsCount > 0 || root.hasNotifications
+                        visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
                         text: "|"
                         color: Colors.overSurfaceVariant
                         opacity: 0.5
@@ -594,7 +587,7 @@ Item {
 
                     // Alerts indicator
                     Item {
-                        visible: root.alertsCount > 0 || root.hasNotifications
+                        visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: alertsRow.implicitWidth
                         implicitHeight: alertsRow.implicitHeight
@@ -641,8 +634,8 @@ Item {
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                visible: (root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null) || opacity > 0
-                opacity: (root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null) ? 1.0 : 0.0
+                visible: !Notifications.silent && (((root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null)) || opacity > 0)
+                opacity: (!Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null) ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
