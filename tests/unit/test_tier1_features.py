@@ -670,17 +670,29 @@ class TestFeature15_IslandMediaTitlePaletteColoring(unittest.TestCase):
         self.assertFalse(os.path.exists("scripts/media_color.py"), "scripts/media_color.py must not exist")
         self.assertFalse(os.path.exists("modules/services/MediaColor.qml"), "modules/services/MediaColor.qml must not exist")
 
-    def test_island_bar_inline_media_text_progress_bar(self):
+    def test_island_bar_fluid_media_text_shader_progress(self):
+        import os
         with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Text progress overlay clips to MprisController.progress with Colors.primary
-        self.assertIn("id: textProgressClip", content, "IslandBar must contain textProgressClip overlay")
-        self.assertIn("MprisController.progress", content, "textProgressClip must bind to MprisController.progress")
-        self.assertIn("Colors.overBackground", content, "Base text must use Colors.overBackground")
-        self.assertIn("color: Colors.primary", content, "Progress text must use Colors.primary")
+        # IslandBar uses FluidTextProgress wired to MprisController.progress
+        self.assertIn("FluidTextProgress", content, "IslandBar must use FluidTextProgress component")
+        self.assertIn("MprisController.progress", content, "IslandBar must bind progress to MprisController.progress")
         self.assertNotIn("MediaColor", content, "IslandBar must not reference MediaColor")
         self.assertNotIn("id: islandMediaProgress", content, "IslandBar must not have separate whole-bar progress bar")
+
+        # FluidTextProgress component & shaders exist
+        self.assertTrue(os.path.exists("modules/components/FluidTextProgress.qml"))
+        self.assertTrue(os.path.exists("modules/components/fluid_progress.frag"))
+        self.assertTrue(os.path.exists("modules/components/fluid_progress.vert"))
+        self.assertTrue(os.path.exists("modules/components/fluid_progress.frag.qsb"))
+        self.assertTrue(os.path.exists("modules/components/fluid_progress.vert.qsb"))
+
+        with open("modules/components/FluidTextProgress.qml", "r", encoding="utf-8") as f:
+            comp_content = f.read()
+        self.assertIn("ShaderEffect", comp_content)
+        self.assertIn("FrameAnimation", comp_content)
+        self.assertIn("fluid_progress.frag.qsb", comp_content)
 
     def test_mpris_controller_progress_and_ticker(self):
         with open("modules/services/MprisController.qml", "r", encoding="utf-8") as f:

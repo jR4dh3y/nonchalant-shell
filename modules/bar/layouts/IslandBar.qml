@@ -450,61 +450,28 @@ Item {
                     anchors.rightMargin: 14
                     spacing: 8
 
-                    // Context info: Window / Media title with inline progress text fill
+                    // Context info: Window / Media title with live fluid shader progress fill
                     Item {
                         id: contextContainer
                         Layout.alignment: Qt.AlignVCenter
                         Layout.maximumWidth: 200
-                        implicitWidth: Math.min(contextText.implicitWidth, 200)
-                        implicitHeight: Math.max(contextText.implicitHeight, 20)
+                        implicitWidth: Math.min(fluidContextText.implicitWidth, 200)
+                        implicitHeight: Math.max(fluidContextText.implicitHeight, 20)
 
-                        // 1. Base text (white / overBackground for unplayed portion)
-                        Text {
-                            id: contextText
+                        FluidTextProgress {
+                            id: fluidContextText
                             anchors.fill: parent
                             text: root.contextLabel
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-1)
-                            font.bold: true
-                            color: (root.isMediaPlaying && MprisController.length <= 0) ? Colors.primary : Colors.overBackground
+                            fontFamily: Config.theme.font
+                            pixelSize: Styling.fontSize(-1)
+                            bold: true
                             elide: Text.ElideRight
                             verticalAlignment: Text.AlignVCenter
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                        }
-
-                        // 2. Played portion overlay (colored with Colors.primary, clipped to playback progress)
-                        Item {
-                            id: textProgressClip
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            anchors.left: parent.left
-                            width: (root.isMediaPlaying && MprisController.length > 0)
-                                ? Math.max(0, Math.min(parent.width, parent.width * MprisController.progress))
-                                : 0
-                            clip: true
-                            visible: root.isMediaPlaying && MprisController.length > 0
-
-                            Behavior on width {
-                                enabled: Config.animDuration > 0
-                                NumberAnimation { duration: 250 }
-                            }
-
-                            Text {
-                                x: 0
-                                y: 0
-                                width: Math.max(contextContainer.width, 1)
-                                height: Math.max(contextContainer.height, 1)
-                                text: contextText.text
-                                font.family: contextText.font.family
-                                font.pixelSize: contextText.font.pixelSize
-                                font.bold: contextText.font.bold
-                                color: Colors.primary
-                                elide: contextText.elide
-                                verticalAlignment: contextText.verticalAlignment
-                                renderType: contextText.renderType
-                                font.hintingPreference: contextText.font.hintingPreference
-                            }
+                            progress: (root.isMediaPlaying && MprisController.length > 0) ? MprisController.progress : 0.0
+                            isPlaying: root.isMediaPlaying
+                            baseColor: Colors.overBackground
+                            fillColor: Colors.primary
+                            highlightColor: Colors.primaryFixed ?? Colors.primary
                         }
 
                         MouseArea {

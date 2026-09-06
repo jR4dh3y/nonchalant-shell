@@ -49,6 +49,7 @@ OPTIONAL_FILES=(
     "modules/bar/island/IslandMediaCard.qml"
     "modules/bar/island/IslandWaveformBar.qml"
     "modules/bar/island/IslandNotificationBanner.qml"
+    "modules/components/FluidTextProgress.qml"
 )
 
 FILES_TO_LINT=()
