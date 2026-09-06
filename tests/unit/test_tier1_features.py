@@ -737,19 +737,32 @@ class TestFeature16_WeatherDetailsAndMediaCenter(unittest.TestCase):
         with open("modules/bar/island/IslandMediaCenterPanel.qml", "r", encoding="utf-8") as f:
             content = f.read()
 
+        # Root Item (prevents broken top corners by not drawing redundant inner rounded rect)
+        self.assertTrue(content.strip().startswith("pragma ComponentBehavior: Bound"))
+        self.assertIn("Item {\n    id: root", content)
+
+        # Header with single player switch icon on right and back button (no redundant X/cancel button)
+        self.assertNotIn("Icons.cancel", content)
+        self.assertNotIn("Icons.x", content)
+        self.assertIn("Icons.arrowLeft", content)
+        self.assertIn("switchPlayerBtn", content)
+        self.assertIn("MprisController.cyclePlayer(1)", content)
+        self.assertIn("Icons.disc", content)
+
         # Rotating vinyl disc
         self.assertIn("RotationAnimation on rotation", content)
         self.assertIn("discRotation", content)
         self.assertIn("faceArtworkDisc", content)
         self.assertIn("MprisController.isPlaying", content)
 
-        # Controls & Waveform
+        # Controls & Waveform with interactive bounce/scale behaviors
         self.assertIn("IslandWaveformBar", content)
         self.assertIn("Icons.previous", content)
         self.assertIn("Icons.next", content)
         self.assertIn("MprisController.togglePlaying()", content)
         self.assertIn("MprisController.setShuffle", content)
         self.assertIn("MprisController.setLoopState", content)
+        self.assertIn("Behavior on scale", content)
 
     def test_island_bar_and_dashboard_media_routing(self):
         with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:

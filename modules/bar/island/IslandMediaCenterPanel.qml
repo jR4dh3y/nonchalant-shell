@@ -11,17 +11,13 @@ import qs.modules.components
 import qs.modules.globals
 import qs.config
 
-StyledRect {
+Item {
     id: root
 
     implicitWidth: 420
     implicitHeight: mainCol.implicitHeight + 28
-    variant: "pane"
-    radius: Styling.radius(3)
-    clip: true
 
     signal backRequested()
-    signal closeRequested()
 
     readonly property bool hasPlayer: MprisController.activePlayer !== null
     readonly property bool isPlaying: MprisController.isPlaying
@@ -56,6 +52,7 @@ StyledRect {
         blurMax: 36
         blur: 0.8
         opacity: root.hasArtwork ? 0.35 : (root.wallpaperUrl !== "" ? 0.18 : 0.0)
+        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
     }
 
     Rectangle {
@@ -74,17 +71,20 @@ StyledRect {
         spacing: 12
 
         // ═══════════════════════════════════════════════════════════════
-        // HEADER: Back button + Title + Player Badge + Close button
+        // HEADER: Back button + Title + (Right) Player Switcher + Close
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
 
+            // Back button
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
+                scale: backMouse.pressed ? 0.88 : (backMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 Text {
                     anchors.centerIn: parent
@@ -103,6 +103,11 @@ StyledRect {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.backRequested()
                 }
+
+                StyledToolTip {
+                    show: backMouse.containsMouse
+                    tooltipText: "Back"
+                }
             }
 
             Text {
@@ -115,81 +120,63 @@ StyledRect {
                 color: Colors.overBackground
             }
 
-            // Player identity badge
-            StyledRect {
-                implicitHeight: 24
-                implicitWidth: playerRow.implicitWidth + 14
-                radius: 12
-                variant: "internalbg"
-
-                RowLayout {
-                    id: playerRow
-                    anchors.centerIn: parent
-                    spacing: 4
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.disc
-                        font.family: Icons.font
-                        font.pixelSize: 12
-                        color: Colors.primary
-                    }
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: MprisController.activePlayer?.identity || "Player"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        font.bold: true
-                        color: Colors.overBackground
-                    }
-
-                    Text {
-                        visible: MprisController.filteredPlayers.length > 1
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.caretRight
-                        font.family: Icons.font
-                        font.pixelSize: 10
-                        color: Colors.overSurfaceVariant
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: MprisController.filteredPlayers.length > 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    enabled: MprisController.filteredPlayers.length > 1
-                    onClicked: MprisController.cyclePlayer(1)
-                }
-            }
-
             Item { Layout.fillWidth: true }
 
-            // Close button
+            // Single Icon Player Switcher (placed on the right before the close button)
             StyledRect {
+                id: switchPlayerBtn
                 implicitWidth: 28
                 implicitHeight: 28
                 radius: 14
-                variant: closeMouse.containsMouse ? "focus" : "common"
+                variant: playerMouse.containsMouse ? "focus" : "common"
+                scale: playerMouse.pressed ? 0.88 : (playerMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 Text {
+                    id: playerIconText
                     anchors.centerIn: parent
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.x
+                    text: Icons.disc
                     font.family: Icons.font
-                    font.pixelSize: 13
-                    color: Colors.overBackground
+                    font.pixelSize: 14
+                    color: Colors.primary
+
+                    Behavior on rotation {
+                        NumberAnimation { duration: 320; easing.type: Easing.OutBack }
+                    }
+                }
+
+                // Dot indicator for multiple active players
+                Rectangle {
+                    visible: MprisController.filteredPlayers.length > 1
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    anchors.margins: 4
+                    width: 5
+                    height: 5
+                    radius: 2.5
+                    color: Colors.primary
                 }
 
                 MouseArea {
-                    id: closeMouse
+                    id: playerMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.closeRequested()
+                    cursorShape: MprisController.filteredPlayers.length > 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: {
+                        playerIconText.rotation += 180;
+                        if (MprisController.filteredPlayers.length > 1) {
+                            MprisController.cyclePlayer(1);
+                        }
+                    }
+                }
+
+                StyledToolTip {
+                    show: playerMouse.containsMouse
+                    tooltipText: MprisController.filteredPlayers.length > 1
+                        ? ("Switch player (current: " + (MprisController.activePlayer?.identity || "Player") + ")")
+                        : (MprisController.activePlayer?.identity || "No other players")
                 }
             }
         }
@@ -203,9 +190,19 @@ StyledRect {
 
             // ── ROTATING VINYL DISC CONTAINER ──
             Item {
+                id: discContainer
                 implicitWidth: 96
                 implicitHeight: 96
                 Layout.alignment: Qt.AlignVCenter
+
+                scale: discMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 350
+                        easing.type: Easing.OutBack
+                        easing.overshoot: 1.25
+                    }
+                }
 
                 // Shadow ring for 3D depth
                 Rectangle {
@@ -346,6 +343,19 @@ StyledRect {
                         }
                     }
                 }
+
+                MouseArea {
+                    id: discMouse
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: MprisController.togglePlaying()
+                }
+
+                StyledToolTip {
+                    show: discMouse.containsMouse
+                    tooltipText: root.isPlaying ? "Click to Pause" : "Click to Play"
+                }
             }
 
             // ── TRACK TYPOGRAPHY & ARTIST ──
@@ -364,6 +374,8 @@ StyledRect {
                     color: Colors.overBackground
                     elide: Text.ElideRight
                     Layout.fillWidth: true
+
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
                 }
 
                 Text {
@@ -377,6 +389,8 @@ StyledRect {
                     color: Colors.primary
                     elide: Text.ElideRight
                     Layout.fillWidth: true
+
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
                 }
 
                 Text {
@@ -415,6 +429,8 @@ StyledRect {
                 radius: 17
                 variant: MprisController.hasShuffle ? "primary" : (shuffleMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.shuffleSupported ? 1.0 : 0.4
+                scale: shuffleMouse.pressed ? 0.88 : (shuffleMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 Text {
                     anchors.centerIn: parent
@@ -445,6 +461,8 @@ StyledRect {
                 radius: 19
                 variant: prevMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoPrevious ? 1.0 : 0.4
+                scale: prevMouse.pressed ? 0.88 : (prevMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 Text {
                     anchors.centerIn: parent
@@ -473,6 +491,8 @@ StyledRect {
                 radius: 23
                 variant: "primary"
                 opacity: playMouse.containsMouse ? 0.9 : 1.0
+                scale: playMouse.pressed ? 0.88 : (playMouse.containsMouse ? 1.08 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
 
                 Text {
                     anchors.centerIn: parent
@@ -500,6 +520,8 @@ StyledRect {
                 radius: 19
                 variant: nextMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoNext ? 1.0 : 0.4
+                scale: nextMouse.pressed ? 0.88 : (nextMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 Text {
                     anchors.centerIn: parent
@@ -530,6 +552,8 @@ StyledRect {
                 radius: 17
                 variant: MprisController.loopState !== 0 ? "primary" : (loopMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.loopSupported ? 1.0 : 0.4
+                scale: loopMouse.pressed ? 0.88 : (loopMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 Text {
                     anchors.centerIn: parent
