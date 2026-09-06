@@ -27,10 +27,13 @@ Item {
         id: mainColumn
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 12
+        spacing: 10
 
-        // Header: Back button + Title + Location badge + Refresh button
+        // ═══════════════════════════════════════════════════════════════
+        // HEADER: Back button + Title (with capitalized city) + Refresh
+        // ═══════════════════════════════════════════════════════════════
         RowLayout {
+            id: headerRow
             Layout.fillWidth: true
             spacing: 8
 
@@ -39,6 +42,8 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
+                scale: backMouse.pressed ? 0.88 : (backMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 Text {
                     anchors.centerIn: parent
@@ -57,52 +62,44 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.backRequested()
                 }
+
+                StyledToolTip {
+                    show: backMouse.containsMouse
+                    tooltipText: "Back"
+                }
             }
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "Weather"
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
-                font.bold: true
-                color: Colors.overBackground
+            RowLayout {
+                spacing: 6
+
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: "Weather"
+                    font.family: Config.theme.font
+                    font.pixelSize: Styling.fontSize(1)
+                    font.bold: true
+                    color: Colors.overBackground
+                }
+
+                Text {
+                    readonly property string loc: Config.weather?.location || ""
+                    visible: loc.length > 0
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: {
+                        const raw = loc.split(",")[0].trim();
+                        return raw ? ("· " + raw.charAt(0).toUpperCase() + raw.slice(1)) : "";
+                    }
+                    font.family: Config.theme.font
+                    font.pixelSize: Styling.fontSize(-1)
+                    color: Colors.overSurfaceVariant
+                    elide: Text.ElideRight
+                    Layout.maximumWidth: 180
+                }
             }
 
             Item { Layout.fillWidth: true }
-
-            // Location badge
-            StyledRect {
-                implicitHeight: 26
-                implicitWidth: locRow.implicitWidth + 14
-                radius: 13
-                variant: "internalbg"
-
-                RowLayout {
-                    id: locRow
-                    anchors.centerIn: parent
-                    spacing: 4
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Icons.mapPin
-                        font.family: Icons.font
-                        font.pixelSize: 12
-                        color: Colors.primary
-                    }
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Config.weather?.location || "Local"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(-2)
-                        font.bold: true
-                        color: Colors.overBackground
-                    }
-                }
-            }
 
             // Refresh button
             StyledRect {
@@ -110,6 +107,8 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: refreshMouse.containsMouse ? "focus" : "common"
+                scale: refreshMouse.pressed ? 0.88 : (refreshMouse.containsMouse ? 1.06 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 Text {
                     anchors.centerIn: parent
@@ -136,14 +135,22 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: WeatherService.updateWeather()
                 }
+
+                StyledToolTip {
+                    show: refreshMouse.containsMouse
+                    tooltipText: "Refresh weather"
+                }
             }
         }
 
-        // 1. Sky View Card: Celestial Arc, Sun/Moon position, Current Temp & Condition
+        // ═══════════════════════════════════════════════════════════════
+        // 1. SKY VIEW CARD: Celestial Arc, Sun/Moon, Temp & Condition
+        // ═══════════════════════════════════════════════════════════════
         ClippingRectangle {
+            id: skyCardItem
             Layout.fillWidth: true
             implicitHeight: 140
-            radius: Styling.radius(3)
+            radius: Styling.radius(2)
             clip: true
 
             WeatherWidget {
@@ -153,43 +160,41 @@ Item {
             }
         }
 
-        // 2. 5-Day Forecast Card Strip with vertical column dividers
+        // ═══════════════════════════════════════════════════════════════
+        // 2. 5-DAY FORECAST CARD: Clean, mathematically equal 5 columns
+        // ═══════════════════════════════════════════════════════════════
         StyledRect {
+            id: forecastCard
             Layout.fillWidth: true
-            implicitHeight: 88
-            radius: Styling.radius(3)
+            implicitHeight: 96
+            radius: Styling.radius(2)
             variant: "internalbg"
+            clip: true
 
-            RowLayout {
+            Row {
                 anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
-                anchors.topMargin: 10
-                anchors.bottomMargin: 10
-                spacing: 0
+                anchors.margins: 8
 
                 Repeater {
                     model: (WeatherService.forecast && WeatherService.forecast.length > 0) ? WeatherService.forecast.slice(0, 5) : []
 
-                    RowLayout {
-                        id: dayContainer
+                    Item {
+                        id: dayCol
                         required property var modelData
                         required property int index
-                        Layout.fillWidth: true
-                        Layout.fillHeight: parent.height
-                        spacing: 0
+                        width: parent.width / 5
+                        height: parent.height
 
                         ColumnLayout {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
+                            anchors.centerIn: parent
                             spacing: 3
 
-                            // Day name ("Today", "Sun", "Mon", etc.)
+                            // Day name ("Today", "Mon", "Tue", etc.)
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: dayContainer.index === 0 ? "Today" : (dayContainer.modelData.dayName || "")
+                                text: dayCol.index === 0 ? "Today" : (dayCol.modelData.dayName || "")
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.Medium
@@ -201,7 +206,7 @@ Item {
                                 Layout.alignment: Qt.AlignHCenter
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: dayContainer.modelData.emoji || "☀️"
+                                text: dayCol.modelData.emoji || "☀️"
                                 font.family: Config.theme.font
                                 font.pixelSize: 18
                             }
@@ -211,7 +216,7 @@ Item {
                                 Layout.alignment: Qt.AlignHCenter
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: (Math.round(dayContainer.modelData.maxTemp) >= 0 ? "+" : "") + Math.round(dayContainer.modelData.maxTemp) + "°"
+                                text: (Math.round(dayCol.modelData.maxTemp) >= 0 ? "+" : "") + Math.round(dayCol.modelData.maxTemp) + "°"
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.bold: true
@@ -223,7 +228,7 @@ Item {
                                 Layout.alignment: Qt.AlignHCenter
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: (Math.round(dayContainer.modelData.minTemp) >= 0 ? "+" : "") + Math.round(dayContainer.modelData.minTemp) + "°"
+                                text: (Math.round(dayCol.modelData.minTemp) >= 0 ? "+" : "") + Math.round(dayCol.modelData.minTemp) + "°"
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-2)
                                 color: Colors.overSurfaceVariant
@@ -232,13 +237,15 @@ Item {
 
                         // Vertical separator between forecast days
                         Rectangle {
-                            visible: dayContainer.index < 4
-                            Layout.fillHeight: true
-                            Layout.topMargin: 4
-                            Layout.bottomMargin: 4
+                            visible: dayCol.index < 4
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.topMargin: 8
+                            anchors.bottomMargin: 8
                             width: 1
                             color: Colors.outlineVariant ?? Qt.rgba(1, 1, 1, 0.12)
-                            opacity: 0.4
+                            opacity: 0.35
                         }
                     }
                 }

@@ -40,20 +40,20 @@ ClippingRectangle {
     }
 
     // Color definitions for each time of day
-    // Day colors (sky blue)
-    readonly property color dayTop: "#87CEEB"
-    readonly property color dayMid: "#B0E0E6"
-    readonly property color dayBot: "#E0F6FF"
+    // Day colors (deep celestial sky)
+    property color dayTop: "#1c3866"
+    property color dayMid: "#254a85"
+    property color dayBot: "#305c9e"
 
     // Evening colors (sunset)
-    readonly property color eveningTop: "#1a1a2e"
-    readonly property color eveningMid: "#e94560"
-    readonly property color eveningBot: "#ffeaa7"
+    property color eveningTop: "#1a1a2e"
+    property color eveningMid: "#e94560"
+    property color eveningBot: "#ffeaa7"
 
     // Night colors (dark blue)
-    readonly property color nightTop: "#0f0f23"
-    readonly property color nightMid: "#1a1a3a"
-    readonly property color nightBot: "#2d2d5a"
+    property color nightTop: "#0f0f23"
+    property color nightMid: "#1a1a3a"
+    property color nightBot: "#2d2d5a"
 
     // Blended colors based on time
     readonly property var blend: WeatherService.effectiveTimeBlend
@@ -878,8 +878,8 @@ ClippingRectangle {
             visible: WeatherService.dataAvailable
             text: Math.round(WeatherService.currentTemp) + "°" + Config.weather.unit
             color: "#FFFFFF"
-            font.family: "Noto Sans"
-            font.pixelSize: Config.theme.fontSize + 10
+            font.family: Config.theme.font
+            font.pixelSize: Config.theme.fontSize + 12
             font.weight: Font.Bold
         }
 
@@ -897,24 +897,18 @@ ClippingRectangle {
     }
 
     // Weather description (top right)
-    Item {
-        id: descContainer
+    Text {
+        id: descText
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 12
-        width: descText.width
-        height: descText.height
-
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            id: descText
-            text: WeatherService.dataAvailable ? WeatherService.effectiveWeatherDescription : "Error"
-            color: Qt.rgba(1, 1, 1, 0.85)
-            font.family: "Noto Sans"
-            font.pixelSize: Config.theme.fontSize - 2
-            font.weight: Font.Bold
-        }
+        renderType: Text.NativeRendering
+        font.hintingPreference: Font.PreferFullHinting
+        text: WeatherService.dataAvailable ? WeatherService.effectiveWeatherDescription : "Error"
+        color: "#FFFFFF"
+        font.family: Config.theme.font
+        font.pixelSize: Config.theme.fontSize - 1
+        font.weight: Font.Bold
     }
 
     // ═══════════════════════════════════════════════════════════
