@@ -5,12 +5,13 @@ import QtQuick.Layouts
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
+import qs.modules.widgets.dashboard.widgets
 import qs.config
 
 Item {
     id: root
 
-    implicitWidth: 480
+    implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
 
     signal backRequested()
@@ -137,258 +138,106 @@ Item {
             }
         }
 
-        // Main Weather Card: Current Temperature & Condition
-        StyledRect {
+        // 1. Sky View Card: Celestial Arc, Sun/Moon position, Current Temp & Condition
+        ClippingRectangle {
             Layout.fillWidth: true
-            implicitHeight: currentCondCol.implicitHeight + 24
+            implicitHeight: 140
             radius: Styling.radius(3)
-            variant: "internalbg"
+            clip: true
 
-            ColumnLayout {
-                id: currentCondCol
+            WeatherWidget {
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 12
-
-                // Top: Big Emoji + Temperature + Description + High/Low
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 14
-
-                    // Weather Symbol / Icon
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: WeatherService.weatherSymbol || Icons.sun
-                        font.family: WeatherService.weatherSymbol ? Config.theme.font : Icons.font
-                        font.pixelSize: 42
-                        color: Colors.yellow
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    // Temperature Readout
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: WeatherService.currentTemp > 0 ? (Math.round(WeatherService.currentTemp) + "°" + (Config.weather?.unit || "C")) : "—"
-                        font.family: Config.theme.font
-                        font.pixelSize: Styling.fontSize(8)
-                        font.bold: true
-                        color: Colors.overBackground
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    Item { Layout.fillWidth: true }
-
-                    // Description and High/Low Column
-                    ColumnLayout {
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: 2
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: WeatherService.weatherDescription || "Clear"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(0)
-                            font.bold: true
-                            color: Colors.overBackground
-                            horizontalAlignment: Text.AlignRight
-                            Layout.alignment: Qt.AlignRight
-                        }
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: "H: " + Math.round(WeatherService.maxTemp) + "°  L: " + Math.round(WeatherService.minTemp) + "°"
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.overSurfaceVariant
-                            horizontalAlignment: Text.AlignRight
-                            Layout.alignment: Qt.AlignRight
-                        }
-                    }
-                }
-
-                Separator {
-                    Layout.fillWidth: true
-                }
-
-                // Metrics row: Wind, Sunrise, Sunset
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-
-                    // Wind
-                    StyledRect {
-                        Layout.fillWidth: true
-                        implicitHeight: 34
-                        radius: Styling.radius(2)
-                        variant: "pane"
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "💨"
-                                font.family: Config.theme.font
-                                font.pixelSize: 14
-                            }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Math.round(WeatherService.windSpeed) + " km/h"
-                                font.family: Config.theme.monoFont
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: true
-                                color: Colors.overBackground
-                            }
-                        }
-                    }
-
-                    // Sunrise
-                    StyledRect {
-                        Layout.fillWidth: true
-                        implicitHeight: 34
-                        radius: Styling.radius(2)
-                        variant: "pane"
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.sun
-                                font.family: Icons.font
-                                font.pixelSize: 14
-                                color: Colors.yellow
-                            }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: WeatherService.sunrise || "—"
-                                font.family: Config.theme.monoFont
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: true
-                                color: Colors.overBackground
-                            }
-                        }
-                    }
-
-                    // Sunset
-                    StyledRect {
-                        Layout.fillWidth: true
-                        implicitHeight: 34
-                        radius: Styling.radius(2)
-                        variant: "pane"
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.moon
-                                font.family: Icons.font
-                                font.pixelSize: 14
-                                color: Colors.tertiary
-                            }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: WeatherService.sunset || "—"
-                                font.family: Config.theme.monoFont
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: true
-                                color: Colors.overBackground
-                            }
-                        }
-                    }
-                }
+                showDebugControls: false
+                animationsEnabled: root.visible
             }
         }
 
-        // Section: 7-Day Forecast
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: "FORECAST"
-            font.family: Config.theme.font
-            font.pixelSize: Styling.fontSize(-3)
-            font.bold: true
-            color: Colors.overSurfaceVariant
-            Layout.leftMargin: 4
-        }
-
-        // Forecast Cards Row
-        RowLayout {
+        // 2. 5-Day Forecast Card Strip with vertical column dividers
+        StyledRect {
             Layout.fillWidth: true
-            spacing: 6
+            implicitHeight: 88
+            radius: Styling.radius(3)
+            variant: "internalbg"
 
-            Repeater {
-                model: (WeatherService.forecast && WeatherService.forecast.length > 0) ? WeatherService.forecast.slice(0, 5) : []
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                anchors.topMargin: 10
+                anchors.bottomMargin: 10
+                spacing: 0
 
-                StyledRect {
-                    id: forecastCard
-                    required property var modelData
-                    Layout.fillWidth: true
-                    implicitHeight: 88
-                    radius: Styling.radius(2)
-                    variant: "internalbg"
+                Repeater {
+                    model: (WeatherService.forecast && WeatherService.forecast.length > 0) ? WeatherService.forecast.slice(0, 5) : []
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 4
+                    RowLayout {
+                        id: dayContainer
+                        required property var modelData
+                        required property int index
+                        Layout.fillWidth: true
+                        Layout.fillHeight: parent.height
+                        spacing: 0
 
-                        Text {
-                            Layout.alignment: Qt.AlignHCenter
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: forecastCard.modelData.dayName || ""
-                            font.family: Config.theme.font
-                            font.pixelSize: Styling.fontSize(-2)
-                            font.bold: true
-                            color: Colors.overBackground
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            spacing: 3
+
+                            // Day name ("Today", "Sun", "Mon", etc.)
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: dayContainer.index === 0 ? "Today" : (dayContainer.modelData.dayName || "")
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(-1)
+                                font.weight: Font.Medium
+                                color: Colors.overBackground
+                            }
+
+                            // Weather condition emoji
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: dayContainer.modelData.emoji || "☀️"
+                                font.family: Config.theme.font
+                                font.pixelSize: 18
+                            }
+
+                            // Max temperature (+30°)
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: (Math.round(dayContainer.modelData.maxTemp) >= 0 ? "+" : "") + Math.round(dayContainer.modelData.maxTemp) + "°"
+                                font.family: Config.theme.monoFont
+                                font.pixelSize: Styling.fontSize(-1)
+                                font.bold: true
+                                color: Colors.overBackground
+                            }
+
+                            // Min temperature (+24°)
+                            Text {
+                                Layout.alignment: Qt.AlignHCenter
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: (Math.round(dayContainer.modelData.minTemp) >= 0 ? "+" : "") + Math.round(dayContainer.modelData.minTemp) + "°"
+                                font.family: Config.theme.monoFont
+                                font.pixelSize: Styling.fontSize(-2)
+                                color: Colors.overSurfaceVariant
+                            }
                         }
 
-                        Text {
-                            Layout.alignment: Qt.AlignHCenter
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: forecastCard.modelData.emoji || "☀️"
-                            font.family: Config.theme.font
-                            font.pixelSize: 18
-                        }
-
-                        Text {
-                            Layout.alignment: Qt.AlignHCenter
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: Math.round(forecastCard.modelData.maxTemp) + "°"
-                            font.family: Config.theme.monoFont
-                            font.pixelSize: Styling.fontSize(-2)
-                            font.bold: true
-                            color: Colors.overBackground
-                        }
-
-                        Text {
-                            Layout.alignment: Qt.AlignHCenter
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: Math.round(forecastCard.modelData.minTemp) + "°"
-                            font.family: Config.theme.monoFont
-                            font.pixelSize: Styling.fontSize(-3)
-                            color: Colors.overSurfaceVariant
+                        // Vertical separator between forecast days
+                        Rectangle {
+                            visible: dayContainer.index < 4
+                            Layout.fillHeight: true
+                            Layout.topMargin: 4
+                            Layout.bottomMargin: 4
+                            width: 1
+                            color: Colors.outlineVariant ?? Qt.rgba(1, 1, 1, 0.12)
+                            opacity: 0.4
                         }
                     }
                 }

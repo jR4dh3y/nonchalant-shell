@@ -35,6 +35,8 @@ StyledRect {
         return frame ? "file://" + frame : (path ? "file://" + path : "");
     }
 
+    signal expandRequested()
+
     // Background: blurred album art while media has artwork, plain wallpaper otherwise
     Image {
         id: bgArt
@@ -74,82 +76,100 @@ StyledRect {
             Layout.fillWidth: true
             spacing: 10
 
-            // Inline circular face / album artwork photo
+            // Inline circular face / album artwork photo + metadata (clickable)
             Item {
-                implicitWidth: 40
-                implicitHeight: 40
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
                 Layout.alignment: Qt.AlignVCenter
 
-                StyledRect {
-                    id: photoFrame
+                RowLayout {
                     anchors.fill: parent
-                    radius: width / 2
-                    variant: "focus"
-                    clip: true
+                    spacing: 10
 
-                    ClippingRectangle {
-                        anchors.fill: parent
-                        anchors.margins: 1
-                        radius: width / 2
-                        color: "transparent"
+                    Item {
+                        implicitWidth: 40
+                        implicitHeight: 40
+                        Layout.alignment: Qt.AlignVCenter
 
-                        Image {
-                            id: coverImage
+                        StyledRect {
+                            id: photoFrame
                             anchors.fill: parent
-                            source: {
-                                if (root.trackArt !== "")
-                                    return root.trackArt;
-                                if (root.wallpaperUrl !== "")
-                                    return root.wallpaperUrl;
-                                return "";
+                            radius: width / 2
+                            variant: "focus"
+                            clip: true
+
+                            ClippingRectangle {
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                radius: width / 2
+                                color: "transparent"
+
+                                Image {
+                                    id: coverImage
+                                    anchors.fill: parent
+                                    source: {
+                                        if (root.trackArt !== "")
+                                            return root.trackArt;
+                                        if (root.wallpaperUrl !== "")
+                                            return root.wallpaperUrl;
+                                        return "";
+                                    }
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    visible: source !== ""
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: !coverImage.visible
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
+                                    text: Icons.player
+                                    font.family: Icons.font
+                                    font.pixelSize: 18
+                                    color: Colors.overBackground
+                                }
                             }
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            visible: source !== ""
+                        }
+                    }
+
+                    // Track metadata
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 2
+
+                        Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: root.trackTitle
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(0)
+                            font.bold: true
+                            color: Colors.overBackground
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
                         }
 
                         Text {
-                            anchors.centerIn: parent
-                            visible: !coverImage.visible
+                            visible: root.trackArtist !== ""
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            text: Icons.player
-                            font.family: Icons.font
-                            font.pixelSize: 18
-                            color: Colors.overBackground
+                            text: root.trackArtist
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-1)
+                            color: Colors.overSurfaceVariant
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
                         }
                     }
                 }
-            }
 
-            // Track metadata
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                spacing: 2
-
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: root.trackTitle
-                    font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(0)
-                    font.bold: true
-                    color: Colors.overBackground
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
-
-                Text {
-                    visible: root.trackArtist !== ""
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: root.trackArtist
-                    font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(-1)
-                    color: Colors.overSurfaceVariant
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: root.expandRequested()
                 }
             }
 

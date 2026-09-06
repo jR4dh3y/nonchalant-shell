@@ -48,6 +48,7 @@ OPTIONAL_FILES=(
     "modules/bar/island/IslandGaugeButton.qml"
     "modules/bar/island/IslandMediaCard.qml"
     "modules/bar/island/IslandWaveformBar.qml"
+    "modules/bar/island/IslandMediaCenterPanel.qml"
     "modules/bar/island/IslandNotificationBanner.qml"
     "modules/components/FluidTextProgress.qml"
 )

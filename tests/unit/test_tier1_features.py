@@ -713,8 +713,63 @@ class TestFeature15_IslandMediaTitlePaletteColoring(unittest.TestCase):
         self.assertNotIn("MediaColor", card_content, "IslandMediaCard must not reference MediaColor")
 
 
+class TestFeature16_WeatherDetailsAndMediaCenter(unittest.TestCase):
+    """Verifies reference weather details panel and dedicated media center widget with rotating face disc."""
+
+    def test_weather_panel_sky_card_and_forecast_strip(self):
+        with open("modules/bar/island/IslandWeatherPanel.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Sky card integration
+        self.assertIn("WeatherWidget", content, "IslandWeatherPanel must embed WeatherWidget sky card")
+        self.assertIn("showDebugControls: false", content)
+
+        # 5-day forecast strip with vertical separators
+        self.assertIn("WeatherService.forecast.slice(0, 5)", content)
+        self.assertIn("Colors.outlineVariant", content)
+        self.assertIn("maxTemp", content)
+        self.assertIn("minTemp", content)
+
+    def test_media_center_panel_and_rotating_disc(self):
+        import os
+        self.assertTrue(os.path.exists("modules/bar/island/IslandMediaCenterPanel.qml"))
+
+        with open("modules/bar/island/IslandMediaCenterPanel.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Rotating vinyl disc
+        self.assertIn("RotationAnimation on rotation", content)
+        self.assertIn("discRotation", content)
+        self.assertIn("faceArtworkDisc", content)
+        self.assertIn("MprisController.isPlaying", content)
+
+        # Controls & Waveform
+        self.assertIn("IslandWaveformBar", content)
+        self.assertIn("Icons.previous", content)
+        self.assertIn("Icons.next", content)
+        self.assertIn("MprisController.togglePlaying()", content)
+        self.assertIn("MprisController.setShuffle", content)
+        self.assertIn("MprisController.setLoopState", content)
+
+    def test_island_bar_and_dashboard_media_routing(self):
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            bar_content = f.read()
+
+        self.assertIn('root.expand("media")', bar_content)
+        self.assertIn('case "media":', bar_content)
+        self.assertIn('IslandMediaCenterPanel', bar_content)
+        self.assertIn('onOpenMedia: root.currentMode = "media"', bar_content)
+
+        with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
+            dash_content = f.read()
+
+        self.assertIn('signal openMedia()', dash_content)
+        self.assertIn('onExpandRequested: root.openMedia()', dash_content)
+
+
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

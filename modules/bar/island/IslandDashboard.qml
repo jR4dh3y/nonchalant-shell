@@ -27,6 +27,7 @@ Item {
     signal openWallpapers()
     signal openBattery()
     signal openWeather()
+    signal openMedia()
 
     property ShellScreen screen: null
 
@@ -666,6 +667,7 @@ Item {
         IslandMediaCard {
             Layout.fillWidth: true
             Layout.preferredHeight: 114
+            onExpandRequested: root.openMedia()
         }
 
         // ═══════════════════════════════════════════════════════════════

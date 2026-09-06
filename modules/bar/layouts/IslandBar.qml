@@ -234,6 +234,8 @@ Item {
             return batteryView.implicitHeight;
         case "weather":
             return weatherView.implicitHeight;
+        case "media":
+            return mediaCenterView.implicitHeight;
         case "apps":
         case "projects":
             return launcherViewWrapper.implicitHeight;
@@ -480,7 +482,7 @@ Item {
                             hoverEnabled: true
                             onClicked: {
                                 if (root.isMediaPlaying)
-                                    root.expand("dashboard");
+                                    root.expand("media");
                                 else
                                     root.expand("apps");
                             }
@@ -682,6 +684,7 @@ Item {
                 onOpenWallpapers: root.currentMode = "wallpapers"
                 onOpenBattery: root.currentMode = "battery"
                 onOpenWeather: root.currentMode = "weather"
+                onOpenMedia: root.currentMode = "media"
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -914,6 +917,30 @@ Item {
                 }
 
                 onBackRequested: root.currentMode = "dashboard"
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // EXPANDED STATE 5.9: DEDICATED MEDIA CENTER
+            // ═══════════════════════════════════════════════════════════════
+            IslandMediaCenterPanel {
+                id: mediaCenterView
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
+                visible: root.currentMode === "media" || opacity > 0
+                opacity: root.currentMode === "media" ? 1.0 : 0.0
+
+                Behavior on opacity {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "media" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "media" ? Easing.OutCubic : Easing.OutQuad
+                    }
+                }
+
+                onBackRequested: root.currentMode = "dashboard"
+                onCloseRequested: root.collapse()
             }
 
             // ═══════════════════════════════════════════════════════════════
