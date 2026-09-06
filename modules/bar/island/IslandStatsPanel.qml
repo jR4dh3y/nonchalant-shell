@@ -12,7 +12,7 @@ Item {
     id: root
 
     implicitWidth: 420
-    implicitHeight: 14 + headerRow.implicitHeight + 10 + statsContentColumn.implicitHeight + 14
+    implicitHeight: mainColumn.implicitHeight + 28
 
     signal backRequested()
 
@@ -36,6 +36,7 @@ Item {
     }
 
     ColumnLayout {
+        id: mainColumn
         anchors.fill: parent
         anchors.margins: 14
         spacing: 10
@@ -89,441 +90,29 @@ Item {
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // NATIVE METRICS BODY
+        // NATIVE METRICS BODY (Single unified darker surface)
         // ═══════════════════════════════════════════════════════════════
-        Item {
+        StyledRect {
+            id: metricsContainer
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            implicitHeight: statsContentColumn.implicitHeight + 24
+            radius: Styling.radius(2)
+            variant: "internalbg"
             clip: true
 
-            Flickable {
-                id: statsFlickable
+            ColumnLayout {
+                id: statsContentColumn
                 anchors.fill: parent
-                anchors.margins: 10
-                contentWidth: width
-                contentHeight: statsContentColumn.implicitHeight
-                flickableDirection: Flickable.VerticalFlick
-                boundsBehavior: Flickable.StopAtBounds
-                clip: true
+                anchors.margins: 12
+                spacing: 10
 
-                WheelHandler {
-                    target: statsFlickable
-                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                    onWheel: event => {
-                        statsFlickable.contentY = Math.max(0, Math.min(Math.max(0, statsFlickable.contentHeight - statsFlickable.height), statsFlickable.contentY - event.angleDelta.y));
-                    }
-                }
-
-                ColumnLayout {
-                    id: statsContentColumn
-                    width: statsFlickable.width
-                    spacing: 8
-
-                    // 1. CPU Card
-                    StyledRect {
+                    // 1. CPU Row
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 56
-                        radius: Styling.radius(2)
-                        variant: "common"
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 6
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-
-                                StyledRect {
-                                    implicitWidth: 26
-                                    implicitHeight: 26
-                                    radius: 13
-                                    variant: "primary"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: Icons.cpu
-                                        font.family: Icons.font
-                                        font.pixelSize: 13
-                                        color: Colors.overPrimary
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 1
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: SystemResources.cpuModel || "Processor"
-                                        font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(-1)
-                                        font.bold: true
-                                        color: Colors.overBackground
-                                        elide: Text.ElideRight
-                                    }
-
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: {
-                                            const freq = root.formatFrequency(SystemResources.cpuFrequency);
-                                            const temp = SystemResources.cpuTemp >= 0 ? `${SystemResources.cpuTemp}°C` : "";
-                                            return [freq, temp].filter(Boolean).join(" · ") || "Active";
-                                        }
-                                        font.family: Config.theme.monoFont
-                                        font.pixelSize: Styling.fontSize(-3)
-                                        color: Colors.overSurfaceVariant
-                                    }
-                                }
-
-                                Text {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: Math.round(SystemResources.cpuUsage) + "%"
-                                    font.family: Config.theme.monoFont
-                                    font.pixelSize: Styling.fontSize(0)
-                                    font.bold: true
-                                    color: Colors.overBackground
-                                }
-                            }
-
-                            // Progress Bar Track
-                            StyledRect {
-                                id: cpuTrack
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 4
-                                radius: 2
-                                variant: "internalbg"
-                                clip: true
-
-                                StyledRect {
-                                    height: parent.height
-                                    width: (SystemResources.cpuUsage > 0) ? Math.max(2, cpuTrack.width * Math.min(1.0, SystemResources.cpuUsage / 100)) : 0
-                                    radius: 2
-                                    variant: "primary"
-
-                                    Behavior on width {
-                                        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 2. Memory (RAM) Card
-                    StyledRect {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 56
-                        radius: Styling.radius(2)
-                        variant: "common"
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 6
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-
-                                StyledRect {
-                                    implicitWidth: 26
-                                    implicitHeight: 26
-                                    radius: 13
-                                    variant: "primary"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: Icons.ram
-                                        font.family: Icons.font
-                                        font.pixelSize: 13
-                                        color: Colors.overPrimary
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 1
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: "Memory (RAM)"
-                                        font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(-1)
-                                        font.bold: true
-                                        color: Colors.overBackground
-                                    }
-
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: `${(SystemResources.ramUsed / 1024 / 1024).toFixed(1)} GB / ${(SystemResources.ramTotal / 1024 / 1024).toFixed(1)} GB`
-                                        font.family: Config.theme.monoFont
-                                        font.pixelSize: Styling.fontSize(-3)
-                                        color: Colors.overSurfaceVariant
-                                    }
-                                }
-
-                                Text {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: Math.round(SystemResources.ramUsage) + "%"
-                                    font.family: Config.theme.monoFont
-                                    font.pixelSize: Styling.fontSize(0)
-                                    font.bold: true
-                                    color: Colors.overBackground
-                                }
-                            }
-
-                            // Progress Bar Track
-                            StyledRect {
-                                id: ramTrack
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 4
-                                radius: 2
-                                variant: "internalbg"
-                                clip: true
-
-                                StyledRect {
-                                    height: parent.height
-                                    width: (SystemResources.ramUsage > 0) ? Math.max(2, ramTrack.width * Math.min(1.0, SystemResources.ramUsage / 100)) : 0
-                                    radius: 2
-                                    variant: "primary"
-
-                                    Behavior on width {
-                                        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 3. GPU Cards
-                    Repeater {
-                        model: SystemResources.gpuDetected ? SystemResources.gpuCount : 0
-
-                        StyledRect {
-                            id: gpuDelegate
-                            required property int index
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 56
-                            radius: Styling.radius(2)
-                            variant: "common"
-
-                            readonly property real gpuUsageVal: SystemResources.gpuUsages[gpuDelegate.index] || 0
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 8
-                                spacing: 6
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 8
-
-                                    StyledRect {
-                                        implicitWidth: 26
-                                        implicitHeight: 26
-                                        radius: 13
-                                        variant: "primary"
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            text: Icons.gpu
-                                            font.family: Icons.font
-                                            font.pixelSize: 13
-                                            color: Colors.overPrimary
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 1
-
-                                        Text {
-                                            Layout.fillWidth: true
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            text: SystemResources.gpuNames[gpuDelegate.index] || "GPU " + (gpuDelegate.index + 1)
-                                            font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(-1)
-                                            font.bold: true
-                                            color: Colors.overBackground
-                                            elide: Text.ElideRight
-                                        }
-
-                                        Text {
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            text: {
-                                                const vram = SystemResources.gpuVramTotal[gpuDelegate.index] > 0
-                                                    ? `VRAM: ${(SystemResources.gpuVramUsed[gpuDelegate.index] / 1024 / 1024 / 1024).toFixed(1)} / ${(SystemResources.gpuVramTotal[gpuDelegate.index] / 1024 / 1024 / 1024).toFixed(1)} GB`
-                                                    : "";
-                                                const temp = (SystemResources.gpuTemps[gpuDelegate.index] ?? -1) >= 0 ? `${SystemResources.gpuTemps[gpuDelegate.index]}°C` : "";
-                                                return [vram, temp].filter(Boolean).join(" · ") || "Active";
-                                            }
-                                            font.family: Config.theme.monoFont
-                                            font.pixelSize: Styling.fontSize(-3)
-                                            color: Colors.overSurfaceVariant
-                                        }
-                                    }
-
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: Math.round(gpuDelegate.gpuUsageVal) + "%"
-                                        font.family: Config.theme.monoFont
-                                        font.pixelSize: Styling.fontSize(0)
-                                        font.bold: true
-                                        color: Colors.overBackground
-                                    }
-                                }
-
-                                StyledRect {
-                                    id: gpuTrack
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 4
-                                    radius: 2
-                                    variant: "internalbg"
-                                    clip: true
-
-                                    StyledRect {
-                                        height: parent.height
-                                        width: (gpuDelegate.gpuUsageVal > 0) ? Math.max(2, gpuTrack.width * Math.min(1.0, gpuDelegate.gpuUsageVal / 100)) : 0
-                                        radius: 2
-                                        variant: "primary"
-
-                                        Behavior on width {
-                                            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 4. Storage / Disks Card
-                    Repeater {
-                        model: SystemResources.validDisks
-
-                        StyledRect {
-                            id: diskDelegate
-                            required property string modelData
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 56
-                            radius: Styling.radius(2)
-                            variant: "common"
-
-                            readonly property real diskUsageVal: SystemResources.diskUsage[diskDelegate.modelData] || 0
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 8
-                                spacing: 6
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 8
-
-                                    StyledRect {
-                                        implicitWidth: 26
-                                        implicitHeight: 26
-                                        radius: 13
-                                        variant: "primary"
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            text: Icons.disk
-                                            font.family: Icons.font
-                                            font.pixelSize: 13
-                                            color: Colors.overPrimary
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 1
-
-                                        Text {
-                                            Layout.fillWidth: true
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            text: "Disk (" + diskDelegate.modelData + ")"
-                                            font.family: Config.theme.font
-                                            font.pixelSize: Styling.fontSize(-1)
-                                            font.bold: true
-                                            color: Colors.overBackground
-                                            elide: Text.ElideRight
-                                        }
-
-                                        Text {
-                                            renderType: Text.NativeRendering
-                                            font.hintingPreference: Font.PreferFullHinting
-                                            text: `${root.formatStorage(SystemResources.diskUsed[diskDelegate.modelData] || 0)} / ${root.formatStorage(SystemResources.diskTotal[diskDelegate.modelData] || 0)}`
-                                            font.family: Config.theme.monoFont
-                                            font.pixelSize: Styling.fontSize(-3)
-                                            color: Colors.overSurfaceVariant
-                                        }
-                                    }
-
-                                    Text {
-                                        renderType: Text.NativeRendering
-                                        font.hintingPreference: Font.PreferFullHinting
-                                        text: Math.round(diskDelegate.diskUsageVal) + "%"
-                                        font.family: Config.theme.monoFont
-                                        font.pixelSize: Styling.fontSize(0)
-                                        font.bold: true
-                                        color: Colors.overBackground
-                                    }
-                                }
-
-                                StyledRect {
-                                    id: diskTrack
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 4
-                                    radius: 2
-                                    variant: "internalbg"
-                                    clip: true
-
-                                    StyledRect {
-                                        height: parent.height
-                                        width: (diskDelegate.diskUsageVal > 0) ? Math.max(2, diskTrack.width * Math.min(1.0, diskDelegate.diskUsageVal / 100)) : 0
-                                        radius: 2
-                                        variant: "primary"
-
-                                        Behavior on width {
-                                            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 5. Network Card
-                    StyledRect {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 52
-                        radius: Styling.radius(2)
-                        variant: "common"
+                        spacing: 6
 
                         RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 8
+                            Layout.fillWidth: true
                             spacing: 8
 
                             StyledRect {
@@ -536,7 +125,7 @@ Item {
                                     anchors.centerIn: parent
                                     renderType: Text.NativeRendering
                                     font.hintingPreference: Font.PreferFullHinting
-                                    text: NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.ethernet
+                                    text: Icons.cpu
                                     font.family: Icons.font
                                     font.pixelSize: 13
                                     color: Colors.overPrimary
@@ -551,7 +140,7 @@ Item {
                                     Layout.fillWidth: true
                                     renderType: Text.NativeRendering
                                     font.hintingPreference: Font.PreferFullHinting
-                                    text: NetworkService.wifiEnabled ? (NetworkService.activeSsid || "Network") : "Ethernet / Local"
+                                    text: SystemResources.cpuModel || "Processor"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(-1)
                                     font.bold: true
@@ -562,15 +151,402 @@ Item {
                                 Text {
                                     renderType: Text.NativeRendering
                                     font.hintingPreference: Font.PreferFullHinting
-                                    text: `↓ ${root.formatSpeed(SystemResources.networkDownloadSpeed)}   ↑ ${root.formatSpeed(SystemResources.networkUploadSpeed)}`
+                                    text: {
+                                        const freq = root.formatFrequency(SystemResources.cpuFrequency);
+                                        const temp = SystemResources.cpuTemp >= 0 ? `${SystemResources.cpuTemp}°C` : "";
+                                        return [freq, temp].filter(Boolean).join(" · ") || "Active";
+                                    }
                                     font.family: Config.theme.monoFont
                                     font.pixelSize: Styling.fontSize(-3)
                                     color: Colors.overSurfaceVariant
                                 }
                             }
+
+                            Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: Math.round(SystemResources.cpuUsage) + "%"
+                                font.family: Config.theme.monoFont
+                                font.pixelSize: Styling.fontSize(0)
+                                font.bold: true
+                                color: Colors.overBackground
+                            }
+                        }
+
+                        // Progress Bar Track
+                        StyledRect {
+                            id: cpuTrack
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 4
+                            radius: 2
+                            variant: "common"
+                            clip: true
+
+                            StyledRect {
+                                height: parent.height
+                                width: (SystemResources.cpuUsage > 0) ? Math.max(2, cpuTrack.width * Math.min(1.0, SystemResources.cpuUsage / 100)) : 0
+                                radius: 2
+                                variant: "primary"
+
+                                Behavior on width {
+                                    NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                }
+                            }
                         }
                     }
-                }
+
+                    // Divider
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: Colors.outlineVariant
+                        opacity: 0.2
+                    }
+
+                    // 2. Memory (RAM) Row
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            StyledRect {
+                                implicitWidth: 26
+                                implicitHeight: 26
+                                radius: 13
+                                variant: "primary"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
+                                    text: Icons.ram
+                                    font.family: Icons.font
+                                    font.pixelSize: 13
+                                    color: Colors.overPrimary
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 1
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
+                                    text: "Memory (RAM)"
+                                    font.family: Config.theme.font
+                                    font.pixelSize: Styling.fontSize(-1)
+                                    font.bold: true
+                                    color: Colors.overBackground
+                                }
+
+                                Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
+                                    text: `${(SystemResources.ramUsed / 1024 / 1024).toFixed(1)} GB / ${(SystemResources.ramTotal / 1024 / 1024).toFixed(1)} GB`
+                                    font.family: Config.theme.monoFont
+                                    font.pixelSize: Styling.fontSize(-3)
+                                    color: Colors.overSurfaceVariant
+                                }
+                            }
+
+                            Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: Math.round(SystemResources.ramUsage) + "%"
+                                font.family: Config.theme.monoFont
+                                font.pixelSize: Styling.fontSize(0)
+                                font.bold: true
+                                color: Colors.overBackground
+                            }
+                        }
+
+                        // Progress Bar Track
+                        StyledRect {
+                            id: ramTrack
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 4
+                            radius: 2
+                            variant: "common"
+                            clip: true
+
+                            StyledRect {
+                                height: parent.height
+                                width: (SystemResources.ramUsage > 0) ? Math.max(2, ramTrack.width * Math.min(1.0, SystemResources.ramUsage / 100)) : 0
+                                radius: 2
+                                variant: "primary"
+
+                                Behavior on width {
+                                    NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                }
+                            }
+                        }
+                    }
+
+                    // Divider
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: Colors.outlineVariant
+                        opacity: 0.2
+                    }
+
+                    // 3. GPU Rows
+                    Repeater {
+                        model: SystemResources.gpuDetected ? SystemResources.gpuCount : 0
+
+                        ColumnLayout {
+                            id: gpuDelegate
+                            required property int index
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            readonly property real gpuUsageVal: SystemResources.gpuUsages[gpuDelegate.index] || 0
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                StyledRect {
+                                    implicitWidth: 26
+                                    implicitHeight: 26
+                                    radius: 13
+                                    variant: "primary"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        text: Icons.gpu
+                                        font.family: Icons.font
+                                        font.pixelSize: 13
+                                        color: Colors.overPrimary
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 1
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        text: SystemResources.gpuNames[gpuDelegate.index] || "GPU " + (gpuDelegate.index + 1)
+                                        font.family: Config.theme.font
+                                        font.pixelSize: Styling.fontSize(-1)
+                                        font.bold: true
+                                        color: Colors.overBackground
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        text: {
+                                            const vram = SystemResources.gpuVramTotal[gpuDelegate.index] > 0
+                                                ? `VRAM: ${(SystemResources.gpuVramUsed[gpuDelegate.index] / 1024 / 1024 / 1024).toFixed(1)} / ${(SystemResources.gpuVramTotal[gpuDelegate.index] / 1024 / 1024 / 1024).toFixed(1)} GB`
+                                                : "";
+                                            const temp = (SystemResources.gpuTemps[gpuDelegate.index] ?? -1) >= 0 ? `${SystemResources.gpuTemps[gpuDelegate.index]}°C` : "";
+                                            return [vram, temp].filter(Boolean).join(" · ") || "Active";
+                                        }
+                                        font.family: Config.theme.monoFont
+                                        font.pixelSize: Styling.fontSize(-3)
+                                        color: Colors.overSurfaceVariant
+                                    }
+                                }
+
+                                Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
+                                    text: Math.round(gpuDelegate.gpuUsageVal) + "%"
+                                    font.family: Config.theme.monoFont
+                                    font.pixelSize: Styling.fontSize(0)
+                                    font.bold: true
+                                    color: Colors.overBackground
+                                }
+                            }
+
+                            StyledRect {
+                                id: gpuTrack
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 4
+                                radius: 2
+                                variant: "common"
+                                clip: true
+
+                                StyledRect {
+                                    height: parent.height
+                                    width: (gpuDelegate.gpuUsageVal > 0) ? Math.max(2, gpuTrack.width * Math.min(1.0, gpuDelegate.gpuUsageVal / 100)) : 0
+                                    radius: 2
+                                    variant: "primary"
+
+                                    Behavior on width {
+                                        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 1
+                                color: Colors.outlineVariant
+                                opacity: 0.2
+                            }
+                        }
+                    }
+
+                    // 4. Storage / Disks Rows
+                    Repeater {
+                        model: SystemResources.validDisks
+
+                        ColumnLayout {
+                            id: diskDelegate
+                            required property string modelData
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            readonly property real diskUsageVal: SystemResources.diskUsage[diskDelegate.modelData] || 0
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                StyledRect {
+                                    implicitWidth: 26
+                                    implicitHeight: 26
+                                    radius: 13
+                                    variant: "primary"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        text: Icons.disk
+                                        font.family: Icons.font
+                                        font.pixelSize: 13
+                                        color: Colors.overPrimary
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 1
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        text: "Disk (" + diskDelegate.modelData + ")"
+                                        font.family: Config.theme.font
+                                        font.pixelSize: Styling.fontSize(-1)
+                                        font.bold: true
+                                        color: Colors.overBackground
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Text {
+                                        renderType: Text.NativeRendering
+                                        font.hintingPreference: Font.PreferFullHinting
+                                        text: `${root.formatStorage(SystemResources.diskUsed[diskDelegate.modelData] || 0)} / ${root.formatStorage(SystemResources.diskTotal[diskDelegate.modelData] || 0)}`
+                                        font.family: Config.theme.monoFont
+                                        font.pixelSize: Styling.fontSize(-3)
+                                        color: Colors.overSurfaceVariant
+                                    }
+                                }
+
+                                Text {
+                                    renderType: Text.NativeRendering
+                                    font.hintingPreference: Font.PreferFullHinting
+                                    text: Math.round(diskDelegate.diskUsageVal) + "%"
+                                    font.family: Config.theme.monoFont
+                                    font.pixelSize: Styling.fontSize(0)
+                                    font.bold: true
+                                    color: Colors.overBackground
+                                }
+                            }
+
+                            StyledRect {
+                                id: diskTrack
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 4
+                                radius: 2
+                                variant: "common"
+                                clip: true
+
+                                StyledRect {
+                                    height: parent.height
+                                    width: (diskDelegate.diskUsageVal > 0) ? Math.max(2, diskTrack.width * Math.min(1.0, diskDelegate.diskUsageVal / 100)) : 0
+                                    radius: 2
+                                    variant: "primary"
+
+                                    Behavior on width {
+                                        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 1
+                                color: Colors.outlineVariant
+                                opacity: 0.2
+                            }
+                        }
+                    }
+
+                    // 5. Network Row
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        StyledRect {
+                            implicitWidth: 26
+                            implicitHeight: 26
+                            radius: 13
+                            variant: "primary"
+
+                            Text {
+                                anchors.centerIn: parent
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.ethernet
+                                font.family: Icons.font
+                                font.pixelSize: 13
+                                color: Colors.overPrimary
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 1
+
+                            Text {
+                                Layout.fillWidth: true
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: NetworkService.wifiEnabled ? (NetworkService.activeSsid || "Network") : "Ethernet / Local"
+                                font.family: Config.theme.font
+                                font.pixelSize: Styling.fontSize(-1)
+                                font.bold: true
+                                color: Colors.overBackground
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                text: `↓ ${root.formatSpeed(SystemResources.networkDownloadSpeed)}   ↑ ${root.formatSpeed(SystemResources.networkUploadSpeed)}`
+                                font.family: Config.theme.monoFont
+                                font.pixelSize: Styling.fontSize(-3)
+                                color: Colors.overSurfaceVariant
+                            }
+                        }
+                    }
             }
         }
     }
