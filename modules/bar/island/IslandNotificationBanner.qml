@@ -31,9 +31,15 @@ Item {
     readonly property int count: Notifications.popupList ? Notifications.popupList.length : 0
 
     implicitWidth: 420
-    implicitHeight: Math.max(contentCol.implicitHeight + 24, 76)
+    implicitHeight: activeNotif ? Math.max(contentCol.implicitHeight + 24, 76) : 0
 
     signal dismissRequested
+
+    onActiveNotifChanged: {
+        if (!activeNotif) {
+            root.dismissRequested();
+        }
+    }
 
     function dismissCurrent() {
         if (!isNaN(root.notifId)) {
@@ -41,6 +47,9 @@ Item {
         }
         if (root.appName) {
             Notifications.dismissPopupApp(root.appName);
+        }
+        if (isNaN(root.notifId) && !root.appName) {
+            Notifications.dismissAllPopups();
         }
         root.dismissRequested();
     }

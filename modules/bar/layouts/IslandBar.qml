@@ -39,12 +39,9 @@ Item {
     // Current morphing state: "collapsed" | "notification" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
     property string currentMode: "collapsed"
     readonly property bool isExpanded: currentMode !== "collapsed"
-    readonly property bool islandActive: isExpanded
+    readonly property bool islandActive: isExpanded && currentMode !== "notification"
 
     function collapse() {
-        if (root.currentMode === "notification") {
-            notificationView.dismissCurrent();
-        }
         root.currentMode = "collapsed";
         GlobalStates.clearLauncherState();
         GlobalStates.clearProjectPickerState();
@@ -55,6 +52,9 @@ Item {
 
     function expand(mode: string) {
         root.currentMode = mode || "dashboard";
+        if (root.currentMode === "dashboard") {
+            BluetoothService.updateStatus();
+        }
     }
 
     function isWindowTouchingTop(win: var): bool {
@@ -209,7 +209,7 @@ Item {
     readonly property int targetHeight: {
         switch (root.currentMode) {
         case "notification":
-            return notificationView.implicitHeight;
+            return (root.hasNotifications && notificationView.activeNotif) ? notificationView.implicitHeight : root.islandHeight;
         case "dashboard":
             return dashboardView.implicitHeight;
         case "power":
@@ -241,7 +241,7 @@ Item {
     }
 
     onCurrentModeChanged: {
-        GlobalStates.islandOpen = (currentMode !== "collapsed");
+        GlobalStates.islandOpen = (currentMode !== "collapsed" && currentMode !== "notification");
         GlobalStates.islandLauncherOpen = (currentMode === "apps" || currentMode === "projects");
         GlobalStates.islandStatsOpen = (currentMode === "stats");
 
@@ -251,7 +251,7 @@ Item {
                 launcherView.forceActiveFocus();
                 launcherView.focusSearchInput();
             });
-        } else if (currentMode !== "collapsed") {
+        } else if (currentMode !== "collapsed" && currentMode !== "notification") {
             Qt.callLater(() => {
                 root.forceActiveFocus();
             });
@@ -272,7 +272,7 @@ Item {
     readonly property int baseOuterMargin: 0
     readonly property int totalBarHeight: islandHeight
     readonly property bool timerInputActive: false
-    readonly property bool dashboardInputActive: root.isExpanded
+    readonly property bool dashboardInputActive: islandActive && currentMode === "dashboard"
 
     property alias barHitbox: activeBarHitbox
 
@@ -325,7 +325,6 @@ Item {
                 root.collapse();
             } else if (root.currentMode === "notification") {
                 notificationView.dismissCurrent();
-                root.collapse();
             } else if (root.currentMode !== "dashboard" && root.currentMode !== "collapsed") {
                 root.currentMode = "dashboard";
             } else {
@@ -538,12 +537,6 @@ Item {
                         showBackground: false
                     }
 
-                    // DAC sample rate / bit depth pill (collapses when disconnected)
-                    AudioFormatBadge {
-                        Layout.alignment: Qt.AlignVCenter
-                        flat: true
-                    }
-
                     // Separator before controls
                     Text {
                         text: "|"
@@ -637,8 +630,8 @@ Item {
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                visible: root.currentMode === "notification" || opacity > 0
-                opacity: root.currentMode === "notification" ? 1.0 : 0.0
+                visible: (root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null) || opacity > 0
+                opacity: (root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null) ? 1.0 : 0.0
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -649,9 +642,7 @@ Item {
                 }
 
                 onDismissRequested: {
-                    if (!root.hasNotifications) {
-                        root.collapse();
-                    }
+                    root.collapse();
                 }
             }
 
