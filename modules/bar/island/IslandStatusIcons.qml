@@ -183,20 +183,6 @@ RowLayout {
         readonly property int percent: Battery.percent
         readonly property bool charging: Battery.charging
 
-        // When charging: electrical plug icon. When discharging: 9-bar resolution.
-        readonly property string iconGlyph: {
-            if (charging) return "power";
-            if (percent < 15) return "battery_alert";
-            if (percent < 25) return "battery_0_bar";
-            if (percent < 38) return "battery_1_bar";
-            if (percent < 50) return "battery_2_bar";
-            if (percent < 62) return "battery_3_bar";
-            if (percent < 74) return "battery_4_bar";
-            if (percent < 86) return "battery_5_bar";
-            if (percent < 95) return "battery_6_bar";
-            return "battery_full";
-        }
-
         readonly property color iconColor: {
             if (percent < 20 && !charging) return Colors.error;
             if (charging) return Colors.primary;

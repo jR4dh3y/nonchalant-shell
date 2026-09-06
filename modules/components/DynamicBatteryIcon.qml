@@ -11,14 +11,20 @@ Item {
     property real size: 18
     property color color: charging ? Colors.green : (percent < 20 ? Colors.error : (percent < 50 ? Colors.yellow : Colors.overBackground))
     property bool animated: true
-    property bool useMaterialFont: true
+    property bool useMaterialFont: false
 
     readonly property real clampedPct: Math.max(0, Math.min(100, percent))
 
     implicitWidth: size
     implicitHeight: size
 
-    // Material Symbols glyph mapping (9-bar resolution + charging plug)
+    // Dimensions mathematically calculated to have identical even parity for pixel-perfect left-right symmetry
+    readonly property int bodyWidth: Math.max(6, Math.round(size * 0.52 / 2.0) * 2)
+    readonly property int capWidth: Math.max(2, Math.round(bodyWidth * 0.40 / 2.0) * 2)
+    readonly property int capHeight: Math.max(1, Math.round(size * 0.10))
+    readonly property int bodyHeight: Math.max(8, Math.round(size * 0.70))
+
+    // Material Symbols glyph mapping (fallback / testing parity)
     readonly property string iconGlyph: {
         if (charging) return "power";
         if (clampedPct < 15) return "battery_alert";
@@ -32,21 +38,24 @@ Item {
         return "battery_full";
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // Primary: Mathematically centered, pixel-perfect vector battery
+    // ─────────────────────────────────────────────────────────────
     Item {
+        id: container
+        visible: !root.useMaterialFont
         anchors.centerIn: parent
-        width: root.size
-        height: root.size
+        width: root.bodyWidth
+        height: root.capHeight + 1 + root.bodyHeight
 
-        // Option 1: Official Material Symbols Rounded Font (Perfect symmetry, native hinting)
-        Text {
-            id: fontGlyph
-            visible: root.useMaterialFont
-            anchors.centerIn: parent
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: root.iconGlyph
-            font.family: "Material Symbols Rounded"
-            font.pixelSize: root.size
+        // Cathode terminal cap (100% horizontal center alignment with identical left and right shoulders)
+        Rectangle {
+            id: cap
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            width: root.capWidth
+            height: root.capHeight
+            radius: 1
             color: root.color
 
             Behavior on color {
@@ -55,21 +64,55 @@ Item {
             }
         }
 
-        // Option 2: Geometric battery capsule with fill bar (fallback)
-        Item {
-            visible: !root.useMaterialFont
-            anchors.fill: parent
+        // Battery capsule body
+        Rectangle {
+            id: bodyCapsule
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: cap.bottom
+            anchors.topMargin: 1
+            anchors.bottom: parent.bottom
+            width: root.bodyWidth
+            radius: Math.max(2, Math.round(root.bodyWidth * 0.22))
+            color: (root.clampedPct >= 95 && !root.charging) ? root.color : "transparent"
+            border.color: root.color
+            border.width: 1.5
 
-            // When charging: Wall plug icon
-            Text {
-                visible: root.charging
-                anchors.centerIn: parent
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "power"
-                font.family: "Material Symbols Rounded"
-                font.pixelSize: root.size
+            Behavior on color {
+                enabled: root.animated
+                ColorAnimation { duration: 160 }
+            }
+
+            Behavior on border.color {
+                enabled: root.animated
+                ColorAnimation { duration: 160 }
+            }
+
+            // Subtle track background when empty / discharging
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Qt.alpha(root.color, 0.12)
+                visible: !root.charging && root.clampedPct < 95
+            }
+
+            // Dynamic fluid fill rising from bottom
+            Rectangle {
+                id: fillLevel
+                visible: !root.charging && root.clampedPct < 95 && root.clampedPct > 0
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 1.5
+                readonly property real maxFillW: parent.width - 3
+                readonly property real maxFillH: parent.height - 3
+                width: maxFillW
+                height: Math.max(1, Math.round(maxFillH * (root.clampedPct / 100.0)))
+                radius: 1
                 color: root.color
+
+                Behavior on height {
+                    enabled: root.animated
+                    NumberAnimation { duration: 160; easing.type: Easing.OutQuad }
+                }
 
                 Behavior on color {
                     enabled: root.animated
@@ -77,69 +120,64 @@ Item {
                 }
             }
 
-            // When discharging: Geometric battery capsule with fill bar
-            Item {
-                visible: !root.charging
+            // Centered lightning bolt when charging
+            Canvas {
+                id: boltCanvas
+                visible: root.charging
                 anchors.centerIn: parent
-                readonly property real bodyWidth: Math.round(root.size * 0.80)
-                readonly property real bodyHeight: Math.round(root.size * 0.48)
-                width: bodyWidth + 2.5
-                height: bodyHeight
+                width: parent.width
+                height: parent.height
 
-                // Battery body capsule
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.bodyWidth
-                    height: parent.bodyHeight
-                    radius: 2.5
-                    color: "transparent"
-                    border.color: root.color
-                    border.width: 1.5
+                onPaint: {
+                    const ctx = getContext("2d");
+                    ctx.reset();
+                    ctx.fillStyle = root.color;
+                    const cx = width / 2.0;
+                    const cy = height / 2.0;
+                    const scaleH = height / 14.0;
+                    const scaleW = width / 10.0;
 
-                    Behavior on border.color {
-                        enabled: root.animated
-                        ColorAnimation { duration: 160 }
-                    }
-
-                    // Inner fill bar
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 2
-                        anchors.verticalCenter: parent.verticalCenter
-                        readonly property real maxFillW: parent.width - 4
-                        width: Math.max(0, maxFillW * (root.clampedPct / 100.0))
-                        height: parent.height - 4
-                        radius: 1
-                        color: root.color
-
-                        Behavior on width {
-                            enabled: root.animated
-                            NumberAnimation { duration: 160; easing.type: Easing.OutQuad }
-                        }
-
-                        Behavior on color {
-                            enabled: root.animated
-                            ColorAnimation { duration: 160 }
-                        }
-                    }
+                    ctx.beginPath();
+                    ctx.moveTo(cx + (0.8 * scaleW), cy - (3.8 * scaleH));
+                    ctx.lineTo(cx - (2.0 * scaleW), cy + (0.2 * scaleH));
+                    ctx.lineTo(cx - (0.2 * scaleW), cy + (0.2 * scaleH));
+                    ctx.lineTo(cx - (0.8 * scaleW), cy + (3.8 * scaleH));
+                    ctx.lineTo(cx + (2.0 * scaleW), cy - (0.2 * scaleH));
+                    ctx.lineTo(cx + (0.2 * scaleW), cy - (0.2 * scaleH));
+                    ctx.closePath();
+                    ctx.fill();
                 }
 
-                // Cathode terminal nipple (+ pole)
-                Rectangle {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 2.5
-                    height: Math.round(parent.bodyHeight * 0.45)
-                    radius: 1
-                    color: root.color
+                Connections {
+                    target: root
+                    function onColorChanged() { if (root.charging) boltCanvas.requestPaint(); }
+                    function onChargingChanged() { if (root.charging) boltCanvas.requestPaint(); }
+                }
 
-                    Behavior on color {
-                        enabled: root.animated
-                        ColorAnimation { duration: 160 }
-                    }
+                Component.onCompleted: {
+                    if (root.charging) boltCanvas.requestPaint();
                 }
             }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Optional Font Fallback: Material Symbols (when useMaterialFont: true)
+    // ─────────────────────────────────────────────────────────────
+    Text {
+        id: fontGlyph
+        visible: root.useMaterialFont
+        anchors.centerIn: parent
+        renderType: Text.NativeRendering
+        font.hintingPreference: Font.PreferFullHinting
+        text: root.iconGlyph
+        font.family: "Material Symbols Rounded"
+        font.pixelSize: root.size
+        color: root.color
+
+        Behavior on color {
+            enabled: root.animated
+            ColorAnimation { duration: 160 }
         }
     }
 }
