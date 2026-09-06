@@ -670,14 +670,24 @@ class TestFeature15_IslandMediaTitlePaletteColoring(unittest.TestCase):
         self.assertFalse(os.path.exists("scripts/media_color.py"), "scripts/media_color.py must not exist")
         self.assertFalse(os.path.exists("modules/services/MediaColor.qml"), "modules/services/MediaColor.qml must not exist")
 
-    def test_island_bar_media_title_palette_coloring(self):
+    def test_island_bar_media_title_palette_coloring_and_progress_bar(self):
         with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
             content = f.read()
 
         # Context title should use Colors.primary when playing and active, otherwise Colors.overBackground
         self.assertIn("(MprisController.isPlaying && MprisController.activePlayer) ? Colors.primary : Colors.overBackground", content)
         self.assertNotIn("MediaColor", content, "IslandBar must not reference MediaColor")
-        self.assertNotIn("islandMediaProgress", content, "IslandBar must not have extra progress bar overlay")
+        self.assertIn("id: islandMediaProgress", content, "IslandBar must contain slim media progress bar")
+        self.assertIn("MprisController.progress", content, "IslandBar progress bar must bind to MprisController.progress")
+
+    def test_mpris_controller_progress_and_ticker(self):
+        with open("modules/services/MprisController.qml", "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("readonly property real position", content)
+        self.assertIn("readonly property real length", content)
+        self.assertIn("readonly property real progress", content)
+        self.assertIn("id: positionTicker", content)
 
     def test_waveform_and_media_card_no_color_extraction(self):
         with open("modules/bar/island/IslandWaveformBar.qml", "r", encoding="utf-8") as f:

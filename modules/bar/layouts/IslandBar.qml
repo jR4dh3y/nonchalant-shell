@@ -441,6 +441,61 @@ Item {
                     }
                 }
 
+                // Slim media progress bar along the bottom of the collapsed island bar
+                Item {
+                    id: islandMediaProgress
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 1
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    height: 2
+                    visible: MprisController.isPlaying && MprisController.activePlayer !== null && root.currentMode === "collapsed" && MprisController.length > 0
+                    opacity: visible ? 0.95 : 0.0
+                    clip: true
+
+                    Behavior on opacity {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation { duration: 250 }
+                    }
+
+                    // Background track
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 1
+                        color: Qt.rgba(1, 1, 1, 0.15)
+                    }
+
+                    // Active progress fill
+                    Rectangle {
+                        height: parent.height
+                        width: Math.max(0, Math.min(parent.width, parent.width * MprisController.progress))
+                        radius: 1
+                        color: Colors.primary
+
+                        Behavior on width {
+                            enabled: Config.animDuration > 0
+                            NumberAnimation { duration: 250 }
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.topMargin: -4
+                        anchors.bottomMargin: -2
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: mouse => {
+                            if (MprisController.activePlayer && MprisController.length > 0) {
+                                const frac = Math.max(0.0, Math.min(1.0, mouse.x / width));
+                                if (MprisController.activePlayer.canSeek ?? true) {
+                                    MprisController.activePlayer.position = frac * MprisController.length;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 RowLayout {
                     id: collapsedRow
                     anchors.fill: parent
