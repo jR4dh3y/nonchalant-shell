@@ -21,6 +21,7 @@ StyledRect {
         if (!visible) {
             root.expandedPanel = -1;
         } else {
+            NetworkService.update();
             BluetoothService.initialize();
         }
     }
@@ -58,19 +59,18 @@ StyledRect {
                     iconName: {
                         if (!NetworkService.wifiEnabled)
                             return Icons.wifiOff;
-                        const strength = NetworkService.networkStrength;
-                        if (strength === 0)
+                        if (!NetworkService.wifiConnected)
                             return Icons.wifiHigh;
-                        if (strength < 25)
-                            return Icons.wifiNone;
-                        if (strength < 50)
-                            return Icons.wifiLow;
-                        if (strength < 75)
-                            return Icons.wifiMedium;
-                        return Icons.wifiHigh;
+                        return NetworkService.wifiIconForStrength(NetworkService.networkStrength);
                     }
                     isActive: NetworkService.wifiEnabled || root.expandedPanel === 0
-                    tooltipText: NetworkService.wifiEnabled ? "Wi-Fi: On" : "Wi-Fi: Off"
+                    tooltipText: {
+                        if (!NetworkService.wifiEnabled)
+                            return "Wi-Fi: Off";
+                        if (NetworkService.wifiConnected)
+                            return "Wi-Fi: " + (NetworkService.activeSsid || "Connected") + " (" + NetworkService.networkStrength + "%)";
+                        return "Wi-Fi: On";
+                    }
                     onClicked: NetworkService.toggleWifi()
                     onRightClicked: root.togglePanel(0)
                     onLongPressed: root.togglePanel(0)
@@ -82,7 +82,7 @@ StyledRect {
                     iconName: {
                         if (!BluetoothService.enabled)
                             return Icons.bluetoothOff;
-                        if (BluetoothService.connected || BluetoothService.connectedDevices > 0)
+                        if (BluetoothService.connected)
                             return Icons.bluetoothConnected;
                         return Icons.bluetooth;
                     }
@@ -90,8 +90,8 @@ StyledRect {
                     tooltipText: {
                         if (!BluetoothService.enabled)
                             return "Bluetooth: Off";
-                        if (BluetoothService.connected || BluetoothService.connectedDevices > 0)
-                            return "Bluetooth: Connected (" + (BluetoothService.firstConnectedDeviceName || "1 device") + ")";
+                        if (BluetoothService.connected)
+                            return "Bluetooth: " + (BluetoothService.firstConnectedDeviceName || (BluetoothService.connectedDevices + " device" + (BluetoothService.connectedDevices > 1 ? "s" : "")));
                         return "Bluetooth: On";
                     }
                     onClicked: BluetoothService.toggle()

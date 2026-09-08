@@ -56,34 +56,32 @@ Item {
     readonly property real audioVolume: Audio.sink?.audio?.volume ?? 0.0
 
     Component.onCompleted: {
+        NetworkService.update();
         BluetoothService.updateStatus();
-        if (BluetoothService.enabled)
-            BluetoothService.updateDevices();
     }
 
     onVisibleChanged: {
         if (visible) {
+            NetworkService.update();
             BluetoothService.updateStatus();
-            if (BluetoothService.enabled)
-                BluetoothService.updateDevices();
         }
     }
 
-    readonly property bool wifiConnected: NetworkService.wifiEnabled && (NetworkService.networkName !== "" || NetworkService.active !== null || NetworkService.wifiStatus === "connected")
-    readonly property string wifiSsid: NetworkService.networkName || NetworkService.active?.ssid || ""
-    readonly property bool btConnected: BluetoothService.enabled && (BluetoothService.connected || BluetoothService.connectedDevices > 0 || (BluetoothService.friendlyDeviceList && BluetoothService.friendlyDeviceList.some(d => d.connected)))
+    readonly property bool wifiConnected: NetworkService.wifiConnected
+    readonly property string wifiSsid: NetworkService.activeSsid
+    readonly property bool btConnected: BluetoothService.enabled && BluetoothService.connected
     readonly property string btDeviceName: {
         if (!btConnected) return "Bluetooth";
+        if (BluetoothService.firstConnectedDeviceName) {
+            return BluetoothService.firstConnectedDeviceName;
+        }
         const list = BluetoothService.friendlyDeviceList;
         if (list) {
             for (let i = 0; i < list.length; i++) {
                 if (list[i]?.connected && list[i]?.name) return list[i].name;
             }
         }
-        if (BluetoothService.firstConnectedDeviceName) {
-            return BluetoothService.firstConnectedDeviceName;
-        }
-        return "Bluetooth";
+        return "Connected";
     }
 
     readonly property int alertsCount: {
@@ -350,7 +348,7 @@ Item {
                             anchors.centerIn: parent
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            text: root.wifiConnected ? Icons.wifiHigh : (NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.wifiOff)
+                            text: root.wifiConnected ? NetworkService.wifiIconForStrength(NetworkService.networkStrength) : (NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.wifiOff)
                             font.family: Icons.font
                             font.pixelSize: 22
                             color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
@@ -384,7 +382,7 @@ Item {
                             anchors.right: parent.right
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            text: root.wifiConnected ? root.wifiSsid : "Wi-Fi"
+                            text: root.wifiConnected ? root.wifiSsid : (NetworkService.wifiConnecting ? "Connecting..." : (NetworkService.wifiEnabled ? "Wi-Fi" : "Wi-Fi Off"))
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
@@ -462,7 +460,7 @@ Item {
                             anchors.right: parent.right
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            text: root.btConnected ? root.btDeviceName : "Bluetooth"
+                            text: root.btConnected ? root.btDeviceName : (BluetoothService.enabled ? "Bluetooth" : "Bluetooth Off")
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true

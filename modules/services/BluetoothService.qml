@@ -71,26 +71,6 @@ Singleton {
             // Then by name
             return (a.name || "").localeCompare(b.name || "");
         });
-
-        // Also cross-check connected status from devices list
-        let connectedCount = 0;
-        let firstName = "";
-        for (let i = 0; i < devices.length; i++) {
-            const d = devices[i];
-            if (d && d.connected) {
-                connectedCount++;
-                if (!firstName && d.name) {
-                    firstName = d.name;
-                }
-            }
-        }
-        if (connectedCount > 0) {
-            root.connected = true;
-            root.connectedDevices = Math.max(root.connectedDevices, connectedCount);
-            if (firstName) {
-                root.firstConnectedDeviceName = firstName;
-            }
-        }
     }
 
     function onDeviceInfoUpdated(): void {
@@ -251,30 +231,31 @@ Singleton {
         });
     }
 
-    Timer {
-        id: updateDebouncer
-        interval: 150
-        repeat: false
-        onTriggered: root.performUpdate()
-    }
+    property bool _isUpdatingProcess: false
+    property bool _hasPendingUpdate: false
 
     Timer {
-        id: devicesDebouncer
-        interval: 300
+        id: updateDebouncer
+        interval: 100
         repeat: false
-        onTriggered: {
-            if (root.enabled)
-                root.updateDevices();
-        }
+        onTriggered: root.performUpdate()
     }
 
     function updateStatus() {
         updateDebouncer.restart();
     }
 
+    function updateDevices() {
+        updateStatus();
+    }
+
     function performUpdate() {
-        if (isUpdating) return;
-        isUpdating = true;
+        if (_isUpdatingProcess) {
+            _hasPendingUpdate = true;
+            return;
+        }
+        _isUpdatingProcess = true;
+        _hasPendingUpdate = false;
         checkStatusProcess.buffer = "";
         checkStatusProcess.running = true;
     }
@@ -288,23 +269,19 @@ Singleton {
             onRead: (data) => {
                 if (data && (data.includes("Connected") || data.includes("Powered") || data.includes("PropertiesChanged") || data.includes("InterfacesAdded") || data.includes("InterfacesRemoved"))) {
                     updateDebouncer.restart();
-                    devicesDebouncer.restart();
                 }
             }
         }
     }
 
-    // Periodic poll every 3 seconds
+    // Periodic poll every 2 seconds
     Timer {
         id: updateTimer
-        interval: 3000
+        interval: 2000
         running: !SuspendManager.isSuspending
         repeat: true
         onTriggered: {
             root.updateStatus();
-            if (root.enabled) {
-                root.updateDevices();
-            }
         }
     }
 
@@ -316,12 +293,16 @@ Singleton {
         onTriggered: root.stopDiscovery()
     }
 
-    // Unified single-process status and connected device extraction
+    // Unified single-process status and device extraction (atomic read in ~25ms)
     Process {
         id: checkStatusProcess
-        command: ["bash", "-c", "bluetoothctl show | grep -q 'Powered: yes' && echo 'powered' || echo 'off'; echo '---'; bluetoothctl devices Connected"]
+        command: ["bash", "-c", "bluetoothctl show | grep -q 'Powered: yes' && echo 'powered' || echo 'off'; echo '---'; bluetoothctl devices Connected; echo '---'; bluetoothctl devices"]
         running: false
         property string buffer: ""
+        environment: ({
+            LANG: "C.UTF-8",
+            LC_ALL: "C.UTF-8"
+        })
         stdout: SplitParser {
             onRead: (data) => {
                 checkStatusProcess.buffer += data + "\n";
@@ -330,72 +311,69 @@ Singleton {
         onExited: (code) => {
             const text = checkStatusProcess.buffer.trim();
             checkStatusProcess.buffer = "";
-            root.isUpdating = false;
-            if (code !== 0 || !text)
-                return;
-            const parts = text.split("---");
-            const powerPart = parts[0].trim();
-            root.enabled = (powerPart === "powered");
-            if (!root.enabled) {
-                root.connected = false;
-                root.connectedDevices = 0;
-                root.firstConnectedDeviceName = "";
-                root.discovering = false;
-                return;
-            }
-            const connectedLines = parts.length > 1
-                ? parts[1].trim().split("\n").filter(l => l.startsWith("Device "))
-                : [];
-            root.connectedDevices = connectedLines.length;
-            root.connected = connectedLines.length > 0;
-            if (connectedLines.length > 0) {
-                const devParts = connectedLines[0].split(" ");
-                root.firstConnectedDeviceName = devParts.slice(2).join(" ") || "Connected";
-            } else {
-                root.firstConnectedDeviceName = "";
-            }
-            root.updateFriendlyList();
-        }
-    }
 
+            try {
+                if (code !== 0 || !text)
+                    return;
 
-    function updateDevices() {
-        getDevicesProcess.running = true;
-    }
+                const parts = text.split("---");
+                const powerPart = (parts[0] || "").trim();
+                root.enabled = (powerPart === "powered");
 
-    Process {
-        id: getDevicesProcess
-        command: ["bash", "-c", "bluetoothctl devices"]
-        running: false
-        property string buffer: ""
-        environment: ({
-            LANG: "C.UTF-8",
-            LC_ALL: "C.UTF-8"
-        })
-        stdout: SplitParser {
-            onRead: data => {
-                getDevicesProcess.buffer += data + "\n";
-            }
-        }
-        onExited: (exitCode, exitStatus) => {
-            const text = getDevicesProcess.buffer;
-            getDevicesProcess.buffer = "";
-            
-            Qt.callLater(() => {
-                const deviceLines = text.trim().split("\n").filter(l => l.startsWith("Device "));
+                if (!root.enabled) {
+                    root.connected = false;
+                    root.connectedDevices = 0;
+                    root.firstConnectedDeviceName = "";
+                    root.discovering = false;
+                    for (let i = 0; i < root.devices.length; i++) {
+                        const dev = root.devices[i];
+                        if (dev) dev.connected = false;
+                    }
+                    root.updateFriendlyList();
+                    return;
+                }
+
+                // Part 1: Connected devices
+                const connectedLines = parts.length > 1
+                    ? parts[1].trim().split("\n").filter(l => l.startsWith("Device "))
+                    : [];
+                const connectedMacs = new Set();
+                let firstConnectedName = "";
+
+                for (let i = 0; i < connectedLines.length; i++) {
+                    const devParts = connectedLines[i].split(" ");
+                    if (devParts.length > 1) {
+                        connectedMacs.add(devParts[1]);
+                        if (!firstConnectedName) {
+                            firstConnectedName = devParts.slice(2).join(" ") || "Connected";
+                        }
+                    }
+                }
+
+                root.connectedDevices = connectedMacs.size;
+                root.connected = connectedMacs.size > 0;
+                root.firstConnectedDeviceName = firstConnectedName;
+
+                // Part 2: All paired/known devices
+                const deviceLines = parts.length > 2
+                    ? parts[2].trim().split("\n").filter(l => l.startsWith("Device "))
+                    : [];
                 const deviceDataList = [];
+
                 for (let i = 0; i < deviceLines.length; i++) {
                     const line = deviceLines[i];
-                    const parts = line.split(" ");
-                    if (parts.length < 2) continue;
+                    const partsDev = line.split(" ");
+                    if (partsDev.length < 2) continue;
+                    const addr = partsDev[1];
                     deviceDataList.push({
-                        address: parts[1],
-                        name: parts.slice(2).join(" ") || "Unknown"
+                        address: addr,
+                        name: partsDev.slice(2).join(" ") || "Unknown",
+                        connected: connectedMacs.has(addr)
                     });
                 }
 
                 const rDevices = root.devices;
-                
+
                 // 1. Remove gone devices
                 for (let i = rDevices.length - 1; i >= 0; i--) {
                     const rd = rDevices[i];
@@ -404,7 +382,7 @@ Singleton {
                         rd.destroy();
                     }
                 }
-                
+
                 // 2. Add or update devices
                 for (let i = 0; i < deviceDataList.length; i++) {
                     const data = deviceDataList[i];
@@ -413,22 +391,36 @@ Singleton {
                         if (existing.name !== data.name) {
                             existing.name = data.name;
                         }
-                        root.queueInfoUpdate(existing);
+                        existing.connected = data.connected;
+                        existing.paired = true;
+                        if (data.connected && existing.battery < 0) {
+                            root.queueInfoUpdate(existing);
+                        }
                     } else {
                         const newDevice = deviceComp.createObject(root, {
                             address: data.address,
-                            name: data.name
+                            name: data.name,
+                            connected: data.connected,
+                            paired: true
                         });
                         newDevice.infoUpdated.connect(root.onDeviceInfoUpdated);
                         rDevices.push(newDevice);
-                        root.queueInfoUpdate(newDevice);
+                        if (data.connected) {
+                            root.queueInfoUpdate(newDevice);
+                        }
                     }
                 }
-                
-                if (deviceDataList.length === 0) {
-                    root.updateFriendlyList();
+
+                root.updateFriendlyList();
+            } catch (e) {
+                console.warn("BluetoothService: Error parsing bluetooth status:", e);
+            } finally {
+                root._isUpdatingProcess = false;
+                if (root._hasPendingUpdate) {
+                    root._hasPendingUpdate = false;
+                    root.performUpdate();
                 }
-            });
+            }
         }
     }
 

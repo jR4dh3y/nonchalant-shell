@@ -47,7 +47,7 @@ Singleton {
 
     Timer {
         id: positionTicker
-        interval: 1000
+        interval: 250
         running: root.isPlaying
         repeat: true
         onTriggered: {

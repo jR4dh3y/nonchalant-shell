@@ -57,6 +57,7 @@ Item {
         }
         root.currentMode = mode || "dashboard";
         if (root.currentMode === "dashboard") {
+            NetworkService.update();
             BluetoothService.updateStatus();
         }
     }

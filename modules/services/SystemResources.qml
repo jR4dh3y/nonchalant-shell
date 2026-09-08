@@ -54,14 +54,14 @@ Singleton {
     property real networkUploadSpeed: 0
 
     // Update interval
-    property int updateInterval: 2000
+    property int updateInterval: 1000
 
     // Unified monitor process.
     // Resource-efficient: only runs while the bar monitor popup is open.
     // Optimized GPU polling avoids waking dGPUs.
     property Process monitorProcess: Process {
         id: monitorProcess
-        running: GlobalStates.systemMonitorOpen && root.validDisks.length > 0
+        running: (GlobalStates.systemMonitorOpen || GlobalStates.islandStatsOpen) && root.validDisks.length > 0
         
         command: {
             let cmd = ["python3", Quickshell.shellDir + "/scripts/system_monitor.py", root.updateInterval.toString()];

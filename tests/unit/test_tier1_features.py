@@ -968,6 +968,46 @@ class TestFeature20_DropdownStylingPaletteColorsAndDND(unittest.TestCase):
         self.assertIn("visible: !Notifications.silent", bar_content)
 
 
+class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
+    """Verifies rapid, reactive, and non-stale Network and Bluetooth bar updates."""
+
+    def test_network_service_reactivity(self):
+        with open("modules/services/NetworkService.qml", "r", encoding="utf-8") as f:
+            net_content = f.read()
+
+        self.assertIn("property string activeSsid:", net_content)
+        self.assertIn("property bool _hasPendingUpdate:", net_content)
+        self.assertIn("readonly property bool wifiConnected:", net_content)
+        self.assertIn("id: periodicTimer", net_content)
+        self.assertIn("id: checkNetworkProcess", net_content)
+
+    def test_bluetooth_service_reactivity(self):
+        with open("modules/services/BluetoothService.qml", "r", encoding="utf-8") as f:
+            bt_content = f.read()
+
+        self.assertIn("property bool _hasPendingUpdate:", bt_content)
+        self.assertIn("id: checkStatusProcess", bt_content)
+        self.assertIn("interval: 2000", bt_content)
+        # Ensure stale resurrection with Math.max was removed
+        self.assertNotIn("Math.max(root.connectedDevices, connectedCount)", bt_content)
+
+    def test_island_dashboard_connectivity_binding(self):
+        with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
+            dash_content = f.read()
+
+        self.assertIn("readonly property bool wifiConnected: NetworkService.wifiConnected", dash_content)
+        self.assertIn("readonly property string wifiSsid: NetworkService.activeSsid", dash_content)
+        self.assertIn("readonly property bool btConnected: BluetoothService.enabled && BluetoothService.connected", dash_content)
+        self.assertIn("NetworkService.update();", dash_content)
+        self.assertIn("BluetoothService.updateStatus();", dash_content)
+
+    def test_system_resources_island_support(self):
+        with open("modules/services/SystemResources.qml", "r", encoding="utf-8") as f:
+            sys_content = f.read()
+
+        self.assertIn("GlobalStates.islandStatsOpen", sys_content)
+
+
 if __name__ == '__main__':
     unittest.main()
 
