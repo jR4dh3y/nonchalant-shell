@@ -348,7 +348,11 @@ Item {
                             anchors.centerIn: parent
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
-                            text: root.wifiConnected ? NetworkService.wifiIconForStrength(NetworkService.networkStrength) : (NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.wifiOff)
+                            text: {
+                                if (!NetworkService.wifiEnabled) return Icons.wifiOff;
+                                if (NetworkService.vpnConnected) return Icons.vpnKey;
+                                return root.wifiConnected ? NetworkService.wifiIconForStrength(NetworkService.networkStrength) : Icons.wifiHigh;
+                            }
                             font.family: Icons.font
                             font.pixelSize: 22
                             color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
@@ -360,6 +364,11 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: NetworkService.toggleWifi()
+                        }
+
+                        StyledToolTip {
+                            show: wifiIconMouse.containsMouse
+                            tooltipText: NetworkService.wifiEnabled ? (NetworkService.vpnConnected ? ("Wi-Fi On (VPN: " + (NetworkService.vpnName || "Active") + ") - Click to disable") : "Wi-Fi On - Click to disable") : "Wi-Fi Off - Click to enable"
                         }
                     }
 
@@ -396,6 +405,11 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.openWifi()
+                        }
+
+                        StyledToolTip {
+                            show: wifiMouse.containsMouse
+                            tooltipText: root.wifiConnected ? (NetworkService.vpnConnected ? (root.wifiSsid + " (VPN: " + (NetworkService.vpnName || "Active") + ")") : root.wifiSsid) : "Open Wi-Fi Settings"
                         }
                     }
                 }

@@ -59,6 +59,8 @@ StyledRect {
                     iconName: {
                         if (!NetworkService.wifiEnabled)
                             return Icons.wifiOff;
+                        if (NetworkService.vpnConnected)
+                            return Icons.vpnKey;
                         if (!NetworkService.wifiConnected)
                             return Icons.wifiHigh;
                         return NetworkService.wifiIconForStrength(NetworkService.networkStrength);
@@ -67,9 +69,11 @@ StyledRect {
                     tooltipText: {
                         if (!NetworkService.wifiEnabled)
                             return "Wi-Fi: Off";
-                        if (NetworkService.wifiConnected)
-                            return "Wi-Fi: " + (NetworkService.activeSsid || "Connected") + " (" + NetworkService.networkStrength + "%)";
-                        return "Wi-Fi: On";
+                        if (NetworkService.wifiConnected) {
+                            const base = "Wi-Fi: " + (NetworkService.activeSsid || "Connected") + " (" + NetworkService.networkStrength + "%)";
+                            return NetworkService.vpnConnected ? (base + " [VPN: " + (NetworkService.vpnName || "Active") + "]") : base;
+                        }
+                        return NetworkService.vpnConnected ? ("Wi-Fi: On [VPN: " + (NetworkService.vpnName || "Active") + "]") : "Wi-Fi: On";
                     }
                     onClicked: NetworkService.toggleWifi()
                     onRightClicked: root.togglePanel(0)

@@ -14,6 +14,8 @@ import json
 import unittest
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 class TestResultCollector:
     def __init__(self):
@@ -49,7 +51,8 @@ class TestResultCollector:
 
 def run_command(cmd, cwd=ROOT_DIR):
     start = time.time()
-    res = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    env = {**os.environ, "PYTHONPATH": ROOT_DIR if "PYTHONPATH" not in os.environ else f"{ROOT_DIR}:{os.environ['PYTHONPATH']}"}
+    res = subprocess.run(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     dur = time.time() - start
     return res.returncode, res.stdout, res.stderr, dur
 

@@ -75,12 +75,12 @@ Item {
                 elide: Text.ElideRight
             }
 
-            // Status label (connecting or limited)
+            // Status label (connecting, limited, or VPN)
             Text {
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting
-                visible: NetworkService.wifiConnecting || NetworkService.wifiStatus === "limited"
-                text: NetworkService.wifiConnecting ? "Connecting..." : (NetworkService.wifiStatus === "limited" ? "Limited" : "")
+                visible: NetworkService.wifiConnecting || NetworkService.wifiStatus === "limited" || NetworkService.vpnConnected
+                text: NetworkService.wifiConnecting ? "Connecting..." : (NetworkService.wifiStatus === "limited" ? "Limited" : (NetworkService.vpnConnected ? ("VPN: " + (NetworkService.vpnName || "Active")) : ""))
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
                 color: NetworkService.wifiStatus === "limited" ? Colors.warning : Styling.srItem("overprimary")

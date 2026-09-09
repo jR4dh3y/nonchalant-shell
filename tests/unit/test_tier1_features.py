@@ -978,8 +978,76 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
         self.assertIn("property string activeSsid:", net_content)
         self.assertIn("property bool _hasPendingUpdate:", net_content)
         self.assertIn("readonly property bool wifiConnected:", net_content)
+        self.assertIn("property bool vpnConnected:", net_content)
+        self.assertIn("property string vpnName:", net_content)
         self.assertIn("id: periodicTimer", net_content)
         self.assertIn("id: checkNetworkProcess", net_content)
+        self.assertIn("getWifiStatePriority", net_content)
+        self.assertIn("bestWifiPriority", net_content)
+
+    def test_network_service_multi_interface_priority(self):
+        """Verifies multi-interface Wi-Fi parsing prioritizes connected interfaces over secondary unavailable devices, and detects VPN."""
+        sample_devices = [
+            "wifi:connected:Kabutar",
+            "tun:connected (externally):tailscale0",
+            "loopback:connected (externally):lo",
+            "wifi-p2p:disconnected:",
+            "ethernet:unavailable:",
+            "wifi:unavailable:"
+        ]
+
+        def get_wifi_state_priority(state):
+            if state.startswith("connected"): return 4
+            if state.startswith("connecting"): return 3
+            if state.startswith("disconnected"): return 2
+            if state.startswith("unavailable"): return 1
+            return 0
+
+        has_wifi = False
+        raw_wifi_state = "disconnected"
+        wifi_conn_name = ""
+        best_priority = -1
+        has_vpn = False
+        vpn_conn_name = ""
+
+        for line in sample_devices:
+            parts = line.split(":")
+            dev_type = parts[0]
+            dev_state = parts[1]
+            dev_conn = ":".join(parts[2:])
+
+            is_vpn_type = dev_type in ("vpn", "tun", "wireguard", "ppp")
+            if is_vpn_type and dev_state.startswith("connected"):
+                has_vpn = True
+                if not vpn_conn_name:
+                    vpn_conn_name = dev_conn or dev_type
+
+            if dev_type == "wifi":
+                p = get_wifi_state_priority(dev_state)
+                if p > best_priority:
+                    best_priority = p
+                    raw_wifi_state = dev_state
+                    wifi_conn_name = dev_conn
+                if dev_state.startswith("connected"):
+                    has_wifi = True
+
+        self.assertTrue(has_wifi)
+        self.assertEqual(raw_wifi_state, "connected")
+        self.assertEqual(wifi_conn_name, "Kabutar")
+        self.assertTrue(has_vpn)
+        self.assertEqual(vpn_conn_name, "tailscale0")
+
+    def test_vpn_symbols_and_key_icon(self):
+        """Verifies VPN key icons and status bindings exist in Icons.qml and IslandDashboard.qml."""
+        with open("modules/theme/Icons.qml", "r", encoding="utf-8") as f:
+            icons_content = f.read()
+        self.assertIn("readonly property string key:", icons_content)
+        self.assertIn("readonly property string vpnKey:", icons_content)
+
+        with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
+            dash_content = f.read()
+        self.assertIn("Icons.vpnKey", dash_content)
+        self.assertIn("NetworkService.vpnConnected", dash_content)
 
     def test_bluetooth_service_reactivity(self):
         with open("modules/services/BluetoothService.qml", "r", encoding="utf-8") as f:

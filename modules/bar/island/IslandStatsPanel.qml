@@ -514,7 +514,7 @@ Item {
                                 anchors.centerIn: parent
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.ethernet
+                                text: NetworkService.vpnConnected ? Icons.vpnKey : (NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.ethernet)
                                 font.family: Icons.font
                                 font.pixelSize: 13
                                 color: Colors.overPrimary
@@ -529,7 +529,7 @@ Item {
                                 Layout.fillWidth: true
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: NetworkService.wifiEnabled ? (NetworkService.activeSsid || "Network") : "Ethernet / Local"
+                                text: NetworkService.vpnConnected ? ((NetworkService.activeSsid ? NetworkService.activeSsid + " [VPN]" : NetworkService.vpnName) || "VPN") : (NetworkService.wifiEnabled ? (NetworkService.activeSsid || "Network") : "Ethernet / Local")
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.bold: true

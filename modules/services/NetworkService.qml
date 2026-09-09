@@ -54,6 +54,9 @@ Singleton {
     readonly property bool wifiConnected: wifiEnabled && (wifiStatus === "connected" || wifiStatus === "limited") && activeSsid !== ""
     property int networkStrength: 0
 
+    property bool vpnConnected: false
+    property string vpnName: ""
+
     property list<var> friendlyWifiNetworks: []
 
     function updateFriendlyList() {
@@ -279,6 +282,17 @@ Singleton {
                 let hasWifi = false;
                 let rawWifiState = "disconnected";
                 let wifiConnName = "";
+                let bestWifiPriority = -1;
+                let hasVpn = false;
+                let vpnConnName = "";
+
+                function getWifiStatePriority(state) {
+                    if (state.startsWith("connected")) return 4;
+                    if (state.startsWith("connecting")) return 3;
+                    if (state.startsWith("disconnected")) return 2;
+                    if (state.startsWith("unavailable")) return 1;
+                    return 0;
+                }
 
                 for (let i = 0; i < deviceLines.length; i++) {
                     const dLine = deviceLines[i].trim();
@@ -288,41 +302,30 @@ Singleton {
                     const devState = parts[1] || "";
                     const devConn = parts.slice(2).join(":") || "";
 
-                    if (devType === "ethernet" && devState.includes("connected")) {
+                    const isVpnType = (devType === "vpn" || devType === "tun" || devType === "wireguard" || devType === "ppp");
+                    if (isVpnType && devState.startsWith("connected")) {
+                        hasVpn = true;
+                        if (!vpnConnName) {
+                            vpnConnName = devConn || devType;
+                        }
+                    }
+
+                    if (devType === "ethernet" && devState.startsWith("connected")) {
                         hasEthernet = true;
                     } else if (devType === "wifi") {
-                        rawWifiState = devState;
-                        wifiConnName = devConn;
-                        if (devState.includes("connected")) {
+                        const priority = getWifiStatePriority(devState);
+                        if (priority > bestWifiPriority) {
+                            bestWifiPriority = priority;
+                            rawWifiState = devState;
+                            wifiConnName = devConn;
+                        }
+                        if (devState.startsWith("connected")) {
                             hasWifi = true;
                         }
                     }
                 }
 
-                // Section 2: Connectivity
-                const connectivity = (sections[2] || "").trim();
-
-                // Compute wifiStatus
-                let computedWifiStatus = "disconnected";
-                if (!wifiEnabled || rawWifiState.includes("unavailable")) {
-                    computedWifiStatus = "disabled";
-                } else if (rawWifiState.includes("connecting")) {
-                    computedWifiStatus = "connecting";
-                } else if (hasWifi) {
-                    if (connectivity === "limited" || connectivity === "portal") {
-                        computedWifiStatus = "limited";
-                    } else {
-                        computedWifiStatus = "connected";
-                    }
-                } else {
-                    computedWifiStatus = "disconnected";
-                }
-
-                root.wifiStatus = computedWifiStatus;
-                root.ethernet = hasEthernet;
-                root.wifi = hasWifi;
-
-                // Section 3: Cached Wi-Fi scan results (d w)
+                // Section 2: Cached Wi-Fi scan results (d w)
                 const scanText = (sections[3] || "").trim();
                 const networkMap = new Map();
                 let activeFromScan = null;
@@ -362,6 +365,37 @@ Singleton {
                         }
                     }
                 }
+
+                if (activeFromScan && activeFromScan.ssid) {
+                    hasWifi = true;
+                    if (!wifiConnName) {
+                        wifiConnName = activeFromScan.ssid;
+                    }
+                }
+
+                // Section 3: Connectivity & Wi-Fi status computation
+                const connectivity = (sections[2] || "").trim();
+
+                let computedWifiStatus = "disconnected";
+                if (!wifiEnabled || (rawWifiState.startsWith("unavailable") && !hasWifi)) {
+                    computedWifiStatus = "disabled";
+                } else if (hasWifi) {
+                    if (connectivity === "limited" || connectivity === "portal") {
+                        computedWifiStatus = "limited";
+                    } else {
+                        computedWifiStatus = "connected";
+                    }
+                } else if (rawWifiState.startsWith("connecting")) {
+                    computedWifiStatus = "connecting";
+                } else {
+                    computedWifiStatus = "disconnected";
+                }
+
+                root.wifiStatus = computedWifiStatus;
+                root.ethernet = hasEthernet;
+                root.wifi = hasWifi;
+                root.vpnConnected = hasVpn;
+                root.vpnName = vpnConnName;
 
                 // Determine active SSID and signal strength
                 if (computedWifiStatus === "connected" || computedWifiStatus === "limited") {
