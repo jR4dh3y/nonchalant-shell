@@ -217,7 +217,7 @@ Item {
             }
             return Math.min(420, root.width - 32);
         }
-        return Math.min(Math.max(collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin + 12, 200), Math.max(200, root.width - 32));
+        return Math.min(Math.max(collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin, 200), Math.max(200, root.width - 32));
     }
 
     readonly property int targetHeight: {
@@ -470,7 +470,7 @@ Item {
                     id: collapsedRow
                     anchors.fill: parent
                     anchors.leftMargin: 16
-                    anchors.rightMargin: 22
+                    anchors.rightMargin: 12
                     spacing: 8
 
                     // Context info: Window / Media title with live fluid shader progress fill
