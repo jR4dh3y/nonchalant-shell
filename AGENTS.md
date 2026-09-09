@@ -80,8 +80,10 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 - **Service init**: Critical services init on next tick via `Qt.callLater`.
 - **Async safety**: Use `Qt.callLater()` when modifying lists inside process handlers.
 - **Process lifecycle**: Always clean up created processes; reset busy flags in `onExited` (including failure cases); use `StdioCollector` for multi-line JSON.
+- **Hot Reloading**: Quickshell and Niri are both hot-reloaded automatically on file changes. Never run `rice reload` or manually restart quickshell or niri.
 
 ## ANTI-PATTERNS (THIS PROJECT)
+- **Manual Reloads (`rice reload`)**: NEVER run `rice reload` or manually kill/restart quickshell or niri. Quickshell natively hot-reloads QML files automatically, and Niri hot-reloads its own configuration automatically.
 - **Hardcoding**: NEVER hardcode colors/sizes. Use `Config.theme.*`, `Config.bar.*`, `Colors.*`, `Styling.*`.
 - **Loose Typing**: NEVER use `property var` when a concrete type (`string`, `int`, `real`, `bool`, `Item`, `list<string>`) is known.
 - **Raw Rectangle containers**: NEVER create raw `Rectangle` containers for styling. Use `StyledRect` with an appropriate variant, or `Item` for layout-only wrappers.
