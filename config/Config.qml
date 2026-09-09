@@ -489,6 +489,7 @@ Singleton {
             property list<string> screenList: []
             property bool enableFirefoxPlayer: false
             property bool use12hFormat: false
+            property bool pinned: false
         }
     }
 

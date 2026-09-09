@@ -402,6 +402,25 @@ class TestFeature9_AutohideAnimationAndStateMachine(unittest.TestCase):
         self.assertEqual(self.sm.state, IslandState.HOVER_REVEALED, "Hovering at top edge must always reveal island")
         self.assertEqual(self.sm.target_y, 0)
 
+    def test_f9_pin_prevents_retraction_when_window_touching_top(self):
+        # Window touching top, but bar is pinned -> island must stay visible
+        self.sm.set_window_count(1)
+        self.sm.set_window_touching_top(True)
+        self.sm.set_pinned(True)
+        self.assertEqual(self.sm.state, IslandState.RESTING_VISIBLE, "Pinned bar must remain visible even with window touching top")
+        self.assertEqual(self.sm.target_y, 0)
+        self.assertTrue(self.sm.is_visible)
+
+    def test_f9_unpin_with_window_touching_top_retracts(self):
+        self.sm.set_pinned(True)
+        self.sm.set_window_count(1)
+        self.sm.set_window_touching_top(True)
+        self.assertEqual(self.sm.state, IslandState.RESTING_VISIBLE)
+        self.sm.set_pinned(False)
+        self.assertEqual(self.sm.state, IslandState.RETRACTED, "Unpinning with window touching top must retract island")
+        self.assertEqual(self.sm.target_y, -36)
+
+
 
 class TestFeature10_TopEdgeHoverTriggerHitbox(unittest.TestCase):
     """Feature 10: Top-Edge Hover Trigger Hitbox (M4)"""

@@ -20,10 +20,12 @@ class DynamicIslandStateMachine:
     def __init__(self,
                  island_height: int = 36,
                  debounce_duration_ms: int = 250,
-                 style: BarStyle = BarStyle.ISLAND):
+                 style: BarStyle = BarStyle.ISLAND,
+                 pinned: bool = False):
         self.island_height = island_height
         self.debounce_duration_ms = debounce_duration_ms
         self.style = style
+        self.pinned = bool(pinned)
 
         self.window_count: int = 0
         self.is_pointer_in_trigger: bool = False
@@ -113,6 +115,10 @@ class DynamicIslandStateMachine:
         self.has_notifications = has_notifs
         self._evaluate_state()
 
+    def set_pinned(self, pinned: bool):
+        self.pinned = bool(pinned)
+        self._evaluate_state()
+
     def tick(self, delta_ms: int):
         """Simulate passage of time in milliseconds."""
         if self._in_debounce:
@@ -137,7 +143,14 @@ class DynamicIslandStateMachine:
             self._transition_to(IslandState.POPUP_LOCKED)
             return
 
-        # 2. If no windows present on active workspace (or none touching top), island rests visible
+        # 2. Pinned: island rests visible regardless of windows touching top
+        if self.pinned:
+            self._in_debounce = False
+            self._debounce_remaining_ms = 0
+            self._transition_to(IslandState.RESTING_VISIBLE)
+            return
+
+        # 3. If no windows present on active workspace (or none touching top), island rests visible
         has_touching = self.window_touching_top if self.window_touching_top is not None else (self.window_count > 0)
         if not has_touching:
             self._in_debounce = False

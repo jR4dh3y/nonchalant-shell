@@ -185,12 +185,15 @@ Item {
 
     readonly property bool isHovered: triggerHoverHandler.hovered || islandHoverHandler.hovered
     property bool debounceActive: false
+    readonly property bool isPinned: Config.bar?.pinned ?? false
 
     readonly property bool shouldBeRevealed: {
         if (root.isExpanded)
             return true;
         if (NiriService.overviewOpen)
             return false;
+        if (root.isPinned)
+            return true;
         if (hasNotifications)
             return true;
         if (isHovered || debounceActive)
@@ -320,7 +323,7 @@ Item {
         if (isHovered) {
             exitDebounceTimer.stop();
             root.debounceActive = false;
-        } else if (root.hasWindowTouchingTop && !root.isExpanded) {
+        } else if (root.hasWindowTouchingTop && !root.isExpanded && !root.isPinned) {
             root.debounceActive = true;
             exitDebounceTimer.restart();
         }
@@ -622,6 +625,59 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.expand("alerts")
+                        }
+                    }
+
+                    // Separator before pin button
+                    Text {
+                        text: "|"
+                        color: Colors.overSurfaceVariant
+                        opacity: 0.5
+                        font.pixelSize: Styling.fontSize(-2)
+                        renderType: Text.NativeRendering
+                    }
+
+                    // Dynamic Island pin toggle button
+                    Item {
+                        id: pinBtn
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        Layout.alignment: Qt.AlignVCenter
+
+                        StyledRect {
+                            anchors.fill: parent
+                            radius: 13
+                            variant: pinMouse.containsMouse ? "focus" : "transparent"
+                            scale: pinMouse.pressed ? 0.88 : (pinMouse.containsMouse ? 1.08 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.isPinned ? Icons.pin : Icons.unpin
+                                font.family: Icons.font
+                                font.pixelSize: 14
+                                color: root.isPinned ? Colors.primary : (pinMouse.containsMouse ? Colors.primary : Colors.overBackground)
+                                opacity: root.isPinned ? 1.0 : (pinMouse.containsMouse ? 1.0 : 0.7)
+                                renderType: Text.NativeRendering
+                            }
+                        }
+
+                        MouseArea {
+                            id: pinMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (Config.bar) {
+                                    Config.bar.pinned = !root.isPinned;
+                                }
+                            }
+                        }
+
+                        StyledToolTip {
+                            show: pinMouse.containsMouse
+                            tooltipText: root.isPinned ? "Unpin Island" : "Pin Island"
+                            description: root.isPinned ? "Autohide disabled" : "Keep island visible over windows"
                         }
                     }
                 }

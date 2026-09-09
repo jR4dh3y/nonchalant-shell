@@ -1,5 +1,6 @@
 {
     "enableFirefoxPlayer": false,
+    "pinned": false,
     "position": "top",
     "screenList": [
     ],

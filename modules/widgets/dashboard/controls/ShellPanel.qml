@@ -741,6 +741,17 @@ Item {
                             }
                         }
 
+                        ToggleRow {
+                            visible: (Config.bar?.style ?? "default") === "island"
+                            label: "Pin Dynamic Island"
+                            checked: Config.bar.pinned ?? false
+                            onToggled: value => {
+                                if (value !== Config.bar.pinned) {
+                                    Config.bar.pinned = value;
+                                }
+                            }
+                        }
+
                         ScreenListRow {
                             label: "Screens"
                             selectedScreens: Config.bar.screenList ?? []

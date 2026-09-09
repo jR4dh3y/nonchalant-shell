@@ -62,6 +62,8 @@ test("F1-SCHEMA-3: bar.data contains standard bar keys alongside 'style'", () =>
     assert.strictEqual(barDefaults.data.screenList.length, 0, "screenList default must be empty array");
     assert.strictEqual(typeof barDefaults.data.enableFirefoxPlayer, "boolean");
     assert.strictEqual(typeof barDefaults.data.use12hFormat, "boolean");
+    assert.strictEqual(typeof barDefaults.data.pinned, "boolean");
+    assert.strictEqual(barDefaults.data.pinned, false);
 });
 
 // Group 2: Validator Style Key Validation
@@ -98,7 +100,8 @@ test("F1-FULLOBJ-1: Valid full bar config preserves 'island' style", () => {
         style: "island",
         screenList: ["DP-1"],
         enableFirefoxPlayer: true,
-        use12hFormat: true
+        use12hFormat: true,
+        pinned: true
     };
     const validated = validator.validate(input, barDefaults.data, "bar");
     assert.strictEqual(validated.style, "island");
@@ -106,6 +109,7 @@ test("F1-FULLOBJ-1: Valid full bar config preserves 'island' style", () => {
     assert.deepStrictEqual(validated.screenList, ["DP-1"]);
     assert.strictEqual(validated.enableFirefoxPlayer, true);
     assert.strictEqual(validated.use12hFormat, true);
+    assert.strictEqual(validated.pinned, true);
 });
 
 test("F1-FULLOBJ-2: Missing 'style' key in user config is populated with default 'default'", () => {
@@ -118,6 +122,7 @@ test("F1-FULLOBJ-2: Missing 'style' key in user config is populated with default
     const validated = validator.validate(input, barDefaults.data, "bar");
     assert.strictEqual(validated.style, "default");
     assert.deepStrictEqual(validated.screenList, ["HDMI-1"]);
+    assert.strictEqual(validated.pinned, false);
 });
 
 test("F1-FULLOBJ-3: Invalid 'style' in user config is corrected while preserving other valid keys", () => {

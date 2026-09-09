@@ -11,19 +11,22 @@ class BarConfigModel:
                  position: str = "top",
                  screen_list: List[str] = None,
                  enable_firefox_player: bool = False,
-                 use_12h_format: bool = False):
+                 use_12h_format: bool = False,
+                 pinned: bool = False):
         self._style = "default"
         self._position = "top"
         self._screen_list = list(screen_list) if screen_list else []
         self._enable_firefox_player = bool(enable_firefox_player)
         self._use_12h_format = bool(use_12h_format)
+        self._pinned = bool(pinned)
 
         self._listeners: Dict[str, List[Callable[[Any], None]]] = {
             "style": [],
             "position": [],
             "screenList": [],
             "enableFirefoxPlayer": [],
-            "use12hFormat": []
+            "use12hFormat": [],
+            "pinned": []
         }
 
         # Validate initial values
@@ -65,6 +68,17 @@ class BarConfigModel:
             self._screen_list = new_val
             self._notify("screenList", self._screen_list)
 
+    @property
+    def pinned(self) -> bool:
+        return self._pinned
+
+    @pinned.setter
+    def pinned(self, val: Any):
+        new_val = bool(val)
+        if self._pinned != new_val:
+            self._pinned = new_val
+            self._notify("pinned", self._pinned)
+
     def on_change(self, key: str, callback: Callable[[Any], None]):
         if key in self._listeners:
             self._listeners[key].append(callback)
@@ -79,7 +93,8 @@ class BarConfigModel:
             "position": self._position,
             "screenList": self._screen_list,
             "enableFirefoxPlayer": self._enable_firefox_player,
-            "use12hFormat": self._use_12h_format
+            "use12hFormat": self._use_12h_format,
+            "pinned": self._pinned
         }
 
     def load_from_dict(self, data: Dict[str, Any]):
@@ -95,3 +110,6 @@ class BarConfigModel:
             self._enable_firefox_player = bool(data["enableFirefoxPlayer"])
         if "use12hFormat" in data:
             self._use_12h_format = bool(data["use12hFormat"])
+        if "pinned" in data:
+            self.pinned = bool(data["pinned"])
+
