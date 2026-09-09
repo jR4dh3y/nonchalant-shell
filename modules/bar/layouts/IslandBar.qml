@@ -217,7 +217,7 @@ Item {
             }
             return Math.min(420, root.width - 32);
         }
-        return Math.min(Math.max(collapsedRow.implicitWidth + 28, 200), Math.min(Math.max(0, root.width - 16), 740));
+        return Math.min(Math.max(collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin + 8, 200), Math.min(Math.max(0, root.width - 16), 740));
     }
 
     readonly property int targetHeight: {
@@ -469,8 +469,8 @@ Item {
                 RowLayout {
                     id: collapsedRow
                     anchors.fill: parent
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 18
                     spacing: 8
 
                     // Context info: Window / Media title with live fluid shader progress fill
@@ -640,13 +640,13 @@ Item {
                     // Dynamic Island pin toggle button
                     Item {
                         id: pinBtn
-                        implicitWidth: 26
-                        implicitHeight: 26
+                        implicitWidth: 22
+                        implicitHeight: 22
                         Layout.alignment: Qt.AlignVCenter
 
                         StyledRect {
                             anchors.fill: parent
-                            radius: 13
+                            radius: 11
                             variant: pinMouse.containsMouse ? "focus" : "transparent"
                             scale: pinMouse.pressed ? 0.88 : (pinMouse.containsMouse ? 1.08 : 1.0)
                             Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
@@ -655,7 +655,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: root.isPinned ? Icons.pin : Icons.unpin
                                 font.family: Icons.font
-                                font.pixelSize: 14
+                                font.pixelSize: 13
                                 color: root.isPinned ? Colors.primary : (pinMouse.containsMouse ? Colors.primary : Colors.overBackground)
                                 opacity: root.isPinned ? 1.0 : (pinMouse.containsMouse ? 1.0 : 0.7)
                                 renderType: Text.NativeRendering
@@ -677,7 +677,7 @@ Item {
                         StyledToolTip {
                             show: pinMouse.containsMouse
                             tooltipText: root.isPinned ? "Unpin Island" : "Pin Island"
-                            description: root.isPinned ? "Autohide disabled" : "Keep island visible over windows"
+                            description: root.isPinned ? "Autohide disabled (reserves window space)" : "Keep island visible and reserve window space"
                         }
                     }
                 }

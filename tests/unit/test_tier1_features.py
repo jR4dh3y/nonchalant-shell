@@ -129,8 +129,8 @@ class TestFeature3_ModularBarDecoupling(unittest.TestCase):
 class TestFeature4_OverlayModeReservation(unittest.TestCase):
     """Feature 4: Overlay Mode Reservation (M2)"""
 
-    def calculate_exclusive_zone(self, style: str, bar_size: int, outer_margin: int) -> int:
-        if style == "island":
+    def calculate_exclusive_zone(self, style: str, bar_size: int, outer_margin: int, pinned: bool = False) -> int:
+        if style == "island" and not pinned:
             return 0
         return bar_size + outer_margin
 
@@ -139,12 +139,18 @@ class TestFeature4_OverlayModeReservation(unittest.TestCase):
 
     def test_f4_island_mode_sets_zero_exclusive_zone(self):
         zone = self.calculate_exclusive_zone("island", 36, 0)
-        self.assertEqual(zone, 0, "Island mode must set exclusiveZone to 0")
+        self.assertEqual(zone, 0, "Island mode must set exclusiveZone to 0 when unpinned")
 
     def test_f4_island_mode_sets_exclusion_ignore(self):
         zone = self.calculate_exclusive_zone("island", 36, 0)
         mode = self.calculate_exclusion_mode(zone)
         self.assertEqual(mode, "ExclusionMode.Ignore", "Zero zone must use ExclusionMode.Ignore")
+
+    def test_f4_pinned_island_reserves_exclusive_zone(self):
+        zone = self.calculate_exclusive_zone("island", 36, 0, pinned=True)
+        self.assertEqual(zone, 36, "Pinned island must reserve space so windows do not sit under it")
+        mode = self.calculate_exclusion_mode(zone)
+        self.assertEqual(mode, "ExclusionMode.Normal", "Pinned island must use ExclusionMode.Normal")
 
     def test_f4_default_mode_restores_exclusive_zone(self):
         zone = self.calculate_exclusive_zone("default", 44, 8)
@@ -159,7 +165,7 @@ class TestFeature4_OverlayModeReservation(unittest.TestCase):
         self.assertEqual(window_y_start, 0, "Windows must occupy full screen starting at Y=0")
 
     def test_f4_bottom_position_reservation_behavior(self):
-        # If configured for bottom, island should still maintain 0 exclusive zone
+        # If configured for bottom, unpinned island should still maintain 0 exclusive zone
         zone = self.calculate_exclusive_zone("island", 36, 0)
         self.assertEqual(zone, 0)
 
