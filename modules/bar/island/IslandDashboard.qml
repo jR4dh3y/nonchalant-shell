@@ -112,14 +112,12 @@ Item {
             Layout.fillWidth: true
             spacing: 8
 
-            StyledRect {
+            Item {
                 id: clockDateBtn
                 Layout.alignment: Qt.AlignVCenter
-                implicitWidth: clockDateCol.implicitWidth + 12
-                implicitHeight: clockDateCol.implicitHeight + 8
-                radius: Styling.radius(2)
-                variant: clockDateMouse.containsMouse ? "focus" : "transparent"
-                scale: clockDateMouse.pressed ? 0.96 : (clockDateMouse.containsMouse ? 1.02 : 1.0)
+                implicitWidth: clockDateCol.implicitWidth
+                implicitHeight: clockDateCol.implicitHeight
+                scale: clockDateMouse.pressed ? 0.96 : 1.0
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
                 ColumnLayout {
@@ -127,44 +125,25 @@ Item {
                     anchors.centerIn: parent
                     spacing: 1
 
-                    RowLayout {
-                        spacing: 6
+                    Text {
+                        id: clockText
+                        renderType: Text.NativeRendering
+                        font.hintingPreference: Font.PreferFullHinting
+                        text: Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm:ss ap" : "hh:mm:ss")
+                        font.family: Config.theme.monoFont
+                        font.pixelSize: Styling.fontSize(4)
+                        font.bold: true
+                        color: clockDateMouse.containsMouse ? Colors.primary : Colors.overBackground
 
-                        Text {
-                            id: clockText
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
-                            font.family: Config.theme.monoFont
-                            font.pixelSize: Styling.fontSize(4)
-                            font.bold: true
-                            color: clockDateMouse.containsMouse ? Colors.primary : Colors.overBackground
-
-                            Timer {
-                                interval: 1000
-                                running: true
-                                repeat: true
-                                onTriggered: clockText.text = Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
-                            }
+                        Behavior on color {
+                            ColorAnimation { duration: 150 }
                         }
 
-                        Text {
-                            id: secondsText
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: Qt.formatTime(new Date(), "ss")
-                            font.family: Config.theme.monoFont
-                            font.pixelSize: Styling.fontSize(-1)
-                            color: clockDateMouse.containsMouse ? Colors.primary : Colors.overSurfaceVariant
-                            Layout.alignment: Qt.AlignBottom
-                            Layout.bottomMargin: 3
-
-                            Timer {
-                                interval: 1000
-                                running: true
-                                repeat: true
-                                onTriggered: secondsText.text = Qt.formatTime(new Date(), "ss")
-                            }
+                        Timer {
+                            interval: 1000
+                            running: true
+                            repeat: true
+                            onTriggered: clockText.text = Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm:ss ap" : "hh:mm:ss")
                         }
                     }
 
@@ -176,8 +155,12 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
                         color: clockDateMouse.containsMouse ? (Colors.primaryFixed ?? Colors.primary) : Colors.overSurfaceVariant
-                        Layout.maximumWidth: 120
+                        Layout.maximumWidth: 160
                         elide: Text.ElideRight
+
+                        Behavior on color {
+                            ColorAnimation { duration: 150 }
+                        }
                     }
                 }
 

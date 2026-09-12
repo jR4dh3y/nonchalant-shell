@@ -89,7 +89,7 @@ Item {
         StyledRect {
             id: clockCard
             Layout.fillWidth: true
-            implicitHeight: 56
+            implicitHeight: 60
             radius: Styling.radius(2)
             variant: "internalbg"
             clip: true
@@ -97,27 +97,16 @@ Item {
             RowLayout {
                 id: clockCol
                 anchors.centerIn: parent
-                spacing: 8
 
                 Text {
+                    id: clockText
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
-                    text: Qt.formatTime(root.now, Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
+                    text: Qt.formatTime(root.now, Config.bar?.use12hFormat ? "hh:mm:ss ap" : "hh:mm:ss")
                     font.family: Config.theme.monoFont
-                    font.pixelSize: Styling.fontSize(5)
+                    font.pixelSize: Styling.fontSize(10)
                     font.bold: true
                     color: Colors.overBackground
-                }
-
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Qt.formatTime(root.now, "ss")
-                    font.family: Config.theme.monoFont
-                    font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overSurfaceVariant
-                    Layout.alignment: Qt.AlignBottom
-                    Layout.bottomMargin: 4
                 }
             }
         }
