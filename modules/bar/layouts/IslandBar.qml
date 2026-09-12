@@ -248,6 +248,8 @@ Item {
             return weatherView.implicitHeight;
         case "media":
             return mediaCenterView.implicitHeight;
+        case "calendar":
+            return calendarView.implicitHeight;
         case "apps":
         case "projects":
             return launcherViewWrapper.implicitHeight;
@@ -544,8 +546,15 @@ Item {
                             id: dateMouse
                             anchors.fill: parent
                             hoverEnabled: true
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.expand("dashboard")
+                            onClicked: mouse => {
+                                if (mouse.button === Qt.RightButton) {
+                                    root.expand("calendar");
+                                } else {
+                                    root.expand("dashboard");
+                                }
+                            }
                         }
                     }
 
@@ -739,6 +748,7 @@ Item {
                 onOpenBattery: root.currentMode = "battery"
                 onOpenWeather: root.currentMode = "weather"
                 onOpenMedia: root.currentMode = "media"
+                onOpenCalendar: root.currentMode = "calendar"
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -1058,6 +1068,54 @@ Item {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
                         duration: root.currentMode === "media" ? root.morphDuration : root.morphCollapseDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                onBackRequested: {
+                    if (root.previousMode === "dashboard") {
+                        root.currentMode = "dashboard";
+                    } else {
+                        root.collapse();
+                    }
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // EXPANDED STATE 5.95: DEDICATED CALENDAR & DATE TIME
+            // ═══════════════════════════════════════════════════════════════
+            IslandCalendarPanel {
+                id: calendarView
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                height: implicitHeight
+                visible: root.currentMode === "calendar" || opacity > 0
+                opacity: root.currentMode === "calendar" ? 1.0 : 0.0
+                scale: root.currentMode === "calendar" ? 1.0 : 0.94
+                y: root.currentMode === "calendar" ? 0 : -8
+                transformOrigin: Item.Top
+
+                Behavior on opacity {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "calendar" ? Math.round(root.morphDuration * 0.75) : 100
+                        easing.type: root.currentMode === "calendar" ? Easing.OutCubic : Easing.OutQuad
+                    }
+                }
+
+                Behavior on scale {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "calendar" ? root.morphDuration : root.morphCollapseDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Behavior on y {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: root.currentMode === "calendar" ? root.morphDuration : root.morphCollapseDuration
                         easing.type: Easing.OutCubic
                     }
                 }

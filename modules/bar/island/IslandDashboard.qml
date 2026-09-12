@@ -28,6 +28,7 @@ Item {
     signal openBattery()
     signal openWeather()
     signal openMedia()
+    signal openCalendar()
 
     property ShellScreen screen: null
 
@@ -111,60 +112,86 @@ Item {
             Layout.fillWidth: true
             spacing: 8
 
-            ColumnLayout {
-                spacing: 1
+            StyledRect {
+                id: clockDateBtn
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: clockDateCol.implicitWidth + 12
+                implicitHeight: clockDateCol.implicitHeight + 8
+                radius: Styling.radius(2)
+                variant: clockDateMouse.containsMouse ? "focus" : "transparent"
+                scale: clockDateMouse.pressed ? 0.96 : (clockDateMouse.containsMouse ? 1.02 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
-                RowLayout {
-                    spacing: 6
+                ColumnLayout {
+                    id: clockDateCol
+                    anchors.centerIn: parent
+                    spacing: 1
 
-                    Text {
-                        id: clockText
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
-                        font.family: Config.theme.monoFont
-                        font.pixelSize: Styling.fontSize(4)
-                        font.bold: true
-                        color: Colors.overBackground
+                    RowLayout {
+                        spacing: 6
 
-                        Timer {
-                            interval: 1000
-                            running: true
-                            repeat: true
-                            onTriggered: clockText.text = Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
+                        Text {
+                            id: clockText
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
+                            font.family: Config.theme.monoFont
+                            font.pixelSize: Styling.fontSize(4)
+                            font.bold: true
+                            color: clockDateMouse.containsMouse ? Colors.primary : Colors.overBackground
+
+                            Timer {
+                                interval: 1000
+                                running: true
+                                repeat: true
+                                onTriggered: clockText.text = Qt.formatTime(new Date(), Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
+                            }
+                        }
+
+                        Text {
+                            id: secondsText
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: Qt.formatTime(new Date(), "ss")
+                            font.family: Config.theme.monoFont
+                            font.pixelSize: Styling.fontSize(-1)
+                            color: clockDateMouse.containsMouse ? Colors.primary : Colors.overSurfaceVariant
+                            Layout.alignment: Qt.AlignBottom
+                            Layout.bottomMargin: 3
+
+                            Timer {
+                                interval: 1000
+                                running: true
+                                repeat: true
+                                onTriggered: secondsText.text = Qt.formatTime(new Date(), "ss")
+                            }
                         }
                     }
 
                     Text {
-                        id: secondsText
+                        id: dateText
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
-                        text: Qt.formatTime(new Date(), "ss")
-                        font.family: Config.theme.monoFont
+                        text: Qt.formatDate(new Date(), "ddd, d MMM")
+                        font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
-                        color: Colors.overSurfaceVariant
-                        Layout.alignment: Qt.AlignBottom
-                        Layout.bottomMargin: 3
-
-                        Timer {
-                            interval: 1000
-                            running: true
-                            repeat: true
-                            onTriggered: secondsText.text = Qt.formatTime(new Date(), "ss")
-                        }
+                        color: clockDateMouse.containsMouse ? (Colors.primaryFixed ?? Colors.primary) : Colors.overSurfaceVariant
+                        Layout.maximumWidth: 120
+                        elide: Text.ElideRight
                     }
                 }
 
-                Text {
-                    id: dateText
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Qt.formatDate(new Date(), "ddd, d MMM")
-                    font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(-1)
-                    color: Colors.overSurfaceVariant
-                    Layout.maximumWidth: 120
-                    elide: Text.ElideRight
+                MouseArea {
+                    id: clockDateMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.openCalendar()
+                }
+
+                StyledToolTip {
+                    show: clockDateMouse.containsMouse
+                    tooltipText: "Calendar & Time"
                 }
             }
 

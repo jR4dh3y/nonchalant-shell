@@ -81,6 +81,10 @@ QtObject {
             case "weather":
                 Visibilities.setActiveModule("weather");
                 break;
+            case "calendar":
+            case "datetime":
+                Visibilities.setActiveModule("calendar");
+                break;
             case "lockscreen": LockscreenService.lock(); break;
             case "config":
             case "settings":

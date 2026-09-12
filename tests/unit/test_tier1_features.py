@@ -1100,6 +1100,35 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
 
         self.assertIn("GlobalStates.islandStatsOpen", sys_content)
 
+    def test_island_calendar_panel_and_integration(self):
+        import os
+        self.assertTrue(os.path.exists("modules/bar/island/IslandCalendarPanel.qml"))
+
+        with open("modules/bar/island/IslandCalendarPanel.qml", "r", encoding="utf-8") as f:
+            cal_content = f.read()
+
+        self.assertIn("signal backRequested()", cal_content)
+        self.assertIn("Calendar {", cal_content)
+        self.assertIn("clockCol", cal_content)
+        self.assertIn("Qt.formatTime", cal_content)
+        self.assertIn("Qt.formatDate", cal_content)
+
+        with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
+            dash_content = f.read()
+
+        self.assertIn("signal openCalendar()", dash_content)
+        self.assertIn("clockDateMouse", dash_content)
+        self.assertIn("root.openCalendar()", dash_content)
+
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            bar_content = f.read()
+
+        self.assertIn('case "calendar":', bar_content)
+        self.assertIn('calendarView.implicitHeight', bar_content)
+        self.assertIn('onOpenCalendar: root.currentMode = "calendar"', bar_content)
+        self.assertIn('IslandCalendarPanel {', bar_content)
+        self.assertIn('id: calendarView', bar_content)
+
 
 if __name__ == '__main__':
     unittest.main()

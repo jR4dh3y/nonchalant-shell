@@ -304,6 +304,12 @@ Singleton {
                     currentActiveModule = "weather";
                     island.expand("weather");
                     return;
+                } else if (moduleName === "calendar") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "calendar";
+                    island.expand("calendar");
+                    return;
                 } else if (!moduleName) {
                     currentActiveModule = "";
                     island.collapse();

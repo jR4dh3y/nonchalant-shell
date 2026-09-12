@@ -45,6 +45,7 @@ OPTIONAL_FILES=(
     "modules/bar/island/IslandWallpaperPanel.qml"
     "modules/bar/island/IslandBatteryPanel.qml"
     "modules/bar/island/IslandWeatherPanel.qml"
+    "modules/bar/island/IslandCalendarPanel.qml"
     "modules/bar/island/IslandGaugeButton.qml"
     "modules/bar/island/IslandMediaCard.qml"
     "modules/bar/island/IslandWaveformBar.qml"
