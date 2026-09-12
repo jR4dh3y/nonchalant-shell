@@ -33,24 +33,19 @@ Item {
         return frame ? "file://" + frame : (path ? "file://" + path : "");
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // ATMOSPHERIC BACKGROUND (Blurred album art + dark vignette)
-    // ═══════════════════════════════════════════════════════════════
     Image {
         id: bgArt
         anchors.fill: parent
         source: root.hasArtwork ? root.trackArt : root.wallpaperUrl
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
-        visible: false
-    }
-
-    MultiEffect {
-        anchors.fill: parent
-        source: bgArt
-        blurEnabled: root.hasArtwork || root.wallpaperUrl !== ""
-        blurMax: 36
-        blur: 0.8
+        clip: true
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            blurEnabled: root.hasArtwork || root.wallpaperUrl !== ""
+            blurMax: 36
+            blur: 0.8
+        }
         opacity: root.hasArtwork ? 0.35 : (root.wallpaperUrl !== "" ? 0.18 : 0.0)
         Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
     }

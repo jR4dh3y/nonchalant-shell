@@ -44,16 +44,15 @@ StyledRect {
         source: root.hasArtwork ? root.trackArt : root.wallpaperUrl
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
-        visible: false
-    }
-
-    MultiEffect {
-        anchors.fill: parent
-        source: bgArt
-        blurEnabled: root.hasArtwork
-        blurMax: 32
-        blur: 0.75
+        clip: true
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            blurEnabled: root.hasArtwork || root.wallpaperUrl !== ""
+            blurMax: 32
+            blur: 0.75
+        }
         opacity: root.hasArtwork ? 1.0 : (root.wallpaperUrl !== "" ? 0.35 : 0.0)
+        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
     }
 
     // Gradient overlay for contrast
