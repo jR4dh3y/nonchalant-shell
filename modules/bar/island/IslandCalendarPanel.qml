@@ -84,54 +84,40 @@ Item {
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // CLOCK CARD: Time & Date on top
+        // CLOCK CARD: One clean clock on top of the calendar
         // ═══════════════════════════════════════════════════════════════
         StyledRect {
+            id: clockCard
             Layout.fillWidth: true
-            implicitHeight: clockCol.implicitHeight + 20
+            implicitHeight: 56
             radius: Styling.radius(2)
             variant: "internalbg"
             clip: true
 
-            ColumnLayout {
+            RowLayout {
                 id: clockCol
-                anchors.fill: parent
-                anchors.margins: 12
-                spacing: 2
+                anchors.centerIn: parent
+                spacing: 8
 
-                RowLayout {
-                    spacing: 6
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Qt.formatTime(root.now, Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
-                        font.family: Config.theme.monoFont
-                        font.pixelSize: Styling.fontSize(4)
-                        font.bold: true
-                        color: Colors.overBackground
-                    }
-
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        text: Qt.formatTime(root.now, "ss")
-                        font.family: Config.theme.monoFont
-                        font.pixelSize: Styling.fontSize(-1)
-                        color: Colors.overSurfaceVariant
-                        Layout.alignment: Qt.AlignBottom
-                        Layout.bottomMargin: 4
-                    }
+                Text {
+                    renderType: Text.NativeRendering
+                    font.hintingPreference: Font.PreferFullHinting
+                    text: Qt.formatTime(root.now, Config.bar?.use12hFormat ? "hh:mm ap" : "hh:mm")
+                    font.family: Config.theme.monoFont
+                    font.pixelSize: Styling.fontSize(5)
+                    font.bold: true
+                    color: Colors.overBackground
                 }
 
                 Text {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
-                    text: Qt.formatDate(root.now, "dddd, d MMMM yyyy")
-                    font.family: Config.theme.font
-                    font.pixelSize: Styling.fontSize(-1)
-                    font.weight: Font.Medium
+                    text: Qt.formatTime(root.now, "ss")
+                    font.family: Config.theme.monoFont
+                    font.pixelSize: Styling.fontSize(0)
                     color: Colors.overSurfaceVariant
+                    Layout.alignment: Qt.AlignBottom
+                    Layout.bottomMargin: 4
                 }
             }
         }

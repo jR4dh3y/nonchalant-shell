@@ -1111,7 +1111,6 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
         self.assertIn("Calendar {", cal_content)
         self.assertIn("clockCol", cal_content)
         self.assertIn("Qt.formatTime", cal_content)
-        self.assertIn("Qt.formatDate", cal_content)
 
         with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
             dash_content = f.read()
