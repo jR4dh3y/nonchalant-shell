@@ -1142,6 +1142,18 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
         # Island collapse must close activeBarPopup, and Escape must dismiss popup first
         self.assertIn("Visibilities.closeActiveBarPopup();", bar_content)
         self.assertIn("if (Visibilities.activeBarPopup && Visibilities.activeBarPopup.isOpen)", bar_content)
+        self.assertIn("onCurrentModeChanged:", bar_content)
+        self.assertIn("FocusGrabManager.clearTopGrab();", bar_content)
+
+        with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
+            dash_content = f.read()
+
+        self.assertIn("Visibilities.closeActiveBarPopup();", dash_content)
+
+        with open("modules/bar/systray/SysTrayItem.qml", "r", encoding="utf-8") as f:
+            tray_content = f.read()
+
+        self.assertIn("Visibilities.closeActiveBarPopup();", tray_content)
 
 
 if __name__ == '__main__':

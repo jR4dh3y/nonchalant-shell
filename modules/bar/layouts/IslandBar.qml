@@ -53,6 +53,8 @@ Item {
     }
 
     function expand(mode: string) {
+        FocusGrabManager.clearTopGrab();
+        Visibilities.closeActiveBarPopup();
         if (root.currentMode !== mode) {
             root.previousMode = root.currentMode;
         }
@@ -260,6 +262,8 @@ Item {
     }
 
     onCurrentModeChanged: {
+        FocusGrabManager.clearTopGrab();
+        Visibilities.closeActiveBarPopup();
         GlobalStates.islandOpen = (currentMode !== "collapsed" && currentMode !== "notification");
         GlobalStates.islandLauncherOpen = (currentMode === "apps" || currentMode === "projects");
         GlobalStates.islandStatsOpen = (currentMode === "stats");
@@ -450,8 +454,12 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
-                // Absorb clicks on empty space so backdropArea doesn't collapse the island
-                onClicked: {}
+                // Absorb clicks on empty space so backdropArea doesn't collapse the island,
+                // but dismiss any open dropdown/bar popup.
+                onClicked: {
+                    FocusGrabManager.clearTopGrab();
+                    Visibilities.closeActiveBarPopup();
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════

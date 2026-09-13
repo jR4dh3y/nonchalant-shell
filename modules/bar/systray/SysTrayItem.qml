@@ -24,6 +24,7 @@ MouseArea {
     onClicked: event => {
         switch (event.button) {
         case Qt.LeftButton:
+            Visibilities.closeActiveBarPopup();
             item.activate();
             break;
         case Qt.RightButton:

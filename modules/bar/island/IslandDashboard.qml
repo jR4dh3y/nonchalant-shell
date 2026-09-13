@@ -97,6 +97,16 @@ Item {
         return count;
     }
 
+    // Dismiss open popup dropdown when clicking on empty space in the dashboard
+    MouseArea {
+        anchors.fill: parent
+        z: -1
+        onClicked: {
+            FocusGrabManager.clearTopGrab();
+            Visibilities.closeActiveBarPopup();
+        }
+    }
+
     ColumnLayout {
         id: mainColumn
         anchors.top: parent.top
@@ -294,7 +304,10 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: GlobalStates.settingsWindowVisible = true
+                    onClicked: {
+                        Visibilities.closeActiveBarPopup();
+                        GlobalStates.settingsWindowVisible = true;
+                    }
                 }
             }
 
@@ -373,7 +386,10 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: NetworkService.toggleWifi()
+                            onClicked: {
+                                Visibilities.closeActiveBarPopup();
+                                NetworkService.toggleWifi();
+                            }
                         }
 
                         StyledToolTip {
@@ -461,7 +477,10 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: BluetoothService.toggle()
+                            onClicked: {
+                                Visibilities.closeActiveBarPopup();
+                                BluetoothService.toggle();
+                            }
                         }
                     }
 
@@ -578,7 +597,10 @@ Item {
                 icon: Notifications.silent ? Icons.bellSlash : Icons.bell
                 iconColor: Notifications.silent ? Colors.overPrimary : Colors.overBackground
                 tooltipText: Notifications.silent ? "Do Not Disturb: On" : "Do Not Disturb: Off"
-                onClicked: (mouse) => Notifications.toggleSilent()
+                onClicked: (mouse) => {
+                    Visibilities.closeActiveBarPopup();
+                    Notifications.toggleSilent();
+                }
             }
 
             // 5. Sysmonitor / Stats
@@ -697,7 +719,10 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: NightLightService.toggle()
+                        onClicked: {
+                            Visibilities.closeActiveBarPopup();
+                            NightLightService.toggle();
+                        }
                         onWheel: wheel => {
                             if (!NightLightService.active) {
                                 NightLightService.toggle();
