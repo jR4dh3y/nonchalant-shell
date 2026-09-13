@@ -49,6 +49,7 @@ Item {
         if (Visibilities.currentActiveModule === "launcher" || Visibilities.currentActiveModule === "powermenu" || Visibilities.currentActiveModule === "system-monitor" || Visibilities.currentActiveModule === "dashboard") {
             Visibilities.setActiveModule("");
         }
+        Visibilities.closeActiveBarPopup();
     }
 
     function expand(mode: string) {
@@ -348,6 +349,11 @@ Item {
                 event.accepted = true;
             }
         } else if (event.key === Qt.Key_Escape) {
+            if (Visibilities.activeBarPopup && Visibilities.activeBarPopup.isOpen) {
+                Visibilities.closeActiveBarPopup();
+                event.accepted = true;
+                return;
+            }
             if (root.currentMode === "apps" || root.currentMode === "projects") {
                 root.collapse();
             } else if (root.currentMode === "notification") {

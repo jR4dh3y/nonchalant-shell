@@ -38,8 +38,8 @@ Singleton {
                 // Previous popup may already be destroyed.
             }
         }
-        // Opening a bar popup should dismiss the run menu / modules.
-        clearAll();
+        // Opening a bar popup should dismiss the run menu / modules without collapsing the bar or island.
+        clearAll(false);
         currentActiveModule = "";
         activeBarPopup = popup;
     }
@@ -364,14 +364,14 @@ Singleton {
         }
     }
 
-    function clearAll() {
+    function clearAll(collapseIslands = true) {
         for (const screenName in screens) {
             const screenProps = screens[screenName];
             for (let i = 0; i < moduleNames.length; i++) {
                 screenProps[moduleNames[i]] = false;
             }
         }
-        if ((Config.bar?.style ?? "default") === "island") {
+        if (collapseIslands && (Config.bar?.style ?? "default") === "island") {
             for (const screenName in islands) {
                 const island = islands[screenName];
                 if (island && island.isExpanded) {

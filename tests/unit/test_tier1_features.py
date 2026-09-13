@@ -1128,6 +1128,21 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
         self.assertIn('IslandCalendarPanel {', bar_content)
         self.assertIn('id: calendarView', bar_content)
 
+    def test_island_tray_popup_does_not_collapse_shell(self):
+        with open("modules/services/Visibilities.qml", "r", encoding="utf-8") as f:
+            vis_content = f.read()
+
+        # claimBarPopup must not collapse the island hosting the popup
+        self.assertIn("clearAll(false)", vis_content)
+        self.assertIn("function clearAll(collapseIslands = true)", vis_content)
+
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            bar_content = f.read()
+
+        # Island collapse must close activeBarPopup, and Escape must dismiss popup first
+        self.assertIn("Visibilities.closeActiveBarPopup();", bar_content)
+        self.assertIn("if (Visibilities.activeBarPopup && Visibilities.activeBarPopup.isOpen)", bar_content)
+
 
 if __name__ == '__main__':
     unittest.main()
