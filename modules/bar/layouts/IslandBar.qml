@@ -220,8 +220,10 @@ Item {
     readonly property bool isFullyRetracted: !shouldBeRevealed && (islandContainer.y <= -islandHeight + 1.0)
     readonly property bool hitboxExpanded: root.isExpanded || shouldBeRevealed || !isFullyRetracted
 
-    readonly property int morphDuration: Config.animDuration > 0 ? Math.max(220, Math.round(Config.animDuration * 0.9)) : 0
-    readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(180, Math.round(Config.animDuration * 0.75)) : 0
+    readonly property int morphDuration: Config.animDuration > 0 ? Math.max(240, Math.round(Config.animDuration * 0.85)) : 0
+    readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(180, Math.round(Config.animDuration * 0.7)) : 0
+    readonly property int contentFadeInDuration: Config.animDuration > 0 ? Math.max(150, Math.round(Config.animDuration * 0.55)) : 0
+    readonly property int contentFadeOutDuration: Config.animDuration > 0 ? Math.max(65, Math.round(Config.animDuration * 0.22)) : 0
 
     readonly property int targetWidth: {
         if (root.isExpanded) {
@@ -420,8 +422,8 @@ Item {
         Behavior on y {
             enabled: Config.animDuration > 0
             NumberAnimation {
-                duration: root.shouldBeRevealed ? 240 : 180
-                easing.type: root.shouldBeRevealed ? Easing.OutCubic : Easing.InCubic
+                duration: root.shouldBeRevealed ? root.morphDuration : root.morphCollapseDuration
+                easing.type: root.shouldBeRevealed ? Easing.OutQuart : Easing.InCubic
             }
         }
 
@@ -429,7 +431,7 @@ Item {
             enabled: Config.animDuration > 0
             NumberAnimation {
                 duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-                easing.type: Easing.OutCubic
+                easing.type: Easing.OutQuart
             }
         }
 
@@ -437,7 +439,7 @@ Item {
             enabled: Config.animDuration > 0
             NumberAnimation {
                 duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-                easing.type: Easing.OutCubic
+                easing.type: Easing.OutQuart
             }
         }
 
@@ -446,7 +448,7 @@ Item {
             enabled: Config.animDuration > 0
             NumberAnimation {
                 duration: Config.animDuration / 2
-                easing.type: Easing.OutCubic
+                easing.type: Easing.OutQuart
             }
         }
 
@@ -462,8 +464,24 @@ Item {
             backgroundOpacity: 1.0
             topLeftRadius: 0
             topRightRadius: 0
-            bottomLeftRadius: root.cornerRadius
-            bottomRightRadius: root.cornerRadius
+            bottomLeftRadius: root.isExpanded ? Math.max(Styling.radius(4), 22) : (root.islandHeight / 2)
+            bottomRightRadius: root.isExpanded ? Math.max(Styling.radius(4), 22) : (root.islandHeight / 2)
+
+            Behavior on bottomLeftRadius {
+                enabled: Config.animDuration > 0
+                NumberAnimation {
+                    duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+                    easing.type: Easing.OutQuart
+                }
+            }
+
+            Behavior on bottomRightRadius {
+                enabled: Config.animDuration > 0
+                NumberAnimation {
+                    duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+                    easing.type: Easing.OutQuart
+                }
+            }
             enableShadow: root.isExpanded
             enableBorder: true
             clip: true
@@ -485,16 +503,17 @@ Item {
                 id: collapsedView
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width
+                width: Math.min(parent.width, collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin)
                 height: root.islandHeight
-                visible: !root.isExpanded || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "collapsed" ? 1.0 : 0.0
+                enabled: root.currentMode === "collapsed"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.isExpanded ? 100 : Math.round(root.morphCollapseDuration * 0.7)
-                        easing.type: root.isExpanded ? Easing.OutQuad : Easing.OutCubic
+                        duration: root.currentMode === "collapsed" ? root.contentFadeInDuration : root.contentFadeOutDuration
+                        easing.type: root.currentMode === "collapsed" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
 
@@ -730,14 +749,15 @@ Item {
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
-                visible: !Notifications.silent && (((root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null)) || opacity > 0)
+                visible: opacity > 0
                 opacity: (!Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null) ? 1.0 : 0.0
+                enabled: !Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "notification" ? Math.round(root.morphDuration * 0.75) : 100
-                        easing.type: root.currentMode === "notification" ? Easing.OutCubic : Easing.OutQuad
+                        duration: (root.currentMode === "notification") ? root.contentFadeInDuration : root.contentFadeOutDuration
+                        easing.type: (root.currentMode === "notification") ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
 
@@ -756,13 +776,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "dashboard" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "dashboard" ? 1.0 : 0.0
+                enabled: root.currentMode === "dashboard"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "dashboard" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "dashboard" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "dashboard" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -790,13 +811,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "power" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "power" ? 1.0 : 0.0
+                enabled: root.currentMode === "power"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "power" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "power" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "power" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -814,13 +836,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "sound" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "sound" ? 1.0 : 0.0
+                enabled: root.currentMode === "sound"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "sound" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "sound" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "sound" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -837,13 +860,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "mic" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "mic" ? 1.0 : 0.0
+                enabled: root.currentMode === "mic"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "mic" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "mic" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "mic" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -860,13 +884,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "wifi" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "wifi" ? 1.0 : 0.0
+                enabled: root.currentMode === "wifi"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "wifi" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "wifi" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "wifi" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -883,13 +908,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "bluetooth" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "bluetooth" ? 1.0 : 0.0
+                enabled: root.currentMode === "bluetooth"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "bluetooth" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "bluetooth" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "bluetooth" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -906,33 +932,15 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "stats" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "stats" ? 1.0 : 0.0
-                scale: root.currentMode === "stats" ? 1.0 : 0.94
-                y: root.currentMode === "stats" ? 0 : -8
-                transformOrigin: Item.Top
+                enabled: root.currentMode === "stats"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "stats" ? root.morphDuration : root.morphCollapseDuration
+                        duration: root.currentMode === "stats" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "stats" ? Easing.OutCubic : Easing.OutQuad
-                    }
-                }
-
-                Behavior on scale {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "stats" ? root.morphDuration : root.morphCollapseDuration
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                Behavior on y {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "stats" ? root.morphDuration : root.morphCollapseDuration
-                        easing.type: Easing.OutCubic
                     }
                 }
 
@@ -948,13 +956,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "alerts" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "alerts" ? 1.0 : 0.0
+                enabled: root.currentMode === "alerts"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "alerts" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "alerts" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "alerts" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -972,13 +981,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "wallpapers" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "wallpapers" ? 1.0 : 0.0
+                enabled: root.currentMode === "wallpapers"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "wallpapers" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "wallpapers" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "wallpapers" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -995,13 +1005,14 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "battery" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "battery" ? 1.0 : 0.0
+                enabled: root.currentMode === "battery"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "battery" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "battery" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "battery" ? Easing.OutCubic : Easing.OutQuad
                     }
                 }
@@ -1018,33 +1029,15 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "weather" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "weather" ? 1.0 : 0.0
-                scale: root.currentMode === "weather" ? 1.0 : 0.94
-                y: root.currentMode === "weather" ? 0 : -8
-                transformOrigin: Item.Top
+                enabled: root.currentMode === "weather"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "weather" ? root.morphDuration : root.morphCollapseDuration
+                        duration: root.currentMode === "weather" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "weather" ? Easing.OutCubic : Easing.OutQuad
-                    }
-                }
-
-                Behavior on scale {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "weather" ? root.morphDuration : root.morphCollapseDuration
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                Behavior on y {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "weather" ? root.morphDuration : root.morphCollapseDuration
-                        easing.type: Easing.OutCubic
                     }
                 }
 
@@ -1060,33 +1053,15 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "media" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "media" ? 1.0 : 0.0
-                scale: root.currentMode === "media" ? 1.0 : 0.94
-                y: root.currentMode === "media" ? 0 : -8
-                transformOrigin: Item.Top
+                enabled: root.currentMode === "media"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "media" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "media" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "media" ? Easing.OutCubic : Easing.OutQuad
-                    }
-                }
-
-                Behavior on scale {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "media" ? root.morphDuration : root.morphCollapseDuration
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                Behavior on y {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "media" ? root.morphDuration : root.morphCollapseDuration
-                        easing.type: Easing.OutCubic
                     }
                 }
 
@@ -1102,33 +1077,15 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 height: implicitHeight
-                visible: root.currentMode === "calendar" || opacity > 0
+                visible: opacity > 0
                 opacity: root.currentMode === "calendar" ? 1.0 : 0.0
-                scale: root.currentMode === "calendar" ? 1.0 : 0.94
-                y: root.currentMode === "calendar" ? 0 : -8
-                transformOrigin: Item.Top
+                enabled: root.currentMode === "calendar"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: root.currentMode === "calendar" ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: root.currentMode === "calendar" ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: root.currentMode === "calendar" ? Easing.OutCubic : Easing.OutQuad
-                    }
-                }
-
-                Behavior on scale {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "calendar" ? root.morphDuration : root.morphCollapseDuration
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                Behavior on y {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "calendar" ? root.morphDuration : root.morphCollapseDuration
-                        easing.type: Easing.OutCubic
                     }
                 }
 
@@ -1145,13 +1102,14 @@ Item {
                 width: root.targetWidth
                 height: implicitHeight
                 implicitHeight: launcherView.implicitHeight + 16
-                visible: (root.currentMode === "apps" || root.currentMode === "projects") || opacity > 0
+                visible: opacity > 0
                 opacity: (root.currentMode === "apps" || root.currentMode === "projects") ? 1.0 : 0.0
+                enabled: root.currentMode === "apps" || root.currentMode === "projects"
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
                     NumberAnimation {
-                        duration: (root.currentMode === "apps" || root.currentMode === "projects") ? Math.round(root.morphDuration * 0.75) : 100
+                        duration: (root.currentMode === "apps" || root.currentMode === "projects") ? root.contentFadeInDuration : root.contentFadeOutDuration
                         easing.type: (root.currentMode === "apps" || root.currentMode === "projects") ? Easing.OutCubic : Easing.OutQuad
                     }
                 }

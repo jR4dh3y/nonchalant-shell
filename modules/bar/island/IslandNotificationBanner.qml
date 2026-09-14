@@ -154,12 +154,12 @@ Item {
                 Layout.preferredHeight: 22
                 Layout.alignment: Qt.AlignVCenter
 
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: 22
-                    height: 22
+                StyledRect {
+                    anchors.fill: parent
                     radius: 11
-                    color: closeMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                    variant: closeMouse.containsMouse ? "focus" : "transparent"
+                    scale: closeMouse.pressed ? 0.88 : (closeMouse.containsMouse ? 1.08 : 1.0)
+                    Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
                 }
 
                 Text {
