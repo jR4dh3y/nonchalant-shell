@@ -43,10 +43,14 @@ Item {
     readonly property bool islandActive: isExpanded && currentMode !== "notification"
 
     function collapse() {
+        if (root.currentMode === "collapsed" && Visibilities.currentActiveModule === "")
+            return;
+        root.debounceActive = false;
+        exitDebounceTimer.stop();
         root.currentMode = "collapsed";
         GlobalStates.clearLauncherState();
         GlobalStates.clearProjectPickerState();
-        if (Visibilities.currentActiveModule === "launcher" || Visibilities.currentActiveModule === "powermenu" || Visibilities.currentActiveModule === "system-monitor" || Visibilities.currentActiveModule === "dashboard") {
+        if (Visibilities.currentActiveModule !== "") {
             Visibilities.setActiveModule("");
         }
         Visibilities.closeActiveBarPopup();
@@ -79,13 +83,15 @@ Item {
 
     readonly property var activeWorkspace: {
         const list = NiriService.workspaces.values;
-        if (!list || list.length === 0)
-            return null;
-        for (let i = 0; i < list.length; i++) {
-            const ws = list[i];
-            if (ws && ws.output === root.screen.name && ws.active)
-                return ws;
+        if (list && list.length > 0) {
+            for (let i = 0; i < list.length; i++) {
+                const ws = list[i];
+                if (ws && (ws.output === root.screen.name || (!ws.output && Quickshell.screens.length <= 1)) && ws.active)
+                    return ws;
+            }
         }
+        if (NiriService.focusedWorkspace && (NiriService.focusedWorkspace.output === root.screen.name || Quickshell.screens.length <= 1))
+            return NiriService.focusedWorkspace;
         return null;
     }
 
@@ -96,15 +102,19 @@ Item {
     }
     readonly property bool hasActiveWindows: activeWorkspaceWindows > 0
     readonly property bool hasWindowTouchingTop: {
-        if (!activeWorkspace)
-            return false;
-        const windows = NiriService.windowsForWorkspace(activeWorkspace.id);
-        if (!windows || windows.length === 0)
-            return false;
-        for (let i = 0; i < windows.length; i++) {
-            if (isWindowTouchingTop(windows[i]))
-                return true;
+        const ws = root.activeWorkspace;
+        if (ws) {
+            const windows = NiriService.windowsForWorkspace(ws.id);
+            if (windows && windows.length > 0) {
+                for (let i = 0; i < windows.length; i++) {
+                    if (isWindowTouchingTop(windows[i]))
+                        return true;
+                }
+                return false;
+            }
         }
+        if (root.screenFocusedClient && isWindowTouchingTop(root.screenFocusedClient))
+            return true;
         return false;
     }
     readonly property bool hasNotifications: !Notifications.silent && Notifications.popupList && Notifications.popupList.length > 0
@@ -197,7 +207,7 @@ Item {
             return false;
         if (root.isPinned)
             return true;
-        if (hasNotifications)
+        if (hasNotifications && currentMode === "notification")
             return true;
         if (isHovered || debounceActive)
             return true;
@@ -207,7 +217,7 @@ Item {
     }
 
     readonly property int targetY: shouldBeRevealed ? 0 : -islandHeight
-    readonly property bool isFullyRetracted: !shouldBeRevealed && (islandContainer.y <= -islandHeight + 0.5)
+    readonly property bool isFullyRetracted: !shouldBeRevealed && (islandContainer.y <= -islandHeight + 1.0)
     readonly property bool hitboxExpanded: root.isExpanded || shouldBeRevealed || !isFullyRetracted
 
     readonly property int morphDuration: Config.animDuration > 0 ? Math.max(220, Math.round(Config.animDuration * 0.9)) : 0
@@ -277,6 +287,12 @@ Item {
         } else if (currentMode !== "collapsed" && currentMode !== "notification") {
             Qt.callLater(() => {
                 root.forceActiveFocus();
+            });
+        } else if (currentMode === "collapsed" && root.hasNotifications) {
+            Qt.callLater(() => {
+                if (root.currentMode === "collapsed" && root.hasNotifications) {
+                    root.currentMode = "notification";
+                }
             });
         }
     }
@@ -349,7 +365,7 @@ Item {
                 powerView.activateSelected();
                 event.accepted = true;
             } else if (event.key === Qt.Key_Escape) {
-                root.currentMode = "dashboard";
+                root.expand("dashboard");
                 event.accepted = true;
             }
         } else if (event.key === Qt.Key_Escape) {
@@ -363,7 +379,7 @@ Item {
             } else if (root.currentMode === "notification") {
                 notificationView.dismissCurrent();
             } else if (root.currentMode !== "dashboard" && root.currentMode !== "collapsed") {
-                root.currentMode = "dashboard";
+                root.expand("dashboard");
             } else {
                 root.collapse();
             }
@@ -785,7 +801,7 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                onBackRequested: root.expand("dashboard")
                 onActionTriggered: root.collapse()
             }
 
@@ -809,7 +825,7 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -832,7 +848,7 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -855,7 +871,7 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -878,7 +894,7 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -920,13 +936,7 @@ Item {
                     }
                 }
 
-                onBackRequested: {
-                    if (root.previousMode === "dashboard") {
-                        root.currentMode = "dashboard";
-                    } else {
-                        root.collapse();
-                    }
-                }
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -949,7 +959,7 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -973,7 +983,7 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -996,7 +1006,7 @@ Item {
                     }
                 }
 
-                onBackRequested: root.currentMode = "dashboard"
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -1038,13 +1048,7 @@ Item {
                     }
                 }
 
-                onBackRequested: {
-                    if (root.previousMode === "dashboard") {
-                        root.currentMode = "dashboard";
-                    } else {
-                        root.collapse();
-                    }
-                }
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -1086,13 +1090,7 @@ Item {
                     }
                 }
 
-                onBackRequested: {
-                    if (root.previousMode === "dashboard") {
-                        root.currentMode = "dashboard";
-                    } else {
-                        root.collapse();
-                    }
-                }
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -1134,13 +1132,7 @@ Item {
                     }
                 }
 
-                onBackRequested: {
-                    if (root.previousMode === "dashboard") {
-                        root.currentMode = "dashboard";
-                    } else {
-                        root.collapse();
-                    }
-                }
+                onBackRequested: root.expand("dashboard")
             }
 
             // ═══════════════════════════════════════════════════════════════
