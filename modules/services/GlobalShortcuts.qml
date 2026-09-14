@@ -2,19 +2,21 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import qs.modules.globals
 import qs.modules.services
 import qs.config
 import Quickshell.Io
 
-QtObject {
+Singleton {
     id: root
 
     readonly property string appId: "nonchalant"
     readonly property string ipcPipe: "/tmp/nonchalant_ipc.pipe"
 
     // High-performance Pipe Listener (Daemon mode)
-    property Process pipeListener: Process {
+    Process {
+        id: pipeListener
         command: ["bash", "-c", "rm -f " + root.ipcPipe + "; mkfifo " + root.ipcPipe + "; tail -f " + root.ipcPipe]
         running: true
         

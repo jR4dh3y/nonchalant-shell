@@ -13,6 +13,7 @@ Canvas {
     property real amplitudeMultiplier: 0.5
     property real fullLength: width
     property bool running: true
+    property alias active: root.running
 
     // Legacy compatibility
     property real amplitude: lineWidth * amplitudeMultiplier

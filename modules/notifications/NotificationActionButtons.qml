@@ -37,31 +37,16 @@ Item {
                 font.weight: Font.Bold
                 hoverEnabled: true
 
-                background: Item {
+                background: StyledRect {
                     id: buttonBg
-                    property color textColor: root.urgency == NotificationUrgency.Critical ? Colors.shadow : styledBg.item
-                    
-                    Rectangle {
-                        anchors.fill: parent
-                        visible: root.urgency == NotificationUrgency.Critical
-                        color: parent.parent.hovered ? Qt.lighter(Colors.criticalRed, 1.3) : Colors.criticalRed
-                        radius: Styling.radius(4)
+                    readonly property color textColor: root.urgency === NotificationUrgency.Critical
+                        ? Colors.shadow
+                        : buttonBg.item
 
-                        Behavior on color {
-                            enabled: Config.animDuration > 0
-                            ColorAnimation {
-                                duration: Config.animDuration
-                            }
-                        }
-                    }
-
-                    StyledRect {
-                        id: styledBg
-                        anchors.fill: parent
-                        visible: root.urgency != NotificationUrgency.Critical
-                        variant: parent.parent.pressed ? "primary" : (parent.parent.hovered ? "focus" : "common")
-                        radius: Styling.radius(4)
-                    }
+                    variant: root.urgency === NotificationUrgency.Critical
+                        ? "error"
+                        : (parent.pressed ? "primary" : (parent.hovered ? "focus" : "common"))
+                    radius: Styling.radius(4)
                 }
 
                 contentItem: Text {

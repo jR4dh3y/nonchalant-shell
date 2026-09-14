@@ -13,24 +13,6 @@ import "../../widgets/dashboard/widgets"
 Item {
     id: root
 
-    IpcHandler {
-        target: "dashboard-animation-debug"
-
-        function open(): void {
-            if (!dashboardPopup.isOpen)
-                root.toggleCenterMenu();
-        }
-
-        function close(): void {
-            if (dashboardPopup.isOpen)
-                dashboardPopup.close();
-        }
-
-        function toggle(): void {
-            root.toggleCenterMenu();
-        }
-    }
-
     property string currentTime: ""
     property string currentDayAbbrev: ""
     property string currentFullDate: ""
@@ -725,16 +707,16 @@ Item {
     }
 
     function scheduleNextDayUpdate() {
-        var now = new Date();
-        var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
-        var ms = next - now;
+        const now = new Date();
+        const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+        const ms = next - now;
         dayUpdateTimer.interval = ms;
         dayUpdateTimer.start();
     }
 
     function updateDay() {
-        var now = new Date();
-        var day = now.toLocaleDateString(Qt.locale(), "ddd");
+        const now = new Date();
+        const day = now.toLocaleDateString(Qt.locale(), "ddd");
         root.currentDayAbbrev = day.slice(0, 3).charAt(0).toUpperCase() + day.slice(1, 3);
         root.currentFullDate = now.toLocaleDateString(Qt.locale(), "dddd, d MMMM yyyy");
         scheduleNextDayUpdate();
@@ -745,9 +727,9 @@ Item {
         running: !SuspendManager.isSuspending
         repeat: true
         onTriggered: {
-            var now = new Date();
-            var format = Config.bar.use12hFormat ? "h:mm ap" : "hh:mm";
-            var formatted = Qt.formatDateTime(now, format);
+            const now = new Date();
+            const format = Config.bar.use12hFormat ? "h:mm ap" : "hh:mm";
+            const formatted = Qt.formatDateTime(now, format);
             root.currentTime = formatted;
         }
     }
@@ -768,9 +750,9 @@ Item {
     }
 
     Component.onCompleted: {
-        var now = new Date();
-        var format = Config.bar.use12hFormat ? "h:mm ap" : "hh:mm";
-        var formatted = Qt.formatDateTime(now, format);
+        const now = new Date();
+        const format = Config.bar.use12hFormat ? "h:mm ap" : "hh:mm";
+        const formatted = Qt.formatDateTime(now, format);
         root.currentTime = formatted;
         updateDay();
 

@@ -19,7 +19,7 @@ RowLayout {
 
     // Action buttons configuration
     // Each action: { icon: "...", tooltip: "...", onClicked: function, enabled: true, loading: false }
-    property var actions: []
+    property list<var> actions: []
 
     // Custom content slot (appears between spacer and actions)
     default property alias customContent: customContentContainer.data

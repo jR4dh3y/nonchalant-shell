@@ -69,7 +69,7 @@ Item {
         }
     }
 
-    function isWindowTouchingTop(win: var): bool {
+    function isWindowTouchingTop(win): bool {
         if (!win)
             return false;
         if (win.floating) {

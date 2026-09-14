@@ -1,8 +1,11 @@
 pragma Singleton
 
 import QtQuick
+import Quickshell
 
-QtObject {
+Singleton {
+    id: root
+
     // Icon font
     readonly property string font: "Phosphor-Bold"
 
@@ -11,8 +14,6 @@ QtObject {
 
     // Layouts
     readonly property string layout: ""
-    readonly property string dwindle: ""
-    readonly property string master: ""
     readonly property string scrolling: ""
 
     // Powermenu

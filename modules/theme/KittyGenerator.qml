@@ -97,9 +97,6 @@ QtObject {
         conf += `color7 ${color7}\n`;
         conf += `color15 ${color15}\n`;
 
-        writer.text = conf;
-
-        // QUICKSHELL-GIT: const kittyConfPath = Quickshell.cachePath("kitty.conf");
         const kittyConfPath = Quickshell.env("HOME") + "/.cache/nonchalant/kitty.conf";
 
         // Ensure directory exists and write file
@@ -111,11 +108,6 @@ QtObject {
 
         writerProcess.command = ["sh", "-c", cmd];
         writerProcess.running = true;
-    }
-
-    property QtObject writer: QtObject {
-        id: writer
-        property string text
     }
 
     property Process writerProcess: Process {

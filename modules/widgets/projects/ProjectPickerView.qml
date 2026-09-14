@@ -10,9 +10,8 @@ import qs.modules.globals
 import qs.modules.services
 import qs.config
 
-Rectangle {
+Item {
     id: root
-    color: "transparent"
 
     implicitWidth: 464
     implicitHeight: 320
@@ -21,7 +20,7 @@ Rectangle {
 
     property string searchText: GlobalStates.projectPickerSearchText
     property int selectedIndex: GlobalStates.projectPickerSelectedIndex
-    property var filteredProjects: []
+    property list<var> filteredProjects: []
 
     signal modeSwitchRequested
 

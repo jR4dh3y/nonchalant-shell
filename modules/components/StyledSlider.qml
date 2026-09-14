@@ -167,14 +167,14 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 height: hSliderItem.height * root.heightMultiplier
                 z: 1
-                sourceComponent: CarouselProgress {
+                sourceComponent: WavyLine {
                     anchors.fill: parent
                     frequency: root.wavyFrequency
                     color: root.progressColor
                     amplitudeMultiplier: root.wavyAmplitude
                     lineWidth: root.thickness
                     fullLength: hSliderItem.width
-                    active: root.playing
+                    running: root.playing
                 }
             }
             Rectangle {
@@ -266,7 +266,7 @@ Item {
                 width: parent.width * heightMultiplier
                 sourceComponent: Item {
                     anchors.fill: parent
-                    CarouselProgress {
+                    WavyLine {
                         anchors.centerIn: parent
                         rotation: -90
                         frequency: root.wavyFrequency
@@ -277,7 +277,7 @@ Item {
                         lineWidth: root.thickness
                         fullLength: vSliderItem.height
                         z: 1
-                        active: root.playing
+                        running: root.playing
                     }
                 }
             }

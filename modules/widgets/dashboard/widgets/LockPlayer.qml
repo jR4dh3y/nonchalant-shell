@@ -111,7 +111,7 @@ StyledRect {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             height: 24
-            sourceComponent: CarouselProgress {
+            sourceComponent: WavyLine {
                 anchors.fill: parent
                 frequency: 4
                 color: Colors.surfaceBright

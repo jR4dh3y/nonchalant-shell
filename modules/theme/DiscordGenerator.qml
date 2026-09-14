@@ -96,11 +96,6 @@ QtObject {
         writerProcess.running = true
     }
 
-    property QtObject writer: QtObject {
-        id: writer
-        property string text
-    }
-
     property Process writerProcess: Process {
         id: writerProcess
         running: false

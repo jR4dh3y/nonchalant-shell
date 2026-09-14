@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.Notifications
 import qs.modules.theme
+import qs.modules.components
 import qs.config
 
 Item {
@@ -61,11 +62,9 @@ Item {
         radius: root.radius
         color: "transparent"
 
-        Rectangle {
+        StyledRect {
             anchors.fill: parent
-            color: root.urgency == NotificationUrgency.Critical ? Colors.shadow : Colors.surfaceBright
-            border.width: root.urgency == NotificationUrgency.Critical ? 2 : 0
-            border.color: root.urgency == NotificationUrgency.Critical ? Colors.criticalRed : "transparent"
+            variant: root.urgency == NotificationUrgency.Critical ? "error" : "common"
             radius: root.radius
             visible: ((root.resolvedImage == "" || root.notificationImageFailed) && (root.resolvedAppIcon == "" || root.appIconFailed))
                 || (appIconLoader.active && root.appIconFailed)
@@ -126,27 +125,16 @@ Item {
             id: notifImageLoader
             active: root.resolvedImage != "" && !root.notificationImageFailed
             anchors.fill: parent
-            sourceComponent: Item {
+            sourceComponent: Image {
+                mipmap: true
+                id: notifImage
                 anchors.fill: parent
-                clip: true
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: root.radius
-                    color: "transparent"
-
-                    Image {
-                        mipmap: true
-                        id: notifImage
-                        anchors.fill: parent
-                        source: root.resolvedImage
-                        fillMode: Image.PreserveAspectCrop
-                        smooth: true
-                        onStatusChanged: {
-                            if (status === Image.Error)
-                                root.notificationImageFailed = true;
-                        }
-                    }
+                source: root.resolvedImage
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                onStatusChanged: {
+                    if (status === Image.Error)
+                        root.notificationImageFailed = true;
                 }
             }
         }
@@ -160,18 +148,15 @@ Item {
         anchors.right: parent.right
         width: root.smallAppIconSize
         height: root.smallAppIconSize
-        sourceComponent: Rectangle {
-            color: "transparent"
-            Image {
-                mipmap: true
-                anchors.fill: parent
-                source: root.resolvedAppIcon
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                onStatusChanged: {
-                    if (status === Image.Error)
-                        root.appIconFailed = true;
-                }
+        sourceComponent: Image {
+            mipmap: true
+            anchors.fill: parent
+            source: root.resolvedAppIcon
+            fillMode: Image.PreserveAspectCrop
+            smooth: true
+            onStatusChanged: {
+                if (status === Image.Error)
+                    root.appIconFailed = true;
             }
         }
     }

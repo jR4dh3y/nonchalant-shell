@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Widgets
 import qs.modules.services
 import qs.modules.theme
 import qs.modules.components
@@ -180,13 +181,14 @@ Item {
                     enableBorder: true
                     enabled: false
 
-                    Rectangle {
+                    ClippingRectangle {
                         anchors.fill: parent
                         radius: toastCard.radius
                         color: "transparent"
                         border.width: toastRoot.isCritical ? 2 : 0
                         border.color: Colors.error
                         enabled: false
+                        visible: toastRoot.isCritical
                     }
 
                     ColumnLayout {
@@ -240,12 +242,13 @@ Item {
                                 Layout.preferredHeight: toastRoot.chromeSize
                                 Layout.alignment: Qt.AlignVCenter
 
-                                Rectangle {
+                                StyledRect {
                                     anchors.centerIn: parent
                                     width: toastRoot.chromeSize + 8
                                     height: toastRoot.chromeSize + 8
                                     radius: width / 2
-                                    color: cardMa.containsMouse && !toastRoot.closing ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                                    variant: "focus"
+                                    opacity: cardMa.containsMouse && !toastRoot.closing ? 1 : 0
                                 }
 
                                 Text {
