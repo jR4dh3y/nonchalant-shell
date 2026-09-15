@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Widgets
+import Quickshell.Services.Notifications
 import qs.modules.services
 import qs.modules.theme
 import qs.modules.components
@@ -51,12 +52,7 @@ Item {
                 readonly property string appName: notif ? String(notif.appName || "") : ""
                 readonly property string summary: notif ? String(notif.summary || "") : ""
                 readonly property string body: notif ? String(notif.body || "") : ""
-                readonly property bool isCritical: {
-                    if (!notif)
-                        return false;
-                    const u = notif.urgency;
-                    return u === 2 || u === "critical" || String(u).toLowerCase() === "critical";
-                }
+                readonly property bool isCritical: notif !== null && notif.urgency === NotificationUrgency.Critical
 
                 property bool closing: false
                 property bool entered: false
