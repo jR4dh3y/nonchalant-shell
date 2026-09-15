@@ -85,6 +85,15 @@ Item {
                         Layout.preferredWidth: 32
                         Layout.fillHeight: true
                         radius: Styling.radius(0)
+                        scale: leftMouseArea.pressed ? 0.93 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: leftMouseArea.pressed ? 80 : 250
+                                easing.type: leftMouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         readonly property color buttonItem: leftMouseArea.pressed ? itemColor : Styling.srItem("overprimary")
 
@@ -113,6 +122,15 @@ Item {
                         Layout.preferredWidth: 32
                         Layout.fillHeight: true
                         radius: Styling.radius(0)
+                        scale: rightMouseArea.pressed ? 0.93 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: rightMouseArea.pressed ? 80 : 250
+                                easing.type: rightMouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         readonly property color buttonItem: rightMouseArea.pressed ? itemColor : Styling.srItem("overprimary")
 

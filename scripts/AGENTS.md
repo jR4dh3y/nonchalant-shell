@@ -14,9 +14,6 @@ Python and Bash backend utilities invoked by QML services via `Quickshell.Io.Pro
 | `weather.sh` | Bash | `WeatherService.qml` | GeoIP lookup + Open-Meteo weather fetch |
 | `daemon_priority.sh` | Bash | `cli.sh` | Terminates competing notification daemons (dunst, mako, etc.) |
 | `install-fonts.sh` | Bash | Setup / manual | Installs Phosphor, JetBrains Mono, League Gothic |
-| `clipboard_watch.sh` | Bash | `ClipboardService.qml` | Watches clipboard events via `wl-paste --watch` |
-| `clipboard_check.sh` | Bash | `ClipboardService.qml` | Validates clipboard state and deduplication |
-| `clipboard_insert.sh` | Bash | `ClipboardService.qml` | Inserts or updates item in `clipboard.db` SQLite database |
 
 ## CONVENTIONS & SECURITY RULES
 - **Bash Strict Mode**: Every Bash script MUST start with `set -euo pipefail`.

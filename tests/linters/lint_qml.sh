@@ -33,7 +33,6 @@ CORE_FILES=(
 OPTIONAL_FILES=(
     "modules/bar/layouts/DefaultBar.qml"
     "modules/bar/layouts/IslandBar.qml"
-    "modules/bar/island/IslandEar.qml"
     "modules/bar/island/IslandDashboard.qml"
     "modules/bar/island/IslandPowerPanel.qml"
     "modules/bar/island/IslandSoundPanel.qml"

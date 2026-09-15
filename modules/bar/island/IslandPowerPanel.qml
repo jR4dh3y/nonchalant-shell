@@ -90,6 +90,15 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
+                scale: backMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: backMouse.pressed ? 80 : 250
+                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -135,6 +144,15 @@ Item {
                 Layout.preferredHeight: 52
                 radius: Styling.radius(2)
                 variant: (sleepMouse.containsMouse || root.selectedIndex === 0) ? "focus" : "internalbg"
+                scale: sleepMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: sleepMouse.pressed ? 80 : 250
+                        easing.type: sleepMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -162,6 +180,15 @@ Item {
                 Layout.preferredHeight: 52
                 radius: Styling.radius(2)
                 variant: (lockMouse.containsMouse || root.selectedIndex === 1) ? "focus" : "internalbg"
+                scale: lockMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: lockMouse.pressed ? 80 : 250
+                        easing.type: lockMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -189,6 +216,15 @@ Item {
                 Layout.preferredHeight: 52
                 radius: Styling.radius(2)
                 variant: (logoutMouse.containsMouse || root.selectedIndex === 2) ? "focus" : "internalbg"
+                scale: logoutMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: logoutMouse.pressed ? 80 : 250
+                        easing.type: logoutMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -216,6 +252,15 @@ Item {
                 Layout.preferredHeight: 52
                 radius: Styling.radius(2)
                 variant: (rebootMouse.containsMouse || root.selectedIndex === 3) ? "focus" : "internalbg"
+                scale: rebootMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: rebootMouse.pressed ? 80 : 250
+                        easing.type: rebootMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -243,6 +288,15 @@ Item {
                 Layout.preferredHeight: 52
                 radius: Styling.radius(2)
                 variant: (shutdownMouse.containsMouse || root.selectedIndex === 4) ? "focus" : "internalbg"
+                scale: shutdownMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: shutdownMouse.pressed ? 80 : 250
+                        easing.type: shutdownMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent

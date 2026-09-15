@@ -1,8 +1,10 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import qs.config
 
-QtObject {
+Singleton {
+    id: root
     readonly property string defaultFont: Config.defaultFont
 
     // Pipeline defaults for crisp UI text. QtRendering (distance-field) gives

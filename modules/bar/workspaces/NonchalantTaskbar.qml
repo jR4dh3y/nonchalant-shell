@@ -102,6 +102,15 @@ Item {
 
                 Layout.preferredWidth: showLabel ? workspaceName.implicitWidth + 16 : Math.max(32, appsRow.implicitWidth + 10)
                 Layout.preferredHeight: 28
+                scale: workspaceMouse.pressed ? 0.94 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: workspaceMouse.pressed ? 80 : 250
+                        easing.type: workspaceMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Behavior on Layout.preferredWidth {
                     enabled: Config.animDuration > 0
@@ -191,6 +200,15 @@ Item {
 
                             width: 24
                             height: 24
+                            scale: appMouse.pressed ? 0.92 : 1.0
+
+                            Behavior on scale {
+                                NumberAnimation {
+                                    duration: appMouse.pressed ? 80 : 250
+                                    easing.type: appMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                    easing.overshoot: 1.5
+                                }
+                            }
 
                             Rectangle {
                                 anchors.fill: parent

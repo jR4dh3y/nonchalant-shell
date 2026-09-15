@@ -26,69 +26,16 @@ Item {
     }
 
     property string screenName: ""
-
-    property var state: QtObject {
-        property int currentTab: GlobalStates.dashboardCurrentTab
-    }
+    property int currentTab: GlobalStates.dashboardCurrentTab
 
     readonly property int tabCount: 2
-    readonly property real nonAnimWidth: state.currentTab === 0 ? 600 : 400
+    readonly property real nonAnimWidth: currentTab === 0 ? 600 : 400
 
     implicitWidth: nonAnimWidth
     implicitHeight: 430
 
-    // LRU Tab Management
-    property var lruAccessOrder: [0]  // Tracks access order: [0] means tab 0 is most recent
-    property var lruTabsLoaded: ({0: true})  // Reflects which tabs are actually loaded
-
-    // Update LRU on tab access
-    function updateLRUAccess(tabIndex) {
-        // Remove if already in list
-        const idx = lruAccessOrder.indexOf(tabIndex);
-        if (idx !== -1) {
-            lruAccessOrder.splice(idx, 1);
-        }
-        // Add to end (most recent)
-        lruAccessOrder.push(tabIndex);
-        updateLoadedTabs();
-    }
-
-    // Determine which tabs should be loaded based on LRU and config
-    function updateLoadedTabs() {
-        let newLoadedTabs = {};
-        
-        // Always load tab 0 (WidgetsTab) to avoid "jumpy" opening
-        newLoadedTabs[0] = true;
-        
-        // Always load current tab
-        newLoadedTabs[root.state.currentTab] = true;
-
-        if (Config.performance.dashboardPersistTabs) {
-            // Load up to maxPersistentTabs most recent tabs
-            const maxTabs = Math.max(1, Config.performance.dashboardMaxPersistentTabs);
-            const startIdx = Math.max(0, lruAccessOrder.length - maxTabs);
-            for (let i = startIdx; i < lruAccessOrder.length; i++) {
-                newLoadedTabs[lruAccessOrder[i]] = true;
-            }
-        }
-
-        lruTabsLoaded = newLoadedTabs;
-    }
-
-    // Check if a tab should be loaded
-    function shouldTabBeLoaded(tabIndex) {
-        if (tabIndex === 0) return true; // Always load WidgetsTab (Tab 0)
-
-        if (Config.performance.dashboardPersistTabs) {
-            return lruTabsLoaded[tabIndex] === true;
-        } else {
-            // Without persistence, only load current tab
-            return root.state.currentTab === tabIndex;
-        }
-    }
-
     function focusCurrentTab() {
-        const activeLoader = root.state.currentTab === 1
+        const activeLoader = root.currentTab === 1
             ? wallpapersTabLoader
             : widgetsTabLoader;
         const activeTab = activeLoader.item;
@@ -102,10 +49,9 @@ Item {
 
     focus: true
 
-    // Navegar a la pestaña seleccionada cuando se abre el dashboard
     Component.onCompleted: {
-        root.state.currentTab = Math.max(0, Math.min(GlobalStates.dashboardCurrentTab, root.tabCount - 1));
-        GlobalStates.dashboardCurrentTab = root.state.currentTab;
+        root.currentTab = Math.max(0, Math.min(GlobalStates.dashboardCurrentTab, root.tabCount - 1));
+        GlobalStates.dashboardCurrentTab = root.currentTab;
     }
 
     onIsVisibleChanged: {
@@ -156,23 +102,20 @@ Item {
                 // which replaces their declarative bindings. Re-establish them
                 // on settle so later direct currentTab writes keep working.
                 function restoreTabBindings() {
-                    widgetsTabLoader.visible = Qt.binding(() => root.state.currentTab === 0);
-                    widgetsTabLoader.opacity = Qt.binding(() => root.state.currentTab === 0 ? 1 : 0);
-                    wallpapersTabLoader.visible = Qt.binding(() => root.state.currentTab === 1);
-                    wallpapersTabLoader.opacity = Qt.binding(() => root.state.currentTab === 1 ? 1 : 0);
+                    widgetsTabLoader.visible = Qt.binding(() => root.currentTab === 0);
+                    widgetsTabLoader.opacity = Qt.binding(() => root.currentTab === 0 ? 1 : 0);
+                    wallpapersTabLoader.visible = Qt.binding(() => root.currentTab === 1);
+                    wallpapersTabLoader.opacity = Qt.binding(() => root.currentTab === 1 ? 1 : 0);
                     widgetsTabLoader.x = 0;
                     wallpapersTabLoader.x = 0;
                 }
 
                 // Function to navigate to a specific tab
                 function navigateToTab(index) {
-                    if (index >= 0 && index < root.tabCount && index !== root.state.currentTab) {
-                        const oldIndex = root.state.currentTab;
-                        root.state.currentTab = index;
+                    if (index >= 0 && index < root.tabCount && index !== root.currentTab) {
+                        const oldIndex = root.currentTab;
+                        root.currentTab = index;
                         GlobalStates.dashboardCurrentTab = index;
-
-                        // Update LRU when tab is accessed
-                        root.updateLRUAccess(index);
 
                         if (index === 0)
                             Notifications.hideAllPopups();
@@ -214,42 +157,42 @@ Item {
                     }
                 }
 
-                // Tab 0: widgets
+                // Tab 0: widgets (always loaded)
                 Loader {
                     id: widgetsTabLoader
                     width: parent.width
                     height: parent.height
-                    active: root.shouldTabBeLoaded(0) || root.state.currentTab === 0 || opacity > 0
+                    active: true
                     sourceComponent: widgetsComponent
-                    visible: root.state.currentTab === 0
-                    opacity: root.state.currentTab === 0 ? 1 : 0
-                    z: root.state.currentTab === 0 ? 2 : 1
+                    visible: root.currentTab === 0
+                    opacity: root.currentTab === 0 ? 1 : 0
+                    z: root.currentTab === 0 ? 2 : 1
                 }
 
-                // Tab 1: Wallpapers
+                // Tab 1: Wallpapers (lazy loaded when selected or when persistTabs is true and maxTabs > 1)
                 Loader {
                     id: wallpapersTabLoader
                     width: parent.width
                     height: parent.height
-                    active: root.shouldTabBeLoaded(1) || root.state.currentTab === 1 || opacity > 0
+                    active: root.currentTab === 1 || (Config.performance.dashboardPersistTabs && Config.performance.dashboardMaxPersistentTabs > 1) || opacity > 0
                     sourceComponent: wallpapersComponent
-                    visible: root.state.currentTab === 1
-                    opacity: root.state.currentTab === 1 ? 1 : 0
-                    z: root.state.currentTab === 1 ? 2 : 1
+                    visible: root.currentTab === 1
+                    opacity: root.currentTab === 1 ? 1 : 0
+                    z: root.currentTab === 1 ? 2 : 1
                 }
 
             }
         }
     }
 
-    // Atajos de teclado para navegación
+    // Keyboard shortcuts for tab switching
     Shortcut {
         id: nextTabShortcut
         sequence: "Ctrl+Tab"
         enabled: GlobalStates.dashboardOpen
 
         onActivated: {
-            let nextIndex = (root.state.currentTab + 1) % root.tabCount;
+            let nextIndex = (root.currentTab + 1) % root.tabCount;
             stack.navigateToTab(nextIndex);
         }
     }
@@ -260,7 +203,7 @@ Item {
         enabled: GlobalStates.dashboardOpen
 
         onActivated: {
-            let prevIndex = root.state.currentTab - 1;
+            let prevIndex = root.currentTab - 1;
             if (prevIndex < 0) {
                 prevIndex = root.tabCount - 1;
             }

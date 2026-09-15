@@ -15,7 +15,6 @@ Backend singletons bridging Wayland protocols, CLI tools (nmcli, upower, wpctl, 
 | **Brightness** | `Brightness.qml` | Per-monitor brightness via `brightnessctl` and DDC/CI |
 | **Night Light** | `NightLightService.qml` | Gamma temperature adjustment via `gammastep` / `wlsunset` |
 | **AI Assistant** | `Ai.qml` | Local ACP agent integration (OpenCode, Grok Build, Codex) |
-| **Clipboard** | `ClipboardService.qml` | Persistent clipboard via `clipboard.db` SQLite + helper scripts |
 | **Media** | `MprisController.qml` | MPRIS D-Bus player control |
 | **Notifications** | `Notifications.qml` | D-Bus notification server with persistence |
 | **System Monitor** | `SystemResources.qml` | CPU, RAM, GPU, temps via Python script |

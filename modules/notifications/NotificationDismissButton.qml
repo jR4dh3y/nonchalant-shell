@@ -13,32 +13,29 @@ Button {
     anchors.fill: parent
     hoverEnabled: true
     visible: visibleWhen
+    scale: root.pressed ? 0.92 : 1.0
 
-    background: Item {
+    Behavior on scale {
+        enabled: (Config.animDuration ?? 0) > 0
+        NumberAnimation {
+            duration: root.pressed
+                ? Math.round((Config.animDuration ?? 300) * 0.27)
+                : Math.round((Config.animDuration ?? 300) * 0.83)
+            easing.type: root.pressed ? Easing.OutQuad : Easing.OutBack
+            easing.overshoot: 1.5
+        }
+    }
+
+    background: StyledRect {
         id: buttonBg
-        property color iconColor: urgency == NotificationUrgency.Critical ? Colors.shadow : (root.pressed ? Colors.overError : Colors.error)
-        
-        Rectangle {
-            anchors.fill: parent
-            visible: urgency == NotificationUrgency.Critical
-            color: parent.parent.hovered ? Qt.lighter(Colors.criticalRed, 1.3) : Colors.criticalRed
-            radius: Styling.radius(4)
+        readonly property color iconColor: root.urgency === NotificationUrgency.Critical
+            ? Colors.shadow
+            : (root.pressed ? Colors.overError : Colors.error)
 
-            Behavior on color {
-                enabled: Config.animDuration > 0
-                ColorAnimation {
-                    duration: Config.animDuration
-                }
-            }
-        }
-
-        StyledRect {
-            id: styledBg
-            anchors.fill: parent
-            visible: urgency != NotificationUrgency.Critical
-            variant: parent.parent.pressed ? "error" : (parent.parent.hovered ? "focus" : "common")
-            radius: Styling.radius(4)
-        }
+        variant: root.urgency === NotificationUrgency.Critical
+            ? "error"
+            : (root.pressed ? "error" : (root.hovered ? "focus" : "common"))
+        radius: Styling.radius(4)
     }
 
     contentItem: Text {

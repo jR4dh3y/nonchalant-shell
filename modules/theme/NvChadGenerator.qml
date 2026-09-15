@@ -119,8 +119,6 @@ QtObject {
         lua += "}\n\n"
 
         lua += "return M"
-
-        writer.text = lua
         
         const home = Quickshell.env("HOME")
         const targetPath = home + `/.cache/wal/base46-${mode}.lua`
@@ -135,11 +133,6 @@ EOF_NVCHAD
 
         writerProcess.command = ["sh", "-c", cmd]
         writerProcess.running = true
-    }
-
-    property QtObject writer: QtObject {
-        id: writer
-        property string text
     }
 
     property Process writerProcess: Process {

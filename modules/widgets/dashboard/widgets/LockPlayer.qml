@@ -111,7 +111,7 @@ StyledRect {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             height: 24
-            sourceComponent: CarouselProgress {
+            sourceComponent: WavyLine {
                 anchors.fill: parent
                 frequency: 4
                 color: Colors.surfaceBright
@@ -120,7 +120,7 @@ StyledRect {
                 fullLength: width
                 opacity: 1.0
                 animationsEnabled: true
-                active: true
+                running: true
 
                 Behavior on color {
                     enabled: Config.animDuration > 0

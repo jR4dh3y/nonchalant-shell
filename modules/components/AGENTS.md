@@ -33,7 +33,6 @@ Atomic design library for Nonchalant Shell. Every themed container in the shell 
 | Component | Role |
 |-----------|------|
 | `WavyLine.qml` | Signature animated progress line rendered via 2D Canvas |
-| `CarouselProgress.qml` | Progress wrapper |
 | `DiagonalStripePattern.qml` | Decorative pattern overlay for critical/accent states |
 | `Tinted.qml` / `TintedWallpaper.qml` | Color tint overlays with shader pipeline |
 

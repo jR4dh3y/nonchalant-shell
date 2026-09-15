@@ -208,18 +208,6 @@ ClippingRectangle {
     // look soft/hazy. Widget chrome shadows live on dedicated shadow items
     // instead of on text-bearing containers.
 
-    // Border overlay to avoid ClippingRectangle artifacts
-    ClippingRectangle {
-        anchors.fill: parent
-        radius: root.radius
-        topLeftRadius: root.topLeftRadius
-        topRightRadius: root.topRightRadius
-        bottomLeftRadius: root.bottomLeftRadius
-        bottomRightRadius: root.bottomRightRadius
-        color: "transparent"
-        border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
-        border.width: borderData?.[1] ?? 0
-
-        visible: root.enableBorder
-    }
+    border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
+    border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0
 }

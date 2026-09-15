@@ -14,7 +14,7 @@ Item {
     id: root
     anchors.fill: parent
 
-    required property var targetScreen
+    required property ShellScreen targetScreen
 
     readonly property bool active: GlobalStates.assistantAvailable
         && GlobalStates.assistantVisible
@@ -26,7 +26,7 @@ Item {
     property bool wantsFocus: false
     property bool menuExpanded: false
     property real menuWidth: 250
-    property var slashCommands: [
+    property list<var> slashCommands: [
         {
             name: "agent",
             description: "Switch ACP agent"

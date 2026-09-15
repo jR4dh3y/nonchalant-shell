@@ -153,13 +153,24 @@ Item {
                 Layout.preferredWidth: 22
                 Layout.preferredHeight: 22
                 Layout.alignment: Qt.AlignVCenter
+                scale: closeMouse.pressed ? 0.92 : 1.0
 
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: 22
-                    height: 22
+                Behavior on scale {
+                    enabled: (Config.animDuration ?? 0) > 0
+                    NumberAnimation {
+                        duration: closeMouse.pressed
+                            ? Math.round((Config.animDuration ?? 300) * 0.27)
+                            : Math.round((Config.animDuration ?? 300) * 0.83)
+                        easing.type: closeMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
+
+                StyledRect {
+                    anchors.fill: parent
                     radius: 11
-                    color: closeMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                    variant: "focus"
+                    visible: closeMouse.containsMouse
                 }
 
                 Text {

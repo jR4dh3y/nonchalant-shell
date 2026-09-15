@@ -1,6 +1,8 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Widgets
+import Quickshell.Services.Notifications
 import qs.modules.services
 import qs.modules.theme
 import qs.modules.components
@@ -50,12 +52,7 @@ Item {
                 readonly property string appName: notif ? String(notif.appName || "") : ""
                 readonly property string summary: notif ? String(notif.summary || "") : ""
                 readonly property string body: notif ? String(notif.body || "") : ""
-                readonly property bool isCritical: {
-                    if (!notif)
-                        return false;
-                    const u = notif.urgency;
-                    return u === 2 || u === "critical" || String(u).toLowerCase() === "critical";
-                }
+                readonly property bool isCritical: notif !== null && notif.urgency === NotificationUrgency.Critical
 
                 property bool closing: false
                 property bool entered: false
@@ -180,13 +177,14 @@ Item {
                     enableBorder: true
                     enabled: false
 
-                    Rectangle {
+                    ClippingRectangle {
                         anchors.fill: parent
                         radius: toastCard.radius
                         color: "transparent"
                         border.width: toastRoot.isCritical ? 2 : 0
                         border.color: Colors.error
                         enabled: false
+                        visible: toastRoot.isCritical
                     }
 
                     ColumnLayout {
@@ -240,12 +238,13 @@ Item {
                                 Layout.preferredHeight: toastRoot.chromeSize
                                 Layout.alignment: Qt.AlignVCenter
 
-                                Rectangle {
+                                StyledRect {
                                     anchors.centerIn: parent
                                     width: toastRoot.chromeSize + 8
                                     height: toastRoot.chromeSize + 8
                                     radius: width / 2
-                                    color: cardMa.containsMouse && !toastRoot.closing ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                                    variant: "focus"
+                                    opacity: cardMa.containsMouse && !toastRoot.closing ? 1 : 0
                                 }
 
                                 Text {

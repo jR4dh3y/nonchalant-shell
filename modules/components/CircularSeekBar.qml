@@ -49,7 +49,7 @@ Item {
     Behavior on animatedHandleOffset { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
     Behavior on animatedHandleWidth { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
-    // Dash Configuration (Matches CarouselProgress logic)
+    // Dash Configuration (Matches segmented stroke logic)
     property real dotSize: lineWidth
     property real baseDashLength: dotSize * 2.5
     property real targetSpacing: 6

@@ -36,32 +36,29 @@ Item {
                 font.pixelSize: Config.theme.fontSize
                 font.weight: Font.Bold
                 hoverEnabled: true
+                scale: pressed ? 0.93 : 1.0
 
-                background: Item {
+                Behavior on scale {
+                    enabled: (Config.animDuration ?? 0) > 0
+                    NumberAnimation {
+                        duration: pressed
+                            ? Math.round((Config.animDuration ?? 300) * 0.27)
+                            : Math.round((Config.animDuration ?? 300) * 0.83)
+                        easing.type: pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
+
+                background: StyledRect {
                     id: buttonBg
-                    property color textColor: root.urgency == NotificationUrgency.Critical ? Colors.shadow : styledBg.item
-                    
-                    Rectangle {
-                        anchors.fill: parent
-                        visible: root.urgency == NotificationUrgency.Critical
-                        color: parent.parent.hovered ? Qt.lighter(Colors.criticalRed, 1.3) : Colors.criticalRed
-                        radius: Styling.radius(4)
+                    readonly property color textColor: root.urgency === NotificationUrgency.Critical
+                        ? Colors.shadow
+                        : buttonBg.item
 
-                        Behavior on color {
-                            enabled: Config.animDuration > 0
-                            ColorAnimation {
-                                duration: Config.animDuration
-                            }
-                        }
-                    }
-
-                    StyledRect {
-                        id: styledBg
-                        anchors.fill: parent
-                        visible: root.urgency != NotificationUrgency.Critical
-                        variant: parent.parent.pressed ? "primary" : (parent.parent.hovered ? "focus" : "common")
-                        radius: Styling.radius(4)
-                    }
+                    variant: root.urgency === NotificationUrgency.Critical
+                        ? "error"
+                        : (parent.pressed ? "primary" : (parent.hovered ? "focus" : "common"))
+                    radius: Styling.radius(4)
                 }
 
                 contentItem: Text {

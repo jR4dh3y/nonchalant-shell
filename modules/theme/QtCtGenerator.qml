@@ -189,8 +189,6 @@ QtObject {
         const qt5Dir = home + "/.config/qt5ct/colors"
         const qt6Dir = home + "/.config/qt6ct/colors"
 
-        writer.text = ini
-        
         // Single command to ensure dirs and write files
         const cmd = `
             mkdir -p "${qt5Dir}" "${qt6Dir}" && \\
@@ -201,11 +199,6 @@ QtObject {
         writerProcess.running = true
     }
     
-    property QtObject writer: QtObject {
-        id: writer
-        property string text
-    }
-
     property Process writerProcess: Process {
         id: writerProcess
         running: false
