@@ -464,8 +464,8 @@ Item {
             backgroundOpacity: 1.0
             topLeftRadius: 0
             topRightRadius: 0
-            bottomLeftRadius: root.isExpanded ? Math.max(Styling.radius(4), 22) : (root.islandHeight / 2)
-            bottomRightRadius: root.isExpanded ? Math.max(Styling.radius(4), 22) : (root.islandHeight / 2)
+            bottomLeftRadius: root.isExpanded ? root.cornerRadius : (root.islandHeight / 2)
+            bottomRightRadius: root.isExpanded ? root.cornerRadius : (root.islandHeight / 2)
 
             Behavior on bottomLeftRadius {
                 enabled: Config.animDuration > 0

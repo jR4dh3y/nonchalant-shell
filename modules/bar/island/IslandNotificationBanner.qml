@@ -156,8 +156,11 @@ Item {
                 scale: closeMouse.pressed ? 0.92 : 1.0
 
                 Behavior on scale {
+                    enabled: (Config.animDuration ?? 0) > 0
                     NumberAnimation {
-                        duration: closeMouse.pressed ? 80 : 250
+                        duration: closeMouse.pressed
+                            ? Math.round((Config.animDuration ?? 300) * 0.27)
+                            : Math.round((Config.animDuration ?? 300) * 0.83)
                         easing.type: closeMouse.pressed ? Easing.OutQuad : Easing.OutBack
                         easing.overshoot: 1.5
                     }
@@ -166,7 +169,8 @@ Item {
                 StyledRect {
                     anchors.fill: parent
                     radius: 11
-                    variant: closeMouse.containsMouse ? "focus" : "transparent"
+                    variant: "focus"
+                    visible: closeMouse.containsMouse
                 }
 
                 Text {
