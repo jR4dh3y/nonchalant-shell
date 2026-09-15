@@ -22,6 +22,16 @@ StyledRect {
     property bool active: false
     property color iconColor: active ? Colors.overPrimary : Colors.overBackground
     variant: active ? "primary" : (mouseArea.containsMouse ? "focus" : "internalbg")
+    scale: mouseArea.pressed ? 0.92 : 1.0
+
+    Behavior on scale {
+        enabled: (Config.animDuration ?? 0) > 0
+        NumberAnimation {
+            duration: mouseArea.pressed ? 80 : 250
+            easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+            easing.overshoot: 1.5
+        }
+    }
 
     // Radial progress properties
     property real value: 0.0

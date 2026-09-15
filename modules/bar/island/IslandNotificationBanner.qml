@@ -153,13 +153,20 @@ Item {
                 Layout.preferredWidth: 22
                 Layout.preferredHeight: 22
                 Layout.alignment: Qt.AlignVCenter
+                scale: closeMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: closeMouse.pressed ? 80 : 250
+                        easing.type: closeMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 StyledRect {
                     anchors.fill: parent
                     radius: 11
                     variant: closeMouse.containsMouse ? "focus" : "transparent"
-                    scale: closeMouse.pressed ? 0.88 : (closeMouse.containsMouse ? 1.08 : 1.0)
-                    Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
                 }
 
                 Text {

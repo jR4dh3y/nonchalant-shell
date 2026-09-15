@@ -647,6 +647,15 @@ StyledRect {
         font.family: Icons.font
         font.pixelSize: 20
         color: mouseArea.containsMouse ? Colors.primary : Colors.overBackground
+        scale: mouseArea.pressed ? 0.92 : 1.0
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: mouseArea.pressed ? 80 : 250
+                easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+                easing.overshoot: 1.5
+            }
+        }
 
         Behavior on color {
             ColorAnimation {

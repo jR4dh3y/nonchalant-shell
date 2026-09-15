@@ -531,6 +531,15 @@ Item {
                         Layout.maximumWidth: 200
                         implicitWidth: Math.min(fluidContextText.implicitWidth, 200)
                         implicitHeight: Math.max(fluidContextText.implicitHeight, 20)
+                        scale: contextMouse.pressed ? 0.94 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: contextMouse.pressed ? 80 : 250
+                                easing.type: contextMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.4
+                            }
+                        }
 
                         FluidTextProgress {
                             id: fluidContextText
@@ -549,6 +558,7 @@ Item {
                         }
 
                         MouseArea {
+                            id: contextMouse
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
@@ -575,6 +585,15 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitHeight: dateTimeRow.implicitHeight
                         implicitWidth: dateTimeRow.implicitWidth
+                        scale: dateMouse.pressed ? 0.94 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: dateMouse.pressed ? 80 : 250
+                                easing.type: dateMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.4
+                            }
+                        }
 
                         RowLayout {
                             id: dateTimeRow
@@ -653,6 +672,15 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         implicitWidth: alertsRow.implicitWidth
                         implicitHeight: alertsRow.implicitHeight
+                        scale: alertsMouse.pressed ? 0.90 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: alertsMouse.pressed ? 80 : 250
+                                easing.type: alertsMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         RowLayout {
                             id: alertsRow
@@ -706,8 +734,14 @@ Item {
                             anchors.fill: parent
                             radius: 11
                             variant: pinMouse.containsMouse ? "focus" : "transparent"
-                            scale: pinMouse.pressed ? 0.88 : (pinMouse.containsMouse ? 1.08 : 1.0)
-                            Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
+                            scale: pinMouse.pressed ? 0.92 : 1.0
+                            Behavior on scale {
+                                NumberAnimation {
+                                    duration: pinMouse.pressed ? 80 : 250
+                                    easing.type: pinMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                    easing.overshoot: 1.5
+                                }
+                            }
 
                             Text {
                                 anchors.centerIn: parent

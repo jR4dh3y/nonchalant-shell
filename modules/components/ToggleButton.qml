@@ -26,6 +26,17 @@ Button {
     implicitWidth: 36
     implicitHeight: 36
 
+    scale: root.pressed ? 0.93 : 1.0
+
+    Behavior on scale {
+        enabled: (Config.animDuration ?? 0) > 0
+        NumberAnimation {
+            duration: root.pressed ? 80 : 250
+            easing.type: root.pressed ? Easing.OutQuad : Easing.OutBack
+            easing.overshoot: 1.5
+        }
+    }
+
     // Check if buttonIcon is a single character (icon font) or a file path
     readonly property bool isIconPath: buttonIcon.length > 1
 

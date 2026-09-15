@@ -48,8 +48,14 @@ RowLayout {
             anchors.fill: parent
             radius: 13
             variant: brightMouse.containsMouse ? "focus" : "transparent"
-            scale: brightMouse.pressed ? 0.88 : (brightMouse.containsMouse ? 1.08 : 1.0)
-            Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
+            scale: brightMouse.pressed ? 0.92 : 1.0
+            Behavior on scale {
+                NumberAnimation {
+                    duration: brightMouse.pressed ? 80 : 250
+                    easing.type: brightMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                    easing.overshoot: 1.5
+                }
+            }
 
             DynamicSunIcon {
                 anchors.centerIn: parent
@@ -123,8 +129,14 @@ RowLayout {
             anchors.fill: parent
             radius: 13
             variant: volMouse.containsMouse ? "focus" : "transparent"
-            scale: volMouse.pressed ? 0.88 : (volMouse.containsMouse ? 1.08 : 1.0)
-            Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
+            scale: volMouse.pressed ? 0.92 : 1.0
+            Behavior on scale {
+                NumberAnimation {
+                    duration: volMouse.pressed ? 80 : 250
+                    easing.type: volMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                    easing.overshoot: 1.5
+                }
+            }
 
             DynamicVolumeIcon {
                 anchors.centerIn: parent
@@ -194,8 +206,14 @@ RowLayout {
             anchors.fill: parent
             radius: 13
             variant: batMouse.containsMouse ? "focus" : "transparent"
-            scale: batMouse.pressed ? 0.88 : (batMouse.containsMouse ? 1.08 : 1.0)
-            Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
+            scale: batMouse.pressed ? 0.92 : 1.0
+            Behavior on scale {
+                NumberAnimation {
+                    duration: batMouse.pressed ? 80 : 250
+                    easing.type: batMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                    easing.overshoot: 1.5
+                }
+            }
 
             DynamicBatteryIcon {
                 anchors.centerIn: parent

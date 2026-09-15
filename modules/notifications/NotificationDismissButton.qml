@@ -13,6 +13,16 @@ Button {
     anchors.fill: parent
     hoverEnabled: true
     visible: visibleWhen
+    scale: root.pressed ? 0.92 : 1.0
+
+    Behavior on scale {
+        enabled: (Config.animDuration ?? 0) > 0
+        NumberAnimation {
+            duration: root.pressed ? 80 : 250
+            easing.type: root.pressed ? Easing.OutQuad : Easing.OutBack
+            easing.overshoot: 1.5
+        }
+    }
 
     background: StyledRect {
         id: buttonBg

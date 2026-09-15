@@ -43,8 +43,14 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
-                scale: backMouse.pressed ? 0.88 : (backMouse.containsMouse ? 1.06 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                scale: backMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: backMouse.pressed ? 80 : 250
+                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent

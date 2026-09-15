@@ -36,6 +36,16 @@ Item {
                 font.pixelSize: Config.theme.fontSize
                 font.weight: Font.Bold
                 hoverEnabled: true
+                scale: pressed ? 0.93 : 1.0
+
+                Behavior on scale {
+                    enabled: (Config.animDuration ?? 0) > 0
+                    NumberAnimation {
+                        duration: pressed ? 80 : 250
+                        easing.type: pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 background: StyledRect {
                     id: buttonBg

@@ -127,8 +127,14 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 implicitWidth: clockDateCol.implicitWidth
                 implicitHeight: clockDateCol.implicitHeight
-                scale: clockDateMouse.pressed ? 0.96 : 1.0
-                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                scale: clockDateMouse.pressed ? 0.94 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: clockDateMouse.pressed ? 80 : 250
+                        easing.type: clockDateMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.4
+                    }
+                }
 
                 ColumnLayout {
                     id: clockDateCol
@@ -196,6 +202,15 @@ Item {
                 implicitWidth: weatherRow.implicitWidth + 14
                 radius: height / 2
                 variant: weatherMouse.containsMouse ? "focus" : "internalbg"
+                scale: weatherMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: weatherMouse.pressed ? 80 : 250
+                        easing.type: weatherMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 RowLayout {
                     id: weatherRow
@@ -237,6 +252,15 @@ Item {
                 implicitWidth: root.alertsCount > 0 ? alertsRow.implicitWidth + 14 : 32
                 radius: root.alertsCount > 0 ? height / 2 : width / 2
                 variant: alertsMouse.containsMouse ? "focus" : "internalbg"
+                scale: alertsMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: alertsMouse.pressed ? 80 : 250
+                        easing.type: alertsMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 RowLayout {
                     id: alertsRow
@@ -288,6 +312,15 @@ Item {
                 implicitWidth: 32
                 radius: width / 2
                 variant: settingsMouse.containsMouse ? "focus" : "internalbg"
+                scale: settingsMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: settingsMouse.pressed ? 80 : 250
+                        easing.type: settingsMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -317,6 +350,15 @@ Item {
                 implicitWidth: 32
                 radius: width / 2
                 variant: powerMouse.containsMouse ? "error" : "internalbg"
+                scale: powerMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: powerMouse.pressed ? 80 : 250
+                        easing.type: powerMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -354,6 +396,15 @@ Item {
                 radius: 26
                 readonly property bool isHovered: wifiMouse.containsMouse || wifiIconMouse.containsMouse
                 variant: NetworkService.wifiEnabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
+                scale: (wifiMouse.pressed || wifiIconMouse.pressed) ? 0.94 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: (wifiMouse.pressed || wifiIconMouse.pressed) ? 80 : 250
+                        easing.type: (wifiMouse.pressed || wifiIconMouse.pressed) ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -449,6 +500,15 @@ Item {
                 radius: 26
                 readonly property bool isHovered: btMouse.containsMouse || btIconMouse.containsMouse
                 variant: BluetoothService.enabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
+                scale: (btMouse.pressed || btIconMouse.pressed) ? 0.94 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: (btMouse.pressed || btIconMouse.pressed) ? 80 : 250
+                        easing.type: (btMouse.pressed || btIconMouse.pressed) ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent

@@ -78,8 +78,14 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
-                scale: backMouse.pressed ? 0.88 : (backMouse.containsMouse ? 1.06 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                scale: backMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: backMouse.pressed ? 80 : 250
+                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -424,8 +430,14 @@ Item {
                 radius: 17
                 variant: MprisController.hasShuffle ? "primary" : (shuffleMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.shuffleSupported ? 1.0 : 0.4
-                scale: shuffleMouse.pressed ? 0.88 : (shuffleMouse.containsMouse ? 1.06 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                scale: shuffleMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: shuffleMouse.pressed ? 80 : 250
+                        easing.type: shuffleMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -456,8 +468,14 @@ Item {
                 radius: 19
                 variant: prevMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoPrevious ? 1.0 : 0.4
-                scale: prevMouse.pressed ? 0.88 : (prevMouse.containsMouse ? 1.06 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                scale: prevMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: prevMouse.pressed ? 80 : 250
+                        easing.type: prevMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -486,8 +504,14 @@ Item {
                 radius: 23
                 variant: "primary"
                 opacity: playMouse.containsMouse ? 0.9 : 1.0
-                scale: playMouse.pressed ? 0.88 : (playMouse.containsMouse ? 1.08 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 1.25 } }
+                scale: playMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: playMouse.pressed ? 80 : 250
+                        easing.type: playMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -515,8 +539,14 @@ Item {
                 radius: 19
                 variant: nextMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoNext ? 1.0 : 0.4
-                scale: nextMouse.pressed ? 0.88 : (nextMouse.containsMouse ? 1.06 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                scale: nextMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: nextMouse.pressed ? 80 : 250
+                        easing.type: nextMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -547,8 +577,14 @@ Item {
                 radius: 17
                 variant: MprisController.loopState !== 0 ? "primary" : (loopMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.loopSupported ? 1.0 : 0.4
-                scale: loopMouse.pressed ? 0.88 : (loopMouse.containsMouse ? 1.06 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                scale: loopMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: loopMouse.pressed ? 80 : 250
+                        easing.type: loopMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent

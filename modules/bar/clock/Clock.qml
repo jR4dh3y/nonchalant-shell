@@ -118,6 +118,15 @@ Item {
             Item {
                 Layout.preferredWidth: weatherDisplay.implicitWidth
                 Layout.preferredHeight: 28
+                scale: weatherMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: weatherMouse.pressed ? 80 : 250
+                        easing.type: weatherMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     renderType: Text.NativeRendering
@@ -134,6 +143,7 @@ Item {
                 }
 
                 MouseArea {
+                    id: weatherMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     // claimBarPopup quick-closes dashboard if it was open.
@@ -153,6 +163,15 @@ Item {
             Item {
                 Layout.preferredWidth: dateDisplay.implicitWidth
                 Layout.preferredHeight: 28
+                scale: dateMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: dateMouse.pressed ? 80 : 250
+                        easing.type: dateMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     renderType: Text.NativeRendering
@@ -167,6 +186,7 @@ Item {
                 }
 
                 MouseArea {
+                    id: dateMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.toggleCenterMenu()
@@ -183,6 +203,15 @@ Item {
                 // Reach the same bar edge used by the weather/dashboard
                 // anchor so every clock popup has an identical visual gap.
                 Layout.preferredHeight: buttonBg.height
+                scale: timeMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: timeMouse.pressed ? 80 : 250
+                        easing.type: timeMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     renderType: Text.NativeRendering
@@ -199,6 +228,7 @@ Item {
                 }
 
                 MouseArea {
+                    id: timeMouse
                     anchors.fill: parent
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                     cursorShape: Qt.PointingHandCursor

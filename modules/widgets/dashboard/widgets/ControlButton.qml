@@ -27,6 +27,16 @@ StyledRect {
     }
 
     radius: root.isActive ? Styling.radius(0) : Styling.radius(4)
+    scale: mouseArea.pressed ? 0.90 : 1.0
+
+    Behavior on scale {
+        enabled: (Config.animDuration ?? 0) > 0
+        NumberAnimation {
+            duration: mouseArea.pressed ? 80 : 250
+            easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+            easing.overshoot: 1.5
+        }
+    }
 
     Text {
         renderType: Text.NativeRendering

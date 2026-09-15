@@ -133,6 +133,15 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
+                scale: backMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: backMouse.pressed ? 80 : 250
+                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -193,6 +202,15 @@ Item {
                 implicitHeight: 28
                 radius: Styling.radius(2)
                 variant: Notifications.silent ? "primary" : (dndMouse.containsMouse ? "focus" : "common")
+                scale: dndMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: dndMouse.pressed ? 80 : 250
+                        easing.type: dndMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -220,6 +238,15 @@ Item {
                 implicitHeight: 28
                 radius: Styling.radius(2)
                 variant: root.isClearing ? "focus" : (broomMouse.containsMouse ? "error" : "common")
+                scale: broomMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: broomMouse.pressed ? 80 : 250
+                        easing.type: broomMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
