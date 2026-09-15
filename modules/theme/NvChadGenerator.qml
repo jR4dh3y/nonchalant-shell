@@ -119,8 +119,6 @@ QtObject {
         lua += "}\n\n"
 
         lua += "return M"
-
-        writer.text = lua
         
         const home = Quickshell.env("HOME")
         const targetPath = home + `/.cache/wal/base46-${mode}.lua`
