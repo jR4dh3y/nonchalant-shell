@@ -169,12 +169,12 @@ Item {
                     z: root.currentTab === 0 ? 2 : 1
                 }
 
-                // Tab 1: Wallpapers (lazy loaded when selected or when persistTabs is true)
+                // Tab 1: Wallpapers (lazy loaded when selected or when persistTabs is true and maxTabs > 1)
                 Loader {
                     id: wallpapersTabLoader
                     width: parent.width
                     height: parent.height
-                    active: root.currentTab === 1 || Config.performance.dashboardPersistTabs || opacity > 0
+                    active: root.currentTab === 1 || (Config.performance.dashboardPersistTabs && Config.performance.dashboardMaxPersistentTabs > 1) || opacity > 0
                     sourceComponent: wallpapersComponent
                     visible: root.currentTab === 1
                     opacity: root.currentTab === 1 ? 1 : 0

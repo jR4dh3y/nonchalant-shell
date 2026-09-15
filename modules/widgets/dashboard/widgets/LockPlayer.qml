@@ -120,7 +120,7 @@ StyledRect {
                 fullLength: width
                 opacity: 1.0
                 animationsEnabled: true
-                active: true
+                running: true
 
                 Behavior on color {
                     enabled: Config.animDuration > 0

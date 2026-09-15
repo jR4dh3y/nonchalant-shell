@@ -31,7 +31,9 @@ Button {
     Behavior on scale {
         enabled: (Config.animDuration ?? 0) > 0
         NumberAnimation {
-            duration: root.pressed ? 80 : 250
+            duration: root.pressed
+                ? Math.round((Config.animDuration ?? 300) * 0.27)
+                : Math.round((Config.animDuration ?? 300) * 0.83)
             easing.type: root.pressed ? Easing.OutQuad : Easing.OutBack
             easing.overshoot: 1.5
         }
