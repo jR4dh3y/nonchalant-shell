@@ -1,13 +1,15 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import Quickshell.Widgets
 import qs.config
 import qs.modules.theme
 
-Rectangle {
+ClippingRectangle {
     id: root
 
     clip: true
     antialiasing: true
+    contentUnderBorder: true
 
     required property string variant
 
