@@ -46,6 +46,15 @@ PanelWindow {
 
     visible: osdShown
 
+    readonly property bool isIsland: (Config.bar?.style ?? "default") === "island"
+
+    onIsIslandChanged: {
+        if (isIsland) {
+            root.revealProgress = 0;
+            root.osdShown = false;
+        }
+    }
+
     // Internal state for responsiveness
     property real osdValue: 0
     property bool osdMuted: false
@@ -195,11 +204,13 @@ PanelWindow {
         target: GlobalStates
         function onOsdVisibleChanged() {
             if (GlobalStates.osdVisible) {
+                if (root.isIsland)
+                    return;
                 closeTimer.stop();
                 root.osdShown = true;
                 hideTimer.restart();
                 Qt.callLater(() => {
-                    if (GlobalStates.osdVisible)
+                    if (GlobalStates.osdVisible && !root.isIsland)
                         root.revealProgress = 1;
                 });
             } else if (root.osdShown) {
@@ -210,7 +221,7 @@ PanelWindow {
     }
 
     Component.onCompleted: {
-        if (GlobalStates.osdVisible) {
+        if (!root.isIsland && GlobalStates.osdVisible) {
             root.osdShown = true;
             Qt.callLater(() => root.revealProgress = 1);
         }
@@ -220,6 +231,8 @@ PanelWindow {
     Connections {
         target: Audio
         function onVolumeChanged(volume, muted, node) {
+            if (root.isIsland)
+                return;
             root.osdValue = volume;
             root.osdMuted = muted;
             GlobalStates.osdIndicator = "volume";
@@ -227,6 +240,8 @@ PanelWindow {
             hideTimer.restart();
         }
         function onMicVolumeChanged(volume, muted, node) {
+            if (root.isIsland)
+                return;
             root.osdValue = volume;
             root.osdMuted = muted;
             GlobalStates.osdIndicator = "mic";
@@ -238,6 +253,8 @@ PanelWindow {
     Connections {
         target: Brightness
         function onBrightnessChanged(value, screen) {
+            if (root.isIsland)
+                return;
             // Check if the change happened on THIS screen or if it's a sync change
             if (!screen || !root.targetScreen || screen.name === root.targetScreen.name || Brightness.syncBrightness) {
                 root.osdValue = value;

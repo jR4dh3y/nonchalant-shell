@@ -1155,6 +1155,37 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
 
         self.assertIn("Visibilities.closeActiveBarPopup();", tray_content)
 
+    def test_island_universal_clean_retract_lifecycle(self):
+        with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
+            bar_content = f.read()
+
+        # Must track openedFromHidden and retractingToHidden
+        self.assertIn("property bool openedFromHidden: false", bar_content)
+        self.assertIn("property bool retractingToHidden: false", bar_content)
+
+        # isExpanded and islandActive must drop during retraction to immediately yield input
+        self.assertIn("readonly property bool isExpanded: currentMode !== \"collapsed\" && !retractingToHidden", bar_content)
+
+        # shouldBeRevealed must return false during retraction so targetY goes to -targetHeight
+        self.assertIn("if (root.retractingToHidden)", bar_content)
+        self.assertIn("return false;", bar_content)
+        self.assertIn("readonly property int targetY: shouldBeRevealed ? 0 : -targetHeight", bar_content)
+
+        # targetWidth must stay expanded during retraction without shrinking horizontally
+        self.assertIn("if (root.isExpanded || root.retractingToHidden)", bar_content)
+
+        # collapsedView must remain invisible and disabled during retraction
+        self.assertIn("opacity: (root.currentMode === \"collapsed\" && !root.retractingToHidden) ? 1.0 : 0.0", bar_content)
+        self.assertIn("enabled: root.currentMode === \"collapsed\" && !root.retractingToHidden", bar_content)
+
+        # collapse() must route directly to retractingToHidden when opened from hidden
+        self.assertIn("if (root.openedFromHidden && !root.barAlwaysVisible && root.currentMode !== \"collapsed\")", bar_content)
+        self.assertIn("root.retractingToHidden = true;", bar_content)
+        self.assertIn("retractFinishTimer.restart();", bar_content)
+
+        # Interruptions must cancel retraction
+        self.assertIn("if (root.retractingToHidden) {", bar_content)
+
 
 if __name__ == '__main__':
     unittest.main()

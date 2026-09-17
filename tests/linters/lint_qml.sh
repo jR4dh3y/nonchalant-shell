@@ -50,6 +50,7 @@ OPTIONAL_FILES=(
     "modules/bar/island/IslandWaveformBar.qml"
     "modules/bar/island/IslandMediaCenterPanel.qml"
     "modules/bar/island/IslandNotificationBanner.qml"
+    "modules/bar/island/IslandOsdBanner.qml"
     "modules/bar/island/IslandStatusIcons.qml"
     "modules/components/FluidTextProgress.qml"
     "modules/components/DynamicSunIcon.qml"

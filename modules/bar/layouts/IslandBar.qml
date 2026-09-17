@@ -36,33 +36,95 @@ Item {
     readonly property int triggerHeight: 8
     readonly property real cornerRadius: Styling.radius(4)
 
-    // Current morphing state: "collapsed" | "notification" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
+    // Current morphing state: "collapsed" | "notification" | "osd" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
     property string currentMode: "collapsed"
     property string previousMode: "collapsed"
-    readonly property bool isExpanded: currentMode !== "collapsed"
-    readonly property bool islandActive: isExpanded && currentMode !== "notification"
+    property bool openedFromHidden: false
+    property bool retractingToHidden: false
+    readonly property bool isExpanded: currentMode !== "collapsed" && !retractingToHidden
+    readonly property bool islandActive: isExpanded && currentMode !== "notification" && currentMode !== "osd"
+
+    function finishRetraction() {
+        if (root.retractingToHidden) {
+            slideUpAnim.stop();
+            retractFinishTimer.stop();
+            barHoverAnim.stop();
+            root.openedFromHidden = false;
+            root.currentMode = "collapsed";
+            root.retractingToHidden = false;
+            root.containerY = -root.islandHeight;
+        }
+    }
 
     function collapse() {
-        if (root.currentMode === "collapsed" && Visibilities.currentActiveModule === "")
+        if (root.currentMode === "collapsed" && !root.retractingToHidden && Visibilities.currentActiveModule === "")
             return;
+
+        islandOsdTimer.stop();
         root.debounceActive = false;
         exitDebounceTimer.stop();
-        root.currentMode = "collapsed";
+        if (slideDownAnim.running)
+            slideDownAnim.stop();
+        if (barHoverAnim.running)
+            barHoverAnim.stop();
+
         GlobalStates.clearLauncherState();
         GlobalStates.clearProjectPickerState();
         if (Visibilities.currentActiveModule !== "") {
-            Visibilities.setActiveModule("");
+            Visibilities.currentActiveModule = "";
         }
         Visibilities.closeActiveBarPopup();
+        FocusGrabManager.clearTopGrab();
+
+        if (root.openedFromHidden && !root.barAlwaysVisible && root.currentMode !== "collapsed") {
+            root.retractingToHidden = true;
+            GlobalStates.islandOpen = false;
+            GlobalStates.islandLauncherOpen = false;
+            GlobalStates.islandStatsOpen = false;
+            retractFinishTimer.restart();
+            slideUpAnim.stop();
+            slideUpAnim.from = root.containerY;
+            slideUpAnim.to = -root.targetHeight;
+            slideUpAnim.start();
+            return;
+        }
+
+        root.retractingToHidden = false;
+        retractFinishTimer.stop();
+        slideUpAnim.stop();
+        root.openedFromHidden = false;
+        root.currentMode = "collapsed";
+        root.containerY = root.shouldBeRevealed ? 0 : -root.islandHeight;
     }
 
     function expand(mode: string) {
         FocusGrabManager.clearTopGrab();
         Visibilities.closeActiveBarPopup();
+        if (root.retractingToHidden) {
+            root.retractingToHidden = false;
+            retractFinishTimer.stop();
+            slideUpAnim.stop();
+        }
+        if (barHoverAnim.running)
+            barHoverAnim.stop();
+        if (slideDownAnim.running)
+            slideDownAnim.stop();
+
+        const wasHidden = !root.barNormallyVisible && root.currentMode === "collapsed";
+        if (root.currentMode === "collapsed") {
+            root.openedFromHidden = !root.barNormallyVisible;
+        }
         if (root.currentMode !== mode) {
             root.previousMode = root.currentMode;
         }
         root.currentMode = mode || "dashboard";
+        if (wasHidden) {
+            slideDownAnim.from = -root.targetHeight;
+            slideDownAnim.to = 0;
+            slideDownAnim.start();
+        } else {
+            root.containerY = 0;
+        }
         if (root.currentMode === "dashboard") {
             NetworkService.update();
             BluetoothService.updateStatus();
@@ -121,8 +183,8 @@ Item {
 
     onHasNotificationsChanged: {
         if (hasNotifications) {
-            if (root.currentMode === "collapsed") {
-                root.currentMode = "notification";
+            if (root.currentMode === "collapsed" || root.retractingToHidden) {
+                root.expand("notification");
             }
         } else {
             if (root.currentMode === "notification") {
@@ -196,29 +258,64 @@ Item {
         return root.screenFocusedClient?.title || "Desktop";
     }
 
-    readonly property bool isHovered: triggerHoverHandler.hovered || islandHoverHandler.hovered
+    readonly property bool isHovered: triggerHoverHandler.hovered || (islandHoverHandler.hovered && root.currentMode === "collapsed" && !root.retractingToHidden)
     property bool debounceActive: false
     readonly property bool isPinned: Config.bar?.pinned ?? false
 
+    readonly property bool barAlwaysVisible: !NiriService.overviewOpen && (root.isPinned || !hasWindowTouchingTop)
+    readonly property bool barNormallyVisible: barAlwaysVisible || isHovered || debounceActive
+
     readonly property bool shouldBeRevealed: {
+        if (root.retractingToHidden)
+            return false;
+        if (currentMode === "osd")
+            return true;
         if (root.isExpanded)
             return true;
-        if (NiriService.overviewOpen)
-            return false;
-        if (root.isPinned)
-            return true;
-        if (hasNotifications && currentMode === "notification")
-            return true;
-        if (isHovered || debounceActive)
-            return true;
-        if (!hasWindowTouchingTop)
-            return true;
-        return false;
+        return barNormallyVisible;
     }
 
-    readonly property int targetY: shouldBeRevealed ? 0 : -islandHeight
-    readonly property bool isFullyRetracted: !shouldBeRevealed && (islandContainer.y <= -islandHeight + 1.0)
+    readonly property int targetY: shouldBeRevealed ? 0 : -targetHeight
+    readonly property bool isFullyRetracted: !shouldBeRevealed && (islandContainer.y <= -targetHeight + 1.0)
     readonly property bool hitboxExpanded: root.isExpanded || shouldBeRevealed || !isFullyRetracted
+
+    property real containerY: shouldBeRevealed ? 0 : -islandHeight
+
+    NumberAnimation {
+        id: slideDownAnim
+        target: root
+        property: "containerY"
+        duration: root.morphDuration
+        easing.type: Easing.OutQuart
+    }
+
+    NumberAnimation {
+        id: slideUpAnim
+        target: root
+        property: "containerY"
+        duration: root.morphCollapseDuration
+        easing.type: Easing.InCubic
+        onFinished: {
+            root.finishRetraction();
+        }
+    }
+
+    NumberAnimation {
+        id: barHoverAnim
+        target: root
+        property: "containerY"
+        duration: root.shouldBeRevealed ? root.morphDuration : root.morphCollapseDuration
+        easing.type: root.shouldBeRevealed ? Easing.OutQuart : Easing.InCubic
+    }
+
+    onShouldBeRevealedChanged: {
+        if (root.isExpanded || root.retractingToHidden)
+            return;
+        barHoverAnim.stop();
+        barHoverAnim.from = root.containerY;
+        barHoverAnim.to = root.shouldBeRevealed ? 0 : -root.islandHeight;
+        barHoverAnim.start();
+    }
 
     readonly property int morphDuration: Config.animDuration > 0 ? Math.max(240, Math.round(Config.animDuration * 0.85)) : 0
     readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(180, Math.round(Config.animDuration * 0.7)) : 0
@@ -226,7 +323,10 @@ Item {
     readonly property int contentFadeOutDuration: Config.animDuration > 0 ? Math.max(65, Math.round(Config.animDuration * 0.22)) : 0
 
     readonly property int targetWidth: {
-        if (root.isExpanded) {
+        if (root.isExpanded || root.retractingToHidden) {
+            if (root.currentMode === "osd") {
+                return Math.min(270, root.width - 32);
+            }
             if (root.currentMode === "wallpapers") {
                 return Math.min(540, root.width - 32);
             }
@@ -237,8 +337,10 @@ Item {
 
     readonly property int targetHeight: {
         switch (root.currentMode) {
+        case "osd":
+            return osdView.implicitHeight;
         case "notification":
-            return (root.hasNotifications && notificationView.activeNotif) ? notificationView.implicitHeight : root.islandHeight;
+            return (notificationView.implicitHeight > 0) ? notificationView.implicitHeight : root.islandHeight;
         case "dashboard":
             return dashboardView.implicitHeight;
         case "power":
@@ -276,9 +378,14 @@ Item {
     onCurrentModeChanged: {
         FocusGrabManager.clearTopGrab();
         Visibilities.closeActiveBarPopup();
-        GlobalStates.islandOpen = (currentMode !== "collapsed" && currentMode !== "notification");
-        GlobalStates.islandLauncherOpen = (currentMode === "apps" || currentMode === "projects");
-        GlobalStates.islandStatsOpen = (currentMode === "stats");
+        GlobalStates.islandOpen = (currentMode !== "collapsed" && currentMode !== "notification" && currentMode !== "osd" && !root.retractingToHidden);
+        GlobalStates.islandLauncherOpen = ((currentMode === "apps" || currentMode === "projects") && !root.retractingToHidden);
+        GlobalStates.islandStatsOpen = (currentMode === "stats" && !root.retractingToHidden);
+
+        if (root.previousMode === "collapsed" && root.currentMode !== "collapsed") {
+            root.openedFromHidden = !root.barAlwaysVisible;
+        }
+        root.previousMode = root.currentMode;
 
         if (currentMode === "apps" || currentMode === "projects") {
             GlobalStates.launcherMode = currentMode;
@@ -286,13 +393,14 @@ Item {
                 launcherView.forceActiveFocus();
                 launcherView.focusSearchInput();
             });
-        } else if (currentMode !== "collapsed" && currentMode !== "notification") {
+        } else if (currentMode !== "collapsed" && currentMode !== "notification" && currentMode !== "osd") {
             Qt.callLater(() => {
                 root.forceActiveFocus();
             });
         } else if (currentMode === "collapsed" && root.hasNotifications) {
             Qt.callLater(() => {
                 if (root.currentMode === "collapsed" && root.hasNotifications) {
+                    root.openedFromHidden = !root.barAlwaysVisible;
                     root.currentMode = "notification";
                 }
             });
@@ -313,6 +421,60 @@ Item {
         function onSilentChanged() {
             if (Notifications.silent && root.currentMode === "notification") {
                 root.collapse();
+            }
+        }
+    }
+
+    // OSD Morphing State & Connections
+    property string osdIndicator: "volume"
+    property real osdValue: 0.0
+    property bool osdMuted: false
+
+    Timer {
+        id: islandOsdTimer
+        interval: 2200
+        repeat: false
+        onTriggered: {
+            if (root.currentMode === "osd") {
+                root.collapse();
+            }
+        }
+    }
+
+    Timer {
+        id: retractFinishTimer
+        interval: root.morphCollapseDuration + 60
+        repeat: false
+        onTriggered: {
+            root.finishRetraction();
+        }
+    }
+
+    function triggerOsd(indicator: string, value: real, muted: bool) {
+        root.osdIndicator = indicator;
+        root.osdValue = value;
+        root.osdMuted = muted;
+        if (root.currentMode === "collapsed" || root.currentMode === "osd") {
+            root.expand("osd");
+            islandOsdTimer.restart();
+        }
+    }
+
+    Connections {
+        target: Audio
+        function onVolumeChanged(volume, muted, node) {
+            root.triggerOsd("volume", volume, muted);
+        }
+        function onMicVolumeChanged(volume, muted, node) {
+            root.triggerOsd("mic", volume, muted);
+        }
+    }
+
+    Connections {
+        target: Brightness
+        function onBrightnessChanged(value, screen) {
+            if (!screen || !root.screen || screen.name === root.screen.name || Brightness.syncBrightness) {
+                root.triggerOsd("brightness", value, false);
             }
         }
     }
@@ -348,7 +510,7 @@ Item {
         if (isHovered) {
             exitDebounceTimer.stop();
             root.debounceActive = false;
-        } else if (root.hasWindowTouchingTop && !root.isExpanded && !root.isPinned) {
+        } else if (root.hasWindowTouchingTop && !root.isExpanded && !root.isPinned && !root.retractingToHidden) {
             root.debounceActive = true;
             exitDebounceTimer.restart();
         }
@@ -356,6 +518,10 @@ Item {
 
     // Keyboard handling when expanded
     Keys.onPressed: event => {
+        if (root.retractingToHidden) {
+            event.accepted = true;
+            return;
+        }
         if (root.currentMode === "power") {
             if (event.key === Qt.Key_Left) {
                 powerView.moveSelection(-1);
@@ -403,11 +569,12 @@ Item {
         id: triggerStrip
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        width: root.targetWidth
+        width: Math.max(200, collapsedRow.implicitWidth + 28)
         height: root.triggerHeight
 
         HoverHandler {
             id: triggerHoverHandler
+            enabled: root.currentMode === "collapsed" && !root.retractingToHidden
         }
     }
 
@@ -417,18 +584,10 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.targetWidth
         height: root.targetHeight
-        y: root.targetY
-
-        Behavior on y {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: root.shouldBeRevealed ? root.morphDuration : root.morphCollapseDuration
-                easing.type: root.shouldBeRevealed ? Easing.OutQuart : Easing.InCubic
-            }
-        }
+        y: root.containerY
 
         Behavior on width {
-            enabled: Config.animDuration > 0
+            enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
             NumberAnimation {
                 duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
                 easing.type: Easing.OutQuart
@@ -436,14 +595,20 @@ Item {
         }
 
         Behavior on height {
-            enabled: Config.animDuration > 0
+            enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
             NumberAnimation {
                 duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
                 easing.type: Easing.OutQuart
             }
         }
 
-        opacity: (root.shouldBeRevealed || islandContainer.y > -root.islandHeight) ? 1.0 : 0.0
+        opacity: {
+            if (root.shouldBeRevealed)
+                return 1.0;
+            if (root.retractingToHidden && islandContainer.y > -root.targetHeight)
+                return 1.0;
+            return 0.0;
+        }
         Behavior on opacity {
             enabled: Config.animDuration > 0
             NumberAnimation {
@@ -464,13 +629,13 @@ Item {
             backgroundOpacity: 1.0
             topLeftRadius: 0
             topRightRadius: 0
-            bottomLeftRadius: root.isExpanded ? root.cornerRadius : (root.islandHeight / 2)
-            bottomRightRadius: root.isExpanded ? root.cornerRadius : (root.islandHeight / 2)
+            bottomLeftRadius: (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
+            bottomRightRadius: (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
 
             Behavior on bottomLeftRadius {
                 enabled: Config.animDuration > 0
                 NumberAnimation {
-                    duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+                    duration: (root.isExpanded || root.retractingToHidden) ? root.morphDuration : root.morphCollapseDuration
                     easing.type: Easing.OutQuart
                 }
             }
@@ -478,11 +643,11 @@ Item {
             Behavior on bottomRightRadius {
                 enabled: Config.animDuration > 0
                 NumberAnimation {
-                    duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+                    duration: (root.isExpanded || root.retractingToHidden) ? root.morphDuration : root.morphCollapseDuration
                     easing.type: Easing.OutQuart
                 }
             }
-            enableShadow: root.isExpanded
+            enableShadow: root.isExpanded || root.retractingToHidden
             enableBorder: true
             clip: true
 
@@ -506,8 +671,8 @@ Item {
                 width: Math.min(parent.width, collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin)
                 height: root.islandHeight
                 visible: opacity > 0
-                opacity: root.currentMode === "collapsed" ? 1.0 : 0.0
-                enabled: root.currentMode === "collapsed"
+                opacity: (root.currentMode === "collapsed" && !root.retractingToHidden) ? 1.0 : 0.0
+                enabled: root.currentMode === "collapsed" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -776,6 +941,30 @@ Item {
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // EXPANDED STATE -1: LIVE OSD BANNER (Volume / Brightness / Mic)
+            // ═══════════════════════════════════════════════════════════════
+            IslandOsdBanner {
+                id: osdView
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.targetWidth
+                indicator: root.osdIndicator
+                value: root.osdValue
+                muted: root.osdMuted
+                visible: opacity > 0
+                opacity: root.currentMode === "osd" ? 1.0 : 0.0
+                enabled: root.currentMode === "osd" && !root.retractingToHidden
+
+                Behavior on opacity {
+                    enabled: Config.animDuration > 0
+                    NumberAnimation {
+                        duration: (root.currentMode === "osd") ? root.contentFadeInDuration : root.contentFadeOutDuration
+                        easing.type: (root.currentMode === "osd") ? Easing.OutCubic : Easing.OutQuad
+                    }
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // EXPANDED STATE 0: LIVE NOTIFICATION BANNER (Dynamic Island Morph)
             // ═══════════════════════════════════════════════════════════════
             IslandNotificationBanner {
@@ -785,7 +974,7 @@ Item {
                 width: root.targetWidth
                 visible: opacity > 0
                 opacity: (!Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null) ? 1.0 : 0.0
-                enabled: !Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null
+                enabled: !Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -812,7 +1001,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "dashboard" ? 1.0 : 0.0
-                enabled: root.currentMode === "dashboard"
+                enabled: root.currentMode === "dashboard" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -847,7 +1036,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "power" ? 1.0 : 0.0
-                enabled: root.currentMode === "power"
+                enabled: root.currentMode === "power" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -872,7 +1061,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "sound" ? 1.0 : 0.0
-                enabled: root.currentMode === "sound"
+                enabled: root.currentMode === "sound" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -896,7 +1085,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "mic" ? 1.0 : 0.0
-                enabled: root.currentMode === "mic"
+                enabled: root.currentMode === "mic" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -920,7 +1109,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "wifi" ? 1.0 : 0.0
-                enabled: root.currentMode === "wifi"
+                enabled: root.currentMode === "wifi" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -944,7 +1133,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "bluetooth" ? 1.0 : 0.0
-                enabled: root.currentMode === "bluetooth"
+                enabled: root.currentMode === "bluetooth" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -968,7 +1157,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "stats" ? 1.0 : 0.0
-                enabled: root.currentMode === "stats"
+                enabled: root.currentMode === "stats" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -992,7 +1181,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "alerts" ? 1.0 : 0.0
-                enabled: root.currentMode === "alerts"
+                enabled: root.currentMode === "alerts" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -1017,7 +1206,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "wallpapers" ? 1.0 : 0.0
-                enabled: root.currentMode === "wallpapers"
+                enabled: root.currentMode === "wallpapers" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -1041,7 +1230,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "battery" ? 1.0 : 0.0
-                enabled: root.currentMode === "battery"
+                enabled: root.currentMode === "battery" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -1065,7 +1254,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "weather" ? 1.0 : 0.0
-                enabled: root.currentMode === "weather"
+                enabled: root.currentMode === "weather" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -1089,7 +1278,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "media" ? 1.0 : 0.0
-                enabled: root.currentMode === "media"
+                enabled: root.currentMode === "media" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -1113,7 +1302,7 @@ Item {
                 height: implicitHeight
                 visible: opacity > 0
                 opacity: root.currentMode === "calendar" ? 1.0 : 0.0
-                enabled: root.currentMode === "calendar"
+                enabled: root.currentMode === "calendar" && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -1138,7 +1327,7 @@ Item {
                 implicitHeight: launcherView.implicitHeight + 16
                 visible: opacity > 0
                 opacity: (root.currentMode === "apps" || root.currentMode === "projects") ? 1.0 : 0.0
-                enabled: root.currentMode === "apps" || root.currentMode === "projects"
+                enabled: (root.currentMode === "apps" || root.currentMode === "projects") && !root.retractingToHidden
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0

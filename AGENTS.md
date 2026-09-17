@@ -96,7 +96,7 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 ## RADHEY FLEET STANDARDS & QUALITY BAR
 - **Simplicity**: Make complex systems as simple as possible. Remove complexity before adding new layers. Apply YAGNI.
 - **Matt Pocock & Theo Browne Quality Bar**: Use strong types. Keep products useful, direct, and lean. Challenge weak ideas.
-- **Hit Every Surface**: For any cross-cutting change, trace behavior through all entry points, clients, contracts, reverse actions (e.g. open/close, lock/unlock, undo), error states, and documents. Do not treat one repaired path as a complete feature.
+- **Hit Every Surface at Root Cause**: For any cross-cutting change or defect that manifests across multiple entry points or UI states (e.g. animations, overlays, popups, keybinds, dismissal), diagnose and fix the root cause in the shared architecture/state machine across all surfaces, clients, contracts, and reverse actions rather than patching single-component symptoms. Never call one repaired path a complete feature. (Ref: `/home/radhey/fleet/AGENTS.md` and `hit-every-surface`).
 - **Verify Real Behavior**: Test changed behavior at the nearest real boundary (syntax verification, IPC messaging, process execution). State each check that passed and each important flow not tested. Never assume a static check or build proves runtime behavior.
 - **Protect Existing Work**: Preserve unrelated user changes. Stage only files that belong to the task.
 - **Protect Private Data**: Never log, print, or pass credentials, tokens, or passwords via command-line arguments (`argv`), logs, or shell aliases. Always clear secret variables immediately after authentication.

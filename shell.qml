@@ -67,9 +67,12 @@ ShellRoot {
                 sidebarPosition: GlobalStates.assistantPosition
             }
 
-            // Volume / mic / brightness OSD for keyboard media keys
-            OSD {
-                targetScreen: screenShellContainer.modelData
+            // Volume / mic / brightness OSD for keyboard media keys (standard bar only; island bar embeds its own OSD)
+            Loader {
+                active: Config.barReady ? (Config.bar?.style ?? "default") !== "island" : false
+                sourceComponent: OSD {
+                    targetScreen: screenShellContainer.modelData
+                }
             }
         }
     }
