@@ -45,6 +45,15 @@ Item {
                 Layout.preferredWidth: 32
                 Layout.maximumWidth: 32
                 Layout.fillWidth: false
+                scale: muteButton.down ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: muteButton.down ? 80 : 250
+                        easing.type: muteButton.down ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 background: StyledRect {
                     variant: muteButton.hovered ? "focus" : "common"

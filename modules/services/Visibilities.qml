@@ -310,6 +310,12 @@ Singleton {
                     currentActiveModule = "calendar";
                     island.expand("calendar");
                     return;
+                } else if (moduleName === "media" || moduleName === "music" || moduleName === "player") {
+                    closeActiveBarPopup();
+                    clearAll();
+                    currentActiveModule = "media";
+                    island.expand("media");
+                    return;
                 } else if (!moduleName) {
                     currentActiveModule = "";
                     island.collapse();

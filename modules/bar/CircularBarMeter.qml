@@ -52,6 +52,15 @@ Item {
         topRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
         bottomLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
         bottomRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
+        scale: (root.clickEnabled && meterMouseArea.pressed) ? 0.92 : 1.0
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: meterMouseArea.pressed ? 80 : 250
+                easing.type: meterMouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+                easing.overshoot: 1.5
+            }
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -140,6 +149,7 @@ Item {
         }
 
         MouseArea {
+            id: meterMouseArea
             anchors.fill: parent
             acceptedButtons: root.clickEnabled ? (Qt.LeftButton | Qt.RightButton) : Qt.NoButton
             cursorShape: root.clickEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor

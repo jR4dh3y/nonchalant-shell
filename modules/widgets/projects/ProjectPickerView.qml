@@ -194,6 +194,7 @@ Item {
                 height: 48
 
                 MouseArea {
+                    id: rowMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     onEntered: {
@@ -212,6 +213,15 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 8
                     spacing: 12
+                    scale: rowMouse.pressed ? 0.96 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: rowMouse.pressed ? 80 : 250
+                            easing.type: rowMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     Item {
                         Layout.preferredWidth: 32

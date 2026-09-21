@@ -209,6 +209,15 @@ Item {
                 id: toggleSwitch
                 implicitWidth: 40
                 implicitHeight: 22
+                scale: toggleMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: toggleMouse.pressed ? 80 : 250
+                        easing.type: toggleMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Rectangle {
                     anchors.fill: parent
@@ -241,6 +250,7 @@ Item {
                 }
 
                 MouseArea {
+                    id: toggleMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor

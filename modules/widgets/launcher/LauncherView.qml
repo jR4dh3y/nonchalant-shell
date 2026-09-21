@@ -637,6 +637,15 @@ Item {
                         anchors.margins: 8
                         height: 32
                         spacing: 12
+                        scale: mouseArea.pressed ? 0.96 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: mouseArea.pressed ? 80 : 250
+                                easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         // App icon
                         Item {
@@ -831,10 +840,18 @@ Item {
                                         anchors.fill: parent
 
                                         RowLayout {
-
                                             anchors.fill: parent
                                             anchors.margins: 8
                                             spacing: 8
+                                            scale: optionMouse.pressed ? 0.96 : 1.0
+
+                                            Behavior on scale {
+                                                NumberAnimation {
+                                                    duration: optionMouse.pressed ? 80 : 250
+                                                    easing.type: optionMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                                    easing.overshoot: 1.5
+                                                }
+                                            }
 
                                             Text {
                                                 renderType: Text.NativeRendering
@@ -888,6 +905,7 @@ Item {
                                         }
 
                                         MouseArea {
+                                            id: optionMouse
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor

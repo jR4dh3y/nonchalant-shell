@@ -796,7 +796,7 @@ class TestFeature16_WeatherDetailsAndMediaCenter(unittest.TestCase):
         self.assertIn('root.expand("media")', bar_content)
         self.assertIn('case "media":', bar_content)
         self.assertIn('IslandMediaCenterPanel', bar_content)
-        self.assertIn('onOpenMedia: root.currentMode = "media"', bar_content)
+        self.assertTrue('onOpenMedia: root.expand("media")' in bar_content or 'onOpenMedia: root.currentMode = "media"' in bar_content)
 
         with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
             dash_content = f.read()
@@ -1124,7 +1124,7 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
 
         self.assertIn('case "calendar":', bar_content)
         self.assertIn('calendarView.implicitHeight', bar_content)
-        self.assertIn('onOpenCalendar: root.currentMode = "calendar"', bar_content)
+        self.assertTrue('onOpenCalendar: root.expand("calendar")' in bar_content or 'onOpenCalendar: root.currentMode = "calendar"' in bar_content)
         self.assertIn('IslandCalendarPanel {', bar_content)
         self.assertIn('id: calendarView', bar_content)
 

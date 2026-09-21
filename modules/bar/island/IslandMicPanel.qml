@@ -110,6 +110,15 @@ Item {
                 implicitWidth: 22
                 implicitHeight: 22
                 Layout.alignment: Qt.AlignVCenter
+                scale: muteMouse.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: muteMouse.pressed ? 80 : 250
+                        easing.type: muteMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -122,6 +131,7 @@ Item {
                 }
 
                 MouseArea {
+                    id: muteMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: Audio.toggleMicMute()
@@ -202,6 +212,15 @@ Item {
                                 radius: Styling.radius(2)
                                 variant: delegateRoot.isCurrent ? "primary" : (devMouse.containsMouse ? "pane" : "internalbg")
                                 enableBorder: delegateRoot.isCurrent
+                                scale: devMouse.pressed ? 0.95 : 1.0
+
+                                Behavior on scale {
+                                    NumberAnimation {
+                                        duration: devMouse.pressed ? 80 : 250
+                                        easing.type: devMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                        easing.overshoot: 1.5
+                                    }
+                                }
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -319,6 +338,15 @@ Item {
                                             implicitWidth: 16
                                             implicitHeight: 16
                                             Layout.alignment: Qt.AlignVCenter
+                                            scale: appMuteMouse.pressed ? 0.88 : 1.0
+
+                                            Behavior on scale {
+                                                NumberAnimation {
+                                                    duration: appMuteMouse.pressed ? 80 : 250
+                                                    easing.type: appMuteMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                                    easing.overshoot: 1.5
+                                                }
+                                            }
 
                                             Text {
                                                 anchors.centerIn: parent
@@ -331,6 +359,7 @@ Item {
                                             }
 
                                             MouseArea {
+                                                id: appMuteMouse
                                                 anchors.fill: parent
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {

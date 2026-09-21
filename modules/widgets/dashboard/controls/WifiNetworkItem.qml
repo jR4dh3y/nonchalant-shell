@@ -31,6 +31,15 @@ Item {
         anchors.fill: parent
         variant: mouseArea.containsMouse ? "focus" : root.baseVariant
         radius: Styling.radius(4)
+        scale: mouseArea.pressed ? 0.98 : 1.0
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: mouseArea.pressed ? 80 : 250
+                easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+                easing.overshoot: 1.5
+            }
+        }
     }
 
     MouseArea {
@@ -205,6 +214,15 @@ Item {
                     flat: true
                     implicitWidth: 100
                     implicitHeight: 32
+                    scale: actionButton.down ? 0.94 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: actionButton.down ? 80 : 250
+                            easing.type: actionButton.down ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     background: StyledRect {
                         variant: root.network?.active ? "internalbg" : "primary"

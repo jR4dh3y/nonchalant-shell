@@ -25,7 +25,9 @@ Item {
 
     ColumnLayout {
         id: mainColumn
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.margins: 14
         spacing: 10
 

@@ -23,10 +23,67 @@ Item {
         objects: [root.node]
     }
 
-    StyledRect {
+    Item {
+        id: itemContainer
         anchors.fill: parent
-        variant: isSelected ? "primary" : (mouseArea.containsMouse ? "focus" : "common")
-        radius: isSelected ? Styling.radius(-4) : Styling.radius(4)
+        scale: mouseArea.pressed ? 0.96 : 1.0
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: mouseArea.pressed ? 80 : 250
+                easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+                easing.overshoot: 1.5
+            }
+        }
+
+        StyledRect {
+            anchors.fill: parent
+            variant: isSelected ? "primary" : (mouseArea.containsMouse ? "focus" : "common")
+            radius: isSelected ? Styling.radius(-4) : Styling.radius(4)
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            anchors.topMargin: 8
+            anchors.bottomMargin: 8
+            spacing: 12
+
+            // Device icon
+            Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
+                text: root.isOutput ? Icons.speakerHigh : Icons.mic
+                font.family: Icons.font
+                font.pixelSize: 18
+                color: root.isSelected ? Styling.srItem("primary") : Colors.overBackground
+            }
+
+            // Device name
+            Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
+                Layout.fillWidth: true
+                text: Audio.friendlyDeviceName(root.node)
+                font.family: Config.theme.font
+                font.pixelSize: Config.theme.fontSize
+                font.weight: root.isSelected ? Font.Bold : Font.Normal
+                color: root.isSelected ? Styling.srItem("primary") : Colors.overBackground
+                elide: Text.ElideRight
+            }
+
+            // Selected indicator
+            Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
+                visible: root.isSelected
+                text: Icons.accept
+                font.family: Icons.font
+                font.pixelSize: 16
+                color: Styling.srItem("primary")
+            }
+        }
     }
 
     MouseArea {
@@ -39,49 +96,6 @@ Item {
             } else {
                 Audio.setDefaultSource(root.node);
             }
-        }
-    }
-
-    RowLayout {
-        anchors.fill: parent
-        anchors.leftMargin: 12
-        anchors.rightMargin: 12
-        anchors.topMargin: 8
-        anchors.bottomMargin: 8
-        spacing: 12
-
-        // Device icon
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            text: root.isOutput ? Icons.speakerHigh : Icons.mic
-            font.family: Icons.font
-            font.pixelSize: 18
-            color: root.isSelected ? Styling.srItem("primary") : Colors.overBackground
-        }
-
-        // Device name
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            Layout.fillWidth: true
-            text: Audio.friendlyDeviceName(root.node)
-            font.family: Config.theme.font
-            font.pixelSize: Config.theme.fontSize
-            font.weight: root.isSelected ? Font.Bold : Font.Normal
-            color: root.isSelected ? Styling.srItem("primary") : Colors.overBackground
-            elide: Text.ElideRight
-        }
-
-        // Selected indicator
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            visible: root.isSelected
-            text: Icons.accept
-            font.family: Icons.font
-            font.pixelSize: 16
-            color: Styling.srItem("primary")
         }
     }
 }

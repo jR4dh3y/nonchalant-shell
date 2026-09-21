@@ -89,6 +89,15 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
+                scale: backMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: backMouse.pressed ? 80 : 250
+                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -126,6 +135,15 @@ Item {
                 implicitHeight: 22
                 radius: 11
                 variant: (root.allScreens && root.allScreens.length > 1 && screenMouse.containsMouse) ? "focus" : "common"
+                scale: screenMouse.pressed ? 0.94 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: screenMouse.pressed ? 80 : 250
+                        easing.type: screenMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 RowLayout {
                     id: screenRow
@@ -215,6 +233,15 @@ Item {
                         font.family: Icons.font
                         font.pixelSize: 12
                         color: clearSearchMouse.containsMouse ? Colors.overBackground : Colors.overSurfaceVariant
+                        scale: clearSearchMouse.pressed ? 0.88 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: clearSearchMouse.pressed ? 80 : 250
+                                easing.type: clearSearchMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         MouseArea {
                             id: clearSearchMouse
@@ -252,6 +279,15 @@ Item {
                     anchors.fill: parent
                     radius: Styling.radius(4)
                     variant: perScreenMouse.containsMouse ? "focus" : "pane"
+                    scale: perScreenMouse.pressed ? 0.94 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: perScreenMouse.pressed ? 80 : 250
+                            easing.type: perScreenMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     RowLayout {
                         anchors.fill: parent
@@ -418,9 +454,13 @@ Item {
                         enableBorder: delegateItem.isCurrent
                         clip: true
 
-                        scale: delegateItem.isHovered ? 0.96 : 1.0
+                        scale: gridItemMouse.pressed ? 0.91 : (delegateItem.isHovered ? 0.96 : 1.0)
                         Behavior on scale {
-                            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                            NumberAnimation {
+                                duration: gridItemMouse.pressed ? 80 : 160
+                                easing.type: gridItemMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.4
+                            }
                         }
 
                         // Thumbnail image
@@ -464,6 +504,7 @@ Item {
                         }
 
                         MouseArea {
+                            id: gridItemMouse
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor

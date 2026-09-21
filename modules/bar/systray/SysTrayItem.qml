@@ -149,24 +149,38 @@ MouseArea {
         }
     }
 
-    IconImage {
-        id: trayIcon
-        source: {
-            const iconPath = root.item.icon.toString();
-            if (iconPath.includes("spotify")) {
-                return Quickshell.iconPath("spotify-client");
-            }
-            return root.item.icon;
-        }
-        anchors.centerIn: parent
-        width: parent.width
-        height: parent.height
-        smooth: true
-    }
+    Item {
+        id: iconContainer
+        anchors.fill: parent
+        scale: root.pressed ? 0.90 : 1.0
 
-    Tinted {
-        sourceItem: trayIcon
-        anchors.fill: trayIcon
+        Behavior on scale {
+            NumberAnimation {
+                duration: root.pressed ? 80 : 250
+                easing.type: root.pressed ? Easing.OutQuad : Easing.OutBack
+                easing.overshoot: 1.5
+            }
+        }
+
+        IconImage {
+            id: trayIcon
+            source: {
+                const iconPath = root.item.icon.toString();
+                if (iconPath.includes("spotify")) {
+                    return Quickshell.iconPath("spotify-client");
+                }
+                return root.item.icon;
+            }
+            anchors.centerIn: parent
+            width: parent.width
+            height: parent.height
+            smooth: true
+        }
+
+        Tinted {
+            sourceItem: trayIcon
+            anchors.fill: trayIcon
+        }
     }
 
     StyledToolTip {
