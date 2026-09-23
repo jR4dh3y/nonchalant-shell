@@ -327,7 +327,7 @@ Item {
     readonly property int targetWidth: {
         if (root.isExpanded || root.retractingToHidden) {
             if (root.currentMode === "osd") {
-                return Math.min(270, root.width - 32);
+                return Math.min(300, root.width - 32);
             }
             if (root.currentMode === "wallpapers") {
                 return Math.min(540, root.width - 32);
@@ -452,12 +452,36 @@ Item {
         }
     }
 
+    property bool suppressOsd: false
+
+    Timer {
+        id: suppressOsdTimer
+        interval: 400
+        repeat: false
+        onTriggered: {
+            root.suppressOsd = false;
+        }
+    }
+
+    function suppressOsdTemporarily() {
+        root.suppressOsd = true;
+        suppressOsdTimer.restart();
+    }
+
     function triggerOsd(indicator: string, value: real, muted: bool) {
+        if (root.suppressOsd && root.currentMode === "collapsed")
+            return;
         root.osdIndicator = indicator;
         root.osdValue = value;
         root.osdMuted = muted;
         if (root.currentMode === "collapsed" || root.currentMode === "osd") {
-            root.expand("osd");
+            if (root.currentMode === "collapsed") {
+                root.expand("osd");
+            } else if (root.retractingToHidden) {
+                root.retractingToHidden = false;
+                retractFinishTimer.stop();
+                slideUpAnim.stop();
+            }
             islandOsdTimer.restart();
         }
     }
@@ -562,8 +586,8 @@ Item {
         id: activeBarHitbox
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        width: root.targetWidth
-        height: root.isExpanded ? root.targetHeight : (root.hitboxExpanded ? root.islandHeight : root.triggerHeight)
+        width: islandContainer.width
+        height: root.isExpanded ? islandContainer.height : (root.hitboxExpanded ? islandContainer.height : root.triggerHeight)
     }
 
     // Slim top-edge trigger hitbox along upper bezel
@@ -955,13 +979,14 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             IslandOsdBanner {
                 id: osdView
+                bar: root
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 indicator: root.osdIndicator
                 value: root.osdValue
                 muted: root.osdMuted
-                visible: opacity > 0
+                visible: opacity > 0 || root.currentMode === "osd"
                 opacity: root.currentMode === "osd" ? 1.0 : 0.0
                 enabled: root.currentMode === "osd" && !root.retractingToHidden
 
