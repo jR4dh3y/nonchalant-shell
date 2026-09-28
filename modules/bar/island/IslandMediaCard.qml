@@ -77,9 +77,19 @@ StyledRect {
 
             // Inline circular face / album artwork photo + metadata (clickable)
             Item {
+                id: trackInfoItem
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
                 Layout.alignment: Qt.AlignVCenter
+                scale: trackMouse.pressed ? 0.96 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: trackMouse.pressed ? 80 : 250
+                        easing.type: trackMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -165,6 +175,7 @@ StyledRect {
                 }
 
                 MouseArea {
+                    id: trackMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true

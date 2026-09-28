@@ -453,6 +453,15 @@ StyledRect {
             Layout.preferredHeight: 44
             variant: "primary"
             opacity: player.hasActivePlayer ? 1.0 : 0.5
+            scale: playPauseMouse.pressed ? 0.92 : 1.0
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: playPauseMouse.pressed ? 80 : 250
+                    easing.type: playPauseMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                    easing.overshoot: 1.5
+                }
+            }
 
             animateRadius: false
             radius: Styling.radius(16)
@@ -495,6 +504,7 @@ StyledRect {
             }
 
             MouseArea {
+                id: playPauseMouse
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 enabled: player.hasActivePlayer
@@ -597,6 +607,15 @@ StyledRect {
                     height: 40
                     variant: delegateMouseArea.containsMouse ? "focus" : "transparent"
                     radius: 4
+                    scale: delegateMouseArea.pressed ? 0.96 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: delegateMouseArea.pressed ? 80 : 250
+                            easing.type: delegateMouseArea.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     RowLayout {
                         anchors.fill: parent

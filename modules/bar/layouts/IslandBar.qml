@@ -286,7 +286,8 @@ Item {
         target: root
         property: "containerY"
         duration: root.morphDuration
-        easing.type: Easing.OutQuart
+        easing.type: Easing.OutBack
+        easing.overshoot: 1.25
     }
 
     NumberAnimation {
@@ -305,7 +306,8 @@ Item {
         target: root
         property: "containerY"
         duration: root.shouldBeRevealed ? root.morphDuration : root.morphCollapseDuration
-        easing.type: root.shouldBeRevealed ? Easing.OutQuart : Easing.InCubic
+        easing.type: root.shouldBeRevealed ? Easing.OutBack : Easing.InCubic
+        easing.overshoot: 1.25
     }
 
     onShouldBeRevealedChanged: {
@@ -319,13 +321,13 @@ Item {
 
     readonly property int morphDuration: Config.animDuration > 0 ? Math.max(240, Math.round(Config.animDuration * 0.85)) : 0
     readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(180, Math.round(Config.animDuration * 0.7)) : 0
-    readonly property int contentFadeInDuration: Config.animDuration > 0 ? Math.max(150, Math.round(Config.animDuration * 0.55)) : 0
-    readonly property int contentFadeOutDuration: Config.animDuration > 0 ? Math.max(65, Math.round(Config.animDuration * 0.22)) : 0
+    readonly property int contentFadeInDuration: Config.animDuration > 0 ? Math.max(160, Math.round(Config.animDuration * 0.60)) : 0
+    readonly property int contentFadeOutDuration: Config.animDuration > 0 ? Math.max(80, Math.round(Config.animDuration * 0.28)) : 0
 
     readonly property int targetWidth: {
         if (root.isExpanded || root.retractingToHidden) {
             if (root.currentMode === "osd") {
-                return Math.min(270, root.width - 32);
+                return Math.min(300, root.width - 32);
             }
             if (root.currentMode === "wallpapers") {
                 return Math.min(540, root.width - 32);
@@ -450,12 +452,36 @@ Item {
         }
     }
 
+    property bool suppressOsd: false
+
+    Timer {
+        id: suppressOsdTimer
+        interval: 400
+        repeat: false
+        onTriggered: {
+            root.suppressOsd = false;
+        }
+    }
+
+    function suppressOsdTemporarily() {
+        root.suppressOsd = true;
+        suppressOsdTimer.restart();
+    }
+
     function triggerOsd(indicator: string, value: real, muted: bool) {
+        if (root.suppressOsd && root.currentMode === "collapsed")
+            return;
         root.osdIndicator = indicator;
         root.osdValue = value;
         root.osdMuted = muted;
         if (root.currentMode === "collapsed" || root.currentMode === "osd") {
-            root.expand("osd");
+            if (root.currentMode === "collapsed") {
+                root.expand("osd");
+            } else if (root.retractingToHidden) {
+                root.retractingToHidden = false;
+                retractFinishTimer.stop();
+                slideUpAnim.stop();
+            }
             islandOsdTimer.restart();
         }
     }
@@ -560,8 +586,8 @@ Item {
         id: activeBarHitbox
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        width: root.targetWidth
-        height: root.isExpanded ? root.targetHeight : (root.hitboxExpanded ? root.islandHeight : root.triggerHeight)
+        width: islandContainer.width
+        height: root.isExpanded ? islandContainer.height : (root.hitboxExpanded ? islandContainer.height : root.triggerHeight)
     }
 
     // Slim top-edge trigger hitbox along upper bezel
@@ -587,18 +613,20 @@ Item {
         y: root.containerY
 
         Behavior on width {
-            enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
+            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden
             NumberAnimation {
                 duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-                easing.type: Easing.OutQuart
+                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutQuad
+                easing.overshoot: 1.28
             }
         }
 
         Behavior on height {
-            enabled: Config.animDuration > 0 && root.barNormallyVisible && !root.retractingToHidden
+            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden
             NumberAnimation {
                 duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-                easing.type: Easing.OutQuart
+                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutQuad
+                easing.overshoot: 1.28
             }
         }
 
@@ -613,7 +641,7 @@ Item {
             enabled: Config.animDuration > 0
             NumberAnimation {
                 duration: Config.animDuration / 2
-                easing.type: Easing.OutQuart
+                easing.type: Easing.OutQuad
             }
         }
 
@@ -633,18 +661,20 @@ Item {
             bottomRightRadius: (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
 
             Behavior on bottomLeftRadius {
-                enabled: Config.animDuration > 0
+                enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden
                 NumberAnimation {
                     duration: (root.isExpanded || root.retractingToHidden) ? root.morphDuration : root.morphCollapseDuration
-                    easing.type: Easing.OutQuart
+                    easing.type: root.isExpanded ? Easing.OutBack : Easing.OutQuad
+                    easing.overshoot: 1.28
                 }
             }
 
             Behavior on bottomRightRadius {
-                enabled: Config.animDuration > 0
+                enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden
                 NumberAnimation {
                     duration: (root.isExpanded || root.retractingToHidden) ? root.morphDuration : root.morphCollapseDuration
-                    easing.type: Easing.OutQuart
+                    easing.type: root.isExpanded ? Easing.OutBack : Easing.OutQuad
+                    easing.overshoot: 1.28
                 }
             }
             enableShadow: root.isExpanded || root.retractingToHidden
@@ -699,6 +729,7 @@ Item {
                         scale: contextMouse.pressed ? 0.94 : 1.0
 
                         Behavior on scale {
+                            enabled: (Config.animDuration ?? 0) > 0
                             NumberAnimation {
                                 duration: contextMouse.pressed ? 80 : 250
                                 easing.type: contextMouse.pressed ? Easing.OutQuad : Easing.OutBack
@@ -753,6 +784,7 @@ Item {
                         scale: dateMouse.pressed ? 0.94 : 1.0
 
                         Behavior on scale {
+                            enabled: (Config.animDuration ?? 0) > 0
                             NumberAnimation {
                                 duration: dateMouse.pressed ? 80 : 250
                                 easing.type: dateMouse.pressed ? Easing.OutQuad : Easing.OutBack
@@ -840,10 +872,11 @@ Item {
                         scale: alertsMouse.pressed ? 0.90 : 1.0
 
                         Behavior on scale {
+                            enabled: (Config.animDuration ?? 0) > 0
                             NumberAnimation {
                                 duration: alertsMouse.pressed ? 80 : 250
                                 easing.type: alertsMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
+                                easing.overshoot: 1.4
                             }
                         }
 
@@ -901,10 +934,11 @@ Item {
                             variant: pinMouse.containsMouse ? "focus" : "transparent"
                             scale: pinMouse.pressed ? 0.92 : 1.0
                             Behavior on scale {
+                                enabled: (Config.animDuration ?? 0) > 0
                                 NumberAnimation {
                                     duration: pinMouse.pressed ? 80 : 250
                                     easing.type: pinMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                    easing.overshoot: 1.5
+                                    easing.overshoot: 1.4
                                 }
                             }
 
@@ -945,13 +979,14 @@ Item {
             // ═══════════════════════════════════════════════════════════════
             IslandOsdBanner {
                 id: osdView
+                bar: root
                 anchors.top: parent.top
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: root.targetWidth
                 indicator: root.osdIndicator
                 value: root.osdValue
                 muted: root.osdMuted
-                visible: opacity > 0
+                visible: opacity > 0 || root.currentMode === "osd"
                 opacity: root.currentMode === "osd" ? 1.0 : 0.0
                 enabled: root.currentMode === "osd" && !root.retractingToHidden
 
@@ -1011,18 +1046,18 @@ Item {
                     }
                 }
 
-                onOpenPower: root.currentMode = "power"
-                onOpenSound: root.currentMode = "sound"
-                onOpenMic: root.currentMode = "mic"
-                onOpenWifi: root.currentMode = "wifi"
-                onOpenBluetooth: root.currentMode = "bluetooth"
-                onOpenStats: root.currentMode = "stats"
-                onOpenAlerts: root.currentMode = "alerts"
-                onOpenWallpapers: root.currentMode = "wallpapers"
-                onOpenBattery: root.currentMode = "battery"
-                onOpenWeather: root.currentMode = "weather"
-                onOpenMedia: root.currentMode = "media"
-                onOpenCalendar: root.currentMode = "calendar"
+                onOpenPower: root.expand("power")
+                onOpenSound: root.expand("sound")
+                onOpenMic: root.expand("mic")
+                onOpenWifi: root.expand("wifi")
+                onOpenBluetooth: root.expand("bluetooth")
+                onOpenStats: root.expand("stats")
+                onOpenAlerts: root.expand("alerts")
+                onOpenWallpapers: root.expand("wallpapers")
+                onOpenBattery: root.expand("battery")
+                onOpenWeather: root.expand("weather")
+                onOpenMedia: root.expand("media")
+                onOpenCalendar: root.expand("calendar")
             }
 
             // ═══════════════════════════════════════════════════════════════

@@ -34,6 +34,15 @@ Button {
     implicitWidth: 200
     implicitHeight: isSeparator ? 10 : 36
     enabled: !isSeparator
+    scale: (!root.isSeparator && root.down) ? 0.96 : 1.0
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: root.down ? 80 : 250
+            easing.type: root.down ? Easing.OutQuad : Easing.OutBack
+            easing.overshoot: 1.5
+        }
+    }
 
     // Reset default styling
     padding: 0

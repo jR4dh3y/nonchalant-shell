@@ -744,6 +744,15 @@ Item {
                     Layout.preferredWidth: 72
                     radius: Styling.radius(2)
                     variant: NightLightService.active ? "primary" : (nlMouse.containsMouse ? "focus" : "common")
+                    scale: nlMouse.pressed ? 0.92 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: nlMouse.pressed ? 80 : 250
+                            easing.type: nlMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     RowLayout {
                         id: nlContentRow

@@ -25,8 +25,12 @@ RowLayout {
         implicitHeight: 26
         Layout.alignment: Qt.AlignVCenter
 
-        readonly property var currentMonitor: Brightness.getMonitorForScreen(root.bar.screen)
-        readonly property real brightnessVal: currentMonitor?.brightness ?? 0.5
+        readonly property var currentMonitor: {
+            if (root.bar?.screen)
+                return Brightness.getMonitorForScreen(root.bar.screen);
+            return Brightness.monitors.length > 0 ? Brightness.monitors[0] : null;
+        }
+        readonly property real brightnessVal: currentMonitor?.brightness ?? (Brightness.monitors.length > 0 ? Brightness.monitors[0]?.brightness ?? 0.5 : 0.5)
 
         readonly property string iconGlyph: {
             if (brightnessVal <= 0.08) return "nightlight";
@@ -50,10 +54,11 @@ RowLayout {
             variant: brightMouse.containsMouse ? "focus" : "transparent"
             scale: brightMouse.pressed ? 0.92 : 1.0
             Behavior on scale {
+                enabled: (Config.animDuration ?? 0) > 0
                 NumberAnimation {
                     duration: brightMouse.pressed ? 80 : 250
                     easing.type: brightMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.5
+                    easing.overshoot: 1.4
                 }
             }
 
@@ -70,6 +75,7 @@ RowLayout {
             target: brightBtn
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
+                root.bar?.suppressOsdTemporarily();
                 const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
                 const newVal = Math.max(0.05, Math.min(1.0, brightBtn.brightnessVal + delta));
                 if (Brightness.syncBrightness) {
@@ -79,6 +85,8 @@ RowLayout {
                     }
                 } else if (brightBtn.currentMonitor?.ready) {
                     brightBtn.currentMonitor.setBrightness(newVal);
+                } else if (Brightness.monitors.length > 0 && Brightness.monitors[0]?.ready) {
+                    Brightness.monitors[0].setBrightness(newVal);
                 }
             }
         }
@@ -131,10 +139,11 @@ RowLayout {
             variant: volMouse.containsMouse ? "focus" : "transparent"
             scale: volMouse.pressed ? 0.92 : 1.0
             Behavior on scale {
+                enabled: (Config.animDuration ?? 0) > 0
                 NumberAnimation {
                     duration: volMouse.pressed ? 80 : 250
                     easing.type: volMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.5
+                    easing.overshoot: 1.4
                 }
             }
 
@@ -153,8 +162,13 @@ RowLayout {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
                 if (volBtn.audioDevice) {
+                    root.bar?.suppressOsdTemporarily();
                     const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
-                    volBtn.audioDevice.volume = Math.max(0.0, Math.min(1.0, volBtn.volumeVal + delta));
+                    const newVal = Math.max(0.0, Math.min(1.0, volBtn.volumeVal + delta));
+                    if (delta > 0 && volBtn.isMuted) {
+                        volBtn.audioDevice.muted = false;
+                    }
+                    Audio.setVolume(newVal);
                 }
             }
         }
@@ -170,6 +184,7 @@ RowLayout {
                     root.bar.expand("sound");
                 } else {
                     if (volBtn.audioDevice) {
+                        root.bar?.suppressOsdTemporarily();
                         volBtn.audioDevice.muted = !volBtn.audioDevice.muted;
                     }
                 }
@@ -208,10 +223,11 @@ RowLayout {
             variant: batMouse.containsMouse ? "focus" : "transparent"
             scale: batMouse.pressed ? 0.92 : 1.0
             Behavior on scale {
+                enabled: (Config.animDuration ?? 0) > 0
                 NumberAnimation {
                     duration: batMouse.pressed ? 80 : 250
                     easing.type: batMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.5
+                    easing.overshoot: 1.4
                 }
             }
 
