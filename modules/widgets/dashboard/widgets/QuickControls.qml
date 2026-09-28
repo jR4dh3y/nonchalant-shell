@@ -136,17 +136,6 @@ StyledRect {
                     tooltipText: Notifications.silent ? "Do Not Disturb: On" : "Do Not Disturb: Off"
                     onClicked: Notifications.toggleSilent()
                 }
-
-                ControlButton {
-                    Layout.preferredWidth: 48
-                    Layout.preferredHeight: 48
-                    iconName: Icons.gpu
-                    isActive: GpuService.nvidiaActive
-                    tooltipText: "GPU: " + GpuService.modeLabel + " · Left: switch · Right: menu"
-                    onClicked: GpuService.toggle()
-                    onRightClicked: root.togglePanel(2)
-                    onLongPressed: root.togglePanel(2)
-                }
             }
         }
 

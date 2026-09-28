@@ -54,8 +54,7 @@ Rectangle {
                         id: quickControls
 
                         onExpandedPanelChanged: {
-                            if (expandedPanel === -1)
-                                widgetsFlickable.contentY = 0;
+                            widgetsFlickable.contentY = 0;
                         }
                     }
 
@@ -76,17 +75,44 @@ Rectangle {
                             anchors.margins: 4
                             variant: "internalbg"
                             radius: Styling.radius(0)
-                            implicitHeight: settingsButton.implicitHeight + 8
+                            implicitHeight: controlsRow.implicitHeight + 8
 
-                            ControlButton {
-                                id: settingsButton
+                            RowLayout {
+                                id: controlsRow
                                 anchors.centerIn: parent
-                                implicitWidth: 48
-                                implicitHeight: 48
-                                iconName: Icons.gear
-                                isActive: GlobalStates.settingsWindowVisible
-                                tooltipText: "Settings"
-                                onClicked: GlobalShortcuts.toggleSettings()
+                                spacing: 4
+
+                                ControlButton {
+                                    id: settingsButton
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 48
+                                    implicitWidth: 48
+                                    implicitHeight: 48
+                                    iconName: Icons.gear
+                                    isActive: GlobalStates.settingsWindowVisible
+                                    tooltipText: "Settings"
+                                    onClicked: GlobalShortcuts.toggleSettings()
+                                }
+
+                                ControlButton {
+                                    id: gpuButton
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 48
+                                    implicitWidth: 48
+                                    implicitHeight: 48
+                                    iconName: Icons.gpu
+                                    isActive: GpuService.nvidiaActive
+                                    tooltipText: "GPU: " + GpuService.modeLabel + " · Left: switch · Right: menu"
+                                    onClicked: GpuService.toggle()
+                                    onRightClicked: {
+                                        widgetsFlickable.contentY = 0;
+                                        quickControls.togglePanel(2);
+                                    }
+                                    onLongPressed: {
+                                        widgetsFlickable.contentY = 0;
+                                        quickControls.togglePanel(2);
+                                    }
+                                }
                             }
                         }
                     }
