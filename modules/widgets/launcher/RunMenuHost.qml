@@ -105,7 +105,9 @@ Item {
                     anchors.fill: parent
                     anchors.margins: root.contentPadding
                     // Keep loaded so open/close does not hitch on first paint.
-                    active: true
+                    // The island hosts its own launcher, so skip this copy there
+                    // (but finish a closing animation after a style switch).
+                    active: Config.bar?.style !== "island" || root.menuShown
                     sourceComponent: Component {
                         LauncherView {}
                     }

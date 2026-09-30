@@ -65,6 +65,7 @@ Item {
             return;
 
         islandOsdTimer.stop();
+        launcherView.cancelFocusRetry();
         root.debounceActive = false;
         exitDebounceTimer.stop();
         if (slideDownAnim.running)
@@ -82,6 +83,10 @@ Item {
 
         if (root.openedFromHidden && !root.barAlwaysVisible && root.currentMode !== "collapsed") {
             root.retractingToHidden = true;
+            // The retracting page stays enabled until hidden; pull keyboard
+            // focus to the island root (which swallows keys while retracting)
+            // so typing cannot reach e.g. the launcher search field.
+            root.forceActiveFocus();
             GlobalStates.islandOpen = false;
             GlobalStates.islandLauncherOpen = false;
             GlobalStates.islandStatsOpen = false;
@@ -264,7 +269,7 @@ Item {
         return root.screenFocusedClient?.title || "Desktop";
     }
 
-    readonly property bool isHovered: triggerHoverHandler.hovered || (islandHoverHandler.hovered && root.currentMode === "collapsed" && !root.retractingToHidden)
+    readonly property bool isHovered: revealHoverHandler.hovered && root.currentMode === "collapsed" && !root.retractingToHidden
     property bool debounceActive: false
     readonly property bool isPinned: Config.bar?.pinned ?? false
 
@@ -426,8 +431,31 @@ Item {
         width: root.targetWidth
         height: root.targetHeight
         transformOrigin: Item.Top
-        visible: opacity > 0.001
-        enabled: page.active && !root.retractingToHidden
+        // The entering page stacks above the leaving one, so the leaving page's
+        // input shield never swallows clicks meant for the new page.
+        z: page.active ? 1 : 0
+        // The active page stays visible even while its fade-in is still
+        // paused at opacity 0: invisible items cannot take focus, so gating on
+        // opacity made opening a page drop its keyboard focus.
+        visible: page.active || opacity > 0.001
+        // Disable only once hidden. A MouseArea that is disabled while the
+        // pointer is over it ignores hover-leave and the later visibility
+        // change, so its containsMouse stayed true and the control looked
+        // stuck "clicked" when the page came back. Leaving and retracting
+        // pages are shielded from input instead.
+        enabled: page.visible
+
+        // Swallows clicks, wheel and hover on a page that is leaving or
+        // retracting. Taking hover also sends controls underneath a proper
+        // hover-leave, clearing their highlight.
+        MouseArea {
+            z: 1000
+            anchors.fill: parent
+            visible: !page.active || root.retractingToHidden
+            hoverEnabled: true
+            acceptedButtons: Qt.AllButtons
+            onWheel: wheel => wheel.accepted = true
+        }
 
         property real drift: -root.pageDrift
         opacity: 0
@@ -548,11 +576,9 @@ Item {
 
         if (currentMode === "apps" || currentMode === "projects") {
             GlobalStates.launcherMode = currentMode;
-            Qt.callLater(() => {
-                launcherView.forceActiveFocus();
-                launcherView.focusSearchInput();
-            });
+            launcherView.focusSearchInput();
         } else if (currentMode !== "collapsed" && currentMode !== "notification" && currentMode !== "osd") {
+            launcherView.cancelFocusRetry();
             Qt.callLater(() => {
                 root.forceActiveFocus();
             });
@@ -569,9 +595,9 @@ Item {
     Connections {
         target: GlobalStates
         function onLauncherModeChanged() {
-            if (root.currentMode === "apps" || root.currentMode === "projects") {
-                root.currentMode = GlobalStates.launcherMode;
-            }
+            const inLauncher = root.currentMode === "apps" || root.currentMode === "projects";
+            if (inLauncher && root.currentMode !== GlobalStates.launcherMode)
+                root.expand(GlobalStates.launcherMode);
         }
     }
 
@@ -635,9 +661,12 @@ Item {
             if (root.currentMode === "collapsed") {
                 root.expand("osd");
             } else if (root.retractingToHidden) {
+                // Cancel the retraction and pull the banner back out, or the
+                // new value would show on a partly hidden OSD.
                 root.retractingToHidden = false;
                 retractFinishTimer.stop();
                 slideUpAnim.stop();
+                root.animateReveal(0);
             }
             islandOsdTimer.restart();
         }
@@ -747,20 +776,6 @@ Item {
         height: root.isExpanded ? islandContainer.height : (root.hitboxExpanded ? islandContainer.height : root.triggerHeight)
     }
 
-    // Slim top-edge trigger hitbox along upper bezel
-    Item {
-        id: triggerStrip
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: 0
-        width: Math.max(200, collapsedRow.implicitWidth + 28)
-        height: root.triggerHeight
-
-        HoverHandler {
-            id: triggerHoverHandler
-            enabled: root.currentMode === "collapsed" && !root.retractingToHidden
-        }
-    }
-
     // Island body
     Item {
         id: islandContainer
@@ -786,10 +801,6 @@ Item {
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
                 easing.overshoot: root.morphOvershoot
             }
-        }
-
-        HoverHandler {
-            id: islandHoverHandler
         }
 
         // Ears hug the body's current edges and scale with the pinch, so the
@@ -1381,6 +1392,27 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    // Single hover zone for the autohide reveal: the top-edge trigger strip
+    // while hidden, growing with the visible body as it pinches out. It sits
+    // above everything and is non-blocking, so controls underneath still get
+    // hover. Separate handlers on the strip and the body lost hover to the
+    // collapsed row's MouseAreas as they slid under a stationary cursor
+    // mid-reveal (hover is delivered top-down and hover-enabled MouseAreas
+    // stop it), so the island flickered open, closed, open.
+    Item {
+        id: hoverZone
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 0
+        z: 1000
+        width: Math.max(200, collapsedRow.implicitWidth + 28, islandBody.width)
+        height: Math.max(root.triggerHeight, islandBody.height)
+
+        HoverHandler {
+            id: revealHoverHandler
+            blocking: false
         }
     }
 }

@@ -42,8 +42,8 @@ Item {
         }
     }
 
-    function focusSearchInput() {
-        searchInput.focusInput();
+    function focusSearchInput(): bool {
+        return searchInput.focusInput();
     }
 
     function rebuildList() {
