@@ -264,7 +264,7 @@ Item {
         return root.screenFocusedClient?.title || "Desktop";
     }
 
-    readonly property bool isHovered: triggerHoverHandler.hovered || (islandHoverHandler.hovered && root.currentMode === "collapsed" && !root.retractingToHidden)
+    readonly property bool isHovered: revealHoverHandler.hovered && root.currentMode === "collapsed" && !root.retractingToHidden
     property bool debounceActive: false
     readonly property bool isPinned: Config.bar?.pinned ?? false
 
@@ -747,20 +747,6 @@ Item {
         height: root.isExpanded ? islandContainer.height : (root.hitboxExpanded ? islandContainer.height : root.triggerHeight)
     }
 
-    // Slim top-edge trigger hitbox along upper bezel
-    Item {
-        id: triggerStrip
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: 0
-        width: Math.max(200, collapsedRow.implicitWidth + 28)
-        height: root.triggerHeight
-
-        HoverHandler {
-            id: triggerHoverHandler
-            enabled: root.currentMode === "collapsed" && !root.retractingToHidden
-        }
-    }
-
     // Island body
     Item {
         id: islandContainer
@@ -786,10 +772,6 @@ Item {
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
                 easing.overshoot: root.morphOvershoot
             }
-        }
-
-        HoverHandler {
-            id: islandHoverHandler
         }
 
         // Ears hug the body's current edges and scale with the pinch, so the
@@ -1381,6 +1363,27 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    // Single hover zone for the autohide reveal: the top-edge trigger strip
+    // while hidden, growing with the visible body as it pinches out. It sits
+    // above everything and is non-blocking, so controls underneath still get
+    // hover. Separate handlers on the strip and the body lost hover to the
+    // collapsed row's MouseAreas as they slid under a stationary cursor
+    // mid-reveal (hover is delivered top-down and hover-enabled MouseAreas
+    // stop it), so the island flickered open, closed, open.
+    Item {
+        id: hoverZone
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 0
+        z: 1000
+        width: Math.max(200, collapsedRow.implicitWidth + 28, islandBody.width)
+        height: Math.max(root.triggerHeight, islandBody.height)
+
+        HoverHandler {
+            id: revealHoverHandler
+            blocking: false
         }
     }
 }
