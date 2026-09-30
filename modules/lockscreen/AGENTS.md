@@ -8,10 +8,15 @@ The lock surface's frame-1 must show the *desktop as the user saw it*
 (windows included), not the clean wallpaper - otherwise niri's output switch
 to the locked frame flashes the bright wallpaper. Flow:
 1. `LockscreenService.lock()` → `GlobalStates.beginLockshotPrep()`.
-2. Each `Wallpaper.qml` window (one per screen) creates a *fresh* hidden
-   `ScreencopyView` (Loader), waits for `hasContent`, then `grabToImage()`s it
-   and unloads the view. Never reuse a view: it has no per-frame signal, so a
-   reused view gets grabbed with its previous (stale) frame. The
+2. `LockshotCapture.qml` (one per screen, hosted on the overlay
+   `UnifiedShellPanel`) creates a *fresh* hidden `ScreencopyView` (Loader),
+   waits for `hasContent`, then `grabToImage()`s it and unloads the view.
+   Never host it on the background wallpaper window: `grabToImage()` waits for
+   the host's next frame, and niri withholds frame callbacks from an occluded
+   background layer (a maximized window made the grab take ~600ms, past the
+   400ms prep timeout, so the lock showed the plain gray scrim). Never
+   reuse a view: it has no per-frame signal, so a reused view gets grabbed
+   with its previous (stale) frame. The
    `ItemGrabResult` goes to `GlobalStates.notifyLockshotPrepared()` (stored in
    `GlobalStates.lockshots`). The shot never touches disk: PNG encoding on
    the UI thread stalled the shell right before the lock engaged.
@@ -25,7 +30,8 @@ full brightness. Do not reintroduce a full-brightness wallpaper frame-1.
 ## STRUCTURE
 ```
 modules/lockscreen/
-└── LockScreen.qml       # Main WlSessionLockSurface component
+├── LockScreen.qml       # Main WlSessionLockSurface component
+└── LockshotCapture.qml  # Pre-lock desktop capture (hosted on the overlay panel)
 config/pam/
 └── password.conf        # Custom PAM rules for lockscreen
 ```
