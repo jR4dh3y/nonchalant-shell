@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Widgets
 import qs.config
@@ -41,6 +42,9 @@ Item {
     property string previousMode: "collapsed"
     property bool openedFromHidden: false
     property bool retractingToHidden: false
+    // Set only while switching mode on a hidden island: nothing is on screen,
+    // so geometry jumps to the new mode and the pinch alone animates it in.
+    property bool snapGeometry: false
     readonly property bool isExpanded: currentMode !== "collapsed" && !retractingToHidden
     readonly property bool islandActive: isExpanded && currentMode !== "notification" && currentMode !== "osd"
 
@@ -94,7 +98,7 @@ Item {
         slideUpAnim.stop();
         root.openedFromHidden = false;
         root.currentMode = "collapsed";
-        root.containerY = root.shouldBeRevealed ? 0 : -root.islandHeight;
+        root.animateReveal(root.shouldBeRevealed ? 0 : -root.islandHeight);
     }
 
     function expand(mode: string) {
@@ -117,13 +121,15 @@ Item {
         if (root.currentMode !== mode) {
             root.previousMode = root.currentMode;
         }
+        root.snapGeometry = wasHidden;
         root.currentMode = mode || "dashboard";
+        root.snapGeometry = false;
         if (wasHidden) {
             slideDownAnim.from = -root.targetHeight;
             slideDownAnim.to = 0;
             slideDownAnim.start();
         } else {
-            root.containerY = 0;
+            root.animateReveal(0);
         }
         if (root.currentMode === "dashboard") {
             NetworkService.update();
@@ -276,7 +282,7 @@ Item {
     }
 
     readonly property int targetY: shouldBeRevealed ? 0 : -targetHeight
-    readonly property bool isFullyRetracted: !shouldBeRevealed && (islandContainer.y <= -targetHeight + 1.0)
+    readonly property bool isFullyRetracted: !shouldBeRevealed && root.revealProgress <= 0.01
     readonly property bool hitboxExpanded: root.isExpanded || shouldBeRevealed || !isFullyRetracted
 
     property real containerY: shouldBeRevealed ? 0 : -islandHeight
@@ -287,7 +293,7 @@ Item {
         property: "containerY"
         duration: root.morphDuration
         easing.type: Easing.OutBack
-        easing.overshoot: 1.25
+        easing.overshoot: root.morphOvershoot
     }
 
     NumberAnimation {
@@ -307,22 +313,173 @@ Item {
         property: "containerY"
         duration: root.shouldBeRevealed ? root.morphDuration : root.morphCollapseDuration
         easing.type: root.shouldBeRevealed ? Easing.OutBack : Easing.InCubic
-        easing.overshoot: 1.25
+        easing.overshoot: root.morphOvershoot
     }
 
     onShouldBeRevealedChanged: {
         if (root.isExpanded || root.retractingToHidden)
             return;
+        root.animateReveal(root.shouldBeRevealed ? 0 : -root.islandHeight);
+    }
+
+    // Motion tokens. Expansion is a long, softly overshooting spring; collapse
+    // is a monotonic decelerating curve. Content enters a beat after the body
+    // starts morphing so it lands on an already-growing surface instead of
+    // popping in clipped.
+    readonly property int morphDuration: Config.animDuration > 0 ? Math.max(360, Math.round(Config.animDuration * 1.3)) : 0
+    readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(240, Math.round(Config.animDuration * 0.9)) : 0
+    readonly property int contentFadeInDuration: Config.animDuration > 0 ? Math.max(200, Math.round(Config.animDuration * 0.8)) : 0
+    readonly property int contentFadeOutDuration: Config.animDuration > 0 ? Math.max(90, Math.round(Config.animDuration * 0.35)) : 0
+    readonly property int contentEnterDelay: Math.round(morphDuration * 0.22)
+    readonly property real morphOvershoot: 1.12
+    readonly property real pageDrift: 6
+
+    // Concave fillets that join the body to the top screen edge.
+    readonly property real earRadius: Math.min(root.cornerRadius, root.islandHeight / 2)
+
+    // The reveal is a pinch out of the top edge, not a slide. containerY
+    // (driven by the slide animations) maps to revealProgress, which grows the
+    // body's height, width, corner radius and ears together from a narrow nub
+    // at the bezel. Positive containerY is spring overshoot; it stretches the
+    // body downward instead of detaching it from the screen edge.
+    readonly property real revealProgress: root.targetHeight > 0 ? Math.max(0, 1 + root.containerY / root.targetHeight) : 0
+    readonly property real revealClamped: Math.min(1, root.revealProgress)
+    readonly property real revealStretch: Math.max(0, root.containerY)
+    readonly property real pinchWidthFactor: 0.28
+    readonly property real revealWidthFactor: root.pinchWidthFactor + (1 - root.pinchWidthFactor) * root.revealClamped
+    // Content arrives over the last part of the reveal so the pinch reads as
+    // a clean shape first.
+    readonly property real contentReveal: Math.max(0, Math.min(1, (root.revealProgress - 0.4) / 0.6))
+
+    readonly property real bodyBottomRadiusTarget: {
+        if (root.currentMode === "osd")
+            return root.targetHeight / 2;
+        return (root.isExpanded || root.retractingToHidden) ? root.cornerRadius : root.islandHeight / 2;
+    }
+    property real bodyBottomRadius: bodyBottomRadiusTarget
+    Behavior on bodyBottomRadius {
+        enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
+        NumberAnimation {
+            duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+            easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
+            easing.overshoot: root.morphOvershoot
+        }
+    }
+
+    // Moves the reveal toward `target` with the hover curve (spring in,
+    // monotonic out) instead of snapping.
+    function animateReveal(target: real) {
         barHoverAnim.stop();
+        if (Config.animDuration <= 0 || Math.abs(root.containerY - target) < 0.5) {
+            root.containerY = target;
+            return;
+        }
         barHoverAnim.from = root.containerY;
-        barHoverAnim.to = root.shouldBeRevealed ? 0 : -root.islandHeight;
+        barHoverAnim.to = target;
         barHoverAnim.start();
     }
 
-    readonly property int morphDuration: Config.animDuration > 0 ? Math.max(240, Math.round(Config.animDuration * 0.85)) : 0
-    readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(180, Math.round(Config.animDuration * 0.7)) : 0
-    readonly property int contentFadeInDuration: Config.animDuration > 0 ? Math.max(160, Math.round(Config.animDuration * 0.60)) : 0
-    readonly property int contentFadeOutDuration: Config.animDuration > 0 ? Math.max(80, Math.round(Config.animDuration * 0.28)) : 0
+    // Inverted corner ("ear"): the region between the screen edge, the island
+    // side and a quarter circle tangent to both. Left ear sits left of the body.
+    component IslandEar: Shape {
+        id: ear
+
+        property bool mirrored: false
+        property real size: 0
+        property color fillColor: "transparent"
+
+        width: size
+        height: size
+        visible: size > 0.5
+        preferredRendererType: Shape.CurveRenderer
+
+        ShapePath {
+            fillColor: ear.fillColor
+            strokeWidth: -1
+            startX: ear.mirrored ? 0 : ear.size
+            startY: 0
+
+            PathLine {
+                x: ear.mirrored ? 0 : ear.size
+                y: ear.size
+            }
+            PathArc {
+                x: ear.mirrored ? ear.size : 0
+                y: 0
+                radiusX: ear.size
+                radiusY: ear.size
+                direction: ear.mirrored ? PathArc.Clockwise : PathArc.Counterclockwise
+            }
+        }
+    }
+
+    // Shared enter/leave choreography for every island surface. Entering
+    // waits a beat, then fades in while drifting down and settling from a
+    // slight shrink; leaving is a quick monotonic fade that drifts back up.
+    component IslandPage: Item {
+        id: page
+
+        required property bool active
+
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: root.targetWidth
+        height: root.targetHeight
+        transformOrigin: Item.Top
+        visible: opacity > 0.001
+        enabled: page.active && !root.retractingToHidden
+
+        property real drift: -root.pageDrift
+        opacity: 0
+        scale: 0.96
+        transform: Translate {
+            y: page.drift
+        }
+
+        states: State {
+            name: "shown"
+            when: page.active
+            PropertyChanges {
+                page.opacity: 1
+                page.scale: 1
+                page.drift: 0
+            }
+        }
+
+        transitions: [
+            Transition {
+                to: "shown"
+                enabled: Config.animDuration > 0
+                SequentialAnimation {
+                    PauseAnimation {
+                        duration: root.contentEnterDelay
+                    }
+                    ParallelAnimation {
+                        NumberAnimation {
+                            property: "opacity"
+                            duration: root.contentFadeInDuration
+                            easing.type: Easing.OutCubic
+                        }
+                        NumberAnimation {
+                            properties: "scale,drift"
+                            duration: root.morphDuration
+                            easing.type: Easing.OutBack
+                            easing.overshoot: root.morphOvershoot
+                        }
+                    }
+                }
+            },
+            Transition {
+                from: "shown"
+                enabled: Config.animDuration > 0
+                NumberAnimation {
+                    properties: "opacity,scale,drift"
+                    duration: root.contentFadeOutDuration
+                    easing.type: Easing.OutQuad
+                }
+            }
+        ]
+    }
 
     readonly property int targetWidth: {
         if (root.isExpanded || root.retractingToHidden) {
@@ -608,40 +765,26 @@ Item {
     Item {
         id: islandContainer
         anchors.horizontalCenter: parent.horizontalCenter
+        y: 0
         width: root.targetWidth
         height: root.targetHeight
-        y: root.containerY
+        visible: root.revealProgress > 0.001
 
         Behavior on width {
-            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden
+            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
                 duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutQuad
-                easing.overshoot: 1.28
+                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
+                easing.overshoot: root.morphOvershoot
             }
         }
 
         Behavior on height {
-            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden
+            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
                 duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
-                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutQuad
-                easing.overshoot: 1.28
-            }
-        }
-
-        opacity: {
-            if (root.shouldBeRevealed)
-                return 1.0;
-            if (root.retractingToHidden && islandContainer.y > -root.targetHeight)
-                return 1.0;
-            return 0.0;
-        }
-        Behavior on opacity {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration / 2
-                easing.type: Easing.OutQuad
+                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
+                easing.overshoot: root.morphOvershoot
             }
         }
 
@@ -649,34 +792,35 @@ Item {
             id: islandHoverHandler
         }
 
-        // Island body container
+        // Ears hug the body's current edges and scale with the pinch, so the
+        // island is pulled out of the bezel as one continuous shape.
+        IslandEar {
+            x: islandBody.x - size
+            y: 0
+            size: root.earRadius * root.revealClamped
+            fillColor: islandBody.color
+        }
+
+        IslandEar {
+            mirrored: true
+            x: islandBody.x + islandBody.width
+            y: 0
+            size: root.earRadius * root.revealClamped
+            fillColor: islandBody.color
+        }
+
         StyledRect {
             id: islandBody
-            anchors.fill: parent
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width * root.revealWidthFactor
+            height: parent.height * root.revealClamped + root.revealStretch
             variant: "pane"
             backgroundOpacity: 1.0
             topLeftRadius: 0
             topRightRadius: 0
-            bottomLeftRadius: (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
-            bottomRightRadius: (root.currentMode === "osd") ? (root.targetHeight / 2) : ((root.isExpanded || root.retractingToHidden) ? root.cornerRadius : (root.islandHeight / 2))
-
-            Behavior on bottomLeftRadius {
-                enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden
-                NumberAnimation {
-                    duration: (root.isExpanded || root.retractingToHidden) ? root.morphDuration : root.morphCollapseDuration
-                    easing.type: root.isExpanded ? Easing.OutBack : Easing.OutQuad
-                    easing.overshoot: 1.28
-                }
-            }
-
-            Behavior on bottomRightRadius {
-                enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden
-                NumberAnimation {
-                    duration: (root.isExpanded || root.retractingToHidden) ? root.morphDuration : root.morphCollapseDuration
-                    easing.type: root.isExpanded ? Easing.OutBack : Easing.OutQuad
-                    easing.overshoot: 1.28
-                }
-            }
+            bottomLeftRadius: root.bodyBottomRadius * root.revealClamped
+            bottomRightRadius: root.bodyBottomRadius * root.revealClamped
             enableShadow: root.isExpanded || root.retractingToHidden
             enableBorder: true
             clip: true
@@ -691,691 +835,550 @@ Item {
                 }
             }
 
-            // ═══════════════════════════════════════════════════════════════
-            // COLLAPSED BAR STATE (Image 0)
-            // ═══════════════════════════════════════════════════════════════
+            // Full-size content plane. It rides the leading edge of the pinch
+            // and is clipped by the body, so panels never reflow mid-reveal.
             Item {
-                id: collapsedView
-                anchors.top: parent.top
+                id: pageLayer
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(parent.width, collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin)
-                height: root.islandHeight
-                visible: opacity > 0
-                opacity: (root.currentMode === "collapsed" && !root.retractingToHidden) ? 1.0 : 0.0
-                enabled: root.currentMode === "collapsed" && !root.retractingToHidden
+                y: islandContainer.height * (root.revealClamped - 1)
+                width: islandContainer.width
+                height: islandContainer.height
+                opacity: root.contentReveal
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "collapsed" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "collapsed" ? Easing.OutCubic : Easing.OutQuad
-                    }
-                }
+                // ═══════════════════════════════════════════════════════════════
+                // COLLAPSED BAR STATE (Image 0)
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "collapsed" && !root.retractingToHidden
 
-                RowLayout {
-                    id: collapsedRow
-                    anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 12
-                    spacing: 8
-
-                    // Context info: Window / Media title with live fluid shader progress fill
                     Item {
-                        id: contextContainer
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.maximumWidth: 200
-                        implicitWidth: Math.min(fluidContextText.implicitWidth, 200)
-                        implicitHeight: Math.max(fluidContextText.implicitHeight, 20)
-                        scale: contextMouse.pressed ? 0.94 : 1.0
-
-                        Behavior on scale {
-                            enabled: (Config.animDuration ?? 0) > 0
-                            NumberAnimation {
-                                duration: contextMouse.pressed ? 80 : 250
-                                easing.type: contextMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.4
-                            }
-                        }
-
-                        FluidTextProgress {
-                            id: fluidContextText
-                            anchors.fill: parent
-                            text: root.contextLabel
-                            fontFamily: Config.theme.font
-                            pixelSize: Styling.fontSize(-1)
-                            bold: true
-                            elide: Text.ElideRight
-                            verticalAlignment: Text.AlignVCenter
-                            progress: (root.isMediaPlaying && MprisController.length > 0) ? MprisController.progress : 0.0
-                            isPlaying: root.isMediaPlaying
-                            baseColor: Colors.overBackground
-                            fillColor: Colors.primary
-                            highlightColor: Colors.primaryFixed ?? Colors.primary
-                        }
-
-                        MouseArea {
-                            id: contextMouse
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: {
-                                if (root.isMediaPlaying)
-                                    root.expand("media");
-                                else
-                                    root.expand("apps");
-                            }
-                        }
-                    }
-
-                    // Separator
-                    Text {
-                        text: "|"
-                        color: Colors.overSurfaceVariant
-                        opacity: 0.5
-                        font.pixelSize: Styling.fontSize(-2)
-                        renderType: Text.NativeRendering
-                    }
-
-                    // Time clickable (clean, seamless - no sub-section pill)
-                    Item {
-                        Layout.alignment: Qt.AlignVCenter
-                        implicitHeight: dateTimeRow.implicitHeight
-                        implicitWidth: dateTimeRow.implicitWidth
-                        scale: dateMouse.pressed ? 0.94 : 1.0
-
-                        Behavior on scale {
-                            enabled: (Config.animDuration ?? 0) > 0
-                            NumberAnimation {
-                                duration: dateMouse.pressed ? 80 : 250
-                                easing.type: dateMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.4
-                            }
-                        }
+                        id: collapsedView
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: Math.min(parent.width, collapsedRow.implicitWidth + collapsedRow.anchors.leftMargin + collapsedRow.anchors.rightMargin)
+                        height: root.islandHeight
 
                         RowLayout {
-                            id: dateTimeRow
+                            id: collapsedRow
                             anchors.fill: parent
-                            spacing: 6
+                            anchors.leftMargin: 16
+                            anchors.rightMargin: 12
+                            spacing: 8
 
-                            Text {
-                                text: root.formattedTime
-                                font.family: Config.theme.monoFont
-                                font.pixelSize: Styling.fontSize(-1)
-                                font.bold: true
-                                color: dateMouse.containsMouse ? Colors.primary : Colors.overBackground
-                                renderType: Text.NativeRendering
-                            }
-                        }
+                            // Context info: Window / Media title with live fluid shader progress fill
+                            Item {
+                                id: contextContainer
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.maximumWidth: 200
+                                implicitWidth: Math.min(fluidContextText.implicitWidth, 200)
+                                implicitHeight: Math.max(fluidContextText.implicitHeight, 20)
+                                scale: contextMouse.pressed ? 0.94 : 1.0
 
-                        MouseArea {
-                            id: dateMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: mouse => {
-                                if (mouse.button === Qt.RightButton) {
-                                    root.expand("calendar");
-                                } else {
-                                    root.expand("dashboard");
+                                Behavior on scale {
+                                    enabled: (Config.animDuration ?? 0) > 0
+                                    NumberAnimation {
+                                        duration: contextMouse.pressed ? 80 : 250
+                                        easing.type: contextMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                        easing.overshoot: 1.4
+                                    }
+                                }
+
+                                FluidTextProgress {
+                                    id: fluidContextText
+                                    anchors.fill: parent
+                                    text: root.contextLabel
+                                    fontFamily: Config.theme.font
+                                    pixelSize: Styling.fontSize(-1)
+                                    bold: true
+                                    elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
+                                    progress: (root.isMediaPlaying && MprisController.length > 0) ? MprisController.progress : 0.0
+                                    isPlaying: root.isMediaPlaying
+                                    baseColor: Colors.overBackground
+                                    fillColor: Colors.primary
+                                    highlightColor: Colors.primaryFixed ?? Colors.primary
+                                }
+
+                                MouseArea {
+                                    id: contextMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        if (root.isMediaPlaying)
+                                            root.expand("media");
+                                        else
+                                            root.expand("apps");
+                                    }
                                 }
                             }
-                        }
-                    }
 
-                    // Separator
-                    Text {
-                        text: "|"
-                        color: Colors.overSurfaceVariant
-                        opacity: 0.5
-                        font.pixelSize: Styling.fontSize(-2)
-                        renderType: Text.NativeRendering
-                    }
-
-                    // Workspaces switcher shared with the default bar
-                    NonchalantTaskbar {
-                        Layout.alignment: Qt.AlignVCenter
-                        bar: root
-                        showBackground: false
-                    }
-
-                    // Separator before controls
-                    Text {
-                        text: "|"
-                        color: Colors.overSurfaceVariant
-                        opacity: 0.5
-                        font.pixelSize: Styling.fontSize(-2)
-                        renderType: Text.NativeRendering
-                    }
-
-                    // Dynamic Material Symbols status icons (Volume, Brightness, Battery)
-                    IslandStatusIcons {
-                        bar: root
-                    }
-
-                    // Separator before alerts
-                    Text {
-                        visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
-                        text: "|"
-                        color: Colors.overSurfaceVariant
-                        opacity: 0.5
-                        font.pixelSize: Styling.fontSize(-2)
-                        renderType: Text.NativeRendering
-                    }
-
-                    // Alerts indicator
-                    Item {
-                        visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
-                        Layout.alignment: Qt.AlignVCenter
-                        implicitWidth: alertsRow.implicitWidth
-                        implicitHeight: alertsRow.implicitHeight
-                        scale: alertsMouse.pressed ? 0.90 : 1.0
-
-                        Behavior on scale {
-                            enabled: (Config.animDuration ?? 0) > 0
-                            NumberAnimation {
-                                duration: alertsMouse.pressed ? 80 : 250
-                                easing.type: alertsMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.4
-                            }
-                        }
-
-                        RowLayout {
-                            id: alertsRow
-                            anchors.fill: parent
-                            spacing: 4
-
+                            // Separator
                             Text {
-                                text: Icons.bell
-                                font.family: Icons.font
-                                font.pixelSize: 13
-                                color: root.hasNotifications ? Colors.primary : (alertsMouse.containsMouse ? Colors.primary : Colors.overBackground)
-                                renderType: Text.NativeRendering
-                            }
-
-                            Text {
-                                text: String(root.alertsCount)
-                                font.family: Config.theme.monoFont
+                                text: "|"
+                                color: Colors.overSurfaceVariant
+                                opacity: 0.5
                                 font.pixelSize: Styling.fontSize(-2)
-                                font.bold: true
-                                color: root.hasNotifications ? Colors.primary : (alertsMouse.containsMouse ? Colors.primary : Colors.overBackground)
                                 renderType: Text.NativeRendering
                             }
-                        }
 
-                        MouseArea {
-                            id: alertsMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.expand("alerts")
-                        }
-                    }
+                            // Time clickable (clean, seamless - no sub-section pill)
+                            Item {
+                                Layout.alignment: Qt.AlignVCenter
+                                implicitHeight: dateTimeRow.implicitHeight
+                                implicitWidth: dateTimeRow.implicitWidth
+                                scale: dateMouse.pressed ? 0.94 : 1.0
 
-                    // Separator before pin button
-                    Text {
-                        text: "|"
-                        color: Colors.overSurfaceVariant
-                        opacity: 0.5
-                        font.pixelSize: Styling.fontSize(-2)
-                        renderType: Text.NativeRendering
-                    }
+                                Behavior on scale {
+                                    enabled: (Config.animDuration ?? 0) > 0
+                                    NumberAnimation {
+                                        duration: dateMouse.pressed ? 80 : 250
+                                        easing.type: dateMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                        easing.overshoot: 1.4
+                                    }
+                                }
 
-                    // Dynamic Island pin toggle button
-                    Item {
-                        id: pinBtn
-                        implicitWidth: 22
-                        implicitHeight: 22
-                        Layout.alignment: Qt.AlignVCenter
+                                RowLayout {
+                                    id: dateTimeRow
+                                    anchors.fill: parent
+                                    spacing: 6
 
-                        StyledRect {
-                            anchors.fill: parent
-                            radius: 11
-                            variant: pinMouse.containsMouse ? "focus" : "transparent"
-                            scale: pinMouse.pressed ? 0.92 : 1.0
-                            Behavior on scale {
-                                enabled: (Config.animDuration ?? 0) > 0
-                                NumberAnimation {
-                                    duration: pinMouse.pressed ? 80 : 250
-                                    easing.type: pinMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                    easing.overshoot: 1.4
+                                    Text {
+                                        text: root.formattedTime
+                                        font.family: Config.theme.monoFont
+                                        font.pixelSize: Styling.fontSize(-1)
+                                        font.bold: true
+                                        color: dateMouse.containsMouse ? Colors.primary : Colors.overBackground
+                                        renderType: Text.NativeRendering
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: dateMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: mouse => {
+                                        if (mouse.button === Qt.RightButton) {
+                                            root.expand("calendar");
+                                        } else {
+                                            root.expand("dashboard");
+                                        }
+                                    }
                                 }
                             }
 
+                            // Separator
                             Text {
-                                anchors.centerIn: parent
-                                text: root.isPinned ? Icons.pin : Icons.unpin
-                                font.family: Icons.font
-                                font.pixelSize: 13
-                                color: root.isPinned ? Colors.primary : (pinMouse.containsMouse ? Colors.primary : Colors.overBackground)
-                                opacity: root.isPinned ? 1.0 : (pinMouse.containsMouse ? 1.0 : 0.7)
+                                text: "|"
+                                color: Colors.overSurfaceVariant
+                                opacity: 0.5
+                                font.pixelSize: Styling.fontSize(-2)
                                 renderType: Text.NativeRendering
                             }
-                        }
 
-                        MouseArea {
-                            id: pinMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (Config.bar) {
-                                    Config.bar.pinned = !root.isPinned;
+                            // Workspaces switcher shared with the default bar
+                            NonchalantTaskbar {
+                                Layout.alignment: Qt.AlignVCenter
+                                bar: root
+                                showBackground: false
+                            }
+
+                            // Separator before controls
+                            Text {
+                                text: "|"
+                                color: Colors.overSurfaceVariant
+                                opacity: 0.5
+                                font.pixelSize: Styling.fontSize(-2)
+                                renderType: Text.NativeRendering
+                            }
+
+                            // Dynamic Material Symbols status icons (Volume, Brightness, Battery)
+                            IslandStatusIcons {
+                                bar: root
+                            }
+
+                            // Separator before alerts
+                            Text {
+                                visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
+                                text: "|"
+                                color: Colors.overSurfaceVariant
+                                opacity: 0.5
+                                font.pixelSize: Styling.fontSize(-2)
+                                renderType: Text.NativeRendering
+                            }
+
+                            // Alerts indicator
+                            Item {
+                                visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
+                                Layout.alignment: Qt.AlignVCenter
+                                implicitWidth: alertsRow.implicitWidth
+                                implicitHeight: alertsRow.implicitHeight
+                                scale: alertsMouse.pressed ? 0.90 : 1.0
+
+                                Behavior on scale {
+                                    enabled: (Config.animDuration ?? 0) > 0
+                                    NumberAnimation {
+                                        duration: alertsMouse.pressed ? 80 : 250
+                                        easing.type: alertsMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                        easing.overshoot: 1.4
+                                    }
+                                }
+
+                                RowLayout {
+                                    id: alertsRow
+                                    anchors.fill: parent
+                                    spacing: 4
+
+                                    Text {
+                                        text: Icons.bell
+                                        font.family: Icons.font
+                                        font.pixelSize: 13
+                                        color: root.hasNotifications ? Colors.primary : (alertsMouse.containsMouse ? Colors.primary : Colors.overBackground)
+                                        renderType: Text.NativeRendering
+                                    }
+
+                                    Text {
+                                        text: String(root.alertsCount)
+                                        font.family: Config.theme.monoFont
+                                        font.pixelSize: Styling.fontSize(-2)
+                                        font.bold: true
+                                        color: root.hasNotifications ? Colors.primary : (alertsMouse.containsMouse ? Colors.primary : Colors.overBackground)
+                                        renderType: Text.NativeRendering
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: alertsMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.expand("alerts")
+                                }
+                            }
+
+                            // Separator before pin button
+                            Text {
+                                text: "|"
+                                color: Colors.overSurfaceVariant
+                                opacity: 0.5
+                                font.pixelSize: Styling.fontSize(-2)
+                                renderType: Text.NativeRendering
+                            }
+
+                            // Dynamic Island pin toggle button
+                            Item {
+                                id: pinBtn
+                                implicitWidth: 22
+                                implicitHeight: 22
+                                Layout.alignment: Qt.AlignVCenter
+
+                                StyledRect {
+                                    anchors.fill: parent
+                                    radius: 11
+                                    variant: pinMouse.containsMouse ? "focus" : "transparent"
+                                    scale: pinMouse.pressed ? 0.92 : 1.0
+                                    Behavior on scale {
+                                        enabled: (Config.animDuration ?? 0) > 0
+                                        NumberAnimation {
+                                            duration: pinMouse.pressed ? 80 : 250
+                                            easing.type: pinMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                            easing.overshoot: 1.4
+                                        }
+                                    }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: root.isPinned ? Icons.pin : Icons.unpin
+                                        font.family: Icons.font
+                                        font.pixelSize: 13
+                                        color: root.isPinned ? Colors.primary : (pinMouse.containsMouse ? Colors.primary : Colors.overBackground)
+                                        opacity: root.isPinned ? 1.0 : (pinMouse.containsMouse ? 1.0 : 0.7)
+                                        renderType: Text.NativeRendering
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: pinMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (Config.bar) {
+                                            Config.bar.pinned = !root.isPinned;
+                                        }
+                                    }
+                                }
+
+                                StyledToolTip {
+                                    show: pinMouse.containsMouse
+                                    tooltipText: root.isPinned ? "Unpin Island" : "Pin Island"
+                                    description: root.isPinned ? "Autohide disabled (reserves window space)" : "Keep island visible and reserve window space"
                                 }
                             }
                         }
+                    }
+                }
 
-                        StyledToolTip {
-                            show: pinMouse.containsMouse
-                            tooltipText: root.isPinned ? "Unpin Island" : "Pin Island"
-                            description: root.isPinned ? "Autohide disabled (reserves window space)" : "Keep island visible and reserve window space"
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE -1: LIVE OSD BANNER (Volume / Brightness / Mic)
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "osd"
+
+                    IslandOsdBanner {
+                        id: osdView
+                        bar: root
+                        width: parent.width
+                        indicator: root.osdIndicator
+                        value: root.osdValue
+                        muted: root.osdMuted
+                    }
+                }
+
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 0: LIVE NOTIFICATION BANNER (Dynamic Island Morph)
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: !Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null
+
+                    IslandNotificationBanner {
+                        id: notificationView
+                        width: parent.width
+
+                        onDismissRequested: {
+                            root.collapse();
                         }
                     }
                 }
-            }
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE -1: LIVE OSD BANNER (Volume / Brightness / Mic)
-            // ═══════════════════════════════════════════════════════════════
-            IslandOsdBanner {
-                id: osdView
-                bar: root
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                indicator: root.osdIndicator
-                value: root.osdValue
-                muted: root.osdMuted
-                visible: opacity > 0 || root.currentMode === "osd"
-                opacity: root.currentMode === "osd" ? 1.0 : 0.0
-                enabled: root.currentMode === "osd" && !root.retractingToHidden
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 1: MAIN DASHBOARD HUB
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "dashboard"
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: (root.currentMode === "osd") ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: (root.currentMode === "osd") ? Easing.OutCubic : Easing.OutQuad
-                    }
-                }
-            }
+                    IslandDashboard {
+                        id: dashboardView
+                        screen: root.screen
+                        width: parent.width
+                        height: implicitHeight
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 0: LIVE NOTIFICATION BANNER (Dynamic Island Morph)
-            // ═══════════════════════════════════════════════════════════════
-            IslandNotificationBanner {
-                id: notificationView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                visible: opacity > 0
-                opacity: (!Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null) ? 1.0 : 0.0
-                enabled: !Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null && !root.retractingToHidden
-
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: (root.currentMode === "notification") ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: (root.currentMode === "notification") ? Easing.OutCubic : Easing.OutQuad
+                        onOpenPower: root.expand("power")
+                        onOpenSound: root.expand("sound")
+                        onOpenMic: root.expand("mic")
+                        onOpenWifi: root.expand("wifi")
+                        onOpenBluetooth: root.expand("bluetooth")
+                        onOpenStats: root.expand("stats")
+                        onOpenAlerts: root.expand("alerts")
+                        onOpenWallpapers: root.expand("wallpapers")
+                        onOpenBattery: root.expand("battery")
+                        onOpenWeather: root.expand("weather")
+                        onOpenMedia: root.expand("media")
+                        onOpenCalendar: root.expand("calendar")
                     }
                 }
 
-                onDismissRequested: {
-                    root.collapse();
-                }
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 2: POWER MENU (Image 0)
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "power"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 1: MAIN DASHBOARD HUB
-            // ═══════════════════════════════════════════════════════════════
-            IslandDashboard {
-                id: dashboardView
-                screen: root.screen
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "dashboard" ? 1.0 : 0.0
-                enabled: root.currentMode === "dashboard" && !root.retractingToHidden
+                    IslandPowerPanel {
+                        id: powerView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "dashboard" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "dashboard" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
+                        onActionTriggered: root.collapse()
                     }
                 }
 
-                onOpenPower: root.expand("power")
-                onOpenSound: root.expand("sound")
-                onOpenMic: root.expand("mic")
-                onOpenWifi: root.expand("wifi")
-                onOpenBluetooth: root.expand("bluetooth")
-                onOpenStats: root.expand("stats")
-                onOpenAlerts: root.expand("alerts")
-                onOpenWallpapers: root.expand("wallpapers")
-                onOpenBattery: root.expand("battery")
-                onOpenWeather: root.expand("weather")
-                onOpenMedia: root.expand("media")
-                onOpenCalendar: root.expand("calendar")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 3: SOUND PANEL (Image 1)
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "sound"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 2: POWER MENU (Image 0)
-            // ═══════════════════════════════════════════════════════════════
-            IslandPowerPanel {
-                id: powerView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "power" ? 1.0 : 0.0
-                enabled: root.currentMode === "power" && !root.retractingToHidden
+                    IslandSoundPanel {
+                        id: soundView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "power" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "power" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-                onActionTriggered: root.collapse()
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 3.5: MICROPHONE PANEL
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "mic"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 3: SOUND PANEL (Image 1)
-            // ═══════════════════════════════════════════════════════════════
-            IslandSoundPanel {
-                id: soundView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "sound" ? 1.0 : 0.0
-                enabled: root.currentMode === "sound" && !root.retractingToHidden
+                    IslandMicPanel {
+                        id: micView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "sound" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "sound" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 4: WI-FI NETWORKS PANEL (Image 2)
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "wifi"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 3.5: MICROPHONE PANEL
-            // ═══════════════════════════════════════════════════════════════
-            IslandMicPanel {
-                id: micView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "mic" ? 1.0 : 0.0
-                enabled: root.currentMode === "mic" && !root.retractingToHidden
+                    IslandWifiPanel {
+                        id: wifiView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "mic" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "mic" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 4.5: BLUETOOTH PANEL
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "bluetooth"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 4: WI-FI NETWORKS PANEL (Image 2)
-            // ═══════════════════════════════════════════════════════════════
-            IslandWifiPanel {
-                id: wifiView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "wifi" ? 1.0 : 0.0
-                enabled: root.currentMode === "wifi" && !root.retractingToHidden
+                    IslandBluetoothPanel {
+                        id: bluetoothView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "wifi" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "wifi" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 5: SYSTEM RESOURCES STATS PANEL
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "stats"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 4.5: BLUETOOTH PANEL
-            // ═══════════════════════════════════════════════════════════════
-            IslandBluetoothPanel {
-                id: bluetoothView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "bluetooth" ? 1.0 : 0.0
-                enabled: root.currentMode === "bluetooth" && !root.retractingToHidden
+                    IslandStatsPanel {
+                        id: statsView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "bluetooth" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "bluetooth" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 5.5: ALERTS PANEL
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "alerts"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 5: SYSTEM RESOURCES STATS PANEL
-            // ═══════════════════════════════════════════════════════════════
-            IslandStatsPanel {
-                id: statsView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "stats" ? 1.0 : 0.0
-                enabled: root.currentMode === "stats" && !root.retractingToHidden
+                    IslandAlertsPanel {
+                        id: alertsView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "stats" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "stats" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 5.6: WALLPAPERS PANEL
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "wallpapers"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 5.5: ALERTS PANEL
-            // ═══════════════════════════════════════════════════════════════
-            IslandAlertsPanel {
-                id: alertsView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "alerts" ? 1.0 : 0.0
-                enabled: root.currentMode === "alerts" && !root.retractingToHidden
+                    IslandWallpaperPanel {
+                        id: wallpapersView
+                        screen: root.screen
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "alerts" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "alerts" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 5.7: BATTERY & POWER PANEL
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "battery"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 5.6: WALLPAPERS PANEL
-            // ═══════════════════════════════════════════════════════════════
-            IslandWallpaperPanel {
-                id: wallpapersView
-                screen: root.screen
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "wallpapers" ? 1.0 : 0.0
-                enabled: root.currentMode === "wallpapers" && !root.retractingToHidden
+                    IslandBatteryPanel {
+                        id: batteryView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "wallpapers" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "wallpapers" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 5.8: WEATHER PANEL
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "weather"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 5.7: BATTERY & POWER PANEL
-            // ═══════════════════════════════════════════════════════════════
-            IslandBatteryPanel {
-                id: batteryView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "battery" ? 1.0 : 0.0
-                enabled: root.currentMode === "battery" && !root.retractingToHidden
+                    IslandWeatherPanel {
+                        id: weatherView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "battery" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "battery" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 5.9: DEDICATED MEDIA CENTER
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "media"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 5.8: WEATHER PANEL
-            // ═══════════════════════════════════════════════════════════════
-            IslandWeatherPanel {
-                id: weatherView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "weather" ? 1.0 : 0.0
-                enabled: root.currentMode === "weather" && !root.retractingToHidden
+                    IslandMediaCenterPanel {
+                        id: mediaCenterView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "weather" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "weather" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 5.95: DEDICATED CALENDAR & DATE TIME
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "calendar"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 5.9: DEDICATED MEDIA CENTER
-            // ═══════════════════════════════════════════════════════════════
-            IslandMediaCenterPanel {
-                id: mediaCenterView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "media" ? 1.0 : 0.0
-                enabled: root.currentMode === "media" && !root.retractingToHidden
+                    IslandCalendarPanel {
+                        id: calendarView
+                        width: parent.width
+                        height: implicitHeight
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "media" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "media" ? Easing.OutCubic : Easing.OutQuad
+                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
-                onBackRequested: root.expand("dashboard")
-            }
+                // ═══════════════════════════════════════════════════════════════
+                // EXPANDED STATE 6: APP LAUNCHER & PROJECT PICKER
+                // ═══════════════════════════════════════════════════════════════
+                IslandPage {
+                    active: root.currentMode === "apps" || root.currentMode === "projects"
 
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 5.95: DEDICATED CALENDAR & DATE TIME
-            // ═══════════════════════════════════════════════════════════════
-            IslandCalendarPanel {
-                id: calendarView
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                visible: opacity > 0
-                opacity: root.currentMode === "calendar" ? 1.0 : 0.0
-                enabled: root.currentMode === "calendar" && !root.retractingToHidden
+                    Item {
+                        id: launcherViewWrapper
+                        width: parent.width
+                        height: implicitHeight
+                        implicitHeight: launcherView.implicitHeight + 16
 
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: root.currentMode === "calendar" ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: root.currentMode === "calendar" ? Easing.OutCubic : Easing.OutQuad
+                        LauncherView {
+                            id: launcherView
+                            anchors.fill: parent
+                            anchors.margins: 8
+                        }
                     }
-                }
-
-                onBackRequested: root.expand("dashboard")
-            }
-
-            // ═══════════════════════════════════════════════════════════════
-            // EXPANDED STATE 6: APP LAUNCHER & PROJECT PICKER
-            // ═══════════════════════════════════════════════════════════════
-            Item {
-                id: launcherViewWrapper
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.targetWidth
-                height: implicitHeight
-                implicitHeight: launcherView.implicitHeight + 16
-                visible: opacity > 0
-                opacity: (root.currentMode === "apps" || root.currentMode === "projects") ? 1.0 : 0.0
-                enabled: (root.currentMode === "apps" || root.currentMode === "projects") && !root.retractingToHidden
-
-                Behavior on opacity {
-                    enabled: Config.animDuration > 0
-                    NumberAnimation {
-                        duration: (root.currentMode === "apps" || root.currentMode === "projects") ? root.contentFadeInDuration : root.contentFadeOutDuration
-                        easing.type: (root.currentMode === "apps" || root.currentMode === "projects") ? Easing.OutCubic : Easing.OutQuad
-                    }
-                }
-
-                LauncherView {
-                    id: launcherView
-                    anchors.fill: parent
-                    anchors.margins: 8
                 }
             }
         }

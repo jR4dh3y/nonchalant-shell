@@ -1174,9 +1174,12 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
         # targetWidth must stay expanded during retraction without shrinking horizontally
         self.assertIn("if (root.isExpanded || root.retractingToHidden)", bar_content)
 
-        # collapsedView must remain invisible and disabled during retraction
-        self.assertIn("opacity: (root.currentMode === \"collapsed\" && !root.retractingToHidden) ? 1.0 : 0.0", bar_content)
-        self.assertIn("enabled: root.currentMode === \"collapsed\" && !root.retractingToHidden", bar_content)
+        # collapsedView must remain invisible and disabled during retraction.
+        # Its IslandPage is only shown while active, and pages never accept
+        # input while retracting.
+        self.assertIn("active: root.currentMode === \"collapsed\" && !root.retractingToHidden", bar_content)
+        self.assertIn("when: page.active", bar_content)
+        self.assertIn("enabled: page.active && !root.retractingToHidden", bar_content)
 
         # collapse() must route directly to retractingToHidden when opened from hidden
         self.assertIn("if (root.openedFromHidden && !root.barAlwaysVisible && root.currentMode !== \"collapsed\")", bar_content)
