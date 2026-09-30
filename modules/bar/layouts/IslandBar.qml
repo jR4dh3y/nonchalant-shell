@@ -82,6 +82,10 @@ Item {
 
         if (root.openedFromHidden && !root.barAlwaysVisible && root.currentMode !== "collapsed") {
             root.retractingToHidden = true;
+            // The retracting page stays enabled until hidden; pull keyboard
+            // focus to the island root (which swallows keys while retracting)
+            // so typing cannot reach e.g. the launcher search field.
+            root.forceActiveFocus();
             GlobalStates.islandOpen = false;
             GlobalStates.islandLauncherOpen = false;
             GlobalStates.islandStatsOpen = false;
@@ -426,6 +430,9 @@ Item {
         width: root.targetWidth
         height: root.targetHeight
         transformOrigin: Item.Top
+        // The entering page stacks above the leaving one, so the leaving page's
+        // input shield never swallows clicks meant for the new page.
+        z: page.active ? 1 : 0
         // The active page stays visible even while its fade-in is still
         // paused at opacity 0: invisible items cannot take focus, so gating on
         // opacity made opening a page drop its keyboard focus.
@@ -652,9 +659,12 @@ Item {
             if (root.currentMode === "collapsed") {
                 root.expand("osd");
             } else if (root.retractingToHidden) {
+                // Cancel the retraction and pull the banner back out, or the
+                // new value would show on a partly hidden OSD.
                 root.retractingToHidden = false;
                 retractFinishTimer.stop();
                 slideUpAnim.stop();
+                root.animateReveal(0);
             }
             islandOsdTimer.restart();
         }
