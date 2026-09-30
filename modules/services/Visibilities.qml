@@ -128,6 +128,56 @@ Singleton {
         return islands[focusedMonitor.name] || null;
     }
 
+    function isIslandStyle(): bool {
+        return (Config.bar?.style ?? "default") === "island";
+    }
+
+    // Module / IPC names -> island modes. "launcher" is resolved separately
+    // because it depends on GlobalStates.launcherMode.
+    readonly property var islandModeAliases: ({
+        "dashboard": "dashboard",
+        "wallpapers": "wallpapers",
+        "wallpaper": "wallpapers",
+        "alerts": "alerts",
+        "notifications": "alerts",
+        "stats": "stats",
+        "system-monitor": "stats",
+        "power": "power",
+        "powermenu": "power",
+        "sound": "sound",
+        "audio": "sound",
+        "mic": "mic",
+        "microphone": "mic",
+        "battery": "battery",
+        "powerprofile": "battery",
+        "wifi": "wifi",
+        "network": "wifi",
+        "bluetooth": "bluetooth",
+        "weather": "weather",
+        "calendar": "calendar",
+        "media": "media",
+        "music": "media",
+        "player": "media"
+    })
+
+    // Single entry point for island shortcuts: close the mode if it is the
+    // one showing, otherwise morph straight into it. expand() already
+    // dismisses popups/grabs, so there is no collapse-then-reopen dance.
+    // Returns false when the island style is not active, so callers can
+    // fall back to the default bar.
+    function toggleIslandMode(mode: string): bool {
+        if (!isIslandStyle())
+            return false;
+        const island = getIslandForActive();
+        if (!island)
+            return false;
+        if (island.isExpanded && island.currentMode === mode)
+            island.collapse();
+        else
+            island.expand(mode);
+        return true;
+    }
+
     function registerDashboardController(screenName, controller) {
         dashboardControllers = _updateMap(dashboardControllers, screenName, controller);
     }
@@ -154,23 +204,12 @@ Singleton {
     }
 
     function togglePowerMenuForActive() {
+        if (toggleIslandMode("power"))
+            return;
+
         const focusedMonitor = NiriService.focusedMonitor;
         if (!focusedMonitor)
             return;
-
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "power") {
-                    island.collapse();
-                } else {
-                    clearAll();
-                    currentActiveModule = "powermenu";
-                    island.expand("power");
-                }
-                return;
-            }
-        }
 
         const button = powerMenuButtons[focusedMonitor.name] || null;
         if (!button) {
@@ -193,23 +232,12 @@ Singleton {
     }
 
     function toggleSystemMonitorForActive() {
+        if (toggleIslandMode("stats"))
+            return;
+
         const focusedMonitor = NiriService.focusedMonitor;
         if (!focusedMonitor)
             return;
-
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "stats") {
-                    island.collapse();
-                } else {
-                    clearAll();
-                    currentActiveModule = "system-monitor";
-                    island.expand("stats");
-                }
-                return;
-            }
-        }
 
         const button = systemMonitorButtons[focusedMonitor.name] || null;
         if (!button) {
@@ -228,97 +256,19 @@ Singleton {
             return;
         }
 
-        if ((Config.bar?.style ?? "default") === "island") {
+        if (isIslandStyle()) {
             const island = getIslandForActive();
             if (island) {
-                if (moduleName === "launcher") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "launcher";
-                    const mode = GlobalStates.launcherMode === "projects" ? "projects" : "apps";
-                    island.expand(mode);
-                    return;
-                } else if (moduleName === "dashboard") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "dashboard";
-                    island.expand("dashboard");
-                    return;
-                } else if (moduleName === "wallpapers" || moduleName === "wallpaper") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "wallpapers";
-                    island.expand("wallpapers");
-                    return;
-                } else if (moduleName === "alerts" || moduleName === "notifications") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "alerts";
-                    island.expand("alerts");
-                    return;
-                } else if (moduleName === "stats" || moduleName === "system-monitor") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "stats";
-                    island.expand("stats");
-                    return;
-                } else if (moduleName === "power" || moduleName === "powermenu") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "powermenu";
-                    island.expand("power");
-                    return;
-                } else if (moduleName === "sound" || moduleName === "audio") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "sound";
-                    island.expand("sound");
-                    return;
-                } else if (moduleName === "mic" || moduleName === "microphone") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "mic";
-                    island.expand("mic");
-                    return;
-                } else if (moduleName === "battery" || moduleName === "powerprofile") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "battery";
-                    island.expand("battery");
-                    return;
-                } else if (moduleName === "wifi" || moduleName === "network") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "wifi";
-                    island.expand("wifi");
-                    return;
-                } else if (moduleName === "bluetooth") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "bluetooth";
-                    island.expand("bluetooth");
-                    return;
-                } else if (moduleName === "weather") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "weather";
-                    island.expand("weather");
-                    return;
-                } else if (moduleName === "calendar") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "calendar";
-                    island.expand("calendar");
-                    return;
-                } else if (moduleName === "media" || moduleName === "music" || moduleName === "player") {
-                    closeActiveBarPopup();
-                    clearAll();
-                    currentActiveModule = "media";
-                    island.expand("media");
-                    return;
-                } else if (!moduleName) {
+                if (!moduleName) {
                     currentActiveModule = "";
                     island.collapse();
+                    return;
+                }
+                const mode = moduleName === "launcher"
+                    ? (GlobalStates.launcherMode === "projects" ? "projects" : "apps")
+                    : islandModeAliases[moduleName];
+                if (mode) {
+                    island.expand(mode);
                     return;
                 }
             }

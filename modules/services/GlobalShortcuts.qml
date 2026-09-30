@@ -110,20 +110,25 @@ Singleton {
         }
     }
 
-    function toggleLauncher() {
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = Visibilities.getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "apps") {
-                    island.collapse();
-                } else {
-                    GlobalStates.launcherMode = "apps";
-                    GlobalStates.clearLauncherState();
-                    island.expand("apps");
-                }
-                return;
-            }
+    // Launcher and project picker share one island page. Decide open/close
+    // before touching launcherMode: changing it switches the island's mode.
+    function toggleIslandLauncher(mode: string, clearState): bool {
+        const island = Visibilities.isIslandStyle() ? Visibilities.getIslandForActive() : null;
+        if (!island)
+            return false;
+        if (island.isExpanded && island.currentMode === mode) {
+            island.collapse();
+            return true;
         }
+        GlobalStates.launcherMode = mode;
+        clearState();
+        island.expand(mode);
+        return true;
+    }
+
+    function toggleLauncher() {
+        if (toggleIslandLauncher("apps", GlobalStates.clearLauncherState))
+            return;
 
         const isActive = Visibilities.currentActiveModule === "launcher"
             && GlobalStates.launcherMode === "apps";
@@ -137,19 +142,8 @@ Singleton {
     }
 
     function toggleProjects() {
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = Visibilities.getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "projects") {
-                    island.collapse();
-                } else {
-                    GlobalStates.launcherMode = "projects";
-                    GlobalStates.clearProjectPickerState();
-                    island.expand("projects");
-                }
-                return;
-            }
-        }
+        if (toggleIslandLauncher("projects", GlobalStates.clearProjectPickerState))
+            return;
 
         const isActive = Visibilities.currentActiveModule === "launcher"
             && GlobalStates.launcherMode === "projects";
@@ -163,19 +157,8 @@ Singleton {
     }
 
     function toggleWallpapers() {
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = Visibilities.getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "wallpapers") {
-                    island.collapse();
-                } else {
-                    Visibilities.clearAll();
-                    Visibilities.currentActiveModule = "wallpapers";
-                    island.expand("wallpapers");
-                }
-                return;
-            }
-        }
+        if (Visibilities.toggleIslandMode("wallpapers"))
+            return;
 
         const controller = Visibilities.getDashboardControllerForActive();
         if (!controller) {
@@ -186,36 +169,14 @@ Singleton {
     }
 
     function toggleAlerts() {
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = Visibilities.getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "alerts") {
-                    island.collapse();
-                } else {
-                    Visibilities.clearAll();
-                    Visibilities.currentActiveModule = "alerts";
-                    island.expand("alerts");
-                }
-                return;
-            }
-        }
+        if (Visibilities.toggleIslandMode("alerts"))
+            return;
         Visibilities.setActiveModule("alerts");
     }
 
     function toggleDashboard() {
-        if ((Config.bar?.style ?? "default") === "island") {
-            const island = Visibilities.getIslandForActive();
-            if (island) {
-                if (island.isExpanded && island.currentMode === "dashboard") {
-                    island.collapse();
-                } else {
-                    Visibilities.clearAll();
-                    Visibilities.currentActiveModule = "dashboard";
-                    island.expand("dashboard");
-                }
-                return;
-            }
-        }
+        if (Visibilities.toggleIslandMode("dashboard"))
+            return;
 
         const controller = Visibilities.getDashboardControllerForActive();
         if (!controller) {

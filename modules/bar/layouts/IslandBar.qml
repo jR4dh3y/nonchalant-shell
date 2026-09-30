@@ -569,9 +569,9 @@ Item {
     Connections {
         target: GlobalStates
         function onLauncherModeChanged() {
-            if (root.currentMode === "apps" || root.currentMode === "projects") {
-                root.currentMode = GlobalStates.launcherMode;
-            }
+            const inLauncher = root.currentMode === "apps" || root.currentMode === "projects";
+            if (inLauncher && root.currentMode !== GlobalStates.launcherMode)
+                root.expand(GlobalStates.launcherMode);
         }
     }
 
