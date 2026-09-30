@@ -8,13 +8,17 @@ The lock surface's frame-1 must show the *desktop as the user saw it*
 (windows included), not the clean wallpaper - otherwise niri's output switch
 to the locked frame flashes the bright wallpaper. Flow:
 1. `LockscreenService.lock()` → `GlobalStates.beginLockshotPrep()`.
-2. Each `Wallpaper.qml` window (one per screen) captures its output via a
-   hidden `ScreencopyView` + `grabToImage()`, saves to
-   `$XDG_RUNTIME_DIR/nonchalant-lockshot-<screen>.png`, preloads it into the
-   pixmap cache, and reports via `GlobalStates.notifyLockshotPrepared()`.
+2. Each `Wallpaper.qml` window (one per screen) creates a *fresh* hidden
+   `ScreencopyView` (Loader), waits for `hasContent`, then `grabToImage()`s it
+   and unloads the view. Never reuse a view: it has no per-frame signal, so a
+   reused view gets grabbed with its previous (stale) frame. The
+   `ItemGrabResult` goes to `GlobalStates.notifyLockshotPrepared()` (stored in
+   `GlobalStates.lockshots`). The shot never touches disk: PNG encoding on
+   the UI thread stalled the shell right before the lock engaged.
 3. Service engages the lock once all screens report (400ms timeout fallback).
-4. `LockScreen.qml` frame-1 shows the shot (cache hit via matching
-   source+sourceSize), then crossfades to the wallpaper on startAnim.
+4. `LockScreen.qml` frame-1 shows the shot synchronously from the grab's
+   `itemgrabber:` URL, then crossfades to the wallpaper on startAnim.
+5. `LockscreenService.finishUnlock()` drops the grab results.
 If no shot exists, the wallpaper is only ever revealed dimmed - never at
 full brightness. Do not reintroduce a full-brightness wallpaper frame-1.
 
@@ -32,7 +36,7 @@ Related: `modules/widgets/dashboard/widgets/LockPlayer.qml` (music player on loc
 |--------|----------|------|
 | `WlSessionLockSurface` | `LockScreen.qml` | Root; handles Wayland session lock protocol |
 | `PamContext` | `LockScreen.qml` | PAM authentication via `Quickshell.Services.Pam` |
-| `shotImage` | `LockScreen.qml` | Displays pre-captured frame-1 desktop lockshot |
+| `shotImage` | `LockScreen.qml` | Displays the in-memory frame-1 desktop lockshot |
 | `TintedWallpaper` | `LockScreen.qml` | Wallpaper with blur and dimming layer |
 | `authPasswordHolder` | `LockScreen.qml` | Transient memory holder for password |
 | `wrongPasswordAnim` | `LockScreen.qml` | Shake animation on auth failure |
@@ -41,17 +45,18 @@ Related: `modules/widgets/dashboard/widgets/LockPlayer.qml` (music player on loc
 Key behaviors:
 - On lock: pre-capture lockshot via Wallpaper screencopy, engage lock, start entry animation, focus password input on primary screen.
 - On auth: verify PAM response requirements: send password ONLY when `!pamAuth.responseVisible` (echo off), send username when `pamAuth.responseVisible` (echo on). Clear password immediately.
-- On unlock: crossfade, trigger unlock animation, and unlink lockshot files from `$XDG_RUNTIME_DIR`.
+- On unlock: crossfade, trigger unlock animation, and release the in-memory lockshots.
 - On failure: shake animation, clear password, provide immediate visual error feedback.
 
 ## CONVENTIONS
 - **PAM Message Safety**: ALWAYS check `!pamAuth.responseVisible` before transmitting password. Never echo passwords into username or info prompts.
 - **Immediate Credential Wipe**: Set `authPasswordHolder.password = ""` immediately after `pamAuth.respond()`.
-- **Lockshot Cleanup**: Unlink lockshot image captures in `$XDG_RUNTIME_DIR` when unlocking to prevent persistent unencrypted desktop images on disk.
+- **Lockshot In Memory**: Keep desktop captures as in-memory `ItemGrabResult`s; never write them to disk (UI-thread stall + unencrypted desktop images on disk). Release them on unlock.
+- **Backdrop fades**: Gate backdrop `Behavior`s on `backdropAnimArmed`, set *before* `startAnim`/`lockscreenUnlocking` change. Gating on the same flag that changes the target races binding evaluation order and snaps the fade.
 - **Multi-Monitor Focus**: Only grant active focus to the password field on the primary screen (`root.screen === Quickshell.screens[0]`) to prevent focus fighting across displays.
 
 ## ANTI-PATTERNS
 - Never log passwords, tokens, or raw PAM prompt responses.
 - Retaining plaintext password in memory after sending PAM response.
 - Feeding passwords to `PromptEchoOn` prompts (causes passwords to be logged as usernames in `/var/log/auth.log`).
-- Leaving unencrypted desktop screenshots in `$XDG_RUNTIME_DIR` after unlocking.
+- Writing desktop screenshots to disk (`$XDG_RUNTIME_DIR` or elsewhere).

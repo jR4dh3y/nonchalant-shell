@@ -21,6 +21,10 @@ WlSessionLockSurface {
     // The shell passes it in so entry animation never races surface mapping.
     property bool lockSecure: false
     property bool startAnim: false
+    // Armed just before startAnim flips so backdrop Behaviors are already
+    // enabled when their targets change (binding evaluation order is not
+    // guaranteed, so gating them on startAnim itself can snap the fade).
+    property bool backdropAnimArmed: false
     property bool entryStarted: false
     property bool unlocking: false
     property bool authenticating: false
@@ -53,8 +57,11 @@ WlSessionLockSurface {
     // wallpaper window BEFORE the lock request. Frame-1 of this surface shows
     // it: identical pixels to what the user was seeing, so niri's output
     // switch to the locked frame is invisible - no wallpaper flash.
-    readonly property string lockshotPath: GlobalStates.lockshotPaths[root.screen ? root.screen.name : ""] || ""
-    readonly property bool shotReady: lockshotPath !== "" && shotImage.ready
+    readonly property string lockshotUrl: {
+        const shot = GlobalStates.lockshots[root.screen ? root.screen.name : ""];
+        return shot ? String(shot.url) : "";
+    }
+    readonly property bool shotReady: lockshotUrl !== "" && shotImage.status === Image.Ready
 
     // PAM can complete on any output. All lock surfaces must run their
     // foreground exit at the same time before the shared lock is released.
@@ -76,21 +83,18 @@ WlSessionLockSurface {
     // this is a cache hit.
     readonly property bool wallpaperReady: wallpaperBackground.source === "" || wallpaperBackground.ready
 
-    // Frame-1 base layer: the pre-lock desktop shot. Same source + sourceSize
-    // as the wallpaper window's lockshot preloader, so this is a cache hit.
+    // Frame-1 base layer: the pre-lock desktop shot, loaded synchronously
+    // from the in-memory grab so it is ready on the very first frame.
     Image {
         id: shotImage
         anchors.fill: parent
         z: 0
-        cache: true
-        mipmap: true
+        cache: false
         smooth: true
-        asynchronous: true
+        asynchronous: false
         fillMode: Image.PreserveAspectCrop
-        visible: lockshotPath !== ""
-        source: lockshotPath !== "" ? "file://" + lockshotPath : ""
-        sourceSize.width: root.width
-        sourceSize.height: root.height
+        visible: root.lockshotUrl !== ""
+        source: root.lockshotUrl
     }
 
     // Entry choreography:
@@ -130,10 +134,10 @@ WlSessionLockSurface {
             : (root.startAnim || !root.shotReady ? 1 : 0)
 
         Behavior on opacity {
-            enabled: Config.animDuration > 0
+            enabled: Config.animDuration > 0 && root.backdropAnimArmed
             NumberAnimation {
                 duration: root.unlockAnimMs
-                easing.type: Easing.OutQuint
+                easing.type: Easing.InOutCubic
             }
         }
     }
@@ -155,11 +159,10 @@ WlSessionLockSurface {
         z: 2
 
         Behavior on opacity {
-            enabled: Config.animDuration > 0
-                && (GlobalStates.lockscreenUnlocking || root.startAnim)
+            enabled: Config.animDuration > 0 && root.backdropAnimArmed
             NumberAnimation {
                 duration: root.unlockAnimMs
-                easing.type: Easing.OutQuint
+                easing.type: Easing.InOutCubic
             }
         }
     }
@@ -641,6 +644,7 @@ WlSessionLockSurface {
                 if (root.unlocking)
                     return;
                 root.unlocking = true;
+                root.backdropAnimArmed = true;
                 GlobalStates.lockscreenUnlocking = true;
                 root.startAnim = false;
                 if (Config.animDuration > 0)
@@ -685,6 +689,7 @@ WlSessionLockSurface {
             if ((baseReady && elapsed >= 32) || elapsed >= 250) {
                 stop();
                 if (!root.unlocking && root.lockSecure) {
+                    root.backdropAnimArmed = true;
                     root.startAnim = true;
                     if (root.screen === Quickshell.screens[0])
                         passwordInput.forceActiveFocus();
