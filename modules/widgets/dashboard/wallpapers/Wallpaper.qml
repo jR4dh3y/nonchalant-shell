@@ -43,77 +43,6 @@ PanelWindow {
 
     readonly property var supportedWallpaperModes: ["crop", "fit", "stretch", "center"]
 
-    // ---- Lockshot: pre-lock desktop capture -------------------------------
-    // Captures this screen's actual desktop (windows included) BEFORE the
-    // lock request reaches niri, so the lock surface's first frame is
-    // identical to what the user was seeing instead of flashing the clean
-    // wallpaper. The capture view paints beneath the wallpaper content and is
-    // never visible.
-    //
-    // A fresh ScreencopyView is created per lock and destroyed after the
-    // grab. ScreencopyView exposes no per-frame signal and hasContent only
-    // flips once, so a reused view cannot tell a new frame from the previous
-    // one: grabbing it showed a stale desktop (e.g. another workspace).
-    // With a fresh view, hasContent means the current frame has landed.
-    Loader {
-        id: lockPrepLoader
-        anchors.fill: parent
-        z: -1
-        active: false
-
-        sourceComponent: ScreencopyView {
-            captureSource: wallpaper.screen
-            live: false
-            paintCursor: false
-
-            Component.onCompleted: captureFrame()
-
-            onHasContentChanged: {
-                if (hasContent)
-                    lockPrepGrabDelay.restart();
-            }
-        }
-    }
-
-    // Called by LockscreenService via the GlobalStates registry. Returns
-    // true if a capture was started for this screen.
-    function prepareLockshot(): bool {
-        if (!wallpaper.screen)
-            return false;
-        lockPrepLoader.active = false;
-        lockPrepLoader.active = true;
-        return true;
-    }
-
-    function grabLockshot() {
-        const view = lockPrepLoader.item;
-        if (!view) {
-            GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, null);
-            return;
-        }
-        // The grab stays in memory and the lock surface displays it straight
-        // from its itemgrabber URL. Encoding a PNG here blocked the UI thread
-        // right before the lock engaged (a visible stutter), and the lock
-        // surface then had to decode it again before its first frame.
-        view.grabToImage(function (result) {
-            if (!result)
-                console.warn("Lockshot grab failed for screen", wallpaper.currentScreenName);
-            GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, result ?? null);
-            // The grab result owns its own image; drop the capture view.
-            lockPrepLoader.active = false;
-        });
-    }
-
-    // Small delay so the freshly captured buffer is painted into the item
-    // texture before the grab pass runs.
-    Timer {
-        id: lockPrepGrabDelay
-        interval: 32
-        onTriggered: wallpaper.grabLockshot()
-    }
-
-    // ---- End lockshot ------------------------------------------------------
-
     // Keep the lockscreen frame warm in QML's pixmap cache. The lock surface's
     // TintedWallpaper loads the same URL with the same sourceSize, so on lock
     // its first frame is a cache hit instead of a fresh async decode (which
@@ -798,11 +727,8 @@ PanelWindow {
     }
 
     Component.onCompleted: {
-        // Every instance registers its screen for lockshot prep (desktop
-        // capture before locking); only the first Wallpaper instance manages
-        // scanning. Other instances (for other screens) share the same data
-        // via GlobalStates.
-        GlobalStates.registerLockPrep(currentScreenName, wallpaper.prepareLockshot);
+        // Only the first Wallpaper instance manages scanning. Other instances
+        // (for other screens) share the same data via GlobalStates.
 
         if (GlobalStates.wallpaperManager !== null) {
             // Another instance already registered, skip initialization
@@ -835,7 +761,6 @@ PanelWindow {
         });
     }
 
-    Component.onDestruction: GlobalStates.unregisterLockPrep(currentScreenName);
 
     FileView {
         id: wallpaperConfig

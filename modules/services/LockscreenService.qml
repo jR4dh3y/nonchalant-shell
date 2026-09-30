@@ -63,6 +63,9 @@ Singleton {
         onTriggered: {
             if (!root.prepActive)
                 return;
+            // The lock surface's first frame will be the plain scrim instead of
+            // the desktop capture; log it so a gray lock frame is traceable.
+            console.warn("LockscreenService: desktop capture not ready after", prepTimeoutTimer.interval, "ms; locking without it");
             root.prepActive = false;
             root.engage();
         }
