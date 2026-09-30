@@ -112,7 +112,14 @@ Singleton {
         root.trace("unlocking");
         GlobalStates.lockscreenVisible = false;
         GlobalStates.lockscreenUnlocking = false;
-        GlobalStates.lockCurtainShown = false;
+        // Releasing the lock tears down the lock surfaces, which blocks the
+        // UI thread for ~100ms+. Starting the fade in the same instant made
+        // it jump a third of the way at once. Lower the curtain afterwards:
+        // it is still opaque and identical to the lock backdrop meantime.
+        Qt.callLater(() => {
+            root.trace("lock released, fading curtain out");
+            GlobalStates.lockCurtainShown = false;
+        });
     }
 
     IpcHandler {
