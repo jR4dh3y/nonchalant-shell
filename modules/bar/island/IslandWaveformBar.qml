@@ -7,6 +7,7 @@ import qs.modules.services
 import qs.modules.theme
 import qs.modules.components
 import qs.config
+import qs.modules.globals
 
 Item {
     id: root
@@ -72,6 +73,8 @@ Item {
         && root.visible
         && root.opacity > 0
         && root.width > 0
+        // Not shown while locked; see FluidTextProgress.
+        && !GlobalStates.lockscreenVisible
 
     FrameAnimation {
         id: waveAnim

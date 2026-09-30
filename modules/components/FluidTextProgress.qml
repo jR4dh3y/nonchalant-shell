@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.config
+import qs.modules.globals
 import qs.modules.theme
 
 Item {
@@ -26,8 +27,10 @@ Item {
 
     property real phase: 0.0
 
+    // Paused while locked: the bar is not shown, and a window that keeps
+    // requesting frames the compositor never presents stalls the UI thread.
     FrameAnimation {
-        running: root.isPlaying && root.visible && root.width > 0
+        running: root.isPlaying && root.visible && root.width > 0 && !GlobalStates.lockscreenVisible
         onTriggered: {
             const dt = (frameTime > 0 && frameTime < 0.1) ? frameTime : 0.016;
             root.phase = (root.phase + 2.5 * dt) % (Math.PI * 2);
