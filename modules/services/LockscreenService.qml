@@ -4,13 +4,16 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.config
 import qs.modules.globals
 
 // Session locking is handled entirely by Quickshell's native ext_session_lock
-// implementation (niri). The UI uses a one-frame in-memory ScreencopyView for
-// the desktop reveal; do not invoke external screenshot or compositor tools.
+// implementation (niri). Lock/unlock fades run on LockCurtain, an overlay layer
+// composited over the live desktop; no screenshots are taken.
 Singleton {
     id: root
+
+    readonly property int curtainFadeMs: Config.animDuration > 0 ? Math.round(Config.animDuration * 1.2) : 0
 
     function toggle() {
         // A lock action must never become an unauthenticated unlock action.
@@ -18,68 +21,56 @@ Singleton {
             lock();
     }
 
+    // Fade the curtain in over the desktop, then engage the real lock. Its
+    // first frame matches the opaque curtain, so the handoff is invisible.
     function lock() {
-        if (GlobalStates.lockscreenVisible || root.prepActive)
+        if (GlobalStates.lockscreenVisible || GlobalStates.lockCurtainShown)
             return;
         GlobalStates.lockscreenUnlocking = false;
-        GlobalStates.lockscreenHandoff = false;
-        // Pre-capture each screen's desktop BEFORE requesting the lock so the
-        // lock surface's first frame matches the on-screen content (windows
-        // included) instead of flashing the clean wallpaper. Falls back to
-        // engaging immediately if no screen can capture.
-        const pending = GlobalStates.beginLockshotPrep();
-        if (pending > 0) {
-            root.prepActive = true;
-            prepTimeoutTimer.restart();
-        } else {
+        GlobalStates.lockCurtainShown = true;
+        if (root.curtainFadeMs > 0)
+            engageTimer.restart();
+        else
             engage();
-        }
     }
 
     function engage() {
         GlobalStates.lockscreenVisible = true;
-    }
-
-    // Engages the lock once every screen has a lockshot (or gave up).
-    property bool prepActive: false
-
-    Connections {
-        target: GlobalStates
-
-        function onLockshotPendingChanged() {
-            if (!root.prepActive)
-                return;
-            if (GlobalStates.lockshotPending > 0)
-                return;
-            root.prepActive = false;
-            prepTimeoutTimer.stop();
-            root.engage();
-        }
+        secureWatchdog.restart();
     }
 
     Timer {
-        id: prepTimeoutTimer
-        interval: 400
+        id: engageTimer
+        interval: root.curtainFadeMs + 50
+        onTriggered: root.engage()
+    }
+
+    // If niri never confirms the lock, drop the curtain instead of leaving an
+    // opaque, input-eating surface that looks locked but has no way to unlock.
+    Timer {
+        id: secureWatchdog
+        interval: 3000
         onTriggered: {
-            if (!root.prepActive)
+            if (!GlobalStates.lockscreenVisible || GlobalStates.lockscreenSecure)
                 return;
-            root.prepActive = false;
-            root.engage();
+            console.warn("LockscreenService: session lock was not confirmed; dropping the lock curtain");
+            GlobalStates.lockscreenVisible = false;
+            GlobalStates.lockCurtainShown = false;
         }
     }
 
     // Called only by LockScreen after PAM succeeds. Keeping this separate from
     // the IPC commands prevents `nonchalant lock` from bypassing authentication.
+    // Releasing the lock reveals the still-opaque curtain over the live
+    // desktop; lowering it fades the desktop in.
     function finishUnlock() {
         if (!GlobalStates.lockscreenVisible || !GlobalStates.lockscreenUnlocking)
             return;
+        secureWatchdog.stop();
         GlobalStates.lockscreenVisible = false;
         GlobalStates.lockscreenUnlocking = false;
-        GlobalStates.lockscreenHandoff = false;
-        // Drop the in-memory desktop captures once the lock surfaces are gone.
-        Qt.callLater(() => GlobalStates.lockshots = {});
+        GlobalStates.lockCurtainShown = false;
     }
-
 
     IpcHandler {
         target: "lockscreen"
@@ -91,8 +82,5 @@ Singleton {
         function lock() {
             root.lock();
         }
-
     }
 }
-
-
