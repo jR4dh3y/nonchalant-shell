@@ -34,35 +34,31 @@ Item {
         Qt.callLater(() => root.focusSearchInput());
     }
 
-    // Retry briefly because the view is pushed into a StackView asynchronously.
+    // The field only gains active focus once the compositor has handed
+    // keyboard focus to the panel, which lands a few frames after opening.
+    // Keep retrying until it sticks (up to ~500ms).
     Timer {
         id: focusRetryTimer
         interval: 50
         repeat: true
-        running: false
         property int retries: 0
         onTriggered: {
-            if (retries > 10) {
-                running = false;
-                return;
-            }
-            
-            root.focusActiveSearchInput();
-            running = false;
-            retries++;
+            if (root.focusActiveSearchInput() || ++retries > 10)
+                stop();
         }
     }
 
     function focusSearchInput() {
+        if (focusActiveSearchInput())
+            return;
         focusRetryTimer.retries = 0;
-        focusRetryTimer.start();
+        focusRetryTimer.restart();
     }
 
-    function focusActiveSearchInput() {
+    function focusActiveSearchInput(): bool {
         if (GlobalStates.launcherMode === "projects")
-            projectPicker.focusSearchInput();
-        else
-            appLauncher.focusSearchInput();
+            return projectPicker.focusSearchInput();
+        return appLauncher.focusSearchInput();
     }
 
     Connections {
@@ -245,8 +241,8 @@ Item {
             searchInput.focusInput();
         }
 
-        function focusSearchInput() {
-            searchInput.focusInput();
+        function focusSearchInput(): bool {
+            return searchInput.focusInput();
         }
 
         function adjustScrollForExpandedItem(index) {

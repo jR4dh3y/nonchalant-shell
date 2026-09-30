@@ -426,7 +426,10 @@ Item {
         width: root.targetWidth
         height: root.targetHeight
         transformOrigin: Item.Top
-        visible: opacity > 0.001
+        // The active page stays visible even while its fade-in is still
+        // paused at opacity 0: invisible items cannot take focus, so gating on
+        // opacity made opening a page drop its keyboard focus.
+        visible: page.active || opacity > 0.001
         enabled: page.active && !root.retractingToHidden
 
         property real drift: -root.pageDrift
@@ -548,10 +551,7 @@ Item {
 
         if (currentMode === "apps" || currentMode === "projects") {
             GlobalStates.launcherMode = currentMode;
-            Qt.callLater(() => {
-                launcherView.forceActiveFocus();
-                launcherView.focusSearchInput();
-            });
+            launcherView.focusSearchInput();
         } else if (currentMode !== "collapsed" && currentMode !== "notification" && currentMode !== "osd") {
             Qt.callLater(() => {
                 root.forceActiveFocus();
