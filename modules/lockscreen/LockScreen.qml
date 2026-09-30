@@ -590,7 +590,7 @@ WlSessionLockSurface {
             if ((backdrop.ready && elapsed >= 32) || elapsed >= 250) {
                 stop();
                 if (!root.unlocking && root.lockSecure) {
-                    LockscreenService.trace(`chrome animating in (backdrop ${backdrop.ready ? "ready" : "not ready"})`);
+                    LockscreenService.trace(`chrome animating in on ${root.screen ? root.screen.name : "?"} (backdrop ${backdrop.ready ? "ready" : "not ready"})`);
                     root.startAnim = true;
                     if (root.screen === Quickshell.screens[0])
                         passwordInput.forceActiveFocus();
@@ -600,7 +600,7 @@ WlSessionLockSurface {
     }
 
     Component.onCompleted: {
-        LockscreenService.trace(`surface created (${root.screen ? root.screen.name : "?"})`);
+        LockscreenService.trace("surface created");
         beginEntry();
     }
 }
