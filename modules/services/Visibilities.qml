@@ -171,11 +171,23 @@ Singleton {
         const island = getIslandForActive();
         if (!island)
             return false;
-        if (island.isExpanded && island.currentMode === mode)
+        if (island.isExpanded && island.currentMode === mode) {
             island.collapse();
-        else
-            island.expand(mode);
+            return true;
+        }
+        collapseOtherIslands(island);
+        island.expand(mode);
         return true;
+    }
+
+    // Only one island is open at a time: the islandOpen/launcher/stats flags
+    // in GlobalStates are shared, so a second open island would desync them.
+    function collapseOtherIslands(keep) {
+        for (const screenName in islands) {
+            const other = islands[screenName];
+            if (other && other !== keep && other.isExpanded)
+                other.collapse();
+        }
     }
 
     function registerDashboardController(screenName, controller) {

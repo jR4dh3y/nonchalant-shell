@@ -82,6 +82,10 @@ Item {
 
         if (root.openedFromHidden && !root.barAlwaysVisible && root.currentMode !== "collapsed") {
             root.retractingToHidden = true;
+            // The retracting page stays enabled until hidden; pull keyboard
+            // focus to the island root (which swallows keys while retracting)
+            // so typing cannot reach e.g. the launcher search field.
+            root.forceActiveFocus();
             GlobalStates.islandOpen = false;
             GlobalStates.islandLauncherOpen = false;
             GlobalStates.islandStatsOpen = false;
@@ -426,11 +430,31 @@ Item {
         width: root.targetWidth
         height: root.targetHeight
         transformOrigin: Item.Top
+        // The entering page stacks above the leaving one, so the leaving page's
+        // input shield never swallows clicks meant for the new page.
+        z: page.active ? 1 : 0
         // The active page stays visible even while its fade-in is still
         // paused at opacity 0: invisible items cannot take focus, so gating on
         // opacity made opening a page drop its keyboard focus.
         visible: page.active || opacity > 0.001
-        enabled: page.active && !root.retractingToHidden
+        // Disable only once hidden. A MouseArea that is disabled while the
+        // pointer is over it ignores hover-leave and the later visibility
+        // change, so its containsMouse stayed true and the control looked
+        // stuck "clicked" when the page came back. Leaving and retracting
+        // pages are shielded from input instead.
+        enabled: page.visible
+
+        // Swallows clicks, wheel and hover on a page that is leaving or
+        // retracting. Taking hover also sends controls underneath a proper
+        // hover-leave, clearing their highlight.
+        MouseArea {
+            z: 1000
+            anchors.fill: parent
+            visible: !page.active || root.retractingToHidden
+            hoverEnabled: true
+            acceptedButtons: Qt.AllButtons
+            onWheel: wheel => wheel.accepted = true
+        }
 
         property real drift: -root.pageDrift
         opacity: 0
@@ -635,9 +659,12 @@ Item {
             if (root.currentMode === "collapsed") {
                 root.expand("osd");
             } else if (root.retractingToHidden) {
+                // Cancel the retraction and pull the banner back out, or the
+                // new value would show on a partly hidden OSD.
                 root.retractingToHidden = false;
                 retractFinishTimer.stop();
                 slideUpAnim.stop();
+                root.animateReveal(0);
             }
             islandOsdTimer.restart();
         }

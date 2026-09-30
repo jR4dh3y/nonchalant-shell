@@ -120,9 +120,13 @@ Singleton {
             island.collapse();
             return true;
         }
+        Visibilities.collapseOtherIslands(island);
         GlobalStates.launcherMode = mode;
         clearState();
-        island.expand(mode);
+        // Switching apps <-> projects on an open launcher already expands
+        // through IslandBar's launcherMode sync.
+        if (island.currentMode !== mode)
+            island.expand(mode);
         return true;
     }
 
