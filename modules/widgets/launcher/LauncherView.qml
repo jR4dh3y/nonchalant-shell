@@ -48,6 +48,12 @@ Item {
         }
     }
 
+    // Called when the launcher is dismissed or left, so a pending retry cannot
+    // pull focus back into a field that is on its way out.
+    function cancelFocusRetry() {
+        focusRetryTimer.stop();
+    }
+
     function focusSearchInput() {
         if (focusActiveSearchInput())
             return;

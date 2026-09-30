@@ -65,6 +65,7 @@ Item {
             return;
 
         islandOsdTimer.stop();
+        launcherView.cancelFocusRetry();
         root.debounceActive = false;
         exitDebounceTimer.stop();
         if (slideDownAnim.running)
@@ -577,6 +578,7 @@ Item {
             GlobalStates.launcherMode = currentMode;
             launcherView.focusSearchInput();
         } else if (currentMode !== "collapsed" && currentMode !== "notification" && currentMode !== "osd") {
+            launcherView.cancelFocusRetry();
             Qt.callLater(() => {
                 root.forceActiveFocus();
             });

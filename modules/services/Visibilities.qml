@@ -280,6 +280,7 @@ Singleton {
                     ? (GlobalStates.launcherMode === "projects" ? "projects" : "apps")
                     : islandModeAliases[moduleName];
                 if (mode) {
+                    collapseOtherIslands(island);
                     island.expand(mode);
                     return;
                 }
