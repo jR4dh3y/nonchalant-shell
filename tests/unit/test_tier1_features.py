@@ -796,7 +796,7 @@ class TestFeature16_WeatherDetailsAndMediaCenter(unittest.TestCase):
         self.assertIn('root.expand("media")', bar_content)
         self.assertIn('case "media":', bar_content)
         self.assertIn('IslandMediaCenterPanel', bar_content)
-        self.assertIn('onOpenMedia: root.currentMode = "media"', bar_content)
+        self.assertTrue('onOpenMedia: root.expand("media")' in bar_content or 'onOpenMedia: root.currentMode = "media"' in bar_content)
 
         with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
             dash_content = f.read()
@@ -1124,7 +1124,7 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
 
         self.assertIn('case "calendar":', bar_content)
         self.assertIn('calendarView.implicitHeight', bar_content)
-        self.assertIn('onOpenCalendar: root.currentMode = "calendar"', bar_content)
+        self.assertTrue('onOpenCalendar: root.expand("calendar")' in bar_content or 'onOpenCalendar: root.currentMode = "calendar"' in bar_content)
         self.assertIn('IslandCalendarPanel {', bar_content)
         self.assertIn('id: calendarView', bar_content)
 
@@ -1174,9 +1174,12 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
         # targetWidth must stay expanded during retraction without shrinking horizontally
         self.assertIn("if (root.isExpanded || root.retractingToHidden)", bar_content)
 
-        # collapsedView must remain invisible and disabled during retraction
-        self.assertIn("opacity: (root.currentMode === \"collapsed\" && !root.retractingToHidden) ? 1.0 : 0.0", bar_content)
-        self.assertIn("enabled: root.currentMode === \"collapsed\" && !root.retractingToHidden", bar_content)
+        # collapsedView must remain invisible and disabled during retraction.
+        # Its IslandPage is only shown while active, and pages never accept
+        # input while retracting.
+        self.assertIn("active: root.currentMode === \"collapsed\" && !root.retractingToHidden", bar_content)
+        self.assertIn("when: page.active", bar_content)
+        self.assertIn("enabled: page.active && !root.retractingToHidden", bar_content)
 
         # collapse() must route directly to retractingToHidden when opened from hidden
         self.assertIn("if (root.openedFromHidden && !root.barAlwaysVisible && root.currentMode !== \"collapsed\")", bar_content)

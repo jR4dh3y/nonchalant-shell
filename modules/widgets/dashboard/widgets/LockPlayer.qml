@@ -6,6 +6,7 @@ import Quickshell.Services.Mpris
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
+import qs.modules.globals
 import qs.config
 
 StyledRect {
@@ -208,6 +209,7 @@ StyledRect {
 
             // Botón de play/pause superpuesto (visible solo en hover)
             Text {
+                id: playPauseIcon
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting
                 anchors.centerIn: parent
@@ -218,6 +220,15 @@ StyledRect {
                 font.family: Icons.font
                 opacity: playPauseHover.hovered ? 1.0 : 0.0
                 visible: MprisController.canTogglePlaying
+                scale: playPauseMouse.pressed ? 0.88 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: playPauseMouse.pressed ? 80 : 250
+                        easing.type: playPauseMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Behavior on opacity {
                     enabled: Config.animDuration > 0
@@ -233,6 +244,7 @@ StyledRect {
             }
 
             MouseArea {
+                id: playPauseMouse
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 enabled: MprisController.canTogglePlaying
@@ -298,6 +310,15 @@ StyledRect {
                     font.pixelSize: 20
                     font.family: Icons.font
                     opacity: MprisController.canGoPrevious ? 1.0 : 0.3
+                    scale: previousMouse.pressed ? 0.88 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: previousMouse.pressed ? 80 : 250
+                            easing.type: previousMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     Behavior on color {
                         enabled: Config.animDuration > 0
@@ -312,6 +333,7 @@ StyledRect {
                     }
 
                     MouseArea {
+                        id: previousMouse
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         enabled: MprisController.canGoPrevious
@@ -340,6 +362,15 @@ StyledRect {
                     font.pixelSize: 20
                     font.family: Icons.font
                     opacity: MprisController.canGoNext ? 1.0 : 0.3
+                    scale: nextMouse.pressed ? 0.88 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: nextMouse.pressed ? 80 : 250
+                            easing.type: nextMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     Behavior on color {
                         enabled: Config.animDuration > 0
@@ -354,6 +385,7 @@ StyledRect {
                     }
 
                     MouseArea {
+                        id: nextMouse
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         enabled: MprisController.canGoNext
@@ -388,6 +420,15 @@ StyledRect {
                             return 0.3;
                         return 1.0;
                     }
+                    scale: modeMouse.pressed ? 0.88 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: modeMouse.pressed ? 80 : 250
+                            easing.type: modeMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     Behavior on color {
                         enabled: Config.animDuration > 0
@@ -402,6 +443,7 @@ StyledRect {
                     }
 
                     MouseArea {
+                        id: modeMouse
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         enabled: MprisController.shuffleSupported || MprisController.loopSupported
@@ -446,6 +488,15 @@ StyledRect {
                     font.pixelSize: 20
                     font.family: Icons.font
                     opacity: MprisController.activePlayer ? 1.0 : 0.3
+                    scale: playerIconMouse.pressed ? 0.88 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: playerIconMouse.pressed ? 80 : 250
+                            easing.type: playerIconMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     Behavior on color {
                         enabled: Config.animDuration > 0
@@ -470,6 +521,7 @@ StyledRect {
                     }
 
                     MouseArea {
+                        id: playerIconMouse
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         acceptedButtons: Qt.LeftButton | Qt.RightButton

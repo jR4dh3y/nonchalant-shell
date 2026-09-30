@@ -61,7 +61,9 @@ Item {
 
     ColumnLayout {
         id: mainCol
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.margins: 14
         spacing: 12
 
@@ -130,8 +132,14 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: playerMouse.containsMouse ? "focus" : "common"
-                scale: playerMouse.pressed ? 0.88 : (playerMouse.containsMouse ? 1.06 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                scale: playerMouse.pressed ? 0.92 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: playerMouse.pressed ? 80 : 250
+                        easing.type: playerMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     id: playerIconText
@@ -199,9 +207,9 @@ Item {
                 scale: discMouse.pressed ? 0.92 : 1.0
                 Behavior on scale {
                     NumberAnimation {
-                        duration: 350
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 1.25
+                        duration: discMouse.pressed ? 80 : 250
+                        easing.type: discMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
                     }
                 }
 

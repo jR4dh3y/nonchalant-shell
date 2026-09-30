@@ -283,6 +283,16 @@ Item {
                         }
                     }
 
+                    scale: schemeButton.down ? 0.96 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: schemeButton.down ? 80 : 250
+                            easing.type: schemeButton.down ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
+
                     background: Rectangle {
                         color: Colors.surfaceContainerLow
                         radius: Styling.radius(0)
@@ -302,10 +312,20 @@ Item {
                 }
 
                 Switch {
+                    id: themeSwitch
                     Layout.preferredWidth: 72
                     Layout.preferredHeight: 40
                     checked: Config.theme.lightMode
                     focusPolicy: Qt.NoFocus
+                    scale: themeSwitch.down ? 0.94 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: themeSwitch.down ? 80 : 250
+                            easing.type: themeSwitch.down ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.5
+                        }
+                    }
 
                     onCheckedChanged: Config.theme.lightMode = checked
 
@@ -416,33 +436,48 @@ Item {
 
                         readonly property bool isSelected: selectedSchemeIndex === index
 
-                        StyledRect {
+                        Item {
+                            id: delegateContent
                             anchors.fill: parent
-                            anchors.leftMargin: 4
-                            anchors.rightMargin: 4
-                            anchors.topMargin: 2
-                            anchors.bottomMargin: 2
-                            variant: delegateRoot.isSelected ? "primary" : "transparent"
-                            radius: Styling.radius(-14)
-                            opacity: delegateRoot.isSelected ? 1 : 0
-                        }
+                            scale: delegateMa.pressed ? 0.96 : 1.0
 
-                        Text {
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 8
-                            text: modelData.label
-                            color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
-                            font.family: Config.theme.font
-                            font.pixelSize: Config.theme.fontSize
-                            font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
+                            Behavior on scale {
+                                NumberAnimation {
+                                    duration: delegateMa.pressed ? 80 : 250
+                                    easing.type: delegateMa.pressed ? Easing.OutQuad : Easing.OutBack
+                                    easing.overshoot: 1.5
+                                }
+                            }
+
+                            StyledRect {
+                                anchors.fill: parent
+                                anchors.leftMargin: 4
+                                anchors.rightMargin: 4
+                                anchors.topMargin: 2
+                                anchors.bottomMargin: 2
+                                variant: delegateRoot.isSelected ? "primary" : "transparent"
+                                radius: Styling.radius(-14)
+                                opacity: delegateRoot.isSelected ? 1 : 0
+                            }
+
+                            Text {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 8
+                                text: modelData.label
+                                color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
+                                font.family: Config.theme.font
+                                font.pixelSize: Config.theme.fontSize
+                                font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal
+                                renderType: Text.NativeRendering
+                                font.hintingPreference: Font.PreferFullHinting
+                                verticalAlignment: Text.AlignVCenter
+                                elide: Text.ElideRight
+                            }
                         }
 
                         MouseArea {
+                            id: delegateMa
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor

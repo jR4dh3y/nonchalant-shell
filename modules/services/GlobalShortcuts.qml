@@ -87,6 +87,11 @@ Singleton {
             case "datetime":
                 Visibilities.setActiveModule("calendar");
                 break;
+            case "media":
+            case "music":
+            case "player":
+                Visibilities.setActiveModule("media");
+                break;
             case "lockscreen": LockscreenService.lock(); break;
             case "config":
             case "settings":

@@ -76,12 +76,8 @@ Singleton {
         GlobalStates.lockscreenVisible = false;
         GlobalStates.lockscreenUnlocking = false;
         GlobalStates.lockscreenHandoff = false;
-        cleanupLockshotsProcess.running = true;
-    }
-
-    Process {
-        id: cleanupLockshotsProcess
-        command: ["sh", "-c", 'rm -f "${XDG_RUNTIME_DIR:-/tmp}"/nonchalant-lockshot-*.png']
+        // Drop the in-memory desktop captures once the lock surfaces are gone.
+        Qt.callLater(() => GlobalStates.lockshots = {});
     }
 
 

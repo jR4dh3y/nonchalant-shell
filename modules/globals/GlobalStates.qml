@@ -113,7 +113,9 @@ Singleton {
     // Wallpaper window registers a prep handler; LockscreenService waits for
     // all of them (with a timeout) before engaging the lock.
     property var lockPrepHandlers: ({})
-    property var lockshotPaths: ({})
+    // screen name -> ItemGrabResult. Holding the result keeps its in-memory
+    // image (and itemgrabber URL) alive until the lock is released.
+    property var lockshots: ({})
     property int lockshotPending: 0
 
     function registerLockPrep(screenName, handler) {
@@ -132,7 +134,7 @@ Singleton {
     // prep handlers actually started.
     function beginLockshotPrep(): int {
         let started = 0;
-        lockshotPaths = {};
+        lockshots = {};
         for (const name in lockPrepHandlers) {
             try {
                 if (lockPrepHandlers[name]())
@@ -145,11 +147,11 @@ Singleton {
         return started;
     }
 
-    function notifyLockshotPrepared(screenName, path) {
-        if (path) {
-            const map = Object.assign({}, lockshotPaths);
-            map[screenName] = path;
-            lockshotPaths = map;
+    function notifyLockshotPrepared(screenName, grabResult) {
+        if (grabResult) {
+            const map = Object.assign({}, lockshots);
+            map[screenName] = grabResult;
+            lockshots = map;
         }
         if (lockshotPending > 0)
             lockshotPending--;

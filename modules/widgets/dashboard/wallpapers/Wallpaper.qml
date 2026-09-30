@@ -47,52 +47,60 @@ PanelWindow {
     // Captures this screen's actual desktop (windows included) BEFORE the
     // lock request reaches niri, so the lock surface's first frame is
     // identical to what the user was seeing instead of flashing the clean
-    // wallpaper. The saved shot is also preloaded into the pixmap cache so
-    // the lock surface's Image is a cache hit. The capture view paints
-    // beneath the wallpaper content and is never visible.
-    ScreencopyView {
-        id: lockPrepCapture
+    // wallpaper. The capture view paints beneath the wallpaper content and is
+    // never visible.
+    //
+    // A fresh ScreencopyView is created per lock and destroyed after the
+    // grab. ScreencopyView exposes no per-frame signal and hasContent only
+    // flips once, so a reused view cannot tell a new frame from the previous
+    // one: grabbing it showed a stale desktop (e.g. another workspace).
+    // With a fresh view, hasContent means the current frame has landed.
+    Loader {
+        id: lockPrepLoader
         anchors.fill: parent
         z: -1
-        captureSource: wallpaper.screen
-        live: false
-        paintCursor: false
-    }
+        active: false
 
-    property bool lockPrepGrabPending: false
+        sourceComponent: ScreencopyView {
+            captureSource: wallpaper.screen
+            live: false
+            paintCursor: false
+
+            Component.onCompleted: captureFrame()
+
+            onHasContentChanged: {
+                if (hasContent)
+                    lockPrepGrabDelay.restart();
+            }
+        }
+    }
 
     // Called by LockscreenService via the GlobalStates registry. Returns
     // true if a capture was started for this screen.
     function prepareLockshot(): bool {
         if (!wallpaper.screen)
             return false;
-        lockPrepGrabPending = true;
-        if (lockPrepCapture.hasContent) {
-            // Refresh the frame; grab once the new buffer has landed.
-            lockPrepCapture.captureFrame();
-            lockPrepGrabDelay.restart();
-        } else {
-            lockPrepCapture.captureFrame();
-        }
+        lockPrepLoader.active = false;
+        lockPrepLoader.active = true;
         return true;
     }
 
     function grabLockshot() {
-        lockPrepCapture.grabToImage(function (result) {
-            const runtimeDir = Quickshell.env("XDG_RUNTIME_DIR");
-            if (!runtimeDir) {
-                console.warn("Lockshot grab failed: XDG_RUNTIME_DIR is not set");
-                GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, "");
-                return;
-            }
-            const path = runtimeDir + "/nonchalant-lockshot-" + wallpaper.currentScreenName + ".png";
-            if (result && result.saveToFile("file://" + path)) {
-                console.log("Lockshot captured for screen", wallpaper.currentScreenName);
-                GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, path);
-            } else {
+        const view = lockPrepLoader.item;
+        if (!view) {
+            GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, null);
+            return;
+        }
+        // The grab stays in memory and the lock surface displays it straight
+        // from its itemgrabber URL. Encoding a PNG here blocked the UI thread
+        // right before the lock engaged (a visible stutter), and the lock
+        // surface then had to decode it again before its first frame.
+        view.grabToImage(function (result) {
+            if (!result)
                 console.warn("Lockshot grab failed for screen", wallpaper.currentScreenName);
-                GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, "");
-            }
+            GlobalStates.notifyLockshotPrepared(wallpaper.currentScreenName, result ?? null);
+            // The grab result owns its own image; drop the capture view.
+            lockPrepLoader.active = false;
         });
     }
 
@@ -102,35 +110,6 @@ PanelWindow {
         id: lockPrepGrabDelay
         interval: 32
         onTriggered: wallpaper.grabLockshot()
-    }
-
-    Connections {
-        target: lockPrepCapture
-
-        function onHasContentChanged() {
-            if (!wallpaper.lockPrepGrabPending || !lockPrepCapture.hasContent)
-                return;
-            wallpaper.lockPrepGrabPending = false;
-            lockPrepGrabDelay.restart();
-        }
-    }
-
-    // Warm the pixmap cache with the saved shot (same source + sourceSize
-    // key the lock surface's Image uses) so its first frame is a cache hit.
-    Image {
-        id: lockshotPreloader
-        visible: false
-        cache: true
-        mipmap: true
-        smooth: true
-        asynchronous: true
-        fillMode: Image.PreserveAspectCrop
-        sourceSize.width: wallpaper.width
-        sourceSize.height: wallpaper.height
-        source: {
-            const shot = GlobalStates.lockshotPaths[wallpaper.currentScreenName];
-            return shot ? "file://" + shot : "";
-        }
     }
 
     // ---- End lockshot ------------------------------------------------------

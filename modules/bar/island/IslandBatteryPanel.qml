@@ -10,7 +10,7 @@ import qs.config
 Item {
     id: root
 
-    implicitWidth: 480
+    implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
 
     signal backRequested()
@@ -25,7 +25,9 @@ Item {
 
     ColumnLayout {
         id: mainColumn
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.margins: 14
         spacing: 12
 
@@ -39,6 +41,15 @@ Item {
                 implicitHeight: 28
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
+                scale: backMouse.pressed ? 0.92 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: backMouse.pressed ? 80 : 250
+                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.5
+                    }
+                }
 
                 Text {
                     anchors.centerIn: parent
@@ -221,6 +232,15 @@ Item {
                         Layout.preferredHeight: 38
                         radius: Styling.radius(1)
                         variant: PowerProfile.currentProfile === "power-saver" ? "primary" : (saverMouse.containsMouse ? "focus" : "common")
+                        scale: saverMouse.pressed ? 0.94 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: saverMouse.pressed ? 80 : 250
+                                easing.type: saverMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         RowLayout {
                             anchors.centerIn: parent
@@ -262,6 +282,15 @@ Item {
                         Layout.preferredHeight: 38
                         radius: Styling.radius(1)
                         variant: PowerProfile.currentProfile === "balanced" ? "primary" : (balMouse.containsMouse ? "focus" : "common")
+                        scale: balMouse.pressed ? 0.94 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: balMouse.pressed ? 80 : 250
+                                easing.type: balMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         RowLayout {
                             anchors.centerIn: parent
@@ -303,6 +332,15 @@ Item {
                         Layout.preferredHeight: 38
                         radius: Styling.radius(1)
                         variant: PowerProfile.currentProfile === "performance" ? "primary" : (perfMouse.containsMouse ? "focus" : "common")
+                        scale: perfMouse.pressed ? 0.94 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: perfMouse.pressed ? 80 : 250
+                                easing.type: perfMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         RowLayout {
                             anchors.centerIn: parent

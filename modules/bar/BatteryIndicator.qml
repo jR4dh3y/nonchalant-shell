@@ -55,6 +55,15 @@ Item {
         topRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
         bottomLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
         bottomRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
+        scale: mainBatMouse.pressed ? 0.92 : 1.0
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: mainBatMouse.pressed ? 80 : 250
+                easing.type: mainBatMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                easing.overshoot: 1.5
+            }
+        }
 
         // Background highlight on hover
         Rectangle {
@@ -171,6 +180,7 @@ Item {
         }
 
         MouseArea {
+            id: mainBatMouse
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
@@ -296,12 +306,22 @@ Item {
                         readonly property bool isFirst: index === 0
                         readonly property bool isLast: index === PowerProfile.availableProfiles.length - 1
                         property bool buttonHovered: false
+                        property bool buttonPressed: false
 
                         readonly property real defaultRadius: Styling.radius(0)
                         readonly property real selectedRadius: Styling.radius(0) / 2
 
                         variant: isSelected ? "primary" : (buttonHovered ? "focus" : "common")
                         enableShadow: false
+                        scale: buttonPressed ? 0.93 : 1.0
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: profileButton.buttonPressed ? 80 : 250
+                                easing.type: profileButton.buttonPressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.5
+                            }
+                        }
 
                         topLeftRadius: isSelected ? (isFirst ? defaultRadius : selectedRadius) : defaultRadius
                         bottomLeftRadius: isSelected ? (isFirst ? defaultRadius : selectedRadius) : defaultRadius
@@ -323,6 +343,9 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
 
+                            onPressed: profileButton.buttonPressed = true
+                            onReleased: profileButton.buttonPressed = false
+                            onCanceled: profileButton.buttonPressed = false
                             onEntered: profileButton.buttonHovered = true
                             onExited: profileButton.buttonHovered = false
 
