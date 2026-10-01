@@ -9,7 +9,6 @@ import qs.modules.widgets.launcher
 import qs.modules.widgets.powermenu
 import qs.modules.notifications
 import qs.modules.sidebar
-import qs.modules.lockscreen
 import qs.config
 
 PanelWindow {
@@ -162,16 +161,6 @@ PanelWindow {
             id: powerMenuHost
             panel: unifiedPanel
             z: 300
-        }
-
-        // Pre-lock desktop capture. Lives on this overlay panel because niri
-        // keeps presenting it; the grab stalls on an occluded background layer.
-        // Parked outside the window so it is never seen; grabs render it anyway.
-        LockshotCapture {
-            screen: unifiedPanel.targetScreen
-            x: -width - 1
-            width: unifiedPanel.width
-            height: unifiedPanel.height
         }
 
         // Detached popup; it never joins the screen edge or reserves space.

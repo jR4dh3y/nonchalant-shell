@@ -56,6 +56,10 @@ OPTIONAL_FILES=(
     "modules/components/DynamicSunIcon.qml"
     "modules/components/DynamicVolumeIcon.qml"
     "modules/components/DynamicBatteryIcon.qml"
+    "modules/lockscreen/LockScreen.qml"
+    "modules/lockscreen/LockCurtain.qml"
+    "modules/lockscreen/LockBackdrop.qml"
+    "modules/services/LockscreenService.qml"
 )
 
 FILES_TO_LINT=()
