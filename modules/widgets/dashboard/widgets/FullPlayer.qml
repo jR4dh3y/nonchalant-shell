@@ -455,12 +455,8 @@ StyledRect {
             opacity: player.hasActivePlayer ? 1.0 : 0.5
             scale: playPauseMouse.pressed ? 0.92 : 1.0
 
-            Behavior on scale {
-                NumberAnimation {
-                    duration: playPauseMouse.pressed ? 80 : 250
-                    easing.type: playPauseMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.5
-                }
+            PressBehavior on scale {
+                pressed: playPauseMouse.pressed
             }
 
             animateRadius: false
@@ -609,12 +605,8 @@ StyledRect {
                     radius: 4
                     scale: delegateMouseArea.pressed ? 0.96 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: delegateMouseArea.pressed ? 80 : 250
-                            easing.type: delegateMouseArea.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: delegateMouseArea.pressed
                     }
 
                     RowLayout {
@@ -668,13 +660,8 @@ StyledRect {
         color: mouseArea.containsMouse ? Colors.primary : Colors.overBackground
         scale: mouseArea.pressed ? 0.92 : 1.0
 
-        Behavior on scale {
-            enabled: (Config.animDuration ?? 0) > 0
-            NumberAnimation {
-                duration: mouseArea.pressed ? 80 : 250
-                easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
-                easing.overshoot: 1.5
-            }
+        PressBehavior on scale {
+            pressed: mouseArea.pressed
         }
 
         Behavior on color {

@@ -28,15 +28,8 @@ Button {
 
     scale: root.pressed ? 0.93 : 1.0
 
-    Behavior on scale {
-        enabled: (Config.animDuration ?? 0) > 0
-        NumberAnimation {
-            duration: root.pressed
-                ? Math.round((Config.animDuration ?? 300) * 0.27)
-                : Math.round((Config.animDuration ?? 300) * 0.83)
-            easing.type: root.pressed ? Easing.OutQuad : Easing.OutBack
-            easing.overshoot: 1.5
-        }
+    PressBehavior on scale {
+        pressed: root.pressed
     }
 
     // Check if buttonIcon is a single character (icon font) or a file path
@@ -52,30 +45,18 @@ Button {
         bottomLeftRadius: root.startRadius
         bottomRightRadius: root.endRadius
 
-        Rectangle {
-            anchors.fill: parent
-            color: parent.item || "transparent"
-            opacity: root.pressed ? 0.5 : (root.hovered ? 0.25 : 0)
-            topLeftRadius: parent.topLeftRadius
-            topRightRadius: parent.topRightRadius
-            bottomLeftRadius: parent.bottomLeftRadius
-            bottomRightRadius: parent.bottomRightRadius
-
-            Behavior on opacity {
-                enabled: (Config.animDuration ?? 0) > 0
-                NumberAnimation {
-                    duration: (Config.animDuration ?? 0) / 2
-                }
-            }
+        HoverTint {
+            color: bg.item
+            hovered: root.hovered
+            pressed: root.pressed
+            pressedOpacity: 0.5
         }
     }
 
 
     contentItem: Item {
         // Text icon (single character)
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
+        StyledText {
             visible: !root.isIconPath
             anchors.fill: parent
             text: root.buttonIcon

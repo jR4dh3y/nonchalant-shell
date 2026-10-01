@@ -54,28 +54,13 @@ Item {
         bottomRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
         scale: (root.clickEnabled && meterMouseArea.pressed) ? 0.92 : 1.0
 
-        Behavior on scale {
-            NumberAnimation {
-                duration: meterMouseArea.pressed ? 80 : 250
-                easing.type: meterMouseArea.pressed ? Easing.OutQuad : Easing.OutBack
-                easing.overshoot: 1.5
-            }
+        PressBehavior on scale {
+            pressed: meterMouseArea.pressed
         }
 
-        Rectangle {
-            anchors.fill: parent
-            color: Styling.srItem("overprimary")
-            opacity: root.isHovered ? (root.flat ? 0.12 : 0.2) : 0
-            radius: root.flat ? (width / 2) : parent.topLeftRadius
-            topLeftRadius: root.flat ? (width / 2) : parent.topLeftRadius
-            topRightRadius: root.flat ? (width / 2) : parent.topRightRadius
-            bottomLeftRadius: root.flat ? (width / 2) : parent.bottomLeftRadius
-            bottomRightRadius: root.flat ? (width / 2) : parent.bottomRightRadius
-
-            Behavior on opacity {
-                enabled: Config.animDuration > 0
-                NumberAnimation { duration: Config.animDuration / 2 }
-            }
+        HoverTint {
+            hovered: root.isHovered
+            hoverOpacity: root.flat ? 0.12 : 0.2
         }
 
         Item {
@@ -138,9 +123,7 @@ Item {
             }
         }
 
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
+        StyledText {
             anchors.centerIn: parent
             text: root.icon
             font.family: Icons.font

@@ -78,7 +78,15 @@ Item {
         }
     }
 
-    Component.onCompleted: GpuService.refresh()
+    // Refresh whenever shown; hosts may keep this panel loaded while hidden.
+    onVisibleChanged: {
+        if (visible)
+            GpuService.refresh();
+    }
+    Component.onCompleted: {
+        if (visible)
+            GpuService.refresh();
+    }
 
     Flickable {
         anchors.fill: parent

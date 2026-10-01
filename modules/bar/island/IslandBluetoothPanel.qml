@@ -52,12 +52,8 @@ Item {
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? 80 : 250
-                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: backMouse.pressed
                 }
 
                 Text {
@@ -118,12 +114,8 @@ Item {
                 variant: settingsMouse.containsMouse ? "focus" : "common"
                 scale: settingsMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: settingsMouse.pressed ? 80 : 250
-                        easing.type: settingsMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: settingsMouse.pressed
                 }
 
                 Text {
@@ -159,12 +151,8 @@ Item {
                 enabled: BluetoothService.enabled
                 scale: rescanMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: rescanMouse.pressed ? 80 : 250
-                        easing.type: rescanMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: rescanMouse.pressed
                 }
 
                 Text {
@@ -211,12 +199,8 @@ Item {
                 implicitHeight: 22
                 scale: toggleMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: toggleMouse.pressed ? 80 : 250
-                        easing.type: toggleMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: toggleMouse.pressed
                 }
 
                 Rectangle {

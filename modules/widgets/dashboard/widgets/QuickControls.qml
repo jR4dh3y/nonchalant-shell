@@ -26,14 +26,6 @@ StyledRect {
         }
     }
 
-    Behavior on implicitHeight {
-        enabled: Config.animDuration > 0 && root.expandedPanel !== -1
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: Easing.OutCubic
-        }
-    }
-
     ColumnLayout {
         id: columnLayout
         anchors.fill: parent
@@ -139,22 +131,55 @@ StyledRect {
             }
         }
 
+        // Drawer: springs open, retracts on a monotonic curve.
         Item {
             id: panelArea
+
+            property real drawerHeight: 0
+
             Layout.fillWidth: true
-            Layout.preferredHeight: root.expandedPanel !== -1 ? root.width - 8 : 0
+            Layout.preferredHeight: drawerHeight
             clip: true
-            opacity: root.expandedPanel !== -1 ? 1 : 0
+            opacity: 0
+            visible: drawerHeight > 0.5
 
-            Behavior on Layout.preferredHeight {
-                enabled: Config.animDuration > 0 && root.expandedPanel !== -1
-                NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
+            states: State {
+                name: "open"
+                when: root.expandedPanel !== -1
+                PropertyChanges {
+                    panelArea.drawerHeight: root.width - 8
+                    panelArea.opacity: 1
+                }
             }
 
-            Behavior on opacity {
-                enabled: Config.animDuration > 0
-                NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart }
-            }
+            transitions: [
+                Transition {
+                    to: "open"
+                    enabled: Motion.enabled
+                    ParallelAnimation {
+                        NumberAnimation {
+                            property: "drawerHeight"
+                            duration: Motion.expandDuration
+                            easing.type: Easing.OutBack
+                            easing.overshoot: Motion.overshoot
+                        }
+                        NumberAnimation {
+                            property: "opacity"
+                            duration: Motion.fadeInDuration
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                },
+                Transition {
+                    from: "open"
+                    enabled: Motion.enabled
+                    NumberAnimation {
+                        properties: "drawerHeight,opacity"
+                        duration: Motion.collapseDuration
+                        easing.type: Easing.InCubic
+                    }
+                }
+            ]
 
             StyledRect {
                 variant: "internalbg"
@@ -171,18 +196,13 @@ StyledRect {
                     Loader {
                         id: wifiLoader
                         anchors.fill: parent
-                        active: root.expandedPanel === 0
+                        visible: opacity > 0
                         source: "../controls/WifiPanel.qml"
                         asynchronous: true
 
                         opacity: root.expandedPanel === 0 ? 1 : 0
                         x: root.expandedPanel === 0 ? 0 : (root.expandedPanel === 1 ? -width : width)
 
-                        onLoaded: {
-                            if (item) {
-                                item.maxContentWidth = width;
-                            }
-                        }
 
                         Behavior on opacity { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
                         Behavior on x { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
@@ -191,18 +211,13 @@ StyledRect {
                     Loader {
                         id: bluetoothLoader
                         anchors.fill: parent
-                        active: root.expandedPanel === 1
+                        visible: opacity > 0
                         source: "../controls/BluetoothPanel.qml"
                         asynchronous: true
 
                         opacity: root.expandedPanel === 1 ? 1 : 0
                         x: root.expandedPanel === 1 ? 0 : (root.expandedPanel === 0 ? width : -width)
 
-                        onLoaded: {
-                            if (item) {
-                                item.maxContentWidth = width;
-                            }
-                        }
 
                         Behavior on opacity { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
                         Behavior on x { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
@@ -211,18 +226,13 @@ StyledRect {
                     Loader {
                         id: gpuLoader
                         anchors.fill: parent
-                        active: root.expandedPanel === 2
+                        visible: opacity > 0
                         source: "../controls/GpuPanel.qml"
                         asynchronous: true
 
                         opacity: root.expandedPanel === 2 ? 1 : 0
                         x: root.expandedPanel === 2 ? 0 : width
 
-                        onLoaded: {
-                            if (item) {
-                                item.maxContentWidth = width;
-                            }
-                        }
 
                         Behavior on opacity { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
                         Behavior on x { enabled: Config.animDuration > 0; NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuart } }
@@ -233,10 +243,6 @@ StyledRect {
     }
 
     function togglePanel(index) {
-        if (root.expandedPanel === index) {
-            root.expandedPanel = -1;
-        } else {
-            root.expandedPanel = index;
-        }
+        root.expandedPanel = root.expandedPanel === index ? -1 : index;
     }
 }

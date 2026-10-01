@@ -140,6 +140,8 @@ RowLayout {
         visible: root.showToggle
         checked: root.toggleChecked
         onCheckedChanged: root.toggleChanged(checked)
+        // The style's default padding would add space beside the drawn track.
+        padding: 0
 
         indicator: Rectangle {
             implicitWidth: 40
@@ -177,8 +179,9 @@ RowLayout {
         background: null
     }
 
-    // Trailing margin so the toggle/actions don't touch the panel edge
+    // Trailing margin matching the title's leading one. The row spacing
+    // before this spacer already counts toward it.
     Item {
-        Layout.preferredWidth: root.horizontalMargin
+        Layout.preferredWidth: root.horizontalMargin - root.spacing
     }
 }

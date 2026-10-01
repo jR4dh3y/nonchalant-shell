@@ -57,31 +57,14 @@ Item {
         bottomRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
         scale: mainBatMouse.pressed ? 0.92 : 1.0
 
-        Behavior on scale {
-            NumberAnimation {
-                duration: mainBatMouse.pressed ? 80 : 250
-                easing.type: mainBatMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                easing.overshoot: 1.5
-            }
+        PressBehavior on scale {
+            pressed: mainBatMouse.pressed
         }
 
         // Background highlight on hover
-        Rectangle {
-            anchors.fill: parent
-            color: Styling.srItem("overprimary")
-            opacity: root.popupOpen ? 0 : (root.isHovered ? (root.flat ? 0.12 : 0.25) : 0)
-            radius: root.flat ? (width / 2) : parent.topLeftRadius
-            topLeftRadius: root.flat ? (width / 2) : parent.topLeftRadius
-            topRightRadius: root.flat ? (width / 2) : parent.topRightRadius
-            bottomLeftRadius: root.flat ? (width / 2) : parent.bottomLeftRadius
-            bottomRightRadius: root.flat ? (width / 2) : parent.bottomRightRadius
-
-            Behavior on opacity {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 2
-                }
-            }
+        HoverTint {
+            hovered: root.isHovered && !root.popupOpen
+            hoverOpacity: root.flat ? 0.12 : 0.25
         }
 
         // Circular progress indicator (only if battery available)
@@ -161,9 +144,7 @@ Item {
         }
 
         // Central icon (Lightning/Plug for battery, PowerProfile icon otherwise)
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
+        StyledText {
             id: batteryIcon
             anchors.centerIn: parent
             text: Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
@@ -191,7 +172,7 @@ Item {
         }
 
         StyledToolTip {
-            visible: root.isHovered && !root.popupOpen
+            show: root.isHovered && !root.popupOpen
             tooltipText: Battery.available ? ("Battery: " + Math.round(Battery.percentage) + "%" + (Battery.isCharging ? " (Charging)" : "")) : ("Power Profile: " + PowerProfile.getProfileDisplayName(PowerProfile.currentProfile))
         }
     }
@@ -229,9 +210,7 @@ Item {
                     anchors.bottomMargin: 8
                     spacing: 12
 
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
+                    StyledText {
                         Layout.alignment: Qt.AlignVCenter
                         text: Battery.getBatteryIcon()
                         font.family: Icons.font
@@ -245,9 +224,7 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         spacing: 2
 
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
+                        StyledText {
                             Layout.fillWidth: true
                             text: Battery.isPluggedIn ? (Battery.isCharging ? "Charging" : "Full") : "On battery"
                             font.family: Styling.defaultFont
@@ -256,9 +233,7 @@ Item {
                             color: Colors.overBackground
                         }
 
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
+                        StyledText {
                             text: Battery.isPluggedIn ? (Battery.timeToFull !== "" ? "Full in " + Battery.timeToFull : "Fully charged") : (Battery.timeToEmpty !== "" ? Battery.timeToEmpty + " remaining" : "")
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(-1)
@@ -270,9 +245,7 @@ Item {
                     }
 
                     // Battery percentage display
-                    Text {
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
+                    StyledText {
                         Layout.alignment: Qt.AlignVCenter
                         text: Math.round(Battery.percentage) + "%"
                         font.family: Styling.defaultFont
@@ -315,12 +288,8 @@ Item {
                         enableShadow: false
                         scale: buttonPressed ? 0.93 : 1.0
 
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: profileButton.buttonPressed ? 80 : 250
-                                easing.type: profileButton.buttonPressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
-                            }
+                        PressBehavior on scale {
+                            pressed: profileButton.buttonPressed
                         }
 
                         topLeftRadius: isSelected ? (isFirst ? defaultRadius : selectedRadius) : defaultRadius
@@ -328,9 +297,7 @@ Item {
                         topRightRadius: isSelected ? (isLast ? defaultRadius : selectedRadius) : defaultRadius
                         bottomRightRadius: isSelected ? (isLast ? defaultRadius : selectedRadius) : defaultRadius
 
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
+                        StyledText {
                             anchors.centerIn: parent
                             text: PowerProfile.getProfileIcon(profileButton.modelData)
                             font.family: Icons.font

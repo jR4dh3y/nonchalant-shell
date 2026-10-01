@@ -128,12 +128,8 @@ Item {
                 implicitWidth: clockDateCol.implicitWidth
                 implicitHeight: clockDateCol.implicitHeight
                 scale: clockDateMouse.pressed ? 0.94 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: clockDateMouse.pressed ? 80 : 250
-                        easing.type: clockDateMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.4
-                    }
+                PressBehavior on scale {
+                    pressed: clockDateMouse.pressed
                 }
 
                 ColumnLayout {
@@ -204,12 +200,8 @@ Item {
                 variant: weatherMouse.containsMouse ? "focus" : "internalbg"
                 scale: weatherMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: weatherMouse.pressed ? 80 : 250
-                        easing.type: weatherMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: weatherMouse.pressed
                 }
 
                 RowLayout {
@@ -254,12 +246,8 @@ Item {
                 variant: alertsMouse.containsMouse ? "focus" : "internalbg"
                 scale: alertsMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: alertsMouse.pressed ? 80 : 250
-                        easing.type: alertsMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: alertsMouse.pressed
                 }
 
                 RowLayout {
@@ -314,12 +302,8 @@ Item {
                 variant: settingsMouse.containsMouse ? "focus" : "internalbg"
                 scale: settingsMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: settingsMouse.pressed ? 80 : 250
-                        easing.type: settingsMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: settingsMouse.pressed
                 }
 
                 Text {
@@ -352,12 +336,8 @@ Item {
                 variant: powerMouse.containsMouse ? "error" : "internalbg"
                 scale: powerMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: powerMouse.pressed ? 80 : 250
-                        easing.type: powerMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: powerMouse.pressed
                 }
 
                 Text {
@@ -398,12 +378,8 @@ Item {
                 variant: NetworkService.wifiEnabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
                 scale: (wifiMouse.pressed || wifiIconMouse.pressed) ? 0.94 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: (wifiMouse.pressed || wifiIconMouse.pressed) ? 80 : 250
-                        easing.type: (wifiMouse.pressed || wifiIconMouse.pressed) ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: (wifiMouse.pressed || wifiIconMouse.pressed)
                 }
 
                 RowLayout {
@@ -502,12 +478,8 @@ Item {
                 variant: BluetoothService.enabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
                 scale: (btMouse.pressed || btIconMouse.pressed) ? 0.94 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: (btMouse.pressed || btIconMouse.pressed) ? 80 : 250
-                        easing.type: (btMouse.pressed || btIconMouse.pressed) ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: (btMouse.pressed || btIconMouse.pressed)
                 }
 
                 RowLayout {
@@ -746,12 +718,8 @@ Item {
                     variant: NightLightService.active ? "primary" : (nlMouse.containsMouse ? "focus" : "common")
                     scale: nlMouse.pressed ? 0.92 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: nlMouse.pressed ? 80 : 250
-                            easing.type: nlMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: nlMouse.pressed
                     }
 
                     RowLayout {

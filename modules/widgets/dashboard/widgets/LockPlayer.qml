@@ -222,12 +222,8 @@ StyledRect {
                 visible: MprisController.canTogglePlaying
                 scale: playPauseMouse.pressed ? 0.88 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: playPauseMouse.pressed ? 80 : 250
-                        easing.type: playPauseMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: playPauseMouse.pressed
                 }
 
                 Behavior on opacity {
@@ -312,12 +308,8 @@ StyledRect {
                     opacity: MprisController.canGoPrevious ? 1.0 : 0.3
                     scale: previousMouse.pressed ? 0.88 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: previousMouse.pressed ? 80 : 250
-                            easing.type: previousMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: previousMouse.pressed
                     }
 
                     Behavior on color {
@@ -364,12 +356,8 @@ StyledRect {
                     opacity: MprisController.canGoNext ? 1.0 : 0.3
                     scale: nextMouse.pressed ? 0.88 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: nextMouse.pressed ? 80 : 250
-                            easing.type: nextMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: nextMouse.pressed
                     }
 
                     Behavior on color {
@@ -422,12 +410,8 @@ StyledRect {
                     }
                     scale: modeMouse.pressed ? 0.88 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: modeMouse.pressed ? 80 : 250
-                            easing.type: modeMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: modeMouse.pressed
                     }
 
                     Behavior on color {
@@ -490,12 +474,8 @@ StyledRect {
                     opacity: MprisController.activePlayer ? 1.0 : 0.3
                     scale: playerIconMouse.pressed ? 0.88 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: playerIconMouse.pressed ? 80 : 250
-                            easing.type: playerIconMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: playerIconMouse.pressed
                     }
 
                     Behavior on color {

@@ -132,13 +132,8 @@ Item {
             Layout.alignment: Qt.AlignVCenter
             scale: iconMouse.pressed ? 0.90 : 1.0
 
-            Behavior on scale {
-                enabled: (Config.animDuration ?? 0) > 0
-                NumberAnimation {
-                    duration: iconMouse.pressed ? 80 : 250
-                    easing.type: iconMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.4
-                }
+            PressBehavior on scale {
+                pressed: iconMouse.pressed
             }
 
             DynamicSunIcon {

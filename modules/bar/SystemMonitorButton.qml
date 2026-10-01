@@ -32,11 +32,10 @@ ToggleButton {
     BarPopup {
         id: monitorPopup
         anchorItem: root
-        variant: "transparent"
-        popupPadding: 0
+        popupPadding: root.contentPadding
 
-        contentWidth: monitorWrapper.width
-        contentHeight: monitorWrapper.height
+        contentWidth: metricsLoader.item ? metricsLoader.item.implicitWidth + popupPadding * 2 : 0
+        contentHeight: metricsLoader.item ? metricsLoader.item.implicitHeight + popupPadding * 2 : 0
 
         onIsOpenChanged: {
             const screenName = root.bar?.screen?.name ?? "";
@@ -47,27 +46,17 @@ ToggleButton {
             }
         }
 
-        StyledRect {
-            id: monitorWrapper
-            variant: "popup"
-            radius: Styling.radius(8)
-            enableShadow: false
-            width: metricsLoader.item ? metricsLoader.item.implicitWidth + root.contentPadding * 2 : 0
-            height: metricsLoader.item ? metricsLoader.item.implicitHeight + root.contentPadding * 2 : 0
+        Loader {
+            id: metricsLoader
+            active: false
+            anchors.fill: parent
 
-            Loader {
-                id: metricsLoader
-                active: false
-                anchors.fill: parent
-                anchors.margins: root.contentPadding
-
-                sourceComponent: Component {
-                    MetricsTab {
-                        Keys.onPressed: event => {
-                            if (event.key === Qt.Key_Escape) {
-                                monitorPopup.close();
-                                event.accepted = true;
-                            }
+            sourceComponent: Component {
+                MetricsTab {
+                    Keys.onPressed: event => {
+                        if (event.key === Qt.Key_Escape) {
+                            monitorPopup.close();
+                            event.accepted = true;
                         }
                     }
                 }

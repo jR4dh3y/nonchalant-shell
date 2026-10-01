@@ -38,8 +38,10 @@ Item {
     Item {
         id: hitbox
         width: root.width
+        // Only the input area collapses while hidden. The position stays put
+        // so the bar inside can slide out instead of jumping with the box.
         height: root.reveal ? root.totalBarHeight : 0
-        y: root.bottomPosition ? root.height - height : 0
+        y: root.bottomPosition ? root.height - root.totalBarHeight : 0
 
         Item {
             id: bar
@@ -47,15 +49,52 @@ Item {
             y: root.bottomPosition ? 0 : barBg.outerMargin
             width: parent.width - barBg.outerMargin * 2
             height: root.barTargetHeight
-            opacity: root.reveal ? 1 : 0
 
-            Behavior on opacity {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 2
-                    easing.type: Easing.OutCubic
+            // Hidden for overview and fullscreen: retracts past the screen
+            // edge on a monotonic curve, springs back in with the island's
+            // overshoot.
+            property real retraction: 0
+            transform: Translate {
+                y: (root.bottomPosition ? 1 : -1) * bar.retraction * (root.totalBarHeight + barBg.outerMargin)
+            }
+
+            states: State {
+                name: "hidden"
+                when: !root.reveal
+                PropertyChanges {
+                    bar.retraction: 1
+                    bar.opacity: 0
                 }
             }
+
+            transitions: [
+                Transition {
+                    from: "hidden"
+                    enabled: Motion.enabled
+                    ParallelAnimation {
+                        NumberAnimation {
+                            property: "retraction"
+                            duration: Motion.expandDuration
+                            easing.type: Easing.OutBack
+                            easing.overshoot: Motion.overshoot
+                        }
+                        NumberAnimation {
+                            property: "opacity"
+                            duration: Motion.fadeInDuration
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                },
+                Transition {
+                    to: "hidden"
+                    enabled: Motion.enabled
+                    NumberAnimation {
+                        properties: "retraction,opacity"
+                        duration: Motion.collapseDuration
+                        easing.type: Easing.InCubic
+                    }
+                }
+            ]
 
             BarBg {
                 id: barBg

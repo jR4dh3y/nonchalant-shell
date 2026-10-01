@@ -17,19 +17,28 @@ Item {
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
-    Component.onCompleted: {
-        // Only refresh device list, don't start scanning automatically
-        if (BluetoothService.enabled) {
-            // Defer update to avoid blocking UI initialization
-            initialUpdateTimer.start();
+    // Hosts may keep this panel loaded while hidden; refresh the device list
+    // (no discovery) each time it is shown, after the host's reveal settles.
+    onVisibleChanged: {
+        if (visible) {
+            updateTimer.restart();
+        } else {
+            updateTimer.stop();
+            BluetoothService.stopDiscovery();
         }
+    }
+    Component.onCompleted: {
+        if (visible)
+            updateTimer.restart();
     }
 
     Timer {
-        id: initialUpdateTimer
-        interval: 300
-        repeat: false
-        onTriggered: BluetoothService.updateDevices()
+        id: updateTimer
+        interval: Motion.expandDuration
+        onTriggered: {
+            if (BluetoothService.enabled)
+                BluetoothService.updateDevices();
+        }
     }
 
     Component.onDestruction: {

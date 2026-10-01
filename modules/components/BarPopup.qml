@@ -1,7 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Layouts
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.modules.services
@@ -9,27 +7,25 @@ import qs.modules.theme
 import qs.modules.components
 import qs.config
 
-// BarPopup: A popup component that anchors to bar elements
-// Shared popup surface for bar-attached controls.
+// Shared popup surface for bar-attached controls. The surface morphs out of
+// the pill it is anchored to (see MorphSurface), the same motion the island
+// uses for its panels.
 PopupWindow {
     id: root
 
     // Required: the item this popup anchors to
     required property Item anchorItem
     // Content to display inside the popup
-    default property alias contentData: contentContainer.data
+    default property alias contentData: surface.content
 
     // Visual configuration
     property int popupPadding: 8
     property int visualMargin: 8  // Distance from bar
-    property int shadowMargin: 16  // Extra margin for shadow
+    property int shadowMargin: 16  // Room around the surface for the spring stretch
     property string variant: "popup"  // StyledRect variant for background
 
     // Behavior configuration
     property bool closeOnFocusLost: true
-    // Large nested surfaces can remain mapped between opens to avoid
-    // compositor remap artifacts. Their input is limited by the mask below.
-    property bool keepMapped: false
 
     // Logical open state (changes immediately, not after animation)
     property bool isOpen: false
@@ -37,37 +33,14 @@ PopupWindow {
     // Signal emitted when popup is closed externally (click outside)
     signal closedExternally
 
-    // Reveal the popup at its attachment edge. Moving or scaling a large popup
-    // makes dashboard content hitch and resamples text; changing only this clip
-    // boundary keeps the content stationary and sharp.
-    property real revealProgress: 0
-    // Mutable duration so sibling switches can use a snappier close/open.
-    property int transitionMs: Config.animDuration > 0 ? Config.animDuration : 0
-
-    // Total size including shadow margin
-    readonly property int totalWidth: contentWidth + shadowMargin * 2
-    readonly property int totalHeight: contentHeight + shadowMargin * 2
     property int contentWidth: 220
     property int contentHeight: 150
 
+    readonly property int totalWidth: contentWidth + shadowMargin * 2
+    readonly property int totalHeight: contentHeight + shadowMargin * 2
+
     implicitWidth: totalWidth
     implicitHeight: totalHeight
-
-    // Smooth size changes when content (e.g. dashboard) finishes loading.
-    Behavior on contentWidth {
-        enabled: root.transitionMs > 0 && root.visible
-        NumberAnimation {
-            duration: Math.max(root.transitionMs / 2, 80)
-            easing.type: Easing.OutCubic
-        }
-    }
-    Behavior on contentHeight {
-        enabled: root.transitionMs > 0 && root.visible
-        NumberAnimation {
-            duration: Math.max(root.transitionMs / 2, 80)
-            easing.type: Easing.OutCubic
-        }
-    }
 
     readonly property bool bottomBar: (Config.bar?.position ?? "top") === "bottom"
 
@@ -81,144 +54,77 @@ PopupWindow {
     anchor.rect.height: 0
 
     color: "transparent"
-    visible: keepMapped
+    visible: false
     mask: Region {
-        item: root.visible ? revealViewport : null
+        item: root.visible ? surface.body : null
     }
 
-    property bool focusActive: false
-
     FocusGrab {
-        id: focusGrab
-        active: root.visible && root.focusActive
+        active: root.visible && root.isOpen
         windows: [root]
 
         onCleared: {
             if (root.closeOnFocusLost && root.isOpen) {
-                root.isOpen = false;
-                root.closedExternally();
                 root.close();
+                root.closedExternally();
             }
         }
     }
 
-    Behavior on revealProgress {
-        enabled: root.transitionMs > 0
-        NumberAnimation {
-            duration: root.transitionMs
-            easing.type: root.isOpen ? Easing.OutCubic : Easing.InCubic
-        }
-    }
-
-    Item {
-        id: revealViewport
+    MorphSurface {
+        id: surface
 
         x: root.shadowMargin
-        width: root.contentWidth
-        height: root.contentHeight * root.revealProgress
-        y: root.bottomBar
-            ? root.shadowMargin + root.contentHeight - height
-            : root.shadowMargin
-        clip: true
+        y: root.shadowMargin
+        contentWidth: root.contentWidth
+        contentHeight: root.contentHeight
+        originWidth: root.anchorItem.width
+        fromBottom: root.bottomBar
+        variant: root.variant
+        padding: root.popupPadding
+        maxStretch: root.shadowMargin - 2
 
-        StyledRect {
-            id: popupContainer
-
-            width: root.contentWidth
-            height: root.contentHeight
-            y: root.bottomBar ? revealViewport.height - height : 0
-            variant: root.variant
-            enableShadow: false
-            radius: Styling.radius(8)
-
-            Item {
-                id: contentContainer
-                anchors.fill: parent
-                anchors.margins: root.popupPadding
-            }
-        }
-    }
-
-    function open() {
-        if (visible && isOpen && revealProgress >= 0.99)
-            return;
-
-        closeTimer.stop();
-        resetTransitionTimer.stop();
-
-        // Snappy full-duration open for a clean settle.
-        transitionMs = Config.animDuration > 0 ? Config.animDuration : 0;
-
-        // One bar popup at a time; a replaced sibling uses a quicker collapse.
-        Visibilities.claimBarPopup(root);
-
-        isOpen = true;
-
-        // A mid-close reopen continues from the current reveal boundary.
-        if (!visible)
-            visible = true;
-
-        // Grab focus immediately so we don't thrash focus between the two popups.
-        focusActive = true;
-
-        Qt.callLater(() => {
-            if (!root.isOpen)
-                return;
-            revealProgress = 1;
-        });
-    }
-
-    // Faster exit used when another popup is replacing this one.
-    function closeQuick() {
-        _closeInternal(true);
-    }
-
-    function close() {
-        _closeInternal(false);
-    }
-
-    function _closeInternal(quick) {
-        if (!visible && !isOpen)
-            return;
-
-        isOpen = false;
-        focusActive = false;
-        Visibilities.releaseBarPopup(root);
-
-        const base = Config.animDuration > 0 ? Config.animDuration : 0;
-        transitionMs = quick ? Math.max(Math.round(base / 2), 80) : base;
-
-        revealProgress = 0;
-
-        closeTimer.interval = transitionMs > 0 ? transitionMs + 30 : 20;
-        closeTimer.restart();
-
-        // Restore default transition length after the close finishes.
-        resetTransitionTimer.interval = closeTimer.interval + 10;
-        resetTransitionTimer.restart();
-    }
-
-    function toggle() {
-        if (isOpen || (visible && revealProgress > 0.5))
-            close();
-        else
-            open();
-    }
-
-    Timer {
-        id: closeTimer
-        interval: 50
-        onTriggered: {
-            if (!root.isOpen && !root.keepMapped)
+        // Unmap only once the surface has fully retracted.
+        onFullyHiddenChanged: {
+            if (fullyHidden && !root.isOpen)
                 root.visible = false;
         }
     }
 
-    Timer {
-        id: resetTransitionTimer
-        interval: 50
-        onTriggered: {
-            root.transitionMs = Config.animDuration > 0 ? Config.animDuration : 0;
-        }
+    function open() {
+        if (isOpen)
+            return;
+
+        // One bar popup at a time; the replaced sibling closes quickly.
+        Visibilities.claimBarPopup(root);
+
+        isOpen = true;
+        visible = true;
+        // Start the morph once the window is mapped so its first frames are
+        // not spent on an unmapped surface.
+        Qt.callLater(() => {
+            if (root.isOpen)
+                surface.shown = true;
+        });
+    }
+
+    function close() {
+        if (!isOpen)
+            return;
+
+        isOpen = false;
+        Visibilities.releaseBarPopup(root);
+        surface.shown = false;
+        if (surface.fullyHidden)
+            visible = false;
+    }
+
+    // Clicking the anchor of an open popup first clears the focus grab, which
+    // starts the close; the click then lands here and must not reopen it.
+    function toggle() {
+        if (isOpen || (visible && surface.progress > 0.5))
+            close();
+        else
+            open();
     }
 }

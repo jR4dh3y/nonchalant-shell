@@ -45,12 +45,8 @@ Item {
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? 80 : 250
-                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: backMouse.pressed
                 }
 
                 Text {
@@ -116,12 +112,8 @@ Item {
                 radius: 14
                 variant: refreshMouse.containsMouse ? "focus" : "common"
                 scale: refreshMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: refreshMouse.pressed ? 80 : 250
-                        easing.type: refreshMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: refreshMouse.pressed
                 }
 
                 Text {

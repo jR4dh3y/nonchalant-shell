@@ -15,9 +15,8 @@ Item {
 
     readonly property var screenVisibilities: Visibilities.getForScreen(screen.name)
     readonly property bool open: (Config.bar?.style !== "island") && (screenVisibilities ? screenVisibilities.launcher : false)
-    readonly property Item hitbox: menuShown ? cardReveal : null
+    readonly property Item hitbox: menuSurface.fullyHidden ? null : menuSurface.body
     property PanelWindow barPanel: Visibilities.getBarPanelForScreen(screen.name)
-    readonly property int contentPadding: 8
     readonly property int edgeGap: 8
     readonly property bool bottomEdge: (Config.bar?.position ?? "top") === "bottom"
     readonly property real barClearance: {
@@ -25,46 +24,18 @@ Item {
             return edgeGap;
         return (barPanel.totalBarHeight > 0 ? barPanel.totalBarHeight : (barPanel.barTargetHeight + barPanel.barOuterMargin)) + edgeGap;
     }
-
-    // Keep the card mounted while its edge clip closes.
-    property bool menuShown: false
-    property real revealProgress: 0
-
-    Behavior on revealProgress {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: root.open ? Easing.OutCubic : Easing.InCubic
-        }
-    }
+    // Keep the launcher mounted until the surface has fully retracted.
+    readonly property bool menuShown: open || !menuSurface.fullyHidden
 
     onOpenChanged: {
-        if (open) {
-            closeTimer.stop();
-            menuShown = true;
-            GlobalStates.clearLauncherState();
-            GlobalStates.clearProjectPickerState();
-            // Next frame so the window has a size before we animate in.
-            Qt.callLater(() => {
-                if (!root.open)
-                    return;
-                revealProgress = 1;
-                if (launcherLoader.item)
-                    launcherLoader.item.forceActiveFocus();
-            });
-        } else if (menuShown) {
-            revealProgress = 0;
-            closeTimer.restart();
-        }
-    }
-
-    Timer {
-        id: closeTimer
-        interval: Config.animDuration > 0 ? Config.animDuration + 40 : 40
-        onTriggered: {
-            if (!root.open)
-                root.menuShown = false;
-        }
+        if (!open)
+            return;
+        GlobalStates.clearLauncherState();
+        GlobalStates.clearProjectPickerState();
+        Qt.callLater(() => {
+            if (root.open && launcherLoader.item)
+                launcherLoader.item.forceActiveFocus();
+        });
     }
 
     Item {
@@ -76,46 +47,30 @@ Item {
         height: Math.max(0, root.height - root.barClearance)
         clip: true
 
-        Item {
-            id: cardReveal
+        MorphSurface {
+            id: menuSurface
 
-            visible: root.menuShown
-            width: launcherLoader.item ? launcherLoader.item.implicitWidth + root.contentPadding * 2 : 0
-            height: (launcherLoader.item
-                ? launcherLoader.item.implicitHeight + root.contentPadding * 2
-                : 0) * root.revealProgress
+            shown: root.open
+            contentWidth: launcherLoader.item ? launcherLoader.item.implicitWidth + padding * 2 : 0
+            contentHeight: launcherLoader.item ? launcherLoader.item.implicitHeight + padding * 2 : 0
+            fromBottom: root.bottomEdge
             x: Math.round((edgeRegion.width - width) / 2)
             y: root.bottomEdge ? edgeRegion.height - height : 0
-            clip: true
 
-            StyledRect {
-                id: menuCard
+            Loader {
+                id: launcherLoader
+                anchors.fill: parent
+                // Keep loaded so open/close does not hitch on first paint.
+                // The island hosts its own launcher, so skip this copy there
+                // (but finish a closing animation after a style switch).
+                active: Config.bar?.style !== "island" || root.menuShown
+                sourceComponent: Component {
+                    LauncherView {}
+                }
 
-                variant: "popup"
-                enableShadow: false
-                radius: Styling.radius(8)
-                width: cardReveal.width
-                height: launcherLoader.item
-                    ? launcherLoader.item.implicitHeight + root.contentPadding * 2
-                    : 0
-                y: root.bottomEdge ? cardReveal.height - height : 0
-
-                Loader {
-                    id: launcherLoader
-                    anchors.fill: parent
-                    anchors.margins: root.contentPadding
-                    // Keep loaded so open/close does not hitch on first paint.
-                    // The island hosts its own launcher, so skip this copy there
-                    // (but finish a closing animation after a style switch).
-                    active: Config.bar?.style !== "island" || root.menuShown
-                    sourceComponent: Component {
-                        LauncherView {}
-                    }
-
-                    onLoaded: {
-                        if (root.open)
-                            Qt.callLater(() => item.forceActiveFocus());
-                    }
+                onLoaded: {
+                    if (root.open)
+                        Qt.callLater(() => item.forceActiveFocus());
                 }
             }
         }

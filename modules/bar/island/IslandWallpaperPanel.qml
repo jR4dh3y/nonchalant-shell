@@ -91,12 +91,8 @@ Item {
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? 80 : 250
-                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: backMouse.pressed
                 }
 
                 Text {
@@ -137,12 +133,8 @@ Item {
                 variant: (root.allScreens && root.allScreens.length > 1 && screenMouse.containsMouse) ? "focus" : "common"
                 scale: screenMouse.pressed ? 0.94 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: screenMouse.pressed ? 80 : 250
-                        easing.type: screenMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: screenMouse.pressed
                 }
 
                 RowLayout {
@@ -235,12 +227,8 @@ Item {
                         color: clearSearchMouse.containsMouse ? Colors.overBackground : Colors.overSurfaceVariant
                         scale: clearSearchMouse.pressed ? 0.88 : 1.0
 
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: clearSearchMouse.pressed ? 80 : 250
-                                easing.type: clearSearchMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
-                            }
+                        PressBehavior on scale {
+                            pressed: clearSearchMouse.pressed
                         }
 
                         MouseArea {
@@ -281,12 +269,8 @@ Item {
                     variant: perScreenMouse.containsMouse ? "focus" : "pane"
                     scale: perScreenMouse.pressed ? 0.94 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: perScreenMouse.pressed ? 80 : 250
-                            easing.type: perScreenMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: perScreenMouse.pressed
                     }
 
                     RowLayout {
