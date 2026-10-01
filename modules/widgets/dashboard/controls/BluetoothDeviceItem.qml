@@ -33,12 +33,8 @@ Item {
         radius: Styling.radius(4)
         scale: mouseArea.pressed ? 0.98 : 1.0
 
-        Behavior on scale {
-            NumberAnimation {
-                duration: mouseArea.pressed ? 80 : 250
-                easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
-                easing.overshoot: 1.5
-            }
+        PressBehavior on scale {
+            pressed: mouseArea.pressed
         }
     }
 
@@ -207,12 +203,8 @@ Item {
                 implicitHeight: 32
                 scale: forgetButton.down ? 0.94 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: forgetButton.down ? 80 : 250
-                        easing.type: forgetButton.down ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: forgetButton.down
                 }
 
                 background: StyledRect {
@@ -244,12 +236,8 @@ Item {
                 implicitHeight: 32
                 scale: actionButton.down ? 0.94 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: actionButton.down ? 80 : 250
-                        easing.type: actionButton.down ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: actionButton.down
                 }
 
                 background: StyledRect {

@@ -53,13 +53,8 @@ RowLayout {
             radius: 13
             variant: brightMouse.containsMouse ? "focus" : "transparent"
             scale: brightMouse.pressed ? 0.92 : 1.0
-            Behavior on scale {
-                enabled: (Config.animDuration ?? 0) > 0
-                NumberAnimation {
-                    duration: brightMouse.pressed ? 80 : 250
-                    easing.type: brightMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.4
-                }
+            PressBehavior on scale {
+                pressed: brightMouse.pressed
             }
 
             DynamicSunIcon {
@@ -138,13 +133,8 @@ RowLayout {
             radius: 13
             variant: volMouse.containsMouse ? "focus" : "transparent"
             scale: volMouse.pressed ? 0.92 : 1.0
-            Behavior on scale {
-                enabled: (Config.animDuration ?? 0) > 0
-                NumberAnimation {
-                    duration: volMouse.pressed ? 80 : 250
-                    easing.type: volMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.4
-                }
+            PressBehavior on scale {
+                pressed: volMouse.pressed
             }
 
             DynamicVolumeIcon {
@@ -222,13 +212,8 @@ RowLayout {
             radius: 13
             variant: batMouse.containsMouse ? "focus" : "transparent"
             scale: batMouse.pressed ? 0.92 : 1.0
-            Behavior on scale {
-                enabled: (Config.animDuration ?? 0) > 0
-                NumberAnimation {
-                    duration: batMouse.pressed ? 80 : 250
-                    easing.type: batMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.4
-                }
+            PressBehavior on scale {
+                pressed: batMouse.pressed
             }
 
             DynamicBatteryIcon {

@@ -236,13 +236,8 @@ FocusScope {
                         opacity: enabled ? 1.0 : 0.5
                         scale: actionButton.pressed ? 0.93 : 1.0
 
-                        Behavior on scale {
-                            enabled: (Config.animDuration ?? 0) > 0
-                            NumberAnimation {
-                                duration: actionButton.pressed ? 80 : 250
-                                easing.type: actionButton.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
-                            }
+                        PressBehavior on scale {
+                            pressed: actionButton.pressed
                         }
 
                         Process {

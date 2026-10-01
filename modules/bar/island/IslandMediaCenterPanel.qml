@@ -81,12 +81,8 @@ Item {
                 radius: 14
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? 80 : 250
-                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: backMouse.pressed
                 }
 
                 Text {
@@ -133,12 +129,8 @@ Item {
                 radius: 14
                 variant: playerMouse.containsMouse ? "focus" : "common"
                 scale: playerMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: playerMouse.pressed ? 80 : 250
-                        easing.type: playerMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: playerMouse.pressed
                 }
 
                 Text {
@@ -205,12 +197,8 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
 
                 scale: discMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: discMouse.pressed ? 80 : 250
-                        easing.type: discMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: discMouse.pressed
                 }
 
                 // Shadow ring for 3D depth
@@ -439,12 +427,8 @@ Item {
                 variant: MprisController.hasShuffle ? "primary" : (shuffleMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.shuffleSupported ? 1.0 : 0.4
                 scale: shuffleMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: shuffleMouse.pressed ? 80 : 250
-                        easing.type: shuffleMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: shuffleMouse.pressed
                 }
 
                 Text {
@@ -477,12 +461,8 @@ Item {
                 variant: prevMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoPrevious ? 1.0 : 0.4
                 scale: prevMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: prevMouse.pressed ? 80 : 250
-                        easing.type: prevMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: prevMouse.pressed
                 }
 
                 Text {
@@ -513,12 +493,8 @@ Item {
                 variant: "primary"
                 opacity: playMouse.containsMouse ? 0.9 : 1.0
                 scale: playMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: playMouse.pressed ? 80 : 250
-                        easing.type: playMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: playMouse.pressed
                 }
 
                 Text {
@@ -548,12 +524,8 @@ Item {
                 variant: nextMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoNext ? 1.0 : 0.4
                 scale: nextMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: nextMouse.pressed ? 80 : 250
-                        easing.type: nextMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: nextMouse.pressed
                 }
 
                 Text {
@@ -586,12 +558,8 @@ Item {
                 variant: MprisController.loopState !== 0 ? "primary" : (loopMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.loopSupported ? 1.0 : 0.4
                 scale: loopMouse.pressed ? 0.92 : 1.0
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: loopMouse.pressed ? 80 : 250
-                        easing.type: loopMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: loopMouse.pressed
                 }
 
                 Text {

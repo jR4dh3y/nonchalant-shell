@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.modules.theme
+import qs.modules.components
 import qs.config
 
 Button {
@@ -36,22 +37,18 @@ Button {
     enabled: !isSeparator
     scale: (!root.isSeparator && root.down) ? 0.96 : 1.0
 
-    Behavior on scale {
-        NumberAnimation {
-            duration: root.down ? 80 : 250
-            easing.type: root.down ? Easing.OutQuad : Easing.OutBack
-            easing.overshoot: 1.5
-        }
+    PressBehavior on scale {
+        pressed: root.down
     }
 
     // Reset default styling
     padding: 0
-    background: Rectangle {
-        color: {
-            if (root.isSeparator) return "transparent"
-            return root.hovered ? Styling.srItem("overprimary") : "transparent"
+    background: Item {
+        HoverTint {
+            hovered: root.hovered && !root.isSeparator
+            hoverOpacity: 1
+            radius: Styling.radius(0)
         }
-        radius: Styling.radius(0)
 
         // Separator line
         Rectangle {
@@ -89,9 +86,7 @@ Button {
                 border.color: root.checkState === Qt.Unchecked ? Colors.outline : Colors.primary
                 border.width: 1.5
 
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
+                StyledText {
                     anchors.centerIn: parent
                     visible: root.checkState !== Qt.Unchecked
                     text: root.checkState === Qt.PartiallyChecked ? "\u2212" : "\u2713"
@@ -132,9 +127,7 @@ Button {
 
             Component {
                 id: fontIcon
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
+                StyledText {
                     text: root.iconSource
                     font.family: Icons.font
                     font.pixelSize: 14
@@ -155,9 +148,7 @@ Button {
         }
 
         // Text
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
+        StyledText {
             Layout.fillWidth: true
             text: root.cleanText
             color: root.hovered ? Colors.overPrimary : Colors.overBackground
@@ -168,9 +159,7 @@ Button {
         }
 
         // Submenu chevron
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
+        StyledText {
             visible: root.hasSubmenu
             text: root.expanded ? "\u25BE" : "\u25B8"
             color: root.hovered ? Colors.overPrimary : Colors.overBackground

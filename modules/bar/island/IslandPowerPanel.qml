@@ -92,12 +92,8 @@ Item {
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? 80 : 250
-                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: backMouse.pressed
                 }
 
                 Text {
@@ -146,12 +142,8 @@ Item {
                 variant: (sleepMouse.containsMouse || root.selectedIndex === 0) ? "focus" : "internalbg"
                 scale: sleepMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: sleepMouse.pressed ? 80 : 250
-                        easing.type: sleepMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: sleepMouse.pressed
                 }
 
                 Text {
@@ -182,12 +174,8 @@ Item {
                 variant: (lockMouse.containsMouse || root.selectedIndex === 1) ? "focus" : "internalbg"
                 scale: lockMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: lockMouse.pressed ? 80 : 250
-                        easing.type: lockMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: lockMouse.pressed
                 }
 
                 Text {
@@ -218,12 +206,8 @@ Item {
                 variant: (logoutMouse.containsMouse || root.selectedIndex === 2) ? "focus" : "internalbg"
                 scale: logoutMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: logoutMouse.pressed ? 80 : 250
-                        easing.type: logoutMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: logoutMouse.pressed
                 }
 
                 Text {
@@ -254,12 +238,8 @@ Item {
                 variant: (rebootMouse.containsMouse || root.selectedIndex === 3) ? "focus" : "internalbg"
                 scale: rebootMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: rebootMouse.pressed ? 80 : 250
-                        easing.type: rebootMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: rebootMouse.pressed
                 }
 
                 Text {
@@ -290,12 +270,8 @@ Item {
                 variant: (shutdownMouse.containsMouse || root.selectedIndex === 4) ? "focus" : "internalbg"
                 scale: shutdownMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: shutdownMouse.pressed ? 80 : 250
-                        easing.type: shutdownMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: shutdownMouse.pressed
                 }
 
                 Text {

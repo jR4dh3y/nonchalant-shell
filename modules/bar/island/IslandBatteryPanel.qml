@@ -43,12 +43,8 @@ Item {
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? 80 : 250
-                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: backMouse.pressed
                 }
 
                 Text {
@@ -234,12 +230,8 @@ Item {
                         variant: PowerProfile.currentProfile === "power-saver" ? "primary" : (saverMouse.containsMouse ? "focus" : "common")
                         scale: saverMouse.pressed ? 0.94 : 1.0
 
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: saverMouse.pressed ? 80 : 250
-                                easing.type: saverMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
-                            }
+                        PressBehavior on scale {
+                            pressed: saverMouse.pressed
                         }
 
                         RowLayout {
@@ -284,12 +276,8 @@ Item {
                         variant: PowerProfile.currentProfile === "balanced" ? "primary" : (balMouse.containsMouse ? "focus" : "common")
                         scale: balMouse.pressed ? 0.94 : 1.0
 
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: balMouse.pressed ? 80 : 250
-                                easing.type: balMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
-                            }
+                        PressBehavior on scale {
+                            pressed: balMouse.pressed
                         }
 
                         RowLayout {
@@ -334,12 +322,8 @@ Item {
                         variant: PowerProfile.currentProfile === "performance" ? "primary" : (perfMouse.containsMouse ? "focus" : "common")
                         scale: perfMouse.pressed ? 0.94 : 1.0
 
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: perfMouse.pressed ? 80 : 250
-                                easing.type: perfMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
-                            }
+                        PressBehavior on scale {
+                            pressed: perfMouse.pressed
                         }
 
                         RowLayout {

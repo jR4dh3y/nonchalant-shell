@@ -154,12 +154,8 @@ MouseArea {
         anchors.fill: parent
         scale: root.pressed ? 0.90 : 1.0
 
-        Behavior on scale {
-            NumberAnimation {
-                duration: root.pressed ? 80 : 250
-                easing.type: root.pressed ? Easing.OutQuad : Easing.OutBack
-                easing.overshoot: 1.5
-            }
+        PressBehavior on scale {
+            pressed: root.pressed
         }
 
         IconImage {
@@ -186,7 +182,7 @@ MouseArea {
     StyledToolTip {
         show: root.isHovered
         tooltipText: root.item.tooltipTitle || root.item.title
-        desciription: root.item.tooltipDescription || ""
+        description: root.item.tooltipDescription || ""
     }
 
     HoverHandler {

@@ -40,22 +40,8 @@ StyledRect {
         onHoveredChanged: root.isHovered = hovered
     }
 
-    // Background highlight on hover
-    Rectangle {
-        anchors.fill: parent
-        color: Styling.srItem("overprimary")
-        opacity: (!root.flat && root.isHovered) ? 0.25 : 0
-        topLeftRadius: parent.topLeftRadius
-        topRightRadius: parent.topRightRadius
-        bottomLeftRadius: parent.bottomLeftRadius
-        bottomRightRadius: parent.bottomRightRadius
-
-        Behavior on opacity {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration / 2
-            }
-        }
+    HoverTint {
+        hovered: !root.flat && root.isHovered
     }
 
     RowLayout {

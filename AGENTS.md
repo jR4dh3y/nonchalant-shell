@@ -57,6 +57,10 @@ Nonchalant Shell is a Niri-first Wayland shell and hard fork of Ambxst, built wi
 | `Colors` | Singleton | `modules/theme/Colors.qml` | Dynamic color palette from JSON |
 | `Styling` | Singleton | `modules/theme/Styling.qml` | Shared style utilities (radius, font, variants) |
 | `Icons` | Singleton | `modules/theme/Icons.qml` | Phosphor-Bold icon font character map |
+| `Motion` | Singleton | `modules/theme/Motion.qml` | Shared motion tokens (spring expand, monotonic collapse, content enter delay, press timings) for island and default bar |
+| `MorphSurface` | Component | `modules/components/MorphSurface.qml` | Island-style reveal for bar-attached surfaces (BarPopup, dashboard popup, run menu, power menu, OSD) |
+| `PressBehavior` | Component | `modules/components/PressBehavior.qml` | `PressBehavior on scale { pressed: ... }` tactile press feedback |
+| `HoverTint` | Component | `modules/components/HoverTint.qml` | Hover/press wash inside a StyledRect pill (clipped to its corners) |
 | `StyledRect` | Component | `modules/components/StyledRect.qml` | Base themed container (300+ usages) |
 | `GradientCache` | Singleton | `modules/components/GradientCache.qml` | GPU texture sharing optimization |
 | `UnifiedShellPanel` | Component | `modules/shell/UnifiedShellPanel.qml` | Full-screen input surface for the bar and floating run menu |

@@ -296,16 +296,16 @@ Item {
         id: slideDownAnim
         target: root
         property: "containerY"
-        duration: root.morphDuration
+        duration: Motion.expandDuration
         easing.type: Easing.OutBack
-        easing.overshoot: root.morphOvershoot
+        easing.overshoot: Motion.overshoot
     }
 
     NumberAnimation {
         id: slideUpAnim
         target: root
         property: "containerY"
-        duration: root.morphCollapseDuration
+        duration: Motion.collapseDuration
         easing.type: Easing.InCubic
         onFinished: {
             root.finishRetraction();
@@ -316,9 +316,9 @@ Item {
         id: barHoverAnim
         target: root
         property: "containerY"
-        duration: root.shouldBeRevealed ? root.morphDuration : root.morphCollapseDuration
+        duration: root.shouldBeRevealed ? Motion.expandDuration : Motion.collapseDuration
         easing.type: root.shouldBeRevealed ? Easing.OutBack : Easing.InCubic
-        easing.overshoot: root.morphOvershoot
+        easing.overshoot: Motion.overshoot
     }
 
     onShouldBeRevealedChanged: {
@@ -326,18 +326,6 @@ Item {
             return;
         root.animateReveal(root.shouldBeRevealed ? 0 : -root.islandHeight);
     }
-
-    // Motion tokens. Expansion is a long, softly overshooting spring; collapse
-    // is a monotonic decelerating curve. Content enters a beat after the body
-    // starts morphing so it lands on an already-growing surface instead of
-    // popping in clipped.
-    readonly property int morphDuration: Config.animDuration > 0 ? Math.max(360, Math.round(Config.animDuration * 1.3)) : 0
-    readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(240, Math.round(Config.animDuration * 0.9)) : 0
-    readonly property int contentFadeInDuration: Config.animDuration > 0 ? Math.max(200, Math.round(Config.animDuration * 0.8)) : 0
-    readonly property int contentFadeOutDuration: Config.animDuration > 0 ? Math.max(90, Math.round(Config.animDuration * 0.35)) : 0
-    readonly property int contentEnterDelay: Math.round(morphDuration * 0.22)
-    readonly property real morphOvershoot: 1.12
-    readonly property real pageDrift: 6
 
     // Concave fillets that join the body to the top screen edge.
     readonly property real earRadius: Math.min(root.cornerRadius, root.islandHeight / 2)
@@ -363,11 +351,11 @@ Item {
     }
     property real bodyBottomRadius: bodyBottomRadiusTarget
     Behavior on bodyBottomRadius {
-        enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
+        enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
         NumberAnimation {
-            duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+            duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
             easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-            easing.overshoot: root.morphOvershoot
+            easing.overshoot: Motion.overshoot
         }
     }
 
@@ -375,7 +363,7 @@ Item {
     // monotonic out) instead of snapping.
     function animateReveal(target: real) {
         barHoverAnim.stop();
-        if (Config.animDuration <= 0 || Math.abs(root.containerY - target) < 0.5) {
+        if (!Motion.enabled || Math.abs(root.containerY - target) < 0.5) {
             root.containerY = target;
             return;
         }
@@ -457,7 +445,7 @@ Item {
             onWheel: wheel => wheel.accepted = true
         }
 
-        property real drift: -root.pageDrift
+        property real drift: -Motion.drift
         opacity: 0
         scale: 0.96
         transform: Translate {
@@ -477,32 +465,32 @@ Item {
         transitions: [
             Transition {
                 to: "shown"
-                enabled: Config.animDuration > 0
+                enabled: Motion.enabled
                 SequentialAnimation {
                     PauseAnimation {
-                        duration: root.contentEnterDelay
+                        duration: Motion.contentEnterDelay
                     }
                     ParallelAnimation {
                         NumberAnimation {
                             property: "opacity"
-                            duration: root.contentFadeInDuration
+                            duration: Motion.fadeInDuration
                             easing.type: Easing.OutCubic
                         }
                         NumberAnimation {
                             properties: "scale,drift"
-                            duration: root.morphDuration
+                            duration: Motion.expandDuration
                             easing.type: Easing.OutBack
-                            easing.overshoot: root.morphOvershoot
+                            easing.overshoot: Motion.overshoot
                         }
                     }
                 }
             },
             Transition {
                 from: "shown"
-                enabled: Config.animDuration > 0
+                enabled: Motion.enabled
                 NumberAnimation {
                     properties: "opacity,scale,drift"
-                    duration: root.contentFadeOutDuration
+                    duration: Motion.fadeOutDuration
                     easing.type: Easing.OutQuad
                 }
             }
@@ -628,7 +616,7 @@ Item {
 
     Timer {
         id: retractFinishTimer
-        interval: root.morphCollapseDuration + 60
+        interval: Motion.collapseDuration + 60
         repeat: false
         onTriggered: {
             root.finishRetraction();
@@ -786,20 +774,20 @@ Item {
         visible: root.revealProgress > 0.001
 
         Behavior on width {
-            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
+            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
-                duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                easing.overshoot: root.morphOvershoot
+                easing.overshoot: Motion.overshoot
             }
         }
 
         Behavior on height {
-            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
+            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
-                duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                easing.overshoot: root.morphOvershoot
+                easing.overshoot: Motion.overshoot
             }
         }
 
@@ -884,13 +872,8 @@ Item {
                                 implicitHeight: Math.max(fluidContextText.implicitHeight, 20)
                                 scale: contextMouse.pressed ? 0.94 : 1.0
 
-                                Behavior on scale {
-                                    enabled: (Config.animDuration ?? 0) > 0
-                                    NumberAnimation {
-                                        duration: contextMouse.pressed ? 80 : 250
-                                        easing.type: contextMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                        easing.overshoot: 1.4
-                                    }
+                                PressBehavior on scale {
+                                    pressed: contextMouse.pressed
                                 }
 
                                 FluidTextProgress {
@@ -939,13 +922,8 @@ Item {
                                 implicitWidth: dateTimeRow.implicitWidth
                                 scale: dateMouse.pressed ? 0.94 : 1.0
 
-                                Behavior on scale {
-                                    enabled: (Config.animDuration ?? 0) > 0
-                                    NumberAnimation {
-                                        duration: dateMouse.pressed ? 80 : 250
-                                        easing.type: dateMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                        easing.overshoot: 1.4
-                                    }
+                                PressBehavior on scale {
+                                    pressed: dateMouse.pressed
                                 }
 
                                 RowLayout {
@@ -1027,13 +1005,8 @@ Item {
                                 implicitHeight: alertsRow.implicitHeight
                                 scale: alertsMouse.pressed ? 0.90 : 1.0
 
-                                Behavior on scale {
-                                    enabled: (Config.animDuration ?? 0) > 0
-                                    NumberAnimation {
-                                        duration: alertsMouse.pressed ? 80 : 250
-                                        easing.type: alertsMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                        easing.overshoot: 1.4
-                                    }
+                                PressBehavior on scale {
+                                    pressed: alertsMouse.pressed
                                 }
 
                                 RowLayout {
@@ -1089,13 +1062,8 @@ Item {
                                     radius: 11
                                     variant: pinMouse.containsMouse ? "focus" : "transparent"
                                     scale: pinMouse.pressed ? 0.92 : 1.0
-                                    Behavior on scale {
-                                        enabled: (Config.animDuration ?? 0) > 0
-                                        NumberAnimation {
-                                            duration: pinMouse.pressed ? 80 : 250
-                                            easing.type: pinMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                            easing.overshoot: 1.4
-                                        }
+                                    PressBehavior on scale {
+                                        pressed: pinMouse.pressed
                                     }
 
                                     Text {

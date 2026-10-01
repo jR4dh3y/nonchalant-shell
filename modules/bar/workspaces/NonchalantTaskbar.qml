@@ -53,19 +53,22 @@ Item {
         opacity: root.activeWorkspaceButton ? 1 : 0
         enableShadow: false
 
+        // Glides to the focused workspace with the shared spring.
         Behavior on x {
-            enabled: Config.animDuration > 0
+            enabled: Motion.enabled
             NumberAnimation {
-                duration: Config.animDuration
-                easing.type: Easing.OutCubic
+                duration: Motion.expandDuration
+                easing.type: Easing.OutBack
+                easing.overshoot: Motion.overshoot
             }
         }
 
         Behavior on width {
-            enabled: Config.animDuration > 0
+            enabled: Motion.enabled
             NumberAnimation {
-                duration: Config.animDuration
-                easing.type: Easing.OutCubic
+                duration: Motion.expandDuration
+                easing.type: Easing.OutBack
+                easing.overshoot: Motion.overshoot
             }
         }
 
@@ -104,12 +107,8 @@ Item {
                 Layout.preferredHeight: 28
                 scale: workspaceMouse.pressed ? 0.94 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: workspaceMouse.pressed ? 80 : 250
-                        easing.type: workspaceMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: workspaceMouse.pressed
                 }
 
                 Behavior on Layout.preferredWidth {
@@ -126,17 +125,13 @@ Item {
                     radius: Styling.radius(5)
                     enableShadow: false
 
-                    Rectangle {
-                        anchors.fill: parent
-                        color: Styling.srItem("overprimary")
-                        opacity: workspaceMouse.containsMouse && !workspaceButton.active ? 0.12 : 0
-                        radius: Styling.radius(5)
+                    HoverTint {
+                        hovered: workspaceMouse.containsMouse && !workspaceButton.active
+                        hoverOpacity: 0.12
                     }
                 }
 
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
+                StyledText {
                     id: workspaceName
                     z: 1
                     anchors.centerIn: parent
@@ -202,12 +197,8 @@ Item {
                             height: 24
                             scale: appMouse.pressed ? 0.92 : 1.0
 
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: appMouse.pressed ? 80 : 250
-                                    easing.type: appMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                    easing.overshoot: 1.5
-                                }
+                            PressBehavior on scale {
+                                pressed: appMouse.pressed
                             }
 
                             Rectangle {
