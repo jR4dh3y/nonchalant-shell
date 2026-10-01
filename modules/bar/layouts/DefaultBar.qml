@@ -38,8 +38,10 @@ Item {
     Item {
         id: hitbox
         width: root.width
+        // Only the input area collapses while hidden. The position stays put
+        // so the bar inside can slide out instead of jumping with the box.
         height: root.reveal ? root.totalBarHeight : 0
-        y: root.bottomPosition ? root.height - height : 0
+        y: root.bottomPosition ? root.height - root.totalBarHeight : 0
 
         Item {
             id: bar

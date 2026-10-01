@@ -111,10 +111,12 @@ Item {
             readonly property real restDrift: root.fromBottom ? Motion.drift : -Motion.drift
             property real drift: restDrift
 
-            // Cancel the body's own offset so the content stays put in the
-            // surface while the body grows around it.
+            // Cancel the body's own offset so the content stays put while the
+            // body reveals it. Growing upward, the content rides the body's
+            // animated far edge, so a size change moves it smoothly instead
+            // of jumping with the resized surface.
             x: root.padding - body.x
-            y: root.padding - body.y
+            y: root.padding - body.y + (root.fromBottom ? root.height - root.bodyHeight : 0)
             width: root.contentWidth - root.padding * 2
             height: root.contentHeight - root.padding * 2
             opacity: 0
