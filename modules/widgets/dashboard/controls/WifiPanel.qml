@@ -16,15 +16,23 @@ Item {
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
+    // Hosts may keep this panel loaded while hidden; scan each time it is
+    // shown, after the host's reveal has settled so the list does not
+    // rebuild mid-animation.
+    onVisibleChanged: {
+        if (visible)
+            scanTimer.restart();
+        else
+            scanTimer.stop();
+    }
     Component.onCompleted: {
-        // Defer scan to avoid blocking UI initialization
-        initialScanTimer.start();
+        if (visible)
+            scanTimer.restart();
     }
 
     Timer {
-        id: initialScanTimer
-        interval: 300
-        repeat: false
+        id: scanTimer
+        interval: Motion.expandDuration
         onTriggered: NetworkService.rescanWifi()
     }
 
