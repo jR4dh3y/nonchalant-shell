@@ -26,6 +26,7 @@ Item {
     focus: true
 
     Component.onCompleted: {
+        root.containerY = root.shouldBeRevealed ? 0 : -root.islandHeight;
         Visibilities.registerIsland(root.screen.name, root);
     }
 
@@ -290,7 +291,11 @@ Item {
     readonly property bool isFullyRetracted: !shouldBeRevealed && root.revealProgress <= 0.01
     readonly property bool hitboxExpanded: root.isExpanded || shouldBeRevealed || !isFullyRetracted
 
-    property real containerY: shouldBeRevealed ? 0 : -islandHeight
+    // Written only by the reveal animations (and set once at startup). A
+    // binding here survived the animations: flipping shouldBeRevealed snapped
+    // it to the end value for a frame before the animation pulled it back, so
+    // every hover reveal or hide played twice until something assigned it.
+    property real containerY: -islandHeight
 
     NumberAnimation {
         id: slideDownAnim
