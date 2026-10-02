@@ -108,6 +108,7 @@ Item {
     }
 
     function expand(mode: string) {
+        root.dropRequested = false;
         FocusGrabManager.clearTopGrab();
         Visibilities.closeActiveBarPopup();
         if (root.retractingToHidden) {
@@ -281,6 +282,10 @@ Item {
         if (root.retractingToHidden)
             return false;
         if (currentMode === "osd")
+            return true;
+        // Hold the bar out while the OSD tab is showing or still retracting
+        // into it, so the tab never floats under an empty bezel.
+        if (root.dropShown || root.dropProgress > 0.001)
             return true;
         if (root.isExpanded)
             return true;
@@ -616,6 +621,7 @@ Item {
             if (root.currentMode === "osd") {
                 root.collapse();
             }
+            root.dropRequested = false;
         }
     }
 
@@ -628,28 +634,52 @@ Item {
         }
     }
 
-    property bool suppressOsd: false
+    // ─── OSD tab ───
+    // While the collapsed bar is already on screen, volume / brightness / mic
+    // changes show as a bare progress bar in a small tab hanging from the bar
+    // under its status icons (whose icon already says what is changing),
+    // instead of morphing the whole bar away from the cursor. A hidden bar
+    // still morphs into the full OSD banner.
+    property bool dropRequested: false
+    readonly property bool dropShown: root.dropRequested && root.currentMode === "collapsed" && !root.retractingToHidden
+    readonly property bool canDrop: root.currentMode === "collapsed" && !root.retractingToHidden && (root.barNormallyVisible || root.dropShown)
 
-    Timer {
-        id: suppressOsdTimer
-        interval: 400
-        repeat: false
-        onTriggered: {
-            root.suppressOsd = false;
+    readonly property real dropEarRadius: Math.min(root.cornerRadius, 10)
+    readonly property int dropWidth: 104
+    readonly property int dropHeight: 14
+    // Centred under the status icons, kept on the flat run of the bar's
+    // bottom edge so the fillets never land on its rounded corners.
+    readonly property real dropCenterX: {
+        const center = islandContainer.x + collapsedView.x + collapsedRow.x + statusIcons.x + statusIcons.width / 2;
+        const inset = root.islandHeight / 2 + root.dropEarRadius + root.dropWidth / 2;
+        const left = islandContainer.x + inset;
+        const right = islandContainer.x + islandContainer.width - inset;
+        return left > right ? islandContainer.x + islandContainer.width / 2 : Math.max(left, Math.min(right, center));
+    }
+
+    // Same pinch as the bar: spring out, monotonic back in. When the island
+    // expands it snaps away instead.
+    property real dropProgress: root.dropShown ? 1 : 0
+    Behavior on dropProgress {
+        enabled: Motion.enabled && root.currentMode === "collapsed"
+        NumberAnimation {
+            duration: root.dropShown ? Motion.expandDuration : Motion.collapseDuration
+            easing.type: root.dropShown ? Easing.OutBack : Easing.InCubic
+            easing.overshoot: Motion.overshoot
         }
     }
-
-    function suppressOsdTemporarily() {
-        root.suppressOsd = true;
-        suppressOsdTimer.restart();
-    }
+    readonly property real dropClamped: Math.min(1, root.dropProgress)
+    readonly property real dropStretch: Math.max(0, root.dropProgress - 1) * root.dropHeight
 
     function triggerOsd(indicator: string, value: real, muted: bool) {
-        if (root.suppressOsd && root.currentMode === "collapsed")
-            return;
         root.osdIndicator = indicator;
         root.osdValue = value;
         root.osdMuted = muted;
+        if (root.canDrop) {
+            root.dropRequested = true;
+            islandOsdTimer.restart();
+            return;
+        }
         if (root.currentMode === "collapsed" || root.currentMode === "osd") {
             if (root.currentMode === "collapsed") {
                 root.expand("osd");
@@ -692,6 +722,7 @@ Item {
     readonly property bool dashboardInputActive: islandActive && currentMode === "dashboard"
 
     property alias barHitbox: activeBarHitbox
+    readonly property Item dropHitbox: dropContainer.visible ? activeDropHitbox : null
 
     // Stable dummy item for dashboardHitbox contract
     Item {
@@ -767,6 +798,97 @@ Item {
         y: 0
         width: islandContainer.width
         height: root.isExpanded ? islandContainer.height : (root.hitboxExpanded ? islandContainer.height : root.triggerHeight)
+    }
+
+    Item {
+        id: activeDropHitbox
+        x: dropContainer.x + dropBody.x
+        y: dropContainer.y
+        width: dropBody.width
+        height: dropBody.height
+    }
+
+    // Hangs from the bar's bottom edge, overlapping the bar's border so the
+    // join reads as one surface.
+    Item {
+        id: dropContainer
+        z: 1
+        x: Math.round(root.dropCenterX - width / 2)
+        y: islandBody.height - islandBody.border.width
+        width: root.dropWidth
+        height: root.dropHeight
+        visible: root.dropProgress > 0.001
+
+        // Concave fillets joining the tab's sides to the bar's bottom edge,
+        // growing with the pinch like the bar's own ears at the bezel.
+        IslandEar {
+            x: dropBody.x - size
+            y: 0
+            size: root.dropEarRadius * root.dropClamped
+            fillColor: dropBody.color
+        }
+
+        IslandEar {
+            mirrored: true
+            x: dropBody.x + dropBody.width
+            y: 0
+            size: root.dropEarRadius * root.dropClamped
+            fillColor: dropBody.color
+        }
+
+        StyledRect {
+            id: dropBody
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width * (root.pinchWidthFactor + (1 - root.pinchWidthFactor) * root.dropClamped)
+            height: parent.height * root.dropClamped + root.dropStretch
+            variant: "pane"
+            backgroundOpacity: 1.0
+            topLeftRadius: 0
+            topRightRadius: 0
+            bottomLeftRadius: dropBody.height / 2
+            bottomRightRadius: dropBody.height / 2
+            animateRadius: false
+            // A border would draw a seam across the join with the bar.
+            enableBorder: false
+            clip: true
+
+            Item {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: dropContainer.height * (root.dropClamped - 1)
+                width: dropContainer.width
+                height: dropContainer.height
+                opacity: Math.max(0, Math.min(1, (root.dropProgress - 0.4) / 0.6))
+
+                Rectangle {
+                    id: dropTrack
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    height: 4
+                    radius: height / 2
+                    color: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
+
+                    Rectangle {
+                        height: parent.height
+                        radius: parent.radius
+                        width: Math.max(height, parent.width * Math.max(0, Math.min(1, root.osdValue)))
+                        visible: root.osdValue > 0
+                        color: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
+
+                        Behavior on width {
+                            enabled: Motion.enabled
+                            NumberAnimation {
+                                duration: Motion.hoverDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Island body
@@ -989,6 +1111,7 @@ Item {
 
                             // Dynamic Material Symbols status icons (Volume, Brightness, Battery)
                             IslandStatusIcons {
+                                id: statusIcons
                                 bar: root
                             }
 

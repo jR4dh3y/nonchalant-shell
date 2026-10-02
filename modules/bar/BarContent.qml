@@ -29,6 +29,8 @@ Item {
 
     readonly property Item barHitbox: (layoutLoader.item && layoutLoader.item.barHitbox) ? layoutLoader.item.barHitbox : fallbackHitbox
     readonly property Item dashboardHitbox: (layoutLoader.item && layoutLoader.item.dashboardHitbox) ? layoutLoader.item.dashboardHitbox : fallbackHitbox
+    // Island-only: the OSD / notification drop under the collapsed bar.
+    readonly property Item dropHitbox: layoutLoader.item?.dropHitbox ?? null
 
     readonly property bool islandActive: (root.isIsland && layoutLoader.item) ? (layoutLoader.item.islandActive ?? false) : false
 
