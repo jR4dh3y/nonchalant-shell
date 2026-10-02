@@ -62,6 +62,9 @@ Item {
     }
 
     function collapse() {
+        // The OSD tab leaves currentMode "collapsed", so clear it before the
+        // early return or it would outlive e.g. opening the overview.
+        root.dropRequested = false;
         if (root.currentMode === "collapsed" && !root.retractingToHidden && Visibilities.currentActiveModule === "")
             return;
 
@@ -635,7 +638,7 @@ Item {
     }
 
     // ─── OSD tab ───
-    // While the collapsed bar is already on screen, volume / brightness / mic
+    // While the collapsed bar is already on screen, volume / brightness
     // changes show as a bare progress bar in a small tab hanging from the bar
     // under its status icons (whose icon already says what is changing),
     // instead of morphing the whole bar away from the cursor. A hidden bar
@@ -675,7 +678,9 @@ Item {
         root.osdIndicator = indicator;
         root.osdValue = value;
         root.osdMuted = muted;
-        if (root.canDrop) {
+        // The bar has no mic icon to say what the bare bar means, so mic
+        // changes keep the labelled banner.
+        if (root.canDrop && indicator !== "mic") {
             root.dropRequested = true;
             islandOsdTimer.restart();
             return;
