@@ -70,7 +70,6 @@ RowLayout {
             target: brightBtn
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
-                root.bar?.suppressOsdTemporarily();
                 const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
                 const newVal = Math.max(0.05, Math.min(1.0, brightBtn.brightnessVal + delta));
                 if (Brightness.syncBrightness) {
@@ -152,7 +151,6 @@ RowLayout {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
                 if (volBtn.audioDevice) {
-                    root.bar?.suppressOsdTemporarily();
                     const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
                     const newVal = Math.max(0.0, Math.min(1.0, volBtn.volumeVal + delta));
                     if (delta > 0 && volBtn.isMuted) {
@@ -174,7 +172,6 @@ RowLayout {
                     root.bar.expand("sound");
                 } else {
                     if (volBtn.audioDevice) {
-                        root.bar?.suppressOsdTemporarily();
                         volBtn.audioDevice.muted = !volBtn.audioDevice.muted;
                     }
                 }
