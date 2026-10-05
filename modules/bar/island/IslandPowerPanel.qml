@@ -19,51 +19,38 @@ Item {
 
     // Keyboard selection: -1 = none. IslandBar routes Left/Right/Return here.
     property int selectedIndex: -1
-    readonly property int actionCount: 5
+
+    readonly property var actions: [
+        // Empty command = lock via LockscreenService.
+        { icon: Icons.suspend, label: "Suspend", command: ["systemctl", "suspend"] },
+        { icon: Icons.lock, label: "Lock Session", command: [] },
+        { icon: Icons.logout, label: "Log out", command: ["niri", "msg", "action", "quit", "--skip-confirmation"] },
+        { icon: Icons.reboot, label: "Reboot", command: ["systemctl", "reboot"] },
+        { icon: Icons.shutdown, label: "Power Off", command: ["systemctl", "poweroff"], danger: true }
+    ]
 
     function resetSelection() {
         selectedIndex = -1;
     }
 
     function moveSelection(delta: int) {
-        selectedIndex = (((selectedIndex + delta) % actionCount) + actionCount) % actionCount;
+        const count = actions.length;
+        selectedIndex = selectedIndex < 0
+            ? (delta > 0 ? 0 : count - 1)
+            : (((selectedIndex + delta) % count) + count) % count;
     }
 
     function activateSelected() {
-        if (selectedIndex === 0)
-            doSuspend();
-        else if (selectedIndex === 1)
-            doLock();
-        else if (selectedIndex === 2)
-            doLogout();
-        else if (selectedIndex === 3)
-            doReboot();
-        else if (selectedIndex === 4)
-            doShutdown();
+        if (selectedIndex >= 0)
+            activate(selectedIndex);
     }
 
-    function doSuspend() {
-        Quickshell.execDetached(["systemctl", "suspend"]);
-        root.actionTriggered();
-    }
-
-    function doLock() {
-        LockscreenService.lock();
-        root.actionTriggered();
-    }
-
-    function doLogout() {
-        Quickshell.execDetached(["niri", "msg", "action", "quit", "--skip-confirmation"]);
-        root.actionTriggered();
-    }
-
-    function doReboot() {
-        Quickshell.execDetached(["systemctl", "reboot"]);
-        root.actionTriggered();
-    }
-
-    function doShutdown() {
-        Quickshell.execDetached(["systemctl", "poweroff"]);
+    function activate(index: int) {
+        const command = actions[index]?.command ?? [];
+        if (command.length > 0)
+            Quickshell.execDetached(command);
+        else
+            LockscreenService.lock();
         root.actionTriggered();
     }
 
@@ -128,168 +115,86 @@ Item {
             Item { Layout.fillWidth: true }
         }
 
-        // Action Buttons Row (icon-only, arrow-key navigable)
-        RowLayout {
+        // Action buttons (icon-only, arrow-key navigable). One track with a
+        // highlight that morphs between items, like the bar's power menu.
+        StyledRect {
+            id: actionTrack
             Layout.fillWidth: true
-            spacing: 8
+            Layout.preferredHeight: 52 + padding * 2
+            readonly property int padding: 4
+            radius: Styling.radius(2) + padding
+            variant: "internalbg"
 
-            // Sleep
-            StyledRect {
-                id: sleepBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
+            ElasticHighlight {
+                id: highlight
                 radius: Styling.radius(2)
-                variant: (sleepMouse.containsMouse || root.selectedIndex === 0) ? "focus" : "internalbg"
-                scale: sleepMouse.pressed ? 0.90 : 1.0
-
-                PressBehavior on scale {
-                    pressed: sleepMouse.pressed
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.suspend
-                    font.family: Icons.font
-                    font.pixelSize: 20
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: sleepMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.doSuspend()
-                }
+                targetItem: root.selectedIndex >= 0 ? actionRepeater.itemAt(root.selectedIndex) : null
+                originX: actionRow.x
+                originY: actionRow.y
             }
 
-            // Lock
-            StyledRect {
-                id: lockBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                radius: Styling.radius(2)
-                variant: (lockMouse.containsMouse || root.selectedIndex === 1) ? "focus" : "internalbg"
-                scale: lockMouse.pressed ? 0.90 : 1.0
+            RowLayout {
+                id: actionRow
+                anchors.fill: parent
+                anchors.margins: actionTrack.padding
+                spacing: 4
 
-                PressBehavior on scale {
-                    pressed: lockMouse.pressed
-                }
+                Repeater {
+                    id: actionRepeater
+                    model: root.actions
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.lock
-                    font.family: Icons.font
-                    font.pixelSize: 20
-                    color: Colors.overBackground
-                }
+                    delegate: Item {
+                        id: actionItem
 
-                MouseArea {
-                    id: lockMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.doLock()
-                }
-            }
+                        required property var modelData
+                        required property int index
 
-            // Log out
-            StyledRect {
-                id: logoutBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                radius: Styling.radius(2)
-                variant: (logoutMouse.containsMouse || root.selectedIndex === 2) ? "focus" : "internalbg"
-                scale: logoutMouse.pressed ? 0.90 : 1.0
+                        readonly property bool selected: root.selectedIndex === index
 
-                PressBehavior on scale {
-                    pressed: logoutMouse.pressed
-                }
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        scale: actionMouse.pressed ? 0.90 : 1.0
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.logout
-                    font.family: Icons.font
-                    font.pixelSize: 20
-                    color: Colors.overBackground
-                }
+                        PressBehavior on scale {
+                            pressed: actionMouse.pressed
+                        }
 
-                MouseArea {
-                    id: logoutMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.doLogout()
-                }
-            }
+                        Text {
+                            anchors.centerIn: parent
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            text: actionItem.modelData.icon
+                            font.family: Icons.font
+                            font.pixelSize: 20
+                            color: actionItem.selected ? highlight.item : (actionItem.modelData.danger ? Colors.red : Colors.overBackground)
 
-            // Restart
-            StyledRect {
-                id: rebootBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                radius: Styling.radius(2)
-                variant: (rebootMouse.containsMouse || root.selectedIndex === 3) ? "focus" : "internalbg"
-                scale: rebootMouse.pressed ? 0.90 : 1.0
+                            Behavior on color {
+                                enabled: Config.animDuration > 0
+                                ColorAnimation {
+                                    duration: Config.animDuration / 2
+                                    easing.type: Easing.OutQuart
+                                }
+                            }
+                        }
 
-                PressBehavior on scale {
-                    pressed: rebootMouse.pressed
-                }
+                        MouseArea {
+                            id: actionMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: {
+                                if (containsMouse)
+                                    root.selectedIndex = actionItem.index;
+                            }
+                            onClicked: root.activate(actionItem.index)
+                        }
 
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.reboot
-                    font.family: Icons.font
-                    font.pixelSize: 20
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: rebootMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.doReboot()
-                }
-            }
-
-            // Shut down
-            StyledRect {
-                id: shutdownBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                radius: Styling.radius(2)
-                variant: (shutdownMouse.containsMouse || root.selectedIndex === 4) ? "focus" : "internalbg"
-                scale: shutdownMouse.pressed ? 0.90 : 1.0
-
-                PressBehavior on scale {
-                    pressed: shutdownMouse.pressed
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.shutdown
-                    font.family: Icons.font
-                    font.pixelSize: 20
-                    color: Colors.red
-                }
-
-                MouseArea {
-                    id: shutdownMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.doShutdown()
+                        StyledToolTip {
+                            visible: actionMouse.containsMouse
+                            tooltipText: actionItem.modelData.label
+                            delay: 500
+                        }
+                    }
                 }
             }
         }
