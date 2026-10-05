@@ -14,19 +14,8 @@ Item {
 
     required property var panel
 
-    // Logical open state (true while open or mid-close animation).
     property bool menuOpen: false
-    property bool menuShown: false
-    property real revealProgress: 0
     readonly property int bottomOffset: 48
-
-    Behavior on revealProgress {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: root.menuOpen ? Easing.OutCubic : Easing.InCubic
-        }
-    }
 
     readonly property bool popupOpen: menuOpen
     // Keep a tiny host for Visibilities registration; real UI is powerWindow.
@@ -46,41 +35,26 @@ Item {
         Visibilities.setActiveModule("");
         Visibilities.closeActiveBarPopup();
 
-        closeTimer.stop();
         menuOpen = true;
-        menuShown = true;
         powerWindow.visible = true;
 
         Qt.callLater(() => {
             if (!root.menuOpen)
                 return;
-            revealProgress = 1;
+            powerSurface.shown = true;
             powerMenuView.forceActiveFocus();
             powerMenuView.focusMenu();
         });
     }
 
     function closeMenu() {
-        if (!menuOpen && !powerWindow.visible)
+        if (!menuOpen)
             return;
 
         menuOpen = false;
-        revealProgress = 0;
-        closeTimer.interval = Config.animDuration > 0
-            ? Config.animDuration + 40
-            : 40;
-        closeTimer.restart();
-    }
-
-    Timer {
-        id: closeTimer
-        interval: 40
-        onTriggered: {
-            if (root.menuOpen)
-                return;
-            root.menuShown = false;
+        powerSurface.shown = false;
+        if (powerSurface.fullyHidden)
             powerWindow.visible = false;
-        }
     }
 
     // Dedicated overlay so position matches OSD (bottom center, 48px up).
@@ -116,40 +90,37 @@ Item {
             onCleared: root.closeMenu()
         }
 
-        Item {
-            anchors.fill: parent
-            clip: true
+        MorphSurface {
+            id: powerSurface
 
-            StyledRect {
-                id: powerWrapper
-                variant: "popup"
-                radius: Styling.radius(16)
-                enableShadow: false
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: root.bottomOffset
-                width: powerMenuView.implicitWidth + 16
-                height: powerMenuView.implicitHeight + 16
-                visible: root.menuShown
-                transform: Translate {
-                    y: (1 - root.revealProgress)
-                        * (powerWrapper.height + root.bottomOffset)
-                }
+            contentWidth: powerMenuView.implicitWidth + padding * 2
+            contentHeight: powerMenuView.implicitHeight + padding * 2
+            originWidth: contentHeight
+            fromBottom: true
+            radius: Styling.radius(16)
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: root.bottomOffset
 
-                // Block backdrop click-through on the pill itself.
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: root.menuOpen
-                    onClicked: {}
-                }
+            // Unmap only once the surface has fully retracted.
+            onFullyHiddenChanged: {
+                if (fullyHidden && !root.menuOpen)
+                    powerWindow.visible = false;
+            }
 
-                PowerMenuView {
-                    id: powerMenuView
-                    anchors.centerIn: parent
-                    popupMode: true
-                    expanded: root.menuOpen
-                    onCloseRequested: root.closeMenu()
-                }
+            // Block backdrop click-through on the pill itself.
+            MouseArea {
+                anchors.fill: parent
+                enabled: root.menuOpen
+                onClicked: {}
+            }
+
+            PowerMenuView {
+                id: powerMenuView
+                anchors.centerIn: parent
+                popupMode: true
+                expanded: root.menuOpen
+                onCloseRequested: root.closeMenu()
             }
         }
 

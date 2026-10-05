@@ -10,7 +10,6 @@ ToolTip {
     id: root
     property string tooltipText: ""
     property string description: ""
-    property alias desciription: root.description
     property bool show: false
 
     text: tooltipText

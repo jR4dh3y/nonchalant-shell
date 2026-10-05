@@ -641,12 +641,8 @@ Item {
                         spacing: 12
                         scale: mouseArea.pressed ? 0.96 : 1.0
 
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: mouseArea.pressed ? 80 : 250
-                                easing.type: mouseArea.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
-                            }
+                        PressBehavior on scale {
+                            pressed: mouseArea.pressed
                         }
 
                         // App icon
@@ -847,12 +843,8 @@ Item {
                                             spacing: 8
                                             scale: optionMouse.pressed ? 0.96 : 1.0
 
-                                            Behavior on scale {
-                                                NumberAnimation {
-                                                    duration: optionMouse.pressed ? 80 : 250
-                                                    easing.type: optionMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                                    easing.overshoot: 1.5
-                                                }
+                                            PressBehavior on scale {
+                                                pressed: optionMouse.pressed
                                             }
 
                                             Text {

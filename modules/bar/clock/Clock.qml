@@ -29,7 +29,7 @@ Item {
     // Popup visibility state
     property bool popupOpen: clockPopup.isOpen
     readonly property bool menuOpen: dashboardPopup.isOpen
-    readonly property Item dashboardHitbox: dashboardPopup.menuShown ? dashboardPopup.cardRevealItem : null
+    readonly property Item dashboardHitbox: dashboardPopup.hitbox
     readonly property bool timeToolsOpen: timePopup.isOpen
     readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
 
@@ -47,11 +47,8 @@ Item {
             return;
         }
 
-        // Warm the dashboard so the open frame already has real size.
         GlobalStates.dashboardCurrentTab = 0;
-        dashboardLoader.active = true;
-        // Single open path: claimBarPopup quick-closes weather and opens
-        // dashboard in the same turn (no double-close / callLater hitch).
+        // claimBarPopup closes any sibling popup (e.g. weather) in the same turn.
         dashboardPopup.open();
     }
 
@@ -62,7 +59,6 @@ Item {
         }
 
         GlobalStates.dashboardCurrentTab = 1;
-        dashboardLoader.active = true;
         dashboardPopup.open();
     }
 
@@ -92,23 +88,9 @@ Item {
         implicitWidth: rowLayout.implicitWidth + 24
         implicitHeight: 36
 
-        Rectangle {
-            anchors.fill: parent
-            color: Styling.srItem("overprimary")
-            opacity: root.anyPopupOpen ? 0 : (root.isHovered ? 0.25 : 0)
-            topLeftRadius: parent.topLeftRadius
-            topRightRadius: parent.topRightRadius
-            bottomLeftRadius: parent.bottomLeftRadius
-            bottomRightRadius: parent.bottomRightRadius
-
-            Behavior on opacity {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 2
-                }
-            }
+        HoverTint {
+            hovered: root.isHovered && !root.anyPopupOpen
         }
-
 
         RowLayout {
             id: rowLayout
@@ -120,17 +102,11 @@ Item {
                 Layout.preferredHeight: 28
                 scale: weatherMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: weatherMouse.pressed ? 80 : 250
-                        easing.type: weatherMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: weatherMouse.pressed
                 }
 
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
+                StyledText {
                     id: weatherDisplay
                     anchors.centerIn: parent
                     text: root.weatherAvailable
@@ -146,12 +122,8 @@ Item {
                     id: weatherMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    // claimBarPopup quick-closes dashboard if it was open.
-                    onClicked: {
-                        if (dashboardPopup.isOpen)
-                            dashboardPopup.closeQuick();
-                        clockPopup.toggle();
-                    }
+                    // claimBarPopup closes the dashboard if it was open.
+                    onClicked: clockPopup.toggle()
                 }
             }
 
@@ -165,17 +137,11 @@ Item {
                 Layout.preferredHeight: 28
                 scale: dateMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: dateMouse.pressed ? 80 : 250
-                        easing.type: dateMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: dateMouse.pressed
                 }
 
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
+                StyledText {
                     id: dateDisplay
                     anchors.centerIn: parent
                     text: root.currentFullDate
@@ -205,17 +171,11 @@ Item {
                 Layout.preferredHeight: buttonBg.height
                 scale: timeMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: timeMouse.pressed ? 80 : 250
-                        easing.type: timeMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: timeMouse.pressed
                 }
 
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
+                StyledText {
                     id: timeDisplay
                     anchors.centerIn: parent
                     text: pomodoroWidget.isRunning || pomodoroWidget.alarmActive || pomodoroWidget.isResuming
@@ -249,32 +209,20 @@ Item {
         id: timePopup
         anchorItem: timeAnchor
         grabFocus: true
-        variant: "transparent"
-        popupPadding: 0
 
-        contentWidth: timeToolsWrapper.width
-        contentHeight: timeToolsWrapper.height
+        contentWidth: 316
+        contentHeight: pomodoroWidget.implicitHeight + popupPadding * 2
 
         onIsOpenChanged: {
             if (isOpen)
                 Qt.callLater(() => pomodoroWidget.focusInput());
         }
 
-        StyledRect {
-            id: timeToolsWrapper
-            variant: "popup"
-            radius: Styling.radius(8)
-            enableShadow: false
-            width: 316
-            height: pomodoroWidget.implicitHeight + 16
-
-            Pomodoro {
-                id: pomodoroWidget
-                anchors.centerIn: parent
-                width: 300
-                height: implicitHeight
-                onRequestPopupOpen: timePopup.open()
-            }
+        Pomodoro {
+            id: pomodoroWidget
+            width: parent.width
+            height: implicitHeight
+            onRequestPopupOpen: timePopup.open()
         }
     }
 
@@ -282,11 +230,8 @@ Item {
     BarPopup {
         id: clockPopup
         anchorItem: buttonBg
-        variant: "transparent"
-        popupPadding: 0
-
-        contentWidth: popupColumn.width
-        contentHeight: popupColumn.height
+        contentWidth: popupContent.width + popupPadding * 2
+        contentHeight: WeatherService.dataAvailable ? popupContent.height + popupPadding * 2 : 0
 
         onIsOpenChanged: {
             if (isOpen) {
@@ -296,302 +241,96 @@ Item {
             }
         }
 
-        // Main popup column
         Column {
-            id: popupColumn
+            id: popupContent
             spacing: 4
 
-            // Weather Wrapper StyledRect
-            StyledRect {
-                id: popupWrapper
-                variant: "popup"
-                radius: Styling.radius(8)
-                enableShadow: false
-                width: popupContent.width + 16
-                height: popupContent.height + 16
-                visible: WeatherService.dataAvailable
+            // Weather widget with sun arc
+            WeatherWidget {
+                id: weatherWidget
+                width: 300
+                height: 140
+                showDebugControls: false
+                animationsEnabled: clockPopup.isOpen
+            }
 
-                // Content container
-                Column {
-                    id: popupContent
-                    anchors.centerIn: parent
-                    spacing: 4
+            // 7-day forecast panel (below weather widget)
+            Item {
+                id: forecastPanel
+                width: weatherWidget.width
+                height: WeatherService.dataAvailable && WeatherService.forecast.length > 0 ? forecastContent.implicitHeight : 0
+                clip: true
+                visible: height > 0
 
-                    // Weather widget with sun arc
-                    WeatherWidget {
-                        id: weatherWidget
-                        width: 300
-                        height: 140
-                        showDebugControls: false
-                        animationsEnabled: clockPopup.isOpen
-                    }
+                StyledRect {
+                    id: forecastContent
+                    variant: "pane"
+                    anchors.fill: parent
+                    implicitHeight: forecastRow.implicitHeight + 16
 
-                    // 7-day forecast panel (below weather widget)
-                    Item {
-                        id: forecastPanel
-                        width: weatherWidget.width
-                        height: WeatherService.dataAvailable && WeatherService.forecast.length > 0 ? forecastContent.implicitHeight : 0
-                        clip: true
-                        visible: height > 0
+                    Row {
+                        id: forecastRow
+                        anchors.centerIn: parent
+                        spacing: 4
 
-                        StyledRect {
-                            id: forecastContent
-                            variant: "pane"
-                            anchors.fill: parent
-                            implicitHeight: forecastRow.implicitHeight + 16
+                        Repeater {
+                            model: WeatherService.forecast.slice(0, 5)
 
                             Row {
-                                id: forecastRow
-                                anchors.centerIn: parent
+                                id: forecastDayRow
+                                required property var modelData
+                                required property int index
                                 spacing: 4
 
-                                Repeater {
-                                    model: WeatherService.forecast.slice(0, 5)
+                                Column {
+                                    id: forecastDay
+                                    spacing: 2
+                                    width: (weatherWidget.width - 16 - (4 * 4) - (4 * 6)) / 5
 
-                                    Row {
-                                        id: forecastDayRow
-                                        required property var modelData
-                                        required property int index
-                                        spacing: 4
+                                    // Day name
+                                    StyledText {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: forecastDayRow.modelData.dayName
+                                        color: Colors.overBackground
+                                        font.family: Config.theme.font
+                                        font.pixelSize: Styling.fontSize(0)
+                                        font.weight: Font.Medium
+                                    }
 
-                                        Column {
-                                            id: forecastDay
-                                            spacing: 2
-                                            width: (weatherWidget.width - 16 - (4 * 4) - (4 * 6)) / 5
+                                    // Weather emoji
+                                    StyledText {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: forecastDayRow.modelData.emoji
+                                        font.pixelSize: Styling.fontSize(4)
+                                    }
 
-                                            // Day name
-                                            Text {
-                                                renderType: Text.NativeRendering
-                                                font.hintingPreference: Font.PreferFullHinting
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                text: forecastDayRow.modelData.dayName
-                                                color: Colors.overBackground
-                                                font.family: Config.theme.font
-                                                font.pixelSize: Styling.fontSize(0)
-                                                font.weight: Font.Medium
-                                            }
+                                    // Max temperature
+                                    StyledText {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: (Math.round(forecastDayRow.modelData.maxTemp) >= 0 ? "+" : "") + Math.round(forecastDayRow.modelData.maxTemp) + "\u00B0"
+                                        color: Colors.overBackground
+                                        font.family: Config.theme.font
+                                        font.pixelSize: Styling.fontSize(0)
+                                        font.weight: Font.Bold
+                                    }
 
-                                            // Weather emoji
-                                            Text {
-                                                renderType: Text.NativeRendering
-                                                font.hintingPreference: Font.PreferFullHinting
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                text: forecastDayRow.modelData.emoji
-                                                font.pixelSize: Styling.fontSize(4)
-                                            }
-
-                                            // Max temperature
-                                            Text {
-                                                renderType: Text.NativeRendering
-                                                font.hintingPreference: Font.PreferFullHinting
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                text: (Math.round(forecastDayRow.modelData.maxTemp) >= 0 ? "+" : "") + Math.round(forecastDayRow.modelData.maxTemp) + "\u00B0"
-                                                color: Colors.overBackground
-                                                font.family: Config.theme.font
-                                                font.pixelSize: Styling.fontSize(0)
-                                                font.weight: Font.Bold
-                                            }
-
-                                            // Min temperature
-                                            Text {
-                                                renderType: Text.NativeRendering
-                                                font.hintingPreference: Font.PreferFullHinting
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                text: (Math.round(forecastDayRow.modelData.minTemp) >= 0 ? "+" : "") + Math.round(forecastDayRow.modelData.minTemp) + "\u00B0"
-                                                color: Colors.outline
-                                                font.family: Config.theme.font
-                                                font.pixelSize: Styling.fontSize(0)
-                                                font.weight: Font.Normal
-                                            }
-                                        }
-
-                                        // Separator between days (not after last)
-                                        Separator {
-                                            vert: true
-                                            visible: forecastDayRow.index < 4
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            height: forecastDay.height - 16
-                                        }
+                                    // Min temperature
+                                    StyledText {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: (Math.round(forecastDayRow.modelData.minTemp) >= 0 ? "+" : "") + Math.round(forecastDayRow.modelData.minTemp) + "\u00B0"
+                                        color: Colors.outline
+                                        font.family: Config.theme.font
+                                        font.pixelSize: Styling.fontSize(0)
+                                        font.weight: Font.Normal
                                     }
                                 }
-                            }
-                        }
-                    }
 
-                    // Debug panel (below weather widget)
-                    Item {
-                        id: debugPanel
-                        width: weatherWidget.width
-                        height: WeatherService.debugMode ? debugContent.implicitHeight : 0
-                        clip: true
-                        visible: height > 0
-
-                        ColumnLayout {
-                            id: debugContent
-                            anchors.fill: parent
-                            spacing: 4
-
-                            // Time slider pane
-                            StyledRect {
-                                variant: "pane"
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 36
-
-                                StyledSlider {
-                                    id: sliderContent
-                                    anchors.fill: parent
-                                    anchors.margins: 12
-                                    icon: Icons.clock
-                                    value: WeatherService.debugHour / 24
-                                    tooltipText: {
-                                        var hour = Math.floor(WeatherService.debugHour);
-                                        var minutes = Math.round((WeatherService.debugHour - hour) * 60);
-                                        return hour.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0');
-                                    }
-                                    onValueChanged: WeatherService.debugHour = value * 24
-                                }
-                            }
-
-                            // Weather type selector pane
-                            StyledRect {
-                                id: weatherSelector
-                                variant: "pane"
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 64 + 8
-
-                                readonly property int buttonPadding: 4
-                                readonly property int buttonSpacing: 2
-
-                                readonly property var weatherTypes: [
-                                    {
-                                        code: 0,
-                                        icon: "☀️",
-                                        name: "Clear"
-                                    },
-                                    {
-                                        code: 1,
-                                        icon: "🌤️",
-                                        name: "Mainly clear"
-                                    },
-                                    {
-                                        code: 2,
-                                        icon: "⛅",
-                                        name: "Partly cloudy"
-                                    },
-                                    {
-                                        code: 3,
-                                        icon: "☁️",
-                                        name: "Overcast"
-                                    },
-                                    {
-                                        code: 45,
-                                        icon: "🌫️",
-                                        name: "Fog"
-                                    },
-                                    {
-                                        code: 51,
-                                        icon: "🌦️",
-                                        name: "Drizzle"
-                                    },
-                                    {
-                                        code: 61,
-                                        icon: "🌧️",
-                                        name: "Rain"
-                                    },
-                                    {
-                                        code: 65,
-                                        icon: "🌧️",
-                                        name: "Heavy rain"
-                                    },
-                                    {
-                                        code: 71,
-                                        icon: "❄️",
-                                        name: "Snow"
-                                    },
-                                    {
-                                        code: 75,
-                                        icon: "❄️",
-                                        name: "Heavy snow"
-                                    },
-                                    {
-                                        code: 95,
-                                        icon: "⛈️",
-                                        name: "Thunder"
-                                    },
-                                    {
-                                        code: 96,
-                                        icon: "🌩️",
-                                        name: "Hail"
-                                    }
-                                ]
-
-                                readonly property int columns: 6
-                                readonly property int rows: Math.ceil(weatherTypes.length / columns)
-
-                                Grid {
-                                    id: weatherButtonsGrid
-                                    anchors.fill: parent
-                                    anchors.margins: weatherSelector.buttonPadding
-                                    columns: weatherSelector.columns
-                                    rowSpacing: weatherSelector.buttonSpacing
-                                    columnSpacing: weatherSelector.buttonSpacing
-
-                                    Repeater {
-                                        model: weatherSelector.weatherTypes
-
-                                        delegate: StyledRect {
-                                            id: weatherBtn
-                                            required property var modelData
-                                            required property int index
-
-                                            readonly property bool isSelected: WeatherService.debugWeatherCode === modelData.code
-                                            readonly property int row: Math.floor(index / weatherSelector.columns)
-                                            readonly property int col: index % weatherSelector.columns
-                                            readonly property bool isFirstCol: col === 0
-                                            readonly property bool isLastCol: col === weatherSelector.columns - 1
-                                            readonly property bool isFirstRow: row === 0
-                                            readonly property bool isLastRow: row === weatherSelector.rows - 1
-                                            property bool buttonHovered: false
-
-                                            readonly property real defaultRadius: Styling.radius(0)
-                                            readonly property real selectedRadius: Styling.radius(0) / 2
-
-                                            readonly property real gridWidth: weatherButtonsGrid.width
-                                            readonly property real gridHeight: weatherButtonsGrid.height
-
-                                            variant: isSelected ? "primary" : (buttonHovered ? "focus" : "internalbg")
-                                            enableShadow: false
-                                            width: (gridWidth - (weatherSelector.columns - 1) * weatherSelector.buttonSpacing) / weatherSelector.columns
-                                            height: (gridHeight - (weatherSelector.rows - 1) * weatherSelector.buttonSpacing) / weatherSelector.rows
-
-                                            topLeftRadius: isSelected ? (isFirstCol && isFirstRow ? defaultRadius : selectedRadius) : defaultRadius
-                                            topRightRadius: isSelected ? (isLastCol && isFirstRow ? defaultRadius : selectedRadius) : defaultRadius
-                                            bottomLeftRadius: isSelected ? (isFirstCol && isLastRow ? defaultRadius : selectedRadius) : defaultRadius
-                                            bottomRightRadius: isSelected ? (isLastCol && isLastRow ? defaultRadius : selectedRadius) : defaultRadius
-
-                                            Text {
-                                                renderType: Text.NativeRendering
-                                                font.hintingPreference: Font.PreferFullHinting
-                                                anchors.centerIn: parent
-                                                text: weatherBtn.modelData.icon
-                                                font.pixelSize: 14
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onEntered: weatherBtn.buttonHovered = true
-                                                onExited: weatherBtn.buttonHovered = false
-                                                onClicked: WeatherService.debugWeatherCode = weatherBtn.modelData.code
-                                            }
-
-                                            StyledToolTip {
-                                                visible: weatherBtn.buttonHovered
-                                                tooltipText: weatherBtn.modelData.name
-                                            }
-                                        }
-                                    }
+                                // Separator between days (not after last)
+                                Separator {
+                                    vert: true
+                                    visible: forecastDayRow.index < 4
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    height: forecastDay.height - 16
                                 }
                             }
                         }
@@ -599,6 +338,182 @@ Item {
                 }
             }
 
+            // Debug panel (below weather widget)
+            Item {
+                id: debugPanel
+                width: weatherWidget.width
+                height: WeatherService.debugMode ? debugContent.implicitHeight : 0
+                clip: true
+                visible: height > 0
+
+                ColumnLayout {
+                    id: debugContent
+                    anchors.fill: parent
+                    spacing: 4
+
+                    // Time slider pane
+                    StyledRect {
+                        variant: "pane"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 36
+
+                        StyledSlider {
+                            id: sliderContent
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            icon: Icons.clock
+                            value: WeatherService.debugHour / 24
+                            tooltipText: {
+                                var hour = Math.floor(WeatherService.debugHour);
+                                var minutes = Math.round((WeatherService.debugHour - hour) * 60);
+                                return hour.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0');
+                            }
+                            onValueChanged: WeatherService.debugHour = value * 24
+                        }
+                    }
+
+                    // Weather type selector pane
+                    StyledRect {
+                        id: weatherSelector
+                        variant: "pane"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 64 + 8
+
+                        readonly property int buttonPadding: 4
+                        readonly property int buttonSpacing: 2
+
+                        readonly property var weatherTypes: [
+                            {
+                                code: 0,
+                                icon: "☀️",
+                                name: "Clear"
+                            },
+                            {
+                                code: 1,
+                                icon: "🌤️",
+                                name: "Mainly clear"
+                            },
+                            {
+                                code: 2,
+                                icon: "⛅",
+                                name: "Partly cloudy"
+                            },
+                            {
+                                code: 3,
+                                icon: "☁️",
+                                name: "Overcast"
+                            },
+                            {
+                                code: 45,
+                                icon: "🌫️",
+                                name: "Fog"
+                            },
+                            {
+                                code: 51,
+                                icon: "🌦️",
+                                name: "Drizzle"
+                            },
+                            {
+                                code: 61,
+                                icon: "🌧️",
+                                name: "Rain"
+                            },
+                            {
+                                code: 65,
+                                icon: "🌧️",
+                                name: "Heavy rain"
+                            },
+                            {
+                                code: 71,
+                                icon: "❄️",
+                                name: "Snow"
+                            },
+                            {
+                                code: 75,
+                                icon: "❄️",
+                                name: "Heavy snow"
+                            },
+                            {
+                                code: 95,
+                                icon: "⛈️",
+                                name: "Thunder"
+                            },
+                            {
+                                code: 96,
+                                icon: "🌩️",
+                                name: "Hail"
+                            }
+                        ]
+
+                        readonly property int columns: 6
+                        readonly property int rows: Math.ceil(weatherTypes.length / columns)
+
+                        Grid {
+                            id: weatherButtonsGrid
+                            anchors.fill: parent
+                            anchors.margins: weatherSelector.buttonPadding
+                            columns: weatherSelector.columns
+                            rowSpacing: weatherSelector.buttonSpacing
+                            columnSpacing: weatherSelector.buttonSpacing
+
+                            Repeater {
+                                model: weatherSelector.weatherTypes
+
+                                delegate: StyledRect {
+                                    id: weatherBtn
+                                    required property var modelData
+                                    required property int index
+
+                                    readonly property bool isSelected: WeatherService.debugWeatherCode === modelData.code
+                                    readonly property int row: Math.floor(index / weatherSelector.columns)
+                                    readonly property int col: index % weatherSelector.columns
+                                    readonly property bool isFirstCol: col === 0
+                                    readonly property bool isLastCol: col === weatherSelector.columns - 1
+                                    readonly property bool isFirstRow: row === 0
+                                    readonly property bool isLastRow: row === weatherSelector.rows - 1
+                                    property bool buttonHovered: false
+
+                                    readonly property real defaultRadius: Styling.radius(0)
+                                    readonly property real selectedRadius: Styling.radius(0) / 2
+
+                                    readonly property real gridWidth: weatherButtonsGrid.width
+                                    readonly property real gridHeight: weatherButtonsGrid.height
+
+                                    variant: isSelected ? "primary" : (buttonHovered ? "focus" : "internalbg")
+                                    enableShadow: false
+                                    width: (gridWidth - (weatherSelector.columns - 1) * weatherSelector.buttonSpacing) / weatherSelector.columns
+                                    height: (gridHeight - (weatherSelector.rows - 1) * weatherSelector.buttonSpacing) / weatherSelector.rows
+
+                                    topLeftRadius: isSelected ? (isFirstCol && isFirstRow ? defaultRadius : selectedRadius) : defaultRadius
+                                    topRightRadius: isSelected ? (isLastCol && isFirstRow ? defaultRadius : selectedRadius) : defaultRadius
+                                    bottomLeftRadius: isSelected ? (isFirstCol && isLastRow ? defaultRadius : selectedRadius) : defaultRadius
+                                    bottomRightRadius: isSelected ? (isLastCol && isLastRow ? defaultRadius : selectedRadius) : defaultRadius
+
+                                    StyledText {
+                                        anchors.centerIn: parent
+                                        text: weatherBtn.modelData.icon
+                                        font.pixelSize: 14
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onEntered: weatherBtn.buttonHovered = true
+                                        onExited: weatherBtn.buttonHovered = false
+                                        onClicked: WeatherService.debugWeatherCode = weatherBtn.modelData.code
+                                    }
+
+                                    StyledToolTip {
+                                        show: weatherBtn.buttonHovered
+                                        tooltipText: weatherBtn.modelData.name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -610,72 +525,34 @@ Item {
         parent: root.bar
 
         property bool isOpen: false
-        property bool menuShown: false
-        property real revealProgress: 0
         readonly property bool bottomBar: (Config.bar?.position ?? "top") === "bottom"
-        readonly property int contentPadding: 8
         readonly property int edgeGap: 8
         readonly property real barClearance: root.bar.totalBarHeight + edgeGap
-        readonly property alias cardRevealItem: cardReveal
+        readonly property Item hitbox: dashboardSurface.fullyHidden ? null : dashboardSurface.body
 
         z: 1000
         x: 0
         y: bottomBar ? 0 : barClearance
         width: parent.width
         height: Math.max(0, parent.height - barClearance)
-        clip: true
-        visible: menuShown || isOpen || revealProgress > 0
-
-        Behavior on revealProgress {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration
-                easing.type: dashboardPopup.isOpen ? Easing.OutCubic : Easing.InCubic
-            }
-        }
+        visible: isOpen || !dashboardSurface.fullyHidden
 
         function open() {
             if (isOpen)
                 return;
-            closeTimer.stop();
             Visibilities.claimBarPopup(dashboardPopup);
             isOpen = true;
-            menuShown = true;
             Qt.callLater(() => {
-                if (!dashboardPopup.isOpen)
-                    return;
-                revealProgress = 1;
-                if (dashboardLoader.item)
+                if (dashboardPopup.isOpen && dashboardLoader.item)
                     dashboardLoader.item.focusCurrentTab();
             });
         }
 
         function close() {
-            if (!isOpen && revealProgress <= 0)
+            if (!isOpen)
                 return;
             isOpen = false;
             Visibilities.releaseBarPopup(dashboardPopup);
-            revealProgress = 0;
-            closeTimer.restart();
-        }
-
-        function closeQuick() {
-            if (!isOpen && revealProgress <= 0)
-                return;
-            closeTimer.stop();
-            isOpen = false;
-            Visibilities.releaseBarPopup(dashboardPopup);
-            revealProgress = 0;
-            menuShown = false;
-        }
-
-        Timer {
-            id: closeTimer
-            interval: Config.animDuration > 0 ? Config.animDuration + 40 : 40
-            onTriggered: {
-                if (!dashboardPopup.isOpen)
-                    dashboardPopup.menuShown = false;
-            }
         }
 
         FocusGrab {
@@ -693,43 +570,28 @@ Item {
             }
         }
 
-        Item {
-            id: cardReveal
+        MorphSurface {
+            id: dashboardSurface
 
-            visible: dashboardPopup.menuShown
-            width: dashboardLoader.item ? dashboardLoader.item.implicitWidth + dashboardPopup.contentPadding * 2 : 916
-            height: (dashboardLoader.item
-                ? dashboardLoader.item.implicitHeight + dashboardPopup.contentPadding * 2
-                : 360) * dashboardPopup.revealProgress
+            shown: dashboardPopup.isOpen
+            contentWidth: dashboardLoader.item ? dashboardLoader.item.implicitWidth + padding * 2 : 916
+            contentHeight: dashboardLoader.item ? dashboardLoader.item.implicitHeight + padding * 2 : 360
+            originWidth: buttonBg.width
+            fromBottom: dashboardPopup.bottomBar
             x: Math.round((dashboardPopup.width - width) / 2)
             y: dashboardPopup.bottomBar ? dashboardPopup.height - height : 0
-            clip: true
 
-            StyledRect {
-                id: dashboardWrapper
+            Loader {
+                id: dashboardLoader
+                // Always warm: weather→dashboard must not hitch on first create.
+                active: true
+                anchors.fill: parent
 
-                variant: "popup"
-                radius: Styling.radius(8)
-                enableShadow: false
-                width: cardReveal.width
-                height: dashboardLoader.item
-                    ? dashboardLoader.item.implicitHeight + dashboardPopup.contentPadding * 2
-                    : 360
-                y: dashboardPopup.bottomBar ? cardReveal.height - height : 0
-
-                Loader {
-                    id: dashboardLoader
-                    // Always warm: weather→dashboard must not hitch on first create.
-                    active: true
-                    anchors.fill: parent
-                    anchors.margins: dashboardPopup.contentPadding
-
-                    sourceComponent: Component {
-                        DashboardView {
-                            screenName: root.bar?.screen?.name ?? ""
-                            popupMode: true
-                            onCloseRequested: dashboardPopup.close()
-                        }
+                sourceComponent: Component {
+                    DashboardView {
+                        screenName: root.bar?.screen?.name ?? ""
+                        popupMode: true
+                        onCloseRequested: dashboardPopup.close()
                     }
                 }
             }

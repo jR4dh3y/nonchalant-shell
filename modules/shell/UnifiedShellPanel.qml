@@ -91,6 +91,9 @@ PanelWindow {
                 item: barContent.dashboardHitbox
             },
             Region {
+                item: barContent.visible ? barContent.dropHitbox : null
+            },
+            Region {
                 item: runMenu.hitbox
             },
             Region {

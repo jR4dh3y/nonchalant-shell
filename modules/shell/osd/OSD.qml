@@ -26,161 +26,135 @@ PanelWindow {
 
     readonly property int bottomOffset: 48
     readonly property int cardHeight: 52
-    property bool osdShown: false
-    property real revealProgress: 0
-
-    Behavior on revealProgress {
-        enabled: Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration
-            easing.type: GlobalStates.osdVisible ? Easing.OutCubic : Easing.InCubic
-        }
-    }
-
-    // Include the final gap in this surface so the card can actually enter
-    // from the screen boundary instead of materializing above it.
     WlrLayershell.margins.bottom: 0
 
     color: "transparent"
-    implicitHeight: cardHeight + bottomOffset
-
-    visible: osdShown
+    // Headroom above the card for the spring stretch.
+    implicitHeight: cardHeight + bottomOffset + 16
+    mask: Region {
+        item: osdSurface.body
+    }
 
     readonly property bool isIsland: (Config.bar?.style ?? "default") === "island"
+    // The island embeds its own OSD banner.
+    readonly property bool showing: GlobalStates.osdVisible && !isIsland
 
-    onIsIslandChanged: {
-        if (isIsland) {
-            root.revealProgress = 0;
-            root.osdShown = false;
-        }
-    }
+    visible: showing || !osdSurface.fullyHidden
 
     // Internal state for responsiveness
     property real osdValue: 0
     property bool osdMuted: false
 
-    // Centering wrapper
-    Item {
-        anchors.fill: parent
-        clip: true
+    // Pinches out into a pill from a round nub, like the island's OSD.
+    MorphSurface {
+        id: osdSurface
 
-        StyledRect {
-            id: osdRect
-            variant: "popup"
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: root.bottomOffset
-            implicitWidth: 220
-            implicitHeight: root.cardHeight
-            radius: Styling.radius(16)
-            transform: Translate {
-                y: (1 - root.revealProgress)
-                    * (osdRect.height + root.bottomOffset)
+        shown: root.showing
+        contentWidth: 220
+        contentHeight: root.cardHeight
+        originWidth: root.cardHeight
+        fromBottom: true
+        padding: 0
+        radius: Styling.radius(16)
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: root.bottomOffset
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 24
+            anchors.topMargin: 8
+            anchors.bottomMargin: 8
+            spacing: 14
+
+            DynamicSunIcon {
+                visible: GlobalStates.osdIndicator === "brightness"
+                size: 24
+                value: root.osdValue
+                color: Colors.overBackground
+                Layout.alignment: Qt.AlignVCenter
             }
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 24
-                anchors.topMargin: 8
-                anchors.bottomMargin: 8
-                spacing: 14
-
-                DynamicSunIcon {
-                    visible: GlobalStates.osdIndicator === "brightness"
-                    size: 24
-                    value: root.osdValue
-                    color: Colors.overBackground
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                Text {
-                    visible: GlobalStates.osdIndicator !== "brightness"
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    id: iconText
-                    text: {
-                        if (GlobalStates.osdIndicator === "volume") {
-                            return Audio.volumeIcon(root.osdValue, root.osdMuted);
-                        } else if (GlobalStates.osdIndicator === "mic") {
-                            return root.osdMuted ? Icons.micSlash : Icons.mic;
-                        }
-                        return "";
+            StyledText {
+                visible: GlobalStates.osdIndicator !== "brightness"
+                id: iconText
+                text: {
+                    if (GlobalStates.osdIndicator === "volume") {
+                        return Audio.volumeIcon(root.osdValue, root.osdMuted);
+                    } else if (GlobalStates.osdIndicator === "mic") {
+                        return root.osdMuted ? Icons.micSlash : Icons.mic;
                     }
-                    font.family: Icons.font
-                    font.pixelSize: 22
-                    color: Colors.overBackground
-                    Layout.alignment: Qt.AlignVCenter
+                    return "";
                 }
+                font.family: Icons.font
+                font.pixelSize: 22
+                color: Colors.overBackground
+                Layout.alignment: Qt.AlignVCenter
+            }
 
-                ColumnLayout {
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 0
+
+                RowLayout {
                     Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
                     spacing: 0
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: {
-                                if (GlobalStates.osdIndicator === "volume")
-                                    return "Volume";
-                                if (GlobalStates.osdIndicator === "mic")
-                                    return "Microphone";
-                                if (GlobalStates.osdIndicator === "brightness")
-                                    return "Brightness";
-                                return "";
-                            }
-                            font.family: Config.theme.font
-                            font.pixelSize: 15
-                            font.bold: false
-                            color: Colors.overBackground
-                            Layout.alignment: Qt.AlignBottom
+                    StyledText {
+                        text: {
+                            if (GlobalStates.osdIndicator === "volume")
+                                return "Volume";
+                            if (GlobalStates.osdIndicator === "mic")
+                                return "Microphone";
+                            if (GlobalStates.osdIndicator === "brightness")
+                                return "Brightness";
+                            return "";
                         }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            renderType: Text.NativeRendering
-                            font.hintingPreference: Font.PreferFullHinting
-                            text: Math.round(root.osdValue * 100)
-                            font.family: Config.theme.font
-                            font.pixelSize: 15
-                            font.bold: false
-                            color: Colors.overBackground
-                            Layout.alignment: Qt.AlignBottom
-                        }
+                        font.family: Config.theme.font
+                        font.pixelSize: 15
+                        font.bold: false
+                        color: Colors.overBackground
+                        Layout.alignment: Qt.AlignBottom
                     }
 
-                    StyledSlider {
+                    Item {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 12
-                        value: root.osdValue
-                        wavy: false
-                        enabled: false
-                        thickness: 3
-                        handleSpacing: 0
-                        progressColor: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
-                        backgroundColor: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
                     }
+
+                    StyledText {
+                        text: Math.round(root.osdValue * 100)
+                        font.family: Config.theme.font
+                        font.pixelSize: 15
+                        font.bold: false
+                        color: Colors.overBackground
+                        Layout.alignment: Qt.AlignBottom
+                    }
+                }
+
+                StyledSlider {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 12
+                    value: root.osdValue
+                    wavy: false
+                    enabled: false
+                    thickness: 3
+                    handleSpacing: 0
+                    progressColor: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
+                    backgroundColor: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
                 }
             }
+        }
 
-            // Dismiss only when the moving card itself is reached. The extra
-            // surface below it exists solely for the screen-edge animation.
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                enabled: GlobalStates.osdVisible
-                onEntered: {
-                    hideTimer.stop();
-                    hideTimer.triggered();
-                }
+        // Hovering the card dismisses it.
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: GlobalStates.osdVisible
+            onEntered: {
+                hideTimer.stop();
+                hideTimer.triggered();
             }
         }
     }
@@ -191,39 +165,11 @@ PanelWindow {
         onTriggered: GlobalStates.osdVisible = false
     }
 
-    Timer {
-        id: closeTimer
-        interval: Config.animDuration > 0 ? Config.animDuration + 40 : 40
-        onTriggered: {
-            if (!GlobalStates.osdVisible)
-                root.osdShown = false;
-        }
-    }
-
     Connections {
         target: GlobalStates
         function onOsdVisibleChanged() {
-            if (GlobalStates.osdVisible) {
-                if (root.isIsland)
-                    return;
-                closeTimer.stop();
-                root.osdShown = true;
+            if (root.showing)
                 hideTimer.restart();
-                Qt.callLater(() => {
-                    if (GlobalStates.osdVisible && !root.isIsland)
-                        root.revealProgress = 1;
-                });
-            } else if (root.osdShown) {
-                root.revealProgress = 0;
-                closeTimer.restart();
-            }
-        }
-    }
-
-    Component.onCompleted: {
-        if (!root.isIsland && GlobalStates.osdVisible) {
-            root.osdShown = true;
-            Qt.callLater(() => root.revealProgress = 1);
         }
     }
 

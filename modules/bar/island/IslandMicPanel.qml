@@ -56,12 +56,8 @@ Item {
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: backMouse.pressed ? 80 : 250
-                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: backMouse.pressed
                 }
 
                 Text {
@@ -112,12 +108,8 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 scale: muteMouse.pressed ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: muteMouse.pressed ? 80 : 250
-                        easing.type: muteMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: muteMouse.pressed
                 }
 
                 Text {
@@ -214,12 +206,8 @@ Item {
                                 enableBorder: delegateRoot.isCurrent
                                 scale: devMouse.pressed ? 0.95 : 1.0
 
-                                Behavior on scale {
-                                    NumberAnimation {
-                                        duration: devMouse.pressed ? 80 : 250
-                                        easing.type: devMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                        easing.overshoot: 1.5
-                                    }
+                                PressBehavior on scale {
+                                    pressed: devMouse.pressed
                                 }
 
                                 RowLayout {
@@ -340,12 +328,8 @@ Item {
                                             Layout.alignment: Qt.AlignVCenter
                                             scale: appMuteMouse.pressed ? 0.88 : 1.0
 
-                                            Behavior on scale {
-                                                NumberAnimation {
-                                                    duration: appMuteMouse.pressed ? 80 : 250
-                                                    easing.type: appMuteMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                                    easing.overshoot: 1.5
-                                                }
+                                            PressBehavior on scale {
+                                                pressed: appMuteMouse.pressed
                                             }
 
                                             Text {

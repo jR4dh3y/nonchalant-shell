@@ -83,12 +83,8 @@ StyledRect {
                 Layout.alignment: Qt.AlignVCenter
                 scale: trackMouse.pressed ? 0.96 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: trackMouse.pressed ? 80 : 250
-                        easing.type: trackMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: trackMouse.pressed
                 }
 
                 RowLayout {
@@ -196,12 +192,8 @@ StyledRect {
                     variant: prevMouse.containsMouse ? "focus" : "common"
                     scale: prevMouse.pressed ? 0.93 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: prevMouse.pressed ? 80 : 250
-                            easing.type: prevMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: prevMouse.pressed
                     }
 
                     Text {
@@ -232,12 +224,8 @@ StyledRect {
                     opacity: playMouse.containsMouse ? 0.9 : 1.0
                     scale: playMouse.pressed ? 0.93 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: playMouse.pressed ? 80 : 250
-                            easing.type: playMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: playMouse.pressed
                     }
 
                     Text {
@@ -267,12 +255,8 @@ StyledRect {
                     variant: nextMouse.containsMouse ? "focus" : "common"
                     scale: nextMouse.pressed ? 0.93 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: nextMouse.pressed ? 80 : 250
-                            easing.type: nextMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: nextMouse.pressed
                     }
 
                     Text {

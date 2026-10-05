@@ -200,12 +200,8 @@ Item {
 
                 scale: modeButton.down ? 0.96 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: modeButton.down ? 80 : 250
-                            easing.type: modeButton.down ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: modeButton.down
                     }
 
                     background: StyledRect {
@@ -300,12 +296,8 @@ Item {
                             anchors.fill: parent
                             scale: delegateMa.pressed ? 0.96 : 1.0
 
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: delegateMa.pressed ? 80 : 250
-                                    easing.type: delegateMa.pressed ? Easing.OutQuad : Easing.OutBack
-                                    easing.overshoot: 1.5
-                                }
+                            PressBehavior on scale {
+                                pressed: delegateMa.pressed
                             }
 
                             StyledRect {

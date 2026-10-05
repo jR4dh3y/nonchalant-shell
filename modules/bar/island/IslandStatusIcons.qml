@@ -53,13 +53,8 @@ RowLayout {
             radius: 13
             variant: brightMouse.containsMouse ? "focus" : "transparent"
             scale: brightMouse.pressed ? 0.92 : 1.0
-            Behavior on scale {
-                enabled: (Config.animDuration ?? 0) > 0
-                NumberAnimation {
-                    duration: brightMouse.pressed ? 80 : 250
-                    easing.type: brightMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.4
-                }
+            PressBehavior on scale {
+                pressed: brightMouse.pressed
             }
 
             DynamicSunIcon {
@@ -75,7 +70,6 @@ RowLayout {
             target: brightBtn
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
-                root.bar?.suppressOsdTemporarily();
                 const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
                 const newVal = Math.max(0.05, Math.min(1.0, brightBtn.brightnessVal + delta));
                 if (Brightness.syncBrightness) {
@@ -138,13 +132,8 @@ RowLayout {
             radius: 13
             variant: volMouse.containsMouse ? "focus" : "transparent"
             scale: volMouse.pressed ? 0.92 : 1.0
-            Behavior on scale {
-                enabled: (Config.animDuration ?? 0) > 0
-                NumberAnimation {
-                    duration: volMouse.pressed ? 80 : 250
-                    easing.type: volMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.4
-                }
+            PressBehavior on scale {
+                pressed: volMouse.pressed
             }
 
             DynamicVolumeIcon {
@@ -162,7 +151,6 @@ RowLayout {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
                 if (volBtn.audioDevice) {
-                    root.bar?.suppressOsdTemporarily();
                     const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
                     const newVal = Math.max(0.0, Math.min(1.0, volBtn.volumeVal + delta));
                     if (delta > 0 && volBtn.isMuted) {
@@ -184,7 +172,6 @@ RowLayout {
                     root.bar.expand("sound");
                 } else {
                     if (volBtn.audioDevice) {
-                        root.bar?.suppressOsdTemporarily();
                         volBtn.audioDevice.muted = !volBtn.audioDevice.muted;
                     }
                 }
@@ -222,13 +209,8 @@ RowLayout {
             radius: 13
             variant: batMouse.containsMouse ? "focus" : "transparent"
             scale: batMouse.pressed ? 0.92 : 1.0
-            Behavior on scale {
-                enabled: (Config.animDuration ?? 0) > 0
-                NumberAnimation {
-                    duration: batMouse.pressed ? 80 : 250
-                    easing.type: batMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                    easing.overshoot: 1.4
-                }
+            PressBehavior on scale {
+                pressed: batMouse.pressed
             }
 
             DynamicBatteryIcon {

@@ -95,96 +95,13 @@ FocusScope {
         color: "transparent"
 
         // Highlight que se desplaza entre botones
-        StyledRect {
+        ElasticHighlight {
             id: highlight
             variant: (repeater.count > 0 && repeater.itemAt(root.currentIndex) && repeater.itemAt(root.currentIndex).actionModel.variant) ? repeater.itemAt(root.currentIndex).actionModel.variant : "primary"
-            radius: Styling.radius(4)
             z: 0 // Por debajo de los botones
-            visible: repeater.count > 0
-
-            property Item targetItem: repeater.count > 0 ? repeater.itemAt(root.currentIndex) : null
-
-            // Target values (geometry relative to container)
-            property real tx: targetItem ? targetItem.x : 0
-            property real ty: targetItem ? targetItem.y : 0
-            property real tw: targetItem ? targetItem.width : 0
-            property real th: targetItem ? targetItem.height : 0
-
-            // Tracker 1 (Fast / Lead)
-            property real t1x: tx
-            property real t1y: ty
-            property real t1w: tw
-            property real t1h: th
-
-            Behavior on t1x {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 3
-                    easing.type: Easing.OutSine
-                }
-            }
-            Behavior on t1y {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 3
-                    easing.type: Easing.OutSine
-                }
-            }
-            Behavior on t1w {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 3
-                    easing.type: Easing.OutSine
-                }
-            }
-            Behavior on t1h {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration / 3
-                    easing.type: Easing.OutSine
-                }
-            }
-
-            // Tracker 2 (Slow / Follow)
-            property real t2x: tx
-            property real t2y: ty
-            property real t2w: tw
-            property real t2h: th
-
-            Behavior on t2x {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration
-                    easing.type: Easing.OutSine
-                }
-            }
-            Behavior on t2y {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration
-                    easing.type: Easing.OutSine
-                }
-            }
-            Behavior on t2w {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration
-                    easing.type: Easing.OutSine
-                }
-            }
-            Behavior on t2h {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: Config.animDuration
-                    easing.type: Easing.OutSine
-                }
-            }
-
-            // Final geometry combining both trackers to create elastic effect
-            x: Math.min(t1x, t2x) + container.x
-            y: Math.min(t1y, t2y) + container.y
-            width: Math.max(t1x + t1w, t2x + t2w) - Math.min(t1x, t2x)
-            height: Math.max(t1y + t1h, t2y + t2h) - Math.min(t1y, t2y)
+            targetItem: repeater.count > 0 ? repeater.itemAt(root.currentIndex) : null
+            originX: container.x
+            originY: container.y
         }
 
         Grid {
@@ -236,13 +153,8 @@ FocusScope {
                         opacity: enabled ? 1.0 : 0.5
                         scale: actionButton.pressed ? 0.93 : 1.0
 
-                        Behavior on scale {
-                            enabled: (Config.animDuration ?? 0) > 0
-                            NumberAnimation {
-                                duration: actionButton.pressed ? 80 : 250
-                                easing.type: actionButton.pressed ? Easing.OutQuad : Easing.OutBack
-                                easing.overshoot: 1.5
-                            }
+                        PressBehavior on scale {
+                            pressed: actionButton.pressed
                         }
 
                         Process {

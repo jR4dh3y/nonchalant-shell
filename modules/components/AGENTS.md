@@ -10,6 +10,7 @@ Atomic design library for Nonchalant Shell. Every themed container in the shell 
 | `StyledRect.qml` | **THE** base themed container. `variant` selects style from `Styling.qml`. Handles borders, gradients, and radii |
 | `Separator.qml` | Visual divider between sections |
 | `ActionGrid.qml` | Flexible button grid (row or grid layout). Used by PowerMenu, ToolsMenu |
+| `ElasticHighlight.qml` | Morphing selection pill (fast lead + slow follow trackers). Used by ActionGrid, IslandPowerPanel |
 
 ### Input
 | Component | Role |

@@ -285,12 +285,8 @@ Item {
 
                     scale: schemeButton.down ? 0.96 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: schemeButton.down ? 80 : 250
-                            easing.type: schemeButton.down ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: schemeButton.down
                     }
 
                     background: Rectangle {
@@ -319,12 +315,8 @@ Item {
                     focusPolicy: Qt.NoFocus
                     scale: themeSwitch.down ? 0.94 : 1.0
 
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: themeSwitch.down ? 80 : 250
-                            easing.type: themeSwitch.down ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.5
-                        }
+                    PressBehavior on scale {
+                        pressed: themeSwitch.down
                     }
 
                     onCheckedChanged: Config.theme.lightMode = checked
@@ -441,12 +433,8 @@ Item {
                             anchors.fill: parent
                             scale: delegateMa.pressed ? 0.96 : 1.0
 
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: delegateMa.pressed ? 80 : 250
-                                    easing.type: delegateMa.pressed ? Easing.OutQuad : Easing.OutBack
-                                    easing.overshoot: 1.5
-                                }
+                            PressBehavior on scale {
+                                pressed: delegateMa.pressed
                             }
 
                             StyledRect {

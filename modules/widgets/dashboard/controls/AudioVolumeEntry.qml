@@ -47,12 +47,8 @@ Item {
                 Layout.fillWidth: false
                 scale: muteButton.down ? 0.90 : 1.0
 
-                Behavior on scale {
-                    NumberAnimation {
-                        duration: muteButton.down ? 80 : 250
-                        easing.type: muteButton.down ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: muteButton.down
                 }
 
                 background: StyledRect {

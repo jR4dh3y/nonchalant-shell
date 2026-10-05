@@ -26,6 +26,7 @@ Item {
     focus: true
 
     Component.onCompleted: {
+        root.containerY = root.shouldBeRevealed ? 0 : -root.islandHeight;
         Visibilities.registerIsland(root.screen.name, root);
     }
 
@@ -61,6 +62,9 @@ Item {
     }
 
     function collapse() {
+        // The OSD tab leaves currentMode "collapsed", so clear it before the
+        // early return or it would outlive e.g. opening the overview.
+        root.dropRequested = false;
         if (root.currentMode === "collapsed" && !root.retractingToHidden && Visibilities.currentActiveModule === "")
             return;
 
@@ -107,6 +111,7 @@ Item {
     }
 
     function expand(mode: string) {
+        root.dropRequested = false;
         FocusGrabManager.clearTopGrab();
         Visibilities.closeActiveBarPopup();
         if (root.retractingToHidden) {
@@ -281,6 +286,10 @@ Item {
             return false;
         if (currentMode === "osd")
             return true;
+        // Hold the bar out while the OSD tab is showing or still retracting
+        // into it, so the tab never floats under an empty bezel.
+        if (root.dropShown || root.dropProgress > 0.001)
+            return true;
         if (root.isExpanded)
             return true;
         return barNormallyVisible;
@@ -290,22 +299,26 @@ Item {
     readonly property bool isFullyRetracted: !shouldBeRevealed && root.revealProgress <= 0.01
     readonly property bool hitboxExpanded: root.isExpanded || shouldBeRevealed || !isFullyRetracted
 
-    property real containerY: shouldBeRevealed ? 0 : -islandHeight
+    // Written only by the reveal animations (and set once at startup). A
+    // binding here survived the animations: flipping shouldBeRevealed snapped
+    // it to the end value for a frame before the animation pulled it back, so
+    // every hover reveal or hide played twice until something assigned it.
+    property real containerY: -islandHeight
 
     NumberAnimation {
         id: slideDownAnim
         target: root
         property: "containerY"
-        duration: root.morphDuration
+        duration: Motion.expandDuration
         easing.type: Easing.OutBack
-        easing.overshoot: root.morphOvershoot
+        easing.overshoot: Motion.overshoot
     }
 
     NumberAnimation {
         id: slideUpAnim
         target: root
         property: "containerY"
-        duration: root.morphCollapseDuration
+        duration: Motion.collapseDuration
         easing.type: Easing.InCubic
         onFinished: {
             root.finishRetraction();
@@ -316,9 +329,9 @@ Item {
         id: barHoverAnim
         target: root
         property: "containerY"
-        duration: root.shouldBeRevealed ? root.morphDuration : root.morphCollapseDuration
+        duration: root.shouldBeRevealed ? Motion.expandDuration : Motion.collapseDuration
         easing.type: root.shouldBeRevealed ? Easing.OutBack : Easing.InCubic
-        easing.overshoot: root.morphOvershoot
+        easing.overshoot: Motion.overshoot
     }
 
     onShouldBeRevealedChanged: {
@@ -326,18 +339,6 @@ Item {
             return;
         root.animateReveal(root.shouldBeRevealed ? 0 : -root.islandHeight);
     }
-
-    // Motion tokens. Expansion is a long, softly overshooting spring; collapse
-    // is a monotonic decelerating curve. Content enters a beat after the body
-    // starts morphing so it lands on an already-growing surface instead of
-    // popping in clipped.
-    readonly property int morphDuration: Config.animDuration > 0 ? Math.max(360, Math.round(Config.animDuration * 1.3)) : 0
-    readonly property int morphCollapseDuration: Config.animDuration > 0 ? Math.max(240, Math.round(Config.animDuration * 0.9)) : 0
-    readonly property int contentFadeInDuration: Config.animDuration > 0 ? Math.max(200, Math.round(Config.animDuration * 0.8)) : 0
-    readonly property int contentFadeOutDuration: Config.animDuration > 0 ? Math.max(90, Math.round(Config.animDuration * 0.35)) : 0
-    readonly property int contentEnterDelay: Math.round(morphDuration * 0.22)
-    readonly property real morphOvershoot: 1.12
-    readonly property real pageDrift: 6
 
     // Concave fillets that join the body to the top screen edge.
     readonly property real earRadius: Math.min(root.cornerRadius, root.islandHeight / 2)
@@ -363,11 +364,11 @@ Item {
     }
     property real bodyBottomRadius: bodyBottomRadiusTarget
     Behavior on bodyBottomRadius {
-        enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
+        enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
         NumberAnimation {
-            duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+            duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
             easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-            easing.overshoot: root.morphOvershoot
+            easing.overshoot: Motion.overshoot
         }
     }
 
@@ -375,7 +376,7 @@ Item {
     // monotonic out) instead of snapping.
     function animateReveal(target: real) {
         barHoverAnim.stop();
-        if (Config.animDuration <= 0 || Math.abs(root.containerY - target) < 0.5) {
+        if (!Motion.enabled || Math.abs(root.containerY - target) < 0.5) {
             root.containerY = target;
             return;
         }
@@ -457,7 +458,7 @@ Item {
             onWheel: wheel => wheel.accepted = true
         }
 
-        property real drift: -root.pageDrift
+        property real drift: -Motion.drift
         opacity: 0
         scale: 0.96
         transform: Translate {
@@ -477,32 +478,32 @@ Item {
         transitions: [
             Transition {
                 to: "shown"
-                enabled: Config.animDuration > 0
+                enabled: Motion.enabled
                 SequentialAnimation {
                     PauseAnimation {
-                        duration: root.contentEnterDelay
+                        duration: Motion.contentEnterDelay
                     }
                     ParallelAnimation {
                         NumberAnimation {
                             property: "opacity"
-                            duration: root.contentFadeInDuration
+                            duration: Motion.fadeInDuration
                             easing.type: Easing.OutCubic
                         }
                         NumberAnimation {
                             properties: "scale,drift"
-                            duration: root.morphDuration
+                            duration: Motion.expandDuration
                             easing.type: Easing.OutBack
-                            easing.overshoot: root.morphOvershoot
+                            easing.overshoot: Motion.overshoot
                         }
                     }
                 }
             },
             Transition {
                 from: "shown"
-                enabled: Config.animDuration > 0
+                enabled: Motion.enabled
                 NumberAnimation {
                     properties: "opacity,scale,drift"
-                    duration: root.contentFadeOutDuration
+                    duration: Motion.fadeOutDuration
                     easing.type: Easing.OutQuad
                 }
             }
@@ -623,40 +624,67 @@ Item {
             if (root.currentMode === "osd") {
                 root.collapse();
             }
+            root.dropRequested = false;
         }
     }
 
     Timer {
         id: retractFinishTimer
-        interval: root.morphCollapseDuration + 60
+        interval: Motion.collapseDuration + 60
         repeat: false
         onTriggered: {
             root.finishRetraction();
         }
     }
 
-    property bool suppressOsd: false
+    // ─── OSD tab ───
+    // While the collapsed bar is already on screen, volume / brightness
+    // changes show as a bare progress bar in a small tab hanging from the bar
+    // under its status icons (whose icon already says what is changing),
+    // instead of morphing the whole bar away from the cursor. A hidden bar
+    // still morphs into the full OSD banner.
+    property bool dropRequested: false
+    readonly property bool dropShown: root.dropRequested && root.currentMode === "collapsed" && !root.retractingToHidden
+    readonly property bool canDrop: root.currentMode === "collapsed" && !root.retractingToHidden && (root.barNormallyVisible || root.dropShown)
 
-    Timer {
-        id: suppressOsdTimer
-        interval: 400
-        repeat: false
-        onTriggered: {
-            root.suppressOsd = false;
+    readonly property real dropEarRadius: Math.min(root.cornerRadius, 10)
+    readonly property int dropWidth: 104
+    readonly property int dropHeight: 14
+    // Centred under the status icons, kept on the flat run of the bar's
+    // bottom edge so the fillets never land on its rounded corners.
+    readonly property real dropCenterX: {
+        const center = islandContainer.x + collapsedView.x + collapsedRow.x + statusIcons.x + statusIcons.width / 2;
+        const inset = root.islandHeight / 2 + root.dropEarRadius + root.dropWidth / 2;
+        const left = islandContainer.x + inset;
+        const right = islandContainer.x + islandContainer.width - inset;
+        return left > right ? islandContainer.x + islandContainer.width / 2 : Math.max(left, Math.min(right, center));
+    }
+
+    // Same pinch as the bar: spring out, monotonic back in. When the island
+    // expands it snaps away instead.
+    property real dropProgress: root.dropShown ? 1 : 0
+    Behavior on dropProgress {
+        enabled: Motion.enabled && root.currentMode === "collapsed"
+        NumberAnimation {
+            duration: root.dropShown ? Motion.expandDuration : Motion.collapseDuration
+            easing.type: root.dropShown ? Easing.OutBack : Easing.InCubic
+            easing.overshoot: Motion.overshoot
         }
     }
-
-    function suppressOsdTemporarily() {
-        root.suppressOsd = true;
-        suppressOsdTimer.restart();
-    }
+    readonly property real dropClamped: Math.min(1, root.dropProgress)
+    readonly property real dropStretch: Math.max(0, root.dropProgress - 1) * root.dropHeight
 
     function triggerOsd(indicator: string, value: real, muted: bool) {
-        if (root.suppressOsd && root.currentMode === "collapsed")
-            return;
         root.osdIndicator = indicator;
         root.osdValue = value;
         root.osdMuted = muted;
+        // The bar has no mic icon to say what the bare bar means, so mic
+        // changes keep the labelled banner.
+        if (root.canDrop && indicator !== "mic") {
+            root.dropRequested = true;
+            islandOsdTimer.restart();
+            return;
+        }
         if (root.currentMode === "collapsed" || root.currentMode === "osd") {
             if (root.currentMode === "collapsed") {
                 root.expand("osd");
@@ -699,6 +727,7 @@ Item {
     readonly property bool dashboardInputActive: islandActive && currentMode === "dashboard"
 
     property alias barHitbox: activeBarHitbox
+    readonly property Item dropHitbox: dropContainer.visible ? activeDropHitbox : null
 
     // Stable dummy item for dashboardHitbox contract
     Item {
@@ -776,6 +805,97 @@ Item {
         height: root.isExpanded ? islandContainer.height : (root.hitboxExpanded ? islandContainer.height : root.triggerHeight)
     }
 
+    Item {
+        id: activeDropHitbox
+        x: dropContainer.x + dropBody.x
+        y: dropContainer.y
+        width: dropBody.width
+        height: dropBody.height
+    }
+
+    // Hangs from the bar's bottom edge, overlapping the bar's border so the
+    // join reads as one surface.
+    Item {
+        id: dropContainer
+        z: 1
+        x: Math.round(root.dropCenterX - width / 2)
+        y: islandBody.height - islandBody.border.width
+        width: root.dropWidth
+        height: root.dropHeight
+        visible: root.dropProgress > 0.001
+
+        // Concave fillets joining the tab's sides to the bar's bottom edge,
+        // growing with the pinch like the bar's own ears at the bezel.
+        IslandEar {
+            x: dropBody.x - size
+            y: 0
+            size: root.dropEarRadius * root.dropClamped
+            fillColor: dropBody.color
+        }
+
+        IslandEar {
+            mirrored: true
+            x: dropBody.x + dropBody.width
+            y: 0
+            size: root.dropEarRadius * root.dropClamped
+            fillColor: dropBody.color
+        }
+
+        StyledRect {
+            id: dropBody
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width * (root.pinchWidthFactor + (1 - root.pinchWidthFactor) * root.dropClamped)
+            height: parent.height * root.dropClamped + root.dropStretch
+            variant: "pane"
+            backgroundOpacity: 1.0
+            topLeftRadius: 0
+            topRightRadius: 0
+            bottomLeftRadius: dropBody.height / 2
+            bottomRightRadius: dropBody.height / 2
+            animateRadius: false
+            // A border would draw a seam across the join with the bar.
+            enableBorder: false
+            clip: true
+
+            Item {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: dropContainer.height * (root.dropClamped - 1)
+                width: dropContainer.width
+                height: dropContainer.height
+                opacity: Math.max(0, Math.min(1, (root.dropProgress - 0.4) / 0.6))
+
+                Rectangle {
+                    id: dropTrack
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    height: 4
+                    radius: height / 2
+                    color: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
+
+                    Rectangle {
+                        height: parent.height
+                        radius: parent.radius
+                        width: Math.max(height, parent.width * Math.max(0, Math.min(1, root.osdValue)))
+                        visible: root.osdValue > 0
+                        color: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
+
+                        Behavior on width {
+                            enabled: Motion.enabled
+                            NumberAnimation {
+                                duration: Motion.hoverDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Island body
     Item {
         id: islandContainer
@@ -786,20 +906,20 @@ Item {
         visible: root.revealProgress > 0.001
 
         Behavior on width {
-            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
+            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
-                duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                easing.overshoot: root.morphOvershoot
+                easing.overshoot: Motion.overshoot
             }
         }
 
         Behavior on height {
-            enabled: Config.animDuration > 0 && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
+            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
-                duration: root.isExpanded ? root.morphDuration : root.morphCollapseDuration
+                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                easing.overshoot: root.morphOvershoot
+                easing.overshoot: Motion.overshoot
             }
         }
 
@@ -884,13 +1004,8 @@ Item {
                                 implicitHeight: Math.max(fluidContextText.implicitHeight, 20)
                                 scale: contextMouse.pressed ? 0.94 : 1.0
 
-                                Behavior on scale {
-                                    enabled: (Config.animDuration ?? 0) > 0
-                                    NumberAnimation {
-                                        duration: contextMouse.pressed ? 80 : 250
-                                        easing.type: contextMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                        easing.overshoot: 1.4
-                                    }
+                                PressBehavior on scale {
+                                    pressed: contextMouse.pressed
                                 }
 
                                 FluidTextProgress {
@@ -939,13 +1054,8 @@ Item {
                                 implicitWidth: dateTimeRow.implicitWidth
                                 scale: dateMouse.pressed ? 0.94 : 1.0
 
-                                Behavior on scale {
-                                    enabled: (Config.animDuration ?? 0) > 0
-                                    NumberAnimation {
-                                        duration: dateMouse.pressed ? 80 : 250
-                                        easing.type: dateMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                        easing.overshoot: 1.4
-                                    }
+                                PressBehavior on scale {
+                                    pressed: dateMouse.pressed
                                 }
 
                                 RowLayout {
@@ -1006,6 +1116,7 @@ Item {
 
                             // Dynamic Material Symbols status icons (Volume, Brightness, Battery)
                             IslandStatusIcons {
+                                id: statusIcons
                                 bar: root
                             }
 
@@ -1027,13 +1138,8 @@ Item {
                                 implicitHeight: alertsRow.implicitHeight
                                 scale: alertsMouse.pressed ? 0.90 : 1.0
 
-                                Behavior on scale {
-                                    enabled: (Config.animDuration ?? 0) > 0
-                                    NumberAnimation {
-                                        duration: alertsMouse.pressed ? 80 : 250
-                                        easing.type: alertsMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                        easing.overshoot: 1.4
-                                    }
+                                PressBehavior on scale {
+                                    pressed: alertsMouse.pressed
                                 }
 
                                 RowLayout {
@@ -1089,13 +1195,8 @@ Item {
                                     radius: 11
                                     variant: pinMouse.containsMouse ? "focus" : "transparent"
                                     scale: pinMouse.pressed ? 0.92 : 1.0
-                                    Behavior on scale {
-                                        enabled: (Config.animDuration ?? 0) > 0
-                                        NumberAnimation {
-                                            duration: pinMouse.pressed ? 80 : 250
-                                            easing.type: pinMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                                            easing.overshoot: 1.4
-                                        }
+                                    PressBehavior on scale {
+                                        pressed: pinMouse.pressed
                                     }
 
                                     Text {

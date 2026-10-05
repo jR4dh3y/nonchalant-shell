@@ -28,6 +28,7 @@ Item {
             model: root.validActions
 
             Button {
+                id: actionButton
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
 
@@ -38,15 +39,8 @@ Item {
                 hoverEnabled: true
                 scale: pressed ? 0.93 : 1.0
 
-                Behavior on scale {
-                    enabled: (Config.animDuration ?? 0) > 0
-                    NumberAnimation {
-                        duration: pressed
-                            ? Math.round((Config.animDuration ?? 300) * 0.27)
-                            : Math.round((Config.animDuration ?? 300) * 0.83)
-                        easing.type: pressed ? Easing.OutQuad : Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
+                PressBehavior on scale {
+                    pressed: actionButton.pressed
                 }
 
                 background: StyledRect {
