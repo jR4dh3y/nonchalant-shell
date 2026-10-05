@@ -77,10 +77,21 @@ ShellRoot {
         }
     }
 
+    // Overlay curtain that fades the lock in/out over the live desktop.
+    Variants {
+        model: Quickshell.screens
+
+        LockCurtain {
+            required property ShellScreen modelData
+            targetScreen: modelData
+        }
+    }
+
     // Secure WlSessionLock lockscreen
     WlSessionLock {
         id: sessionLock
         locked: GlobalStates.lockscreenVisible
+        onSecureChanged: GlobalStates.lockscreenSecure = secure
 
         // Surface auto-created per screen. Defer animation until the protocol
         // confirms niri has locked every output.
@@ -106,7 +117,7 @@ ShellRoot {
         Component.onCompleted: {
             Qt.callLater(() => {
                 let _ = GlobalShortcuts.appId;
-                _ = LockscreenService.prepActive;
+                _ = LockscreenService.curtainFadeMs;
                 // Keep compositor + OSD services hot for overview hide and media keys.
                 _ = NiriService.overviewOpen;
                 _ = Audio.value;

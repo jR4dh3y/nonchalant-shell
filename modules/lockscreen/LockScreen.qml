@@ -21,10 +21,6 @@ WlSessionLockSurface {
     // The shell passes it in so entry animation never races surface mapping.
     property bool lockSecure: false
     property bool startAnim: false
-    // Armed just before startAnim flips so backdrop Behaviors are already
-    // enabled when their targets change (binding evaluation order is not
-    // guaranteed, so gating them on startAnim itself can snap the fade).
-    property bool backdropAnimArmed: false
     property bool entryStarted: false
     property bool unlocking: false
     property bool authenticating: false
@@ -53,16 +49,6 @@ WlSessionLockSurface {
 
     onLockSecureChanged: beginEntry()
 
-    // Pre-lock desktop capture ("lockshot") for this screen, taken by the
-    // wallpaper window BEFORE the lock request. Frame-1 of this surface shows
-    // it: identical pixels to what the user was seeing, so niri's output
-    // switch to the locked frame is invisible - no wallpaper flash.
-    readonly property string lockshotUrl: {
-        const shot = GlobalStates.lockshots[root.screen ? root.screen.name : ""];
-        return shot ? String(shot.url) : "";
-    }
-    readonly property bool shotReady: lockshotUrl !== "" && shotImage.status === Image.Ready
-
     // PAM can complete on any output. All lock surfaces must run their
     // foreground exit at the same time before the shared lock is released.
     Connections {
@@ -74,97 +60,14 @@ WlSessionLockSurface {
         }
     }
 
-    readonly property bool revealDesktop: GlobalStates.lockscreenUnlocking && shotReady
-
-    // The wallpaper is the frame-1 fallback base layer of the lock surface. It
-    // must be ready at first commit: niri switches the output to the locked
-    // frame as soon as this surface commits. The wallpaper window keeps the
-    // same image warm in the pixmap cache (see lockscreenFramePreloader), so
-    // this is a cache hit.
-    readonly property bool wallpaperReady: wallpaperBackground.source === "" || wallpaperBackground.ready
-
-    // Frame-1 base layer: the pre-lock desktop shot, loaded synchronously
-    // from the in-memory grab so it is ready on the very first frame.
-    Image {
-        id: shotImage
+    // Steady from frame 1 in both directions: LockCurtain has already faded
+    // this exact backdrop in over the desktop before the lock engaged, and it
+    // fades it back out after the lock is released. Only the chrome animates
+    // here.
+    LockBackdrop {
+        id: backdrop
         anchors.fill: parent
-        z: 0
-        cache: false
-        smooth: true
-        asynchronous: false
-        fillMode: Image.PreserveAspectCrop
-        visible: root.lockshotUrl !== ""
-        source: root.lockshotUrl
-    }
-
-    // Entry choreography:
-    // - The desktop shot was captured BEFORE the lock request (see Wallpaper.qml
-    //   lockshot prep), so frame 1 is the actual desktop the user was looking
-    //   at - niri's output switch to the locked frame is seamless.
-    // - The dim scrim hides the surface until a base layer (shot or wallpaper)
-    //   is ready. If only the wallpaper is available, it is revealed dimmed,
-    //   never at full brightness, so the clean wallpaper can never flash.
-    // - startAnim then crossfades the shot into the dimmed wallpaper while
-    //   the clock / password slide in.
-
-    TintedWallpaper {
-        id: wallpaperBackground
-        anchors.fill: parent
-        z: 1
-        radius: 0
-        tintEnabled: GlobalStates.wallpaperManager ? GlobalStates.wallpaperManager.tintEnabled : false
-
-        property string lockscreenFramePath: {
-            const manager = GlobalStates.wallpaperManager;
-            if (!manager)
-                return "";
-            const perScreen = manager.perScreenWallpapers || {};
-            const wallpaper = perScreen[root.screen ? root.screen.name : ""] || manager.currentWallpaper;
-            return manager.getLockscreenFramePath(wallpaper);
-        }
-
-        source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
-        visible: source !== ""
-        // Pre-startAnim the lockshot (if present) is the base; the wallpaper
-        // crossfades in with the entry animation so the steady-state backdrop
-        // is the wallpaper. On unlock it fades back out over the shot for the
-        // desktop reveal. Without a shot it stays visible as the fallback.
-        opacity: GlobalStates.lockscreenUnlocking
-            ? (root.revealDesktop ? 0 : 1)
-            : (root.startAnim || !root.shotReady ? 1 : 0)
-
-        Behavior on opacity {
-            enabled: Config.animDuration > 0 && root.backdropAnimArmed
-            NumberAnimation {
-                duration: root.unlockAnimMs
-                easing.type: Easing.InOutCubic
-            }
-        }
-    }
-
-    // The themed scrim hides the surface until a base layer (capture or
-    // wallpaper) is ready, then fades in over it with the entry animation. On
-    // unlock it keeps the existing desktop-reveal fade.
-    Rectangle {
-        id: dimOverlay
-        anchors.fill: parent
-        color: Colors.background
-        // The scrim only clears for the lockshot (identical pixels to the
-        // pre-lock desktop - seamless). Without a shot it stays opaque until
-        // startAnim dims the wallpaper in, so the clean wallpaper can never
-        // flash at full brightness.
-        opacity: GlobalStates.lockscreenUnlocking
-            ? (root.revealDesktop ? 0 : 0.55)
-            : (root.startAnim ? 0.55 : (root.shotReady ? 0 : 1))
-        z: 2
-
-        Behavior on opacity {
-            enabled: Config.animDuration > 0 && root.backdropAnimArmed
-            NumberAnimation {
-                duration: root.unlockAnimMs
-                easing.type: Easing.InOutCubic
-            }
-        }
+        screenName: root.screen ? root.screen.name : ""
     }
 
     // Clock (center)
@@ -644,7 +547,6 @@ WlSessionLockSurface {
                 if (root.unlocking)
                     return;
                 root.unlocking = true;
-                root.backdropAnimArmed = true;
                 GlobalStates.lockscreenUnlocking = true;
                 root.startAnim = false;
                 if (Config.animDuration > 0)
@@ -682,14 +584,13 @@ WlSessionLockSurface {
         property int elapsed: 0
         onTriggered: {
             elapsed += interval;
-            // Start once a base layer (lockshot or wallpaper) has been up for
-            // at least two frames so the lock-in animation is not skipped;
-            // fall back after 250ms if neither ever becomes ready.
-            const baseReady = root.shotReady || root.wallpaperReady;
-            if ((baseReady && elapsed >= 32) || elapsed >= 250) {
+            // Start once the backdrop has been up for at least two frames so
+            // the lock-in animation is not skipped; fall back after 250ms if
+            // the wallpaper never becomes ready.
+            if ((backdrop.ready && elapsed >= 32) || elapsed >= 250) {
                 stop();
                 if (!root.unlocking && root.lockSecure) {
-                    root.backdropAnimArmed = true;
+                    LockscreenService.trace(`chrome animating in on ${root.screen ? root.screen.name : "?"} (backdrop ${backdrop.ready ? "ready" : "not ready"})`);
                     root.startAnim = true;
                     if (root.screen === Quickshell.screens[0])
                         passwordInput.forceActiveFocus();
@@ -699,6 +600,7 @@ WlSessionLockSurface {
     }
 
     Component.onCompleted: {
+        LockscreenService.trace("surface created");
         beginEntry();
     }
 }
