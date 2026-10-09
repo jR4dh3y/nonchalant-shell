@@ -27,6 +27,8 @@ Item {
 
     property string screenName: ""
     property int currentTab: GlobalStates.dashboardCurrentTab
+    readonly property bool lyricsActive: root.currentTab === 0
+        && root.screenName !== "" && GlobalStates.dashboardPopupScreen === root.screenName
 
     readonly property int tabCount: 2
     readonly property real nonAnimWidth: currentTab === 0 ? 600 : 400
@@ -215,7 +217,7 @@ Item {
     // Component definitions for better performance (defined once, reused)
     Component {
         id: widgetsComponent
-        WidgetsTab {}
+        WidgetsTab { lyricsActive: root.lyricsActive }
     }
 
     Component {

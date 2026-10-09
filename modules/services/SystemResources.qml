@@ -13,6 +13,16 @@ pragma ComponentBehavior: Bound
 Singleton {
     id: root
 
+    property int watchers: 0
+
+    function subscribe(): void {
+        root.watchers += 1;
+    }
+
+    function release(): void {
+        root.watchers = Math.max(0, root.watchers - 1);
+    }
+
     // CPU metrics
     property real cpuUsage: 0.0
     property string cpuModel: ""
@@ -57,11 +67,12 @@ Singleton {
     property int updateInterval: 1000
 
     // Unified monitor process.
-    // Resource-efficient: only runs while the bar monitor popup is open.
+    // Resource-efficient: only runs while a resource view is visible.
     // Optimized GPU polling avoids waking dGPUs.
     property Process monitorProcess: Process {
         id: monitorProcess
-        running: (GlobalStates.systemMonitorOpen || GlobalStates.islandStatsOpen) && root.validDisks.length > 0
+        running: (root.watchers > 0 || GlobalStates.systemMonitorOpen || GlobalStates.islandStatsOpen)
+            && root.validDisks.length > 0
         
         command: {
             let cmd = ["python3", Quickshell.shellDir + "/scripts/system_monitor.py", root.updateInterval.toString()];

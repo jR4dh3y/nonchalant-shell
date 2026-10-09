@@ -31,6 +31,7 @@ Item {
     signal openCalendar()
 
     property ShellScreen screen: null
+    property bool lyricsActive: false
 
     readonly property var currentMonitor: {
         if (root.screen)
@@ -322,8 +323,7 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        Visibilities.closeActiveBarPopup();
-                        GlobalStates.settingsWindowVisible = true;
+                        GlobalShortcuts.toggleSettings();
                     }
                 }
             }
@@ -778,7 +778,9 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         IslandMediaCard {
             Layout.fillWidth: true
-            Layout.preferredHeight: 114
+            Layout.preferredHeight: 140
+            lyricsActive: root.lyricsActive
+
             onExpandRequested: root.openMedia()
         }
 

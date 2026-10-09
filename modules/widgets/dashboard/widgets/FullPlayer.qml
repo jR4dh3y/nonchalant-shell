@@ -16,6 +16,7 @@ StyledRect {
 
     property real playerRadius: Config.roundness > 0 ? Config.roundness + 4 : 0
     property bool playersListExpanded: false
+    property bool lyricsActive: false
 
     visible: true
     radius: playerRadius
@@ -419,6 +420,15 @@ StyledRect {
                 opacity: 0.7
                 visible: text !== ""
             }
+        }
+
+        LyricsView {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(implicitHeight,
+                Math.max(22, player.height - player.implicitHeight + 22))
+            mode: "detail"
+            lyricsEnabled: Config.bar.lyricsEnabled
+            active: player.lyricsActive
         }
 
         RowLayout {

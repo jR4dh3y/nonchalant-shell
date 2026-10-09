@@ -28,9 +28,12 @@ Item {
     Component.onCompleted: {
         root.containerY = root.shouldBeRevealed ? 0 : -root.islandHeight;
         Visibilities.registerIsland(root.screen.name, root);
+        root.syncCollapsedLyricsSubscription();
     }
 
     Component.onDestruction: {
+        if (root.collapsedLyricsSubscribed)
+            LyricsService.release();
         Visibilities.unregisterIsland(root.screen.name, root);
     }
 
@@ -266,9 +269,28 @@ Item {
     }
 
     readonly property bool isMediaPlaying: MprisController.isPlaying && MprisController.activePlayer !== null
+    readonly property bool collapsedLyricsActive: Config.bar.lyricsEnabled
+        && root.currentMode === "collapsed" && !root.retractingToHidden
+        && root.shouldBeRevealed && MprisController.activePlayer !== null
+    property bool collapsedLyricsSubscribed: false
+
+    function syncCollapsedLyricsSubscription(): void {
+        if (root.collapsedLyricsActive === root.collapsedLyricsSubscribed)
+            return;
+        root.collapsedLyricsSubscribed = root.collapsedLyricsActive;
+        if (root.collapsedLyricsSubscribed)
+            LyricsService.subscribe();
+        else
+            LyricsService.release();
+    }
+
+    onCollapsedLyricsActiveChanged: root.syncCollapsedLyricsSubscription()
 
     readonly property string contextLabel: {
         if (root.isMediaPlaying) {
+            if (root.collapsedLyricsActive && LyricsService.available && LyricsService.synced
+                && LyricsService.current >= 0 && LyricsService.currentText !== "")
+                return LyricsService.currentText;
             return MprisController.trackTitle || "Playing";
         }
         return root.screenFocusedClient?.title || "Desktop";
@@ -1274,6 +1296,7 @@ Item {
                         id: dashboardView
                         screen: root.screen
                         width: parent.width
+                        lyricsActive: root.currentMode === "dashboard" && !root.retractingToHidden
                         height: implicitHeight
 
                         onOpenPower: root.expand("power")
@@ -1452,6 +1475,8 @@ Item {
                     IslandMediaCenterPanel {
                         id: mediaCenterView
                         width: parent.width
+                        maximumHeight: Math.max(0, root.screen.height - 32)
+                        lyricsActive: root.currentMode === "media" && !root.retractingToHidden
                         height: implicitHeight
 
                         onBackRequested: root.expand("dashboard")
