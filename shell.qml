@@ -13,10 +13,12 @@ import qs.modules.shell
 import qs.modules.shell.osd
 import qs.modules.widgets.dashboard.wallpapers
 import qs.modules.widgets.config
+import qs.modules.widgets.desktop
 import qs.config
 
 ShellRoot {
     id: root
+
 
     // Keep the inherited wallpaper owner: it also provides the wallpaper
     // manager used by the lockscreen.
@@ -41,6 +43,10 @@ ShellRoot {
         Item {
             id: screenShellContainer
             required property ShellScreen modelData
+
+            DesktopWidgets {
+                targetScreen: screenShellContainer.modelData
+            }
 
             UnifiedShellPanel {
                 id: unifiedPanel

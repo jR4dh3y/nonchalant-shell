@@ -18,6 +18,11 @@ Item {
     implicitHeight: mainCol.implicitHeight + 28
 
     signal backRequested()
+    property bool lyricsActive: false
+    property real maximumHeight: 0
+    readonly property real fixedContentHeight: headerRow.implicitHeight
+        + heroRow.implicitHeight + waveformRow.Layout.preferredHeight
+        + playbackRow.implicitHeight + mainCol.spacing * 4 + 28
 
     readonly property bool hasPlayer: MprisController.activePlayer !== null
     readonly property bool isPlaying: MprisController.isPlaying
@@ -71,6 +76,7 @@ Item {
         // HEADER: Back button + Title + (Right) Player Switcher + Close
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
+            id: headerRow
             Layout.fillWidth: true
             spacing: 8
 
@@ -186,6 +192,7 @@ Item {
         // HERO: Rotating Vinyl Face Disc + Track Typography
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
+            id: heroRow
             Layout.fillWidth: true
             spacing: 16
 
@@ -403,10 +410,21 @@ Item {
             }
         }
 
+        LyricsView {
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.maximumHeight > 0
+                ? Math.max(0, Math.min(implicitHeight, root.maximumHeight - root.fixedContentHeight))
+                : implicitHeight
+            mode: "detail"
+            lyricsEnabled: Config.bar.lyricsEnabled
+            active: root.lyricsActive
+        }
+
         // ═══════════════════════════════════════════════════════════════
         // WAVEFORM PROGRESS BAR
         // ═══════════════════════════════════════════════════════════════
         IslandWaveformBar {
+            id: waveformRow
             Layout.fillWidth: true
             Layout.preferredHeight: 38
         }
@@ -415,6 +433,7 @@ Item {
         // PLAYBACK CONTROLS ROW
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
+            id: playbackRow
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
             spacing: 12

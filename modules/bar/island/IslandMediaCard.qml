@@ -14,9 +14,10 @@ import qs.config
 
 StyledRect {
     id: root
+    property bool lyricsActive: false
 
     implicitWidth: 460
-    implicitHeight: 114
+    implicitHeight: 140
     variant: "pane"
     radius: Styling.radius(2)
     clip: true
@@ -278,6 +279,14 @@ StyledRect {
                     }
                 }
             }
+        }
+
+        LyricsView {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 22
+            mode: "compact"
+            lyricsEnabled: Config.bar.lyricsEnabled
+            active: root.lyricsActive
         }
 
         // Bottom row: Interactive Waveform progress bar

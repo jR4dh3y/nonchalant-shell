@@ -17,6 +17,7 @@ release process. The fork keeps a lean runtime focus:
 - one unified bar
 - floating run menu
 - lockscreen
+- settings and desktop widgets
 - reactive JSON configuration
 
 Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
@@ -28,7 +29,10 @@ Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
 - Unified bar with workspaces/taskbar, clock, system status, and systray
 - Floating run menu and power menu
 - Wallpaper picker and secure `WlSessionLock` session lock
-- Isolated `nonchalant` config, state, cache, data, and IPC paths
+- Searchable settings with section history, previews, and the existing configuration domains
+- Desktop widget editor with Modern, Analogue, and Sticker themes
+- Synchronized lyrics in the media players, desktop widgets, and lockscreen
+- Separate configuration, per-shell state, cache, data, and IPC paths
 
 ## Showcase
 
@@ -75,6 +79,45 @@ and toggles it closed when invoked again. This can be bound from Niri with:
 Mod+Shift+W hotkey-overlay-title="Open Wallpapers" { spawn "nonchalant" "run" "wallpapers"; }
 ```
 
+### Settings, widgets, and lyrics
+
+```bash
+nonchalant run settings
+nonchalant run widgets
+```
+
+The widgets command toggles the desktop editor. Add a widget from the gallery,
+drag it into position, then use its inspector to choose a supported size and
+appearance. A selected widget also has a lower-right resize handle.
+Notes and audio spectra can also be placed on screen edges.
+Layout and appearance are saved in `nonchalant/config/desktop.json` under
+`$XDG_CONFIG_HOME`. Editing is suspended on fullscreen outputs and dismissed
+when its output changes workspace.
+
+The gallery includes media, timer, Claude, Codex, battery, volume, brightness,
+network, Bluetooth, weather, GitHub, system statistics, updates, pet, games,
+calendar, notes, tasks, clock, photos, spectrum, and lyrics. Notes, tasks, and
+game scores use the shell's state directory under `$XDG_STATE_HOME/nonchalant`.
+Claude and Codex usage comes from local session
+records, not account billing or quota APIs.
+GitHub uses the username configured in Desktop settings. Update checks use
+available package-manager tools; they do not install packages. Audio spectra
+require `cava`.
+
+Settings retain the existing Network, Bluetooth, Mixer, AI, and detailed theme
+controls. The port uses Nonchalant's configuration store and Niri integration,
+not Impasto's profiles, updater, or Hyprland controllers.
+
+Lyrics follow the selected MPRIS player. Timed lines follow playback and can be
+clicked to seek; plain lyrics scroll manually. Shell settings provide separate
+bar and lockscreen switches. When a lyrics view is visible, track title, artist,
+album, and duration are sent to [LRCLIB](https://lrclib.net). Results are cached
+under `$XDG_STATE_HOME/nonchalant/lyrics`. Hidden views do not start new lookups
+or retries; a lookup already in progress can finish after its view closes.
+Retries are scheduled by the active lyrics service, not by the Python helper.
+The lyrics helper and desktop data helpers require Python 3.
+
+
 ## Run the development tree
 
 Install Quickshell and the runtime tools needed by the shell. Install fonts once,
@@ -99,6 +142,11 @@ adjustment for this fork.
 Nonchalant Shell is derived from Ambxst by Axenide. Full copyright and
 contributor history from that lineage is preserved in this repository’s Git
 history.
+
+The settings presentation, desktop widgets, games, and lyrics port incorporate
+work from [Impasto](https://github.com/andreumassanet/impasto) by Andreu Massanet,
+based on revision `6d759aa3fe16e3b40641beeb9b24e3c4afcfeefe`. That upstream is
+GPLv3-licensed; its retained source notices apply to the incorporated work.
 
 This project is licensed under the GNU Affero General Public License v3.0 or
 later. See [LICENSE](./LICENSE).

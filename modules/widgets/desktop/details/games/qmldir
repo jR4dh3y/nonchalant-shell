@@ -1,0 +1,16 @@
+module qs.modules.widgets.desktop.details.games
+singleton Theme 1.0 Theme.qml
+Bots 1.0 Bots.qml
+Burst 1.0 Burst.qml
+Flood 1.0 Flood.qml
+GameBoard 1.0 GameBoard.qml
+Hextris 1.0 Hextris.qml
+Lights 1.0 Lights.qml
+Mini2048 1.0 Mini2048.qml
+Pop 1.0 Pop.qml
+Snake 1.0 Snake.qml
+Solitaire 1.0 Solitaire.qml
+Space 1.0 Space.qml
+Target 1.0 Target.qml
+Tetris 1.0 Tetris.qml
+Whack 1.0 Whack.qml

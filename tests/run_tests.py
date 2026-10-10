@@ -10,6 +10,7 @@ import os
 import argparse
 import subprocess
 import time
+import re
 import json
 import unittest
 
@@ -72,7 +73,11 @@ def run_qml_lint(collector: TestResultCollector, verbose: bool):
                 print(f"  {line}")
 
     if code == 0:
-        collector.record_tier("QML Syntax (qmllint)", passed=6, failed=0, errors=0, duration=dur)
+        summary = re.search(r"SUCCESS: All (\d+) QML files", stdout)
+        if summary:
+            collector.record_tier("QML Syntax (qmllint)", passed=int(summary[1]), failed=0, errors=0, duration=dur)
+        else:
+            collector.record_tier("QML Syntax (qmllint)", passed=0, failed=1, errors=0, duration=dur, details="Missing lint summary")
     else:
         collector.record_tier("QML Syntax (qmllint)", passed=0, failed=1, errors=0, duration=dur, details=stderr)
 
@@ -169,15 +174,19 @@ def main():
 
     if run_all or args.tier1:
         run_unittest_suite("Tier 1: Feature Coverage", "tests.unit.test_tier1_features", collector, args.verbose)
+        run_unittest_suite("Tier 1: Lyrics Lookup", "tests.unit.test_lyrics", collector, args.verbose)
+        run_unittest_suite("Tier 1: Claude Usage", "tests.unit.test_claude_usage", collector, args.verbose)
 
     if run_all or args.tier2:
         run_unittest_suite("Tier 2: Boundary & Corner Cases", "tests.unit.test_tier2_boundaries", collector, args.verbose)
 
     if run_all or args.tier3:
         run_unittest_suite("Tier 3: Cross-Feature Interactions", "tests.integration.test_tier3_interactions", collector, args.verbose)
+        run_unittest_suite("Tier 3: Focus Input Ownership", "tests.integration.test_focus_grab_manager", collector, args.verbose)
 
     if run_all or args.tier4:
         run_unittest_suite("Tier 4: Real-World Scenarios", "tests.e2e.test_tier4_lifecycle", collector, args.verbose)
+        run_unittest_suite("Tier 4: Desktop Runtime", "tests.e2e.test_desktop_runtime", collector, args.verbose)
 
     if args.json:
         report = {

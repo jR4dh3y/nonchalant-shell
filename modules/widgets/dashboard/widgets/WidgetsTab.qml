@@ -9,6 +9,7 @@ import "calendar"
 
 Rectangle {
     id: root
+    property bool lyricsActive: false
 
     color: "transparent"
     implicitWidth: 544
@@ -20,6 +21,7 @@ Rectangle {
 
         FullPlayer {
             Layout.preferredWidth: 216
+            lyricsActive: root.lyricsActive
             Layout.fillHeight: true
         }
 

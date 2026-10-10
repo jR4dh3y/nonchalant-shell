@@ -98,6 +98,14 @@ Singleton {
             case "dashboard-controls":
                 toggleSettings();
                 break;
+            case "desktop":
+            case "widgets":
+            case "edit-widgets":
+                if (DesktopWidgetService.editing)
+                    DesktopWidgetService.closeEditor();
+                else
+                    DesktopWidgetService.openEditor();
+                break;
             default: console.warn("Unknown IPC command:", command);
         }
     }
@@ -193,6 +201,9 @@ Singleton {
     function toggleSettings(screenName) {
         const willOpen = !GlobalStates.settingsWindowVisible;
         if (willOpen) {
+            DesktopWidgetService.closeEditor();
+            DesktopWidgetService.closeDetail();
+            FocusGrabManager.clearTopGrab();
             const targetMonitor = screenName
                 ? NiriService.monitorFor(screenName)
                 : NiriService.focusedMonitor;

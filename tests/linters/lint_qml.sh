@@ -27,6 +27,14 @@ CORE_FILES=(
     "modules/shell/ReservationWindows.qml"
     "modules/shell/UnifiedShellPanel.qml"
     "modules/widgets/dashboard/controls/ShellPanel.qml"
+    "modules/services/DesktopWidgetService.qml"
+    "modules/services/LyricsService.qml"
+    "modules/services/SystemResources.qml"
+    "modules/components/LyricsView.qml"
+    "modules/widgets/dashboard/controls/SettingsTab.qml"
+    "modules/widgets/dashboard/controls/SettingsIndex.qml"
+    "modules/widgets/dashboard/controls/DesktopSettingsPage.qml"
+    "modules/widgets/dashboard/controls/CustomColorPicker.qml"
 )
 
 # Also include modular bar files if they exist
@@ -69,6 +77,11 @@ for f in "${OPTIONAL_FILES[@]}"; do
     if [ -f "$ROOT_DIR/$f" ]; then
         FILES_TO_LINT+=("$ROOT_DIR/$f")
     fi
+done
+
+shopt -s globstar nullglob
+for file in "$ROOT_DIR"/modules/widgets/desktop/**/*.qml "$ROOT_DIR"/modules/services/desktop/*.qml; do
+    FILES_TO_LINT+=("$file")
 done
 
 # If arguments passed, lint those instead

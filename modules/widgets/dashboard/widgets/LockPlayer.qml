@@ -25,7 +25,7 @@ StyledRect {
     }
 
     visible: MprisController.activePlayer !== null
-    height: 96
+    height: GlobalStates.lockscreenVisible ? 118 : 96
     radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
     backgroundOpacity: (MprisController.activePlayer || wallpaperPath !== "") ? 0.0 : 1.0
 
@@ -289,6 +289,14 @@ StyledRect {
                     visible: text !== ""
                     opacity: 0.7
                 }
+                LyricsView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 22
+                    mode: "detail"
+                    lyricsEnabled: Config.lockscreen.lyricsEnabled
+                    active: GlobalStates.lockscreenVisible && !GlobalStates.lockscreenUnlocking
+                }
+
             }
 
             // Controles

@@ -16,6 +16,10 @@ Item {
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
+    function resetScroll(): void {
+        mainFlickable.contentY = 0
+    }
+
     property string currentSection: ""
     property string selectedVariant: "bg"
 

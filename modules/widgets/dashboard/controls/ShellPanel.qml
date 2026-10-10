@@ -15,6 +15,10 @@ Item {
     readonly property int contentWidth: Math.min(width, maxContentWidth)
     readonly property real sideMargin: (width - contentWidth) / 2
 
+    function resetScroll(): void {
+        mainFlickable.contentY = 0
+    }
+
     // Available color names for color picker
     readonly property var colorNames: Colors.availableColorNames
 
@@ -740,6 +744,28 @@ Item {
                                 }
                             }
                         }
+                        ToggleRow {
+                            label: "Show lyrics in the bar"
+                            checked: Config.bar.lyricsEnabled ?? true
+                            onToggled: value => {
+                                if (value !== Config.bar.lyricsEnabled) {
+                                    Config.bar.lyricsEnabled = value;
+                                }
+                            }
+                        }
+
+                        Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            Layout.fillWidth: true
+                            Layout.leftMargin: 8
+                            Layout.rightMargin: 8
+                            text: "When enabled, Nonchalant sends track metadata such as artist and title to LRCLIB to find matching lyrics."
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-2)
+                            color: Colors.overSurfaceVariant
+                            wrapMode: Text.Wrap
+                        }
 
                         ToggleRow {
                             visible: (Config.bar?.style ?? "default") === "island"
@@ -806,6 +832,28 @@ Item {
                                     Config.lockscreen.position = newValue;
                                 }
                             }
+                        }
+                        ToggleRow {
+                            label: "Show lyrics on the lockscreen"
+                            checked: Config.lockscreen.lyricsEnabled ?? true
+                            onToggled: value => {
+                                if (value !== Config.lockscreen.lyricsEnabled) {
+                                    Config.lockscreen.lyricsEnabled = value;
+                                }
+                            }
+                        }
+
+                        Text {
+                            renderType: Text.NativeRendering
+                            font.hintingPreference: Font.PreferFullHinting
+                            Layout.fillWidth: true
+                            Layout.leftMargin: 8
+                            Layout.rightMargin: 8
+                            text: "When enabled, Nonchalant sends track metadata such as artist and title to LRCLIB to find matching lyrics."
+                            font.family: Config.theme.font
+                            font.pixelSize: Styling.fontSize(-2)
+                            color: Colors.overSurfaceVariant
+                            wrapMode: Text.Wrap
                         }
                     }
 

@@ -5,6 +5,7 @@ var data = {
     "style": "default",
     "screenList": [],
     "enableFirefoxPlayer": false,
+    "lyricsEnabled": true,
     "use12hFormat": false,
     "pinned": false
 }

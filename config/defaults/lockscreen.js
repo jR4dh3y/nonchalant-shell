@@ -1,5 +1,6 @@
 .pragma library
 
 var data = {
-    "position": "bottom"
+    "position": "bottom",
+    "lyricsEnabled": true
 }
