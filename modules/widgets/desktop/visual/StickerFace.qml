@@ -6,6 +6,7 @@ import qs.modules.components
 import qs.modules.services
 import qs.modules.services.desktop
 import qs.modules.theme
+import qs.modules.widgets.desktop
 
 import "../faces"
 
@@ -73,16 +74,16 @@ Item {
         family: root.family
         ink: root.ink
         row: root.row
-        active: root.active && (root.moduleId === "clock" || root.moduleId === "calendar" || root.moduleId === "stats")
+        active: root.active
     }
 
+    WidgetShadow { radius: Styling.radius(-2) }
     StyledRect {
         id: sticker
         anchors.fill: parent
         variant: "common"
         radius: Styling.radius(-2)
         backgroundOpacity: 0.24
-        enableShadow: Config.desktop.widgetShadow
 
         StyledRect {
             id: paper
@@ -91,7 +92,6 @@ Item {
             variant: "pane"
             radius: Styling.radius(-4)
             backgroundOpacity: 0.72
-            enableShadow: Config.desktop.widgetShadow
 
             StyledRect {
                 id: patch
@@ -103,7 +103,6 @@ Item {
                 radius: width * root.patchRoundness
                 rotation: root.tilt
                 backgroundOpacity: 0.72
-                enableShadow: Config.desktop.widgetShadow
 
                 StickerArt {
                     anchors.fill: parent
@@ -150,11 +149,14 @@ Item {
                 Text {
                     id: tagText
                     anchors.centerIn: parent
+                    width: parent.width - Styling.fontSize(0)
                     text: root.label.toUpperCase()
                     color: root.inkColor
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-2)
                     font.weight: Font.Bold
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
                 }
             }
 
@@ -203,7 +205,7 @@ Item {
                     elide: Text.ElideRight
                 }
             }
-            FaceDetail {
+            Loader {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
@@ -211,15 +213,8 @@ Item {
                 anchors.rightMargin: Styling.fontSize(0)
                 anchors.bottomMargin: Styling.fontSize(-1)
                 height: parent.height * 0.46
-                visible: root.detailed && root.moduleId !== "calendar"
-                moduleId: root.moduleId
-                family: root.family
-                ink: root.ink
-                now: data.now
-                showMediaArt: false
-                theme: "sticker"
-                row: root.row
-                interactive: root.active
+                active: root.visible && root.detailed && root.moduleId !== "calendar"
+                sourceComponent: detail
             }
             MediaTransport {
                 visible: root.showMediaTransport
@@ -259,16 +254,39 @@ Item {
         }
     }
 
-    CalendarTasksView {
+    Loader {
         anchors.fill: parent
         anchors.margins: root.family === "4x4" ? Styling.fontSize(0) : Styling.fontSize(-1)
         z: 2
-        visible: root.moduleId === "calendar" && root.family !== "2x2"
-        family: root.family
-        theme: "sticker"
-        ink: root.ink
-        row: root.row
-        interactive: root.active
+        active: root.visible && root.moduleId === "calendar" && root.family !== "2x2"
+        sourceComponent: calendar
+    }
+
+    Component {
+        id: detail
+        FaceDetail {
+            anchors.fill: parent
+            moduleId: root.moduleId
+            family: root.family
+            ink: root.ink
+            now: data.now
+            showMediaArt: false
+            theme: "sticker"
+            row: root.row
+            interactive: root.active
+        }
+    }
+
+    Component {
+        id: calendar
+        CalendarTasksView {
+            anchors.fill: parent
+            family: root.family
+            theme: "sticker"
+            ink: root.ink
+            row: root.row
+            interactive: root.active
+        }
     }
 }
 

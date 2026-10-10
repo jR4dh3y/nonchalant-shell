@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import qs.modules.theme
 
 Singleton {
@@ -44,7 +43,6 @@ Singleton {
         }
     }
 
-    readonly property Process notifier: Process {}
 
     function parse(text: string): real {
         const clean = (text ?? "").trim().toLowerCase()
@@ -128,10 +126,9 @@ Singleton {
         root.running = false
         root.paused = false
         root.remaining = 0
-        root.notifier.command = ["notify-send", "-u", "critical",
+        Quickshell.execDetached(["notify-send", "-u", "critical",
             finishedLabel === "" ? "Timer finished" : finishedLabel,
-            "The countdown has run out."]
-        root.notifier.running = true
+            "The countdown has run out."])
         root.finished(finishedLabel)
         root.label = ""
     }

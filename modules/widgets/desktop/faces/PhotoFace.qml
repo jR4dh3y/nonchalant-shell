@@ -6,6 +6,7 @@ import qs.modules.components
 import qs.modules.services
 import qs.modules.services.desktop
 import qs.modules.theme
+import qs.modules.widgets.desktop
 
 Item {
     id: root
@@ -22,12 +23,12 @@ Item {
     readonly property color foreground: root.ink?.text ?? Colors.overBackground
     readonly property color muted: root.ink?.muted ?? Colors.overSurfaceVariant
 
+    WidgetShadow { radius: Styling.radius(-2) }
     StyledRect {
         anchors.fill: parent
         variant: "common"
         radius: Styling.radius(-2)
         color: root.ink?.raised ?? Colors.surfaceContainer
-        enableShadow: Config.desktop.widgetShadow
         enableBorder: true
 
         Image {

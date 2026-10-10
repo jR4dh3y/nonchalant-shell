@@ -271,7 +271,7 @@ Item {
     readonly property bool isMediaPlaying: MprisController.isPlaying && MprisController.activePlayer !== null
     readonly property bool collapsedLyricsActive: Config.bar.lyricsEnabled
         && root.currentMode === "collapsed" && !root.retractingToHidden
-        && root.shouldBeRevealed && MprisController.activePlayer !== null
+        && root.shouldBeRevealed && root.isMediaPlaying
     property bool collapsedLyricsSubscribed: false
 
     function syncCollapsedLyricsSubscription(): void {

@@ -20,10 +20,13 @@ Popup {
     readonly property color selectedColor: Qt.hsva(hue / 360, saturation, value, alpha)
     readonly property int edgeMargin: 16
 
-    width: parent ? Math.min(380, Math.max(220, parent.width - edgeMargin * 2)) : 360
-    height: parent ? Math.min(contentItem.implicitHeight + padding * 2, Math.max(240, parent.height - edgeMargin * 2)) : contentItem.implicitHeight + padding * 2
-    x: parent ? Math.max(edgeMargin, (parent.width - width) / 2) : edgeMargin
-    y: parent ? Math.max(edgeMargin, (parent.height - height) / 2) : edgeMargin
+    readonly property real availableWidth: parent ? Math.max(1, parent.width - edgeMargin * 2) : 360
+    readonly property real availableHeight: parent ? Math.max(1, parent.height - edgeMargin * 2) : 600
+    width: parent ? Math.min(380, availableWidth) : 360
+    height: parent ? Math.min(contentItem.implicitHeight + padding * 2, availableHeight)
+        : contentItem.implicitHeight + padding * 2
+    x: parent ? (parent.width - width) / 2 : edgeMargin
+    y: parent ? (parent.height - height) / 2 : edgeMargin
     padding: 16
     modal: true
     focus: true
@@ -35,8 +38,6 @@ Popup {
         saturation = colorValue.hsvSaturation;
         value = colorValue.hsvValue;
         alpha = colorValue.a;
-        hueSlider.value = hue;
-        alphaSlider.value = alpha;
     }
 
     function setSaturationValue(x: real, y: real): void {

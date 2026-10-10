@@ -22,7 +22,16 @@ Item {
 
     anchors.fill: board
 
-    onVisibleChanged: root.publishDropTarget()
+    onVisibleChanged: {
+        if (visible) {
+            root.publishDropTarget()
+        } else if (root.pulling !== "") {
+            root.clearReceiving()
+            root.edgeTarget = ""
+            DesktopWidgetService.endGalleryDrag()
+            root.pulling = ""
+        }
+    }
 
     function familyFor(id: string): string {
         return DesktopWidgetService.familiesFor(id)[0] ?? "4x2"
@@ -80,11 +89,13 @@ Item {
 
     StyledRect {
         id: card
-
         x: root.defaultPosition.x
         y: root.defaultPosition.y
-        width: root.defaultSize.width
-        height: root.defaultSize.height
+
+        width: Math.min(root.defaultSize.width,
+            Math.max(1, root.width - DesktopWidgetService.gutter * 2))
+        height: Math.min(root.defaultSize.height,
+            Math.max(1, root.height - DesktopWidgetService.gutter * 2))
         variant: "popup"
         backgroundOpacity: 0.96
         radius: Styling.radius(8)
@@ -131,13 +142,29 @@ Item {
             DragHandler {
                 id: moveGallery
                 target: null
+                property point startOffset: Qt.point(0, 0)
+                onActiveChanged: {
+                    if (active) {
+                        const pointer = root.board.mapFromItem(null,
+                            centroid.scenePosition.x, centroid.scenePosition.y)
+                        startOffset = Qt.point(pointer.x - card.x, pointer.y - card.y)
+                        DesktopWidgetService.inHand = true
+                    } else {
+                        DesktopWidgetService.inHand = false
+                        if (DesktopWidgetService.editing && root.visible)
+                            DesktopWidgetService.setGalleryAt(root.screenName, card.x, card.y)
+                    }
+                }
 
                 onCentroidChanged: {
-                    if (!active)
+                    if (!active || !root.visible || !DesktopWidgetService.editing)
                         return
-                    const pointer = root.board.mapFromItem(null, centroid.scenePosition.x, centroid.scenePosition.y)
-                    card.x = Math.max(0, Math.min(root.width - card.width, pointer.x - card.width / 2))
-                    card.y = Math.max(0, Math.min(root.height - card.height, pointer.y - card.height / 2))
+                    const pointer = root.board.mapFromItem(null,
+                        centroid.scenePosition.x, centroid.scenePosition.y)
+                    card.x = Math.max(0, Math.min(Math.max(0, root.width - card.width),
+                        pointer.x - moveGallery.startOffset.x))
+                    card.y = Math.max(0, Math.min(Math.max(0, root.height - card.height),
+                        pointer.y - moveGallery.startOffset.y))
                     DesktopWidgetService.setGalleryAt(root.screenName, card.x, card.y)
                 }
             }
@@ -308,6 +335,17 @@ Item {
                             return
                         }
 
+                        if (root.pulling !== tile.moduleId)
+                            return
+
+                        if (!root.visible || !DesktopWidgetService.editing) {
+                            root.clearReceiving()
+                            root.edgeTarget = ""
+                            DesktopWidgetService.endGalleryDrag()
+                            root.pulling = ""
+                            return
+                        }
+
                         root.aim(tile.moduleId, centroid.scenePosition.x, centroid.scenePosition.y)
                         const edge = root.edgeTarget
                         const landing = DesktopWidgetService.landing
@@ -326,7 +364,8 @@ Item {
                     }
 
                     onCentroidChanged: {
-                        if (active)
+                        if (active && root.pulling === tile.moduleId && root.visible
+                                && DesktopWidgetService.editing)
                             root.aim(tile.moduleId, centroid.scenePosition.x, centroid.scenePosition.y)
                     }
                 }
@@ -358,27 +397,34 @@ Item {
                 target: null
                 property real startWidth: card.width
                 property real startHeight: card.height
+                property point startPointer: Qt.point(0, 0)
 
                 onActiveChanged: {
                     if (active) {
                         startWidth = card.width
                         startHeight = card.height
+                        startPointer = centroid.scenePosition
                         DesktopWidgetService.inHand = true
                     } else {
                         DesktopWidgetService.inHand = false
-                        DesktopWidgetService.setGallerySize(root.screenName, card.width, card.height)
-                        DesktopWidgetService.setGalleryAt(root.screenName, card.x, card.y)
+                        if (DesktopWidgetService.editing && root.visible) {
+                            DesktopWidgetService.setGallerySize(root.screenName, card.width, card.height)
+                            DesktopWidgetService.setGalleryAt(root.screenName, card.x, card.y)
+                        }
                     }
                 }
 
                 onCentroidChanged: {
-                    if (!active)
+                    if (!active || !root.visible || !DesktopWidgetService.editing)
                         return
-                    const delta = centroid.position
-                    card.width = Math.max(180, Math.min(root.width - card.x,
-                        resizeGallery.startWidth + delta.x))
-                    card.height = Math.max(190, Math.min(root.height - card.y,
-                        resizeGallery.startHeight + delta.y))
+                    const deltaX = centroid.scenePosition.x - resizeGallery.startPointer.x
+                    const deltaY = centroid.scenePosition.y - resizeGallery.startPointer.y
+                    const availableWidth = Math.max(1, root.width - card.x)
+                    const availableHeight = Math.max(1, root.height - card.y)
+                    card.width = Math.max(Math.min(180, availableWidth),
+                        Math.min(availableWidth, resizeGallery.startWidth + deltaX))
+                    card.height = Math.max(Math.min(190, availableHeight),
+                        Math.min(availableHeight, resizeGallery.startHeight + deltaY))
                 }
             }
         }

@@ -6,6 +6,7 @@ import qs.modules.components
 import qs.modules.services
 import qs.modules.services.desktop
 import qs.modules.theme
+import qs.modules.widgets.desktop
 
 Item {
     id: root
@@ -21,12 +22,12 @@ Item {
     readonly property color mutedColor: root.ink?.muted ?? Colors.overSurfaceVariant
     readonly property color paperColor: NotesService.paperOf(root.note?.tint ?? "yellow")
 
+    WidgetShadow { radius: Styling.radius(-2) }
     StyledRect {
         anchors.fill: parent
         variant: "common"
         color: root.paperColor
         radius: Styling.radius(-2)
-        enableShadow: Config.desktop.widgetShadow
 
         Column {
             anchors.fill: parent

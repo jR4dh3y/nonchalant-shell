@@ -99,7 +99,7 @@ Singleton {
     property var boards: ({})
     property var spots: ({})
     property var keysByScreen: ({})
-    property string persistedWidgets: ""
+    readonly property string fallbackOutput: root.fallbackScreenName()
 
     property bool editing: false
     property string editingScreen: ""
@@ -158,7 +158,6 @@ Singleton {
         interval: 120
         repeat: false
         onTriggered: {
-            root.persistedWidgets = root.fingerprint(root.widgets)
             Config.desktop.widgets = root.widgets
         }
     }
@@ -172,7 +171,6 @@ Singleton {
                 return
             root.saver.stop()
             root.widgets = incoming
-            root.persistedWidgets = root.fingerprint(incoming)
             root.conform()
         }
 
@@ -234,12 +232,18 @@ Singleton {
 
     Connections {
         target: Quickshell
-        function onScreensChanged(): void { root.syncKeys() }
+        function onScreensChanged(): void {
+            root.spots = root.calculateSpots()
+            root.syncKeys()
+            if (root.editing && !root.screenExists(root.editingScreen))
+                root.closeEditor()
+            if (root.detailModuleId !== "" && !root.screenExists(root.detailScreen))
+                root.closeDetail()
+        }
     }
 
     Component.onCompleted: {
         root.widgets = root.normalise(Config.desktop.widgets)
-        root.persistedWidgets = root.fingerprint(root.widgets)
         root.conform()
         root.syncKeys()
     }
@@ -253,7 +257,10 @@ Singleton {
         root.spots = root.calculateSpots()
         root.syncKeys()
     }
-    onEditingChanged: root.syncKeys()
+    onFallbackOutputChanged: {
+        root.spots = root.calculateSpots()
+        root.syncKeys()
+    }
 
     onGalleryScreenChanged: {
         if (root.editing && root.screenExists(root.galleryScreen)) {
@@ -378,7 +385,7 @@ Singleton {
 
     function nameOf(widget: var): string {
         const saved = widget && typeof widget.screen === "string" ? widget.screen : ""
-        return root.screenExists(saved) ? saved : root.fallbackScreenName()
+        return root.screenExists(saved) ? saved : root.fallbackOutput
     }
 
     function screenField(name: string): var {
@@ -391,7 +398,7 @@ Singleton {
 
     function insetsFor(name: string): var {
         const panel = Visibilities.getBarPanelForScreen(name)
-        const reserve = panel
+        const reserve = panel?.barEnabled
             ? Math.max(0, Number(panel.totalBarHeight ?? 0) + Number(panel.barOuterMargin ?? 0))
             : 0
         const position = Config.bar?.position ?? "top"
@@ -532,12 +539,10 @@ Singleton {
             for (const widget of rows) {
                 const shape = root.family(root.familyOf(widget))
                 const home = root.clamped(widget, shape, name)
-                let spot = root.freeAgainst(occupied, home.col, home.row, shape, grid)
+                const spot = root.freeAgainst(occupied, home.col, home.row, shape, grid)
                     ? home : root.nearestAgainst(occupied, home.col, home.row, shape, grid)
-                if (!spot)
-                    spot = home
-                result[widget.key] = spot
-                if (shape.cols <= grid.columns && shape.rows <= grid.rows)
+                result[widget.key] = spot ?? { col: home.col, row: home.row, valid: false }
+                if (spot)
                     occupied.push({ col: spot.col, row: spot.row, cols: shape.cols, rows: shape.rows })
             }
         }
@@ -596,60 +601,40 @@ Singleton {
             y: y,
             width: root.offsetX(name, spot.col + shape.cols) - root.gutter - x,
             height: root.offsetY(name, spot.row + shape.rows) - root.gutter - y,
-            valid: shape.cols <= grid.columns && shape.rows <= grid.rows
+            valid: spot.valid !== false && shape.cols <= grid.columns && shape.rows <= grid.rows
         }
     }
 
-    function overlaps(name: string, col: int, row: int, familyId: string, exceptKey: string): bool {
-        const shape = root.family(familyId)
-        return root.gridWidgetsOn(name).some(other => {
-            if (other.key === exceptKey)
-                return false
-            const theirs = root.family(root.familyOf(other))
-            const spot = root.spotOf(other)
-            return col < spot.col + theirs.cols && spot.col < col + shape.cols
-                && row < spot.row + theirs.rows && spot.row < row + shape.rows
-        })
-    }
-
-    function onBoard(name: string, col: int, row: int, familyId: string): bool {
-        const shape = root.family(familyId)
-        const grid = root.gridOn(name)
-        return col >= 0 && row >= 0 && col + shape.cols <= grid.columns && row + shape.rows <= grid.rows
-    }
-
-    function free(name: string, col: int, row: int, familyId: string, exceptKey: string): bool {
-        return root.onBoard(name, col, row, familyId)
-            && !root.overlaps(name, col, row, familyId, exceptKey)
+    function occupiedOn(name: string, exceptKey: string): list<var> {
+        const occupied = []
+        for (const widget of root.gridWidgetsOn(name)) {
+            if (widget.key === exceptKey)
+                continue
+            const shape = root.family(root.familyOf(widget))
+            const spot = root.spotOf(widget)
+            if (spot.valid === false)
+                continue
+            occupied.push({ col: spot.col, row: spot.row, cols: shape.cols, rows: shape.rows })
+        }
+        return occupied
     }
 
     function nearestFree(name: string, col: int, row: int, familyId: string, exceptKey = ""): var {
-        if (root.free(name, col, row, familyId, exceptKey))
-            return { col: col, row: row }
         const shape = root.family(familyId)
         const grid = root.gridOn(name)
-        let best = null
-        let bestDistance = Infinity
-        for (let y = 0; y + shape.rows <= grid.rows; y++) {
-            for (let x = 0; x + shape.cols <= grid.columns; x++) {
-                if (!root.free(name, x, y, familyId, exceptKey))
-                    continue
-                const distance = (x - col) ** 2 + (y - row) ** 2
-                if (distance < bestDistance) {
-                    best = { col: x, row: y }
-                    bestDistance = distance
-                }
-            }
-        }
-        return best
+        const occupied = root.occupiedOn(name, exceptKey)
+        if (root.freeAgainst(occupied, col, row, shape, grid))
+            return { col: col, row: row }
+        return root.nearestAgainst(occupied, col, row, shape, grid)
     }
 
     function firstFree(name: string, familyId: string, exceptKey = ""): var {
         const shape = root.family(familyId)
         const grid = root.gridOn(name)
+        const occupied = root.occupiedOn(name, exceptKey)
         for (let y = 0; y + shape.rows <= grid.rows; y++) {
             for (let x = 0; x + shape.cols <= grid.columns; x++) {
-                if (root.free(name, x, y, familyId, exceptKey))
+                if (root.freeAgainst(occupied, x, y, shape, grid))
                     return { col: x, row: y }
             }
         }

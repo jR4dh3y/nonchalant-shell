@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import qs.modules.components
 import qs.modules.services.desktop
@@ -22,11 +23,43 @@ Item {
     property string selectedKey: root.initialTaskKey
     readonly property var task: TasksService.entry(root.selectedKey)
     readonly property real gap: Styling.fontSize(-2)
-    onSelectedKeyChanged: TasksService.open(root.selectedKey)
-    onRowChanged: {
-        root.selectedKey = root.initialTaskKey
+    property string dueDraft: ""
+
+    function selectTask(key: string): void {
+        if (key === root.selectedKey)
+            return
+        if (taskText?.activeFocus)
+            taskText.focus = false
+        if (dueInput?.activeFocus)
+            dueInput.focus = false
+        if (taskBody?.activeFocus)
+            taskBody.focus = false
+        root.selectedKey = key
     }
-    Component.onCompleted: TasksService.open(root.selectedKey)
+
+    function commitDueDraft(): void {
+        if (!root.task) {
+            root.dueDraft = ""
+            return
+        }
+        const taskKey = root.task.key
+        const due = TasksService.parseDue(root.dueDraft)
+        if (root.dueDraft.trim() === "" || due !== "") {
+            TasksService.setDue(taskKey, due)
+            root.dueDraft = due
+        } else {
+            root.dueDraft = root.task.due
+        }
+    }
+    onSelectedKeyChanged: {
+        TasksService.open(root.selectedKey)
+        root.dueDraft = TasksService.entry(root.selectedKey)?.due ?? ""
+    }
+    onRowChanged: root.selectTask(root.initialTaskKey)
+    Component.onCompleted: {
+        TasksService.open(root.selectedKey)
+        root.dueDraft = TasksService.entry(root.selectedKey)?.due ?? ""
+    }
     Component.onDestruction: TasksService.leave()
 
     RowLayout {
@@ -51,7 +84,7 @@ Item {
                     text: "New task"
                     icon: "+"
                     highlighted: true
-                    onClicked: root.selectedKey = TasksService.create()
+                    onClicked: root.selectTask(TasksService.create())
                 }
             }
 
@@ -62,6 +95,12 @@ Item {
                 contentHeight: lanes.implicitHeight
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.horizontal: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                }
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                }
 
                 RowLayout {
                     id: lanes
@@ -130,7 +169,7 @@ Item {
                                     TapHandler {
                                         gesturePolicy: TapHandler.ReleaseWithinBounds
                                         onTapped: {
-                                            root.selectedKey = taskCard.modelData.key
+                                            root.selectTask(taskCard.modelData.key)
                                             TasksService.open(taskCard.modelData.key)
                                         }
                                     }
@@ -175,7 +214,7 @@ Item {
                                 return
                             const old = root.task.key
                             TasksService.remove(old)
-                            root.selectedKey = TasksService.queue[0]?.key ?? ""
+                            root.selectTask(TasksService.queue[0]?.key ?? "")
                         }
                     }
                 }
@@ -190,20 +229,15 @@ Item {
                         anchors.fill: parent
                         anchors.margins: root.gap
                         verticalAlignment: TextInput.AlignVCenter
-                        text: root.task ? root.task.due : ""
+                        text: root.dueDraft
                         color: Colors.overSurface
                         selectionColor: Colors.primary
                         selectedTextColor: Colors.overPrimary
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-1)
                         clip: true
-                        onEditingFinished: {
-                            if (!root.task)
-                                return
-                            const due = TasksService.parseDue(text)
-                            if (text.trim() === "" || due !== "")
-                                TasksService.setDue(root.task.key, due)
-                        }
+                        onTextEdited: root.dueDraft = text
+                        onEditingFinished: root.commitDueDraft()
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: dueInput.text === ""

@@ -36,40 +36,38 @@ Item {
         contentScroller.contentY = 0
     }
 
-    component ChoiceButton: StyledRect {
+    component ChoiceButton: Button {
         id: choice
         required property string label
         required property string value
         required property string selectedValue
         signal picked(string value)
-        property bool hovered: false
 
+        activeFocusOnTab: true
         Layout.fillWidth: true
         Layout.preferredHeight: 34
-        variant: value === selectedValue ? "primary" : (hovered ? "focus" : "common")
-        radius: Styling.radius(-4)
+        padding: 0
+        Accessible.role: Accessible.Button
+        Accessible.name: choice.label
 
-        Text {
-            anchors.fill: parent
-            anchors.margins: 4
+        background: StyledRect {
+            variant: choice.value === choice.selectedValue ? "primary"
+                : (choice.activeFocus || choice.hovered ? "focus" : "common")
+            radius: Styling.radius(-4)
+        }
+
+        contentItem: Text {
             text: choice.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-1)
             font.weight: choice.value === choice.selectedValue ? Font.DemiBold : Font.Normal
-            color: choice.item
+            color: choice.value === choice.selectedValue ? Styling.srItem("primary") : Colors.overBackground
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
 
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onEntered: choice.hovered = true
-            onExited: choice.hovered = false
-            onClicked: choice.picked(choice.value)
-        }
+        onClicked: choice.picked(choice.value)
     }
 
     component PreferenceToggle: StyledRect {

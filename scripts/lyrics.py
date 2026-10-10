@@ -73,6 +73,8 @@ def lookup(artist, title, album, seconds):
     found = []
     busy = False
     wanted = folded(title)
+    if not wanted:
+        return None
     wanted_artist = folded(artist)
 
     def eligible(entry):

@@ -23,9 +23,11 @@ Item {
     readonly property color textColor: root.ink?.text ?? Colors.overBackground
     readonly property color mutedColor: root.ink?.muted ?? Colors.overSurfaceVariant
     readonly property color accentColor: root.ink?.accent ?? Colors.primary
-    readonly property var forecast: WeatherService.dataAvailable
+    readonly property var forecast: root.moduleId === "weather" && WeatherService.dataAvailable
         ? WeatherService.forecast.slice(0, root.large ? 4 : 3) : []
     readonly property var contributionDays: {
+        if (root.moduleId !== "github")
+            return []
         const all = []
         const weeks = GithubService.weeks ?? []
         for (let week = Math.max(0, weeks.length - 6); week < weeks.length; week++) {
@@ -44,6 +46,8 @@ Item {
         }
     }
     readonly property string lastGameName: {
+        if (root.moduleId !== "games")
+            return ""
         const game = GamesService.catalogue.find(item => item.id === GamesService.lastPlayed)
         return game?.name ?? ""
     }
@@ -119,14 +123,16 @@ Item {
             spacing: Styling.fontSize(-1)
 
             Repeater {
-                model: [
-                    { label: "CPU", value: SystemResources.cpuUsage / 100, reading: `${Math.round(SystemResources.cpuUsage)}%` },
-                    { label: "Memory", value: SystemResources.ramUsage / 100, reading: `${Math.round(SystemResources.ramUsage)}%` },
-                    { label: "GPU", value: SystemResources.gpuUsage / 100, reading: SystemResources.gpuDetected ? `${Math.round(SystemResources.gpuUsage)}%` : "—" }
-                ]
+                model: root.moduleId === "stats" ? 3 : 0
 
                 delegate: Column {
-                    required property var modelData
+                    required property int index
+                    readonly property string label: index === 0 ? "CPU" : index === 1 ? "Memory" : "GPU"
+                    readonly property real value: (index === 0 ? SystemResources.cpuUsage
+                        : index === 1 ? SystemResources.ramUsage : SystemResources.gpuUsage) / 100
+                    readonly property string reading: index === 0 ? `${Math.round(SystemResources.cpuUsage)}%`
+                        : index === 1 ? `${Math.round(SystemResources.ramUsage)}%`
+                        : SystemResources.gpuDetected ? `${Math.round(SystemResources.gpuUsage)}%` : "—"
                     width: parent.width
                     spacing: Styling.fontSize(-4)
 
@@ -134,21 +140,21 @@ Item {
                         width: parent.width
                         Text {
                             width: parent.width * 0.5
-                            text: modelData.label
+                            text: label
                             color: root.mutedColor
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
                         }
                         Text {
                             width: parent.width * 0.5
-                            text: modelData.reading
+                            text: reading
                             horizontalAlignment: Text.AlignRight
                             color: root.textColor
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-2)
                         }
                     }
-                    UsageBar { width: parent.width; progress: modelData.value; fillColor: root.accentColor }
+                    UsageBar { width: parent.width; progress: value; fillColor: root.accentColor }
                 }
             }
         }
@@ -171,7 +177,7 @@ Item {
             readonly property real cellSide: Math.min(Styling.fontSize(-1), (width - 6 * cellGap) / 7)
 
             Repeater {
-                model: root.contributionDays
+                model: root.moduleId === "github" ? root.contributionDays : []
 
                 delegate: StyledRect {
                     required property var modelData
@@ -210,17 +216,20 @@ Item {
             spacing: Styling.fontSize(0)
 
             StyledRect {
-                width: root.showMediaArt && MprisController.activePlayer?.trackArtUrl
+                width: root.visible && root.moduleId === "media" && root.showMediaArt
+                    && !!MprisController.activePlayer?.trackArtUrl
                     ? Math.min(parent.height, parent.width * 0.36) : 0
                 height: parent.height
-                visible: root.showMediaArt && !!MprisController.activePlayer?.trackArtUrl
+                visible: root.visible && root.moduleId === "media" && root.showMediaArt
+                    && !!MprisController.activePlayer?.trackArtUrl
                 variant: "pane"
                 radius: Styling.radius(-3)
                 enableBorder: false
 
                 Image {
                     anchors.fill: parent
-                    source: MprisController.activePlayer?.trackArtUrl ?? ""
+                    source: root.visible && root.moduleId === "media" && root.showMediaArt
+                        ? (MprisController.activePlayer?.trackArtUrl ?? "") : ""
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     sourceSize.width: parent.width * 2
@@ -230,7 +239,8 @@ Item {
 
             Column {
                 anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - (root.showMediaArt && MprisController.activePlayer?.trackArtUrl ? parent.height * 0.36 : 0) - Styling.fontSize(0)
+                width: parent.width - (root.visible && root.moduleId === "media" && root.showMediaArt
+                    && !!MprisController.activePlayer?.trackArtUrl ? parent.height * 0.36 : 0) - Styling.fontSize(0)
                 spacing: Styling.fontSize(-2)
 
                 Text {
@@ -253,7 +263,11 @@ Item {
                     font.pixelSize: Styling.fontSize(-2)
                     elide: Text.ElideRight
                 }
-                UsageBar { width: parent.width; progress: MprisController.progress; fillColor: root.accentColor }
+                UsageBar {
+                    width: parent.width
+                    progress: root.moduleId === "media" ? MprisController.progress : 0
+                    fillColor: root.accentColor
+                }
             }
         }
         MediaTransport {
@@ -281,12 +295,12 @@ Item {
             Gauge {
                 width: Math.min(parent.height, parent.width * 0.42)
                 height: width
-                value: TimerService.progress
+                value: root.moduleId === "timer" ? TimerService.progress : 0
                 trackColor: root.ink?.dim ?? Colors.surfaceVariant
                 fillColor: root.accentColor
                 Text {
                     anchors.centerIn: parent
-                    text: TimerService.display
+                    text: root.moduleId === "timer" ? TimerService.display : ""
                     color: root.textColor
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-1)
@@ -298,7 +312,7 @@ Item {
                 width: parent.width - parent.height * 0.42 - Styling.fontSize(0)
                 Text {
                     width: parent.width
-                    text: TimerService.label || "Countdown"
+                    text: root.moduleId === "timer" ? TimerService.label || "Countdown" : ""
                     color: root.textColor
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(0)
@@ -306,7 +320,8 @@ Item {
                 }
                 Text {
                     width: parent.width
-                    text: TimerService.running ? (TimerService.paused ? "Paused" : "Running") : "Ready"
+                    text: root.moduleId === "timer"
+                        ? (TimerService.running ? (TimerService.paused ? "Paused" : "Running") : "Ready") : ""
                     color: root.mutedColor
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
@@ -337,7 +352,11 @@ Item {
 
             Text {
                 width: parent.width
-                text: root.moduleId === "claude" ? (ClaudeService.available ? `Session · ${ClaudeService.percent(ClaudeService.sessionFraction)}` : "No usage found") : (CodexService.available ? `${CodexService.fullestName} · ${CodexService.figure}` : "No usage found")
+                text: root.moduleId === "claude"
+                    ? (ClaudeService.available
+                        ? `Block · ${ClaudeService.compact(ClaudeService.blockTokens)}` : "No usage found")
+                    : root.moduleId === "codex"
+                        ? (CodexService.available ? `${CodexService.fullestName} · ${CodexService.figure}` : "No usage found") : ""
                 color: root.textColor
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-1)
@@ -345,12 +364,14 @@ Item {
             }
             UsageBar {
                 width: parent.width
-                progress: root.moduleId === "claude" ? ClaudeService.gauge : CodexService.gauge
+                progress: root.moduleId === "claude" ? ClaudeService.gauge
+                    : root.moduleId === "codex" ? CodexService.gauge : 0
                 fillColor: root.moduleId === "claude" ? Colors.tertiary : Colors.blue
             }
             Text {
                 width: parent.width
-                text: root.moduleId === "claude" ? ClaudeService.resetsIn : CodexService.windowLine(CodexService.fullest)
+                text: root.moduleId === "claude" ? ClaudeService.resetsIn
+                    : root.moduleId === "codex" ? CodexService.windowLine(CodexService.fullest) : ""
                 color: root.mutedColor
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -368,7 +389,7 @@ Item {
             spacing: Styling.fontSize(-2)
 
             Repeater {
-                model: TasksService.queue.slice(0, root.large ? 4 : 3)
+                model: root.moduleId === "tasks" ? TasksService.queue.slice(0, root.large ? 4 : 3) : []
 
                 delegate: Row {
                     required property var modelData
@@ -419,7 +440,7 @@ Item {
             }
 
             Text {
-                visible: TasksService.queue.length === 0
+                visible: root.moduleId === "tasks" && TasksService.queue.length === 0
                 text: "Nothing due"
                 color: root.mutedColor
                 font.family: Config.theme.font
@@ -458,14 +479,10 @@ Item {
         }
     }
 
-    CalendarTasksView {
+    Loader {
         anchors.fill: parent
-        visible: root.moduleId === "calendar"
-        family: root.family
-        theme: root.theme
-        ink: root.ink
-        row: root.row
-        interactive: root.interactive
+        active: root.visible && root.moduleId === "calendar"
+        sourceComponent: calendar
     }
 
     Item {
@@ -513,7 +530,7 @@ Item {
             anchors.fill: parent
             spacing: Styling.fontSize(-2)
             Repeater {
-                model: UpdatesService.packages.slice(0, root.large ? 5 : 3)
+                model: root.moduleId === "updates" ? UpdatesService.packages.slice(0, root.large ? 5 : 3) : []
                 delegate: Text {
                     required property string modelData
                     width: parent.width
@@ -542,7 +559,7 @@ Item {
                     : root.moduleId === "bluetooth" ? (BluetoothService.enabled ? 1 : 0)
                     : root.moduleId === "brightness" ? (Brightness.monitors[0]?.brightness ?? 0)
                     : root.moduleId === "volume" ? Audio.value
-                    : Battery.available ? Battery.percentage / 100 : 0
+                    : root.moduleId === "battery" && Battery.available ? Battery.percentage / 100 : 0
                 fillColor: root.moduleId === "battery" && Battery.available && Battery.percentage <= 20 ? Colors.red : root.accentColor
             }
 
@@ -552,7 +569,8 @@ Item {
                     : root.moduleId === "bluetooth" ? `${BluetoothService.connectedDevices} devices`
                     : root.moduleId === "brightness" ? (Brightness.monitors[0] ? `${Math.round(Brightness.monitors[0].brightness * 100)}% backlight` : "No backlight")
                     : root.moduleId === "volume" ? ((Audio.sink?.audio?.muted ?? true) ? "Muted" : `${Math.round(Audio.value * 100)}% volume`)
-                    : Battery.available ? (Battery.isCharging ? "Charging" : Battery.timeToEmpty) : "No battery"
+                    : root.moduleId === "battery"
+                        ? (Battery.available ? (Battery.isCharging ? "Charging" : Battery.timeToEmpty) : "No battery") : ""
                 color: root.mutedColor
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
@@ -584,6 +602,18 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
             }
+        }
+    }
+
+    Component {
+        id: calendar
+        CalendarTasksView {
+            anchors.fill: parent
+            family: root.family
+            theme: root.theme
+            ink: root.ink
+            row: root.row
+            interactive: root.interactive
         }
     }
 

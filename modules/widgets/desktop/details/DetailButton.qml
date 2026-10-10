@@ -17,6 +17,7 @@ Item {
     implicitWidth: label.implicitWidth + 2 * Styling.fontSize(0)
     implicitHeight: Math.max(Styling.fontSize(0) * 2.5, label.implicitHeight + Styling.fontSize(-1))
     scale: 1
+    activeFocusOnTab: root.enabled
 
     Accessible.role: Accessible.Button
     Accessible.name: root.text
@@ -27,7 +28,7 @@ Item {
 
     StyledRect {
         anchors.fill: parent
-        variant: root.highlighted ? "primary" : "common"
+        variant: root.highlighted ? "primary" : (root.activeFocus ? "focus" : "common")
         opacity: root.enabled ? 1 : 0.45
     }
 
@@ -52,5 +53,12 @@ Item {
         gesturePolicy: TapHandler.ReleaseWithinBounds
         acceptedButtons: Qt.LeftButton
         onTapped: root.clicked()
+    }
+    Keys.onPressed: event => {
+        if (!root.enabled || event.isAutoRepeat
+                || (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Space))
+            return
+        event.accepted = true
+        root.clicked()
     }
 }

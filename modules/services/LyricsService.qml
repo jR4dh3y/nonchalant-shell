@@ -14,6 +14,10 @@ Singleton {
     property string readFor: ""
     property string askedTrack: ""
     property bool requestQueued: false
+    property bool queryActive: false
+    property bool queryExited: false
+    property bool queryOutputFinished: false
+    property bool cancelledRequest: false
     property int retryAttempt: 0
     property list<var> lines: []
     property bool synced: false
@@ -59,13 +63,20 @@ Singleton {
             root.requestQueued = false;
             if (!root.available)
                 root.status = "idle";
+            root.cancelQuery();
         }
     }
 
     Connections {
         target: MprisController
-        function onPositionChanged() { root.reanchor(); }
-        function onIsPlayingChanged() { root.reanchor(); }
+        function onPositionChanged() {
+            if (root.wanted)
+                root.reanchor();
+        }
+        function onIsPlayingChanged() {
+            if (root.wanted)
+                root.reanchor();
+        }
     }
 
     Timer {
@@ -104,10 +115,13 @@ Singleton {
         root.anchorTime = Date.now();
         root.status = root.wanted ? "loading" : "idle";
 
-        if (query.running) {
+        if (root.queryActive) {
             root.requestQueued = root.wanted;
+            root.cancelQuery();
         } else {
-            Qt.callLater(root.fetch);
+            root.requestQueued = false;
+            if (root.wanted)
+                Qt.callLater(root.fetch);
         }
     }
 
@@ -144,16 +158,22 @@ Singleton {
             return false;
 
         const length = Math.max(0, player.length || 0);
-        player.position = Math.max(0, Math.min(length > 0 ? length : seconds, seconds));
-        root.reanchor();
+        const target = Math.max(0, Math.min(length > 0 ? length : seconds, seconds));
+        player.position = target;
+        root.anchorPosition = target;
+        root.anchorTime = Date.now();
+        root.place();
         return true;
     }
 
     function fetch(): void {
         if (!root.wanted || root.readFor === root.track)
             return;
-        if (query.running) {
-            root.requestQueued = true;
+        if (root.queryActive) {
+            if (root.cancelledRequest || root.askedTrack !== root.track) {
+                root.requestQueued = true;
+                root.status = "loading";
+            }
             return;
         }
 
@@ -163,6 +183,10 @@ Singleton {
 
         root.requestQueued = false;
         root.askedTrack = root.track;
+        root.queryActive = true;
+        root.queryExited = false;
+        root.queryOutputFinished = false;
+        root.cancelledRequest = false;
         root.status = "loading";
         query.command = [
             "python3",
@@ -173,6 +197,38 @@ Singleton {
             String(Math.round(player.length || 0))
         ];
         query.running = true;
+    }
+
+    function cancelQuery(): void {
+        if (!root.queryActive || root.cancelledRequest)
+            return;
+        root.cancelledRequest = true;
+        if (query.running)
+            query.running = false;
+    }
+
+    function finishQuery(): void {
+        if (!root.queryActive || !root.queryExited || !root.queryOutputFinished)
+            return;
+
+        const finishedTrack = root.askedTrack;
+        const wasCancelled = root.cancelledRequest;
+        root.queryActive = false;
+        root.queryExited = false;
+        root.queryOutputFinished = false;
+        root.cancelledRequest = false;
+        root.askedTrack = "";
+
+        if (!wasCancelled && finishedTrack === root.track && root.wanted
+                && root.status === "loading")
+            root.failNetwork(finishedTrack);
+
+        if (root.wanted && root.requestQueued) {
+            root.requestQueued = false;
+            Qt.callLater(root.fetch);
+        } else {
+            root.requestQueued = false;
+        }
     }
 
     function failNetwork(requestedTrack: string): void {
@@ -271,18 +327,25 @@ Singleton {
         running: false
 
         stdout: StdioCollector {
-            onStreamFinished: root.receive(text)
+            onStreamFinished: {
+                if (!root.cancelledRequest)
+                    root.receive(text);
+                root.queryOutputFinished = true;
+                root.finishQuery();
+            }
         }
 
         onExited: {
-            const finishedTrack = root.askedTrack;
-            if (finishedTrack === root.track && root.wanted && root.status === "loading")
-                root.failNetwork(finishedTrack);
-            root.askedTrack = "";
-            if (root.wanted && root.requestQueued) {
-                root.requestQueued = false;
-                Qt.callLater(root.fetch);
-            }
+            root.queryExited = true;
+            root.finishQuery();
+        }
+        onRunningChanged: {
+            // FailedToStart emits neither exited nor stdout completion.
+            if (query.running || !root.queryActive || root.queryExited)
+                return;
+            root.queryOutputFinished = true;
+            root.queryExited = true;
+            root.finishQuery();
         }
     }
 

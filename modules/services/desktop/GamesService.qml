@@ -129,6 +129,8 @@ Singleton {
     }
 
     function hydrate(saved: var): void {
+        if (root.ready)
+            return
         const pending = root.bests
         const loaded = Object.assign({}, saved ?? ({}))
         for (const id of Object.keys(pending)) {

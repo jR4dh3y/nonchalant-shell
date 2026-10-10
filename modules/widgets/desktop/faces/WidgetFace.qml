@@ -20,6 +20,9 @@ Item {
     property bool active: false
     readonly property bool statsDemand: root.active && root.moduleId === "stats"
     property bool statsSubscribed: false
+    readonly property string demandService: ["claude", "codex", "github", "updates", "pet"].includes(root.moduleId)
+        ? root.moduleId : ""
+    property string subscribedService: ""
 
     function syncStatsDemand(): void {
         if (root.statsDemand === root.statsSubscribed)
@@ -30,12 +33,46 @@ Item {
         else
             SystemResources.release()
     }
+    function subscribeService(service: string): void {
+        switch (service) {
+        case "claude": ClaudeService.subscribe(); break
+        case "codex": CodexService.subscribe(); break
+        case "github": GithubService.subscribe(); break
+        case "updates": UpdatesService.subscribe(); break
+        case "pet": PetService.subscribe(); break
+        }
+    }
+
+    function releaseService(service: string): void {
+        switch (service) {
+        case "claude": ClaudeService.release(); break
+        case "codex": CodexService.release(); break
+        case "github": GithubService.release(); break
+        case "updates": UpdatesService.release(); break
+        case "pet": PetService.release(); break
+        }
+    }
+
+    function syncServiceDemand(): void {
+        const wanted = root.active ? root.demandService : ""
+        if (wanted === root.subscribedService)
+            return
+        root.releaseService(root.subscribedService)
+        root.subscribedService = wanted
+        root.subscribeService(wanted)
+    }
 
     onStatsDemandChanged: root.syncStatsDemand()
-    Component.onCompleted: root.syncStatsDemand()
+    onDemandServiceChanged: root.syncServiceDemand()
+    onActiveChanged: root.syncServiceDemand()
+    Component.onCompleted: {
+        root.syncStatsDemand()
+        root.syncServiceDemand()
+    }
     Component.onDestruction: {
         if (root.statsSubscribed)
             SystemResources.release()
+        root.releaseService(root.subscribedService)
     }
 
     readonly property bool large: root.family === "4x4"
@@ -87,7 +124,6 @@ Item {
         }
     }
     readonly property string reading: {
-        const player = MprisController.activePlayer
         switch (root.moduleId) {
         case "battery": return Battery.available ? `${Math.round(Battery.percentage)}%` : "—"
         case "volume": return Audio.ready ? ((Audio.sink?.audio?.muted ?? true) ? "Muted" : `${Math.round(Audio.value * 100)}%`) : "—"
@@ -98,12 +134,12 @@ Item {
         case "weather": return WeatherService.dataAvailable ? `${Math.round(WeatherService.currentTemp)}°` : "—°"
         case "github": return GithubService.available ? GithubService.totalLabel : "—"
         case "stats": return `${Math.round(SystemResources.cpuUsage)}% CPU`
-        case "claude": return !ClaudeService.available ? "—" : ClaudeService.sessionMeasured ? ClaudeService.percent(ClaudeService.sessionFraction) : ClaudeService.compact(ClaudeService.blockTokens)
+        case "claude": return ClaudeService.available ? ClaudeService.compact(ClaudeService.blockTokens) : "—"
         case "codex": return CodexService.available ? CodexService.figure : "—"
         case "timer": return TimerService.running ? TimerService.display : "Set a timer"
         case "pet": return PetService.hatched ? `Lv ${PetService.level}` : "A new egg"
         case "games": return GamesService.totalPlays > 0 ? `${GamesService.totalPlays} plays` : "Ready to play"
-        case "media": return player ? MprisController.trackTitle || "Playing" : "Nothing playing"
+        case "media": return MprisController.activePlayer ? MprisController.trackTitle || "Playing" : "Nothing playing"
         case "clock": return Qt.formatDateTime(clock.date, root.clockFormat)
         case "calendar": return Qt.formatDate(clock.date, "d MMM")
         case "tasks": return `${TasksService.pending} to do`
@@ -183,14 +219,15 @@ Item {
 
         StyledRect {
             anchors.fill: parent
-            visible: root.moduleId === "media" && MprisController.activePlayer?.trackArtUrl
+            visible: root.visible && root.moduleId === "media" && !!MprisController.activePlayer?.trackArtUrl
             variant: "common"
             radius: Styling.radius(-4)
             enableBorder: false
 
             Image {
                 anchors.fill: parent
-                source: MprisController.activePlayer?.trackArtUrl ?? ""
+                source: root.visible && root.moduleId === "media"
+                    ? (MprisController.activePlayer?.trackArtUrl ?? "") : ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize.width: mark.width * 2
@@ -210,7 +247,7 @@ Item {
 
         Text {
             anchors.centerIn: parent
-            visible: !(root.moduleId === "media" && MprisController.activePlayer?.trackArtUrl)
+            visible: !(root.visible && root.moduleId === "media" && !!MprisController.activePlayer?.trackArtUrl)
             text: root.glyph
             color: root.moduleId === "battery" && Battery.available && Battery.percentage <= 20
                 ? Colors.red : root.textColor
@@ -249,16 +286,10 @@ Item {
         anchors.bottomMargin: root.large ? 10 : 0
         visible: root.large
         clip: true
-
-        FaceDetail {
+        Loader {
             anchors.fill: parent
-            moduleId: root.moduleId
-            family: root.family
-            ink: root.ink
-            now: root.now
-            theme: "modern"
-            row: root.row
-            interactive: root.active
+            active: root.visible && root.large
+            sourceComponent: detail
         }
     }
 
@@ -306,6 +337,15 @@ Item {
             : root.band ? parent.width * 0.32 : parent.width * 0.38
         height: parent.height - y - root.padding
 
+        Loader {
+            anchors.fill: parent
+            active: root.visible && (root.band || root.family === "4x2")
+            sourceComponent: detail
+        }
+    }
+
+    Component {
+        id: detail
         FaceDetail {
             anchors.fill: parent
             moduleId: root.moduleId

@@ -53,7 +53,7 @@ Item {
         family: root.family
         ink: root.ink
         row: root.row
-        active: root.active && (root.moduleId === "clock" || root.moduleId === "calendar" || root.moduleId === "stats")
+        active: root.active
     }
 
     StyledRect {
@@ -66,7 +66,6 @@ Item {
         variant: "pane"
         radius: width / 2
         backgroundOpacity: 0.48
-        enableShadow: Config.desktop.widgetShadow
 
         Gauge {
             anchors.fill: parent
@@ -124,13 +123,15 @@ Item {
             visible: root.moduleId === "stats"
 
             Repeater {
-                model: [SystemResources.cpuUsage, SystemResources.ramUsage, SystemResources.gpuUsage]
+                model: root.moduleId === "stats" ? 3 : 0
 
                 delegate: Rectangle {
                     required property int index
-                    required property real modelData
+                    readonly property real usage: index === 0 ? SystemResources.cpuUsage
+                        : index === 1 ? SystemResources.ramUsage : SystemResources.gpuUsage
                     readonly property real barWidth: parent.width * 0.12
-                    height: Math.max(root.side * 0.08, parent.height * 0.62 * Math.max(0.04, Math.min(1, modelData / 100)))
+                    height: Math.max(root.side * 0.08,
+                        parent.height * 0.62 * Math.max(0.04, Math.min(1, usage / 100)))
                     width: barWidth
                     x: parent.width * (0.24 + index * 0.25)
                     y: parent.height * 0.78 - height
@@ -279,15 +280,23 @@ Item {
         surfaceColor: root.ink?.raised ?? Colors.surfaceContainerHigh
     }
 
-    CalendarTasksView {
+    Loader {
         anchors.fill: parent
         anchors.margins: root.family === "4x4" ? Styling.fontSize(0) : Styling.fontSize(-1)
         z: 2
-        visible: root.moduleId === "calendar" && root.family !== "2x2"
-        family: root.family
-        theme: "analogue"
-        ink: root.ink
-        row: root.row
-        interactive: root.active
+        active: root.visible && root.moduleId === "calendar" && root.family !== "2x2"
+        sourceComponent: calendar
+    }
+
+    Component {
+        id: calendar
+        CalendarTasksView {
+            anchors.fill: parent
+            family: root.family
+            theme: "analogue"
+            ink: root.ink
+            row: root.row
+            interactive: root.active
+        }
     }
 }

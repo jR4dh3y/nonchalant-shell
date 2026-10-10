@@ -14,6 +14,8 @@ Item {
     property bool subscribed: false
 
     implicitHeight: root.mode === "detail" ? 140 : 22
+    readonly property bool shouldRender: root.active && root.visible
+        && root.width > 0 && root.height > 0
 
     readonly property bool hasTrack: MprisController.activePlayer !== null
         && MprisController.trackTitle.trim() !== ""
@@ -43,7 +45,7 @@ Item {
     }
 
     function syncSubscription(): void {
-        const shouldSubscribe = root.active && root.lyricsEnabled && root.visible;
+        const shouldSubscribe = root.shouldRender && root.lyricsEnabled;
         if (shouldSubscribe === root.subscribed)
             return;
         root.subscribed = shouldSubscribe;
@@ -53,9 +55,8 @@ Item {
             LyricsService.release();
     }
 
-    onActiveChanged: root.syncSubscription()
+    onShouldRenderChanged: root.syncSubscription()
     onLyricsEnabledChanged: root.syncSubscription()
-    onVisibleChanged: root.syncSubscription()
     Component.onCompleted: root.syncSubscription()
     Component.onDestruction: {
         if (root.subscribed)
@@ -64,7 +65,7 @@ Item {
 
     Text {
         anchors.fill: parent
-        visible: root.mode === "compact"
+        visible: root.shouldRender && root.mode === "compact"
         text: root.compactText
         textFormat: Text.PlainText
         color: root.lyricsEnabled && LyricsService.available && LyricsService.synced
@@ -80,7 +81,7 @@ Item {
     Text {
         anchors.centerIn: parent
         width: parent.width
-        visible: root.mode === "detail"
+        visible: root.shouldRender && root.mode === "detail"
             && (!root.lyricsEnabled || !LyricsService.available || LyricsService.instrumental)
         text: root.statusText
         color: Colors.overSurfaceVariant
@@ -92,10 +93,17 @@ Item {
         wrapMode: Text.Wrap
     }
 
+    FontMetrics {
+        id: lyricFontMetrics
+        font.family: Config.theme.font
+        font.pixelSize: Styling.fontSize(1)
+        font.weight: Font.DemiBold
+    }
+
     ListView {
         id: lyricLines
         anchors.fill: parent
-        visible: root.mode === "detail" && root.lyricsEnabled
+        visible: root.shouldRender && root.mode === "detail" && root.lyricsEnabled
             && LyricsService.available && !LyricsService.instrumental
         clip: true
         model: visible ? LyricsService.lines : []
@@ -105,10 +113,10 @@ Item {
             ? Math.min(LyricsService.current, count - 1) : -1
         highlightRangeMode: LyricsService.synced
             ? ListView.StrictlyEnforceRange : ListView.NoHighlightRange
-        preferredHighlightBegin: Math.max(0,
-            (height - (currentItem?.height ?? Styling.fontSize(1))) / 2)
+        // Strict range enforcement can change currentItem; do not size the range from it.
+        preferredHighlightBegin: Math.max(0, (height - lyricFontMetrics.height) / 2)
         preferredHighlightEnd: Math.min(height,
-            preferredHighlightBegin + (currentItem?.height ?? Styling.fontSize(1)))
+            preferredHighlightBegin + lyricFontMetrics.height)
         highlightMoveDuration: Config.animDuration
         highlightFollowsCurrentItem: true
         header: Item {

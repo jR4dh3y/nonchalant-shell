@@ -120,6 +120,8 @@ Singleton {
     }
 
     function hydrate(saved: list<var>): void {
+        if (root.ready)
+            return
         const pending = root.tasks
         const loaded = root.normalise(saved)
         for (const task of pending) {

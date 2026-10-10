@@ -30,6 +30,8 @@ Item {
 
     readonly property real side: Math.min(root.width, root.height)
     readonly property var contributionDays: {
+        if (root.moduleId !== "github")
+            return []
         const weeks = GithubService.weeks ?? []
         const days = []
         for (let week = Math.max(0, weeks.length - 4); week < weeks.length; week++) {
@@ -73,7 +75,8 @@ Item {
 
         Text {
             anchors.centerIn: parent
-            text: Battery.available ? `${Math.round(Battery.percentage)}%` : "—"
+            text: root.moduleId === "battery"
+                ? (Battery.available ? `${Math.round(Battery.percentage)}%` : "—") : ""
             color: root.foreground
             font.family: Config.theme.monoFont
             font.pixelSize: root.side * 0.14
@@ -142,8 +145,10 @@ Item {
                 anchors.centerIn: parent
                 width: parent.width * 0.62
                 height: width
-                visible: !!MprisController.activePlayer?.trackArtUrl
-                source: MprisController.activePlayer?.trackArtUrl ?? ""
+                visible: root.visible && root.moduleId === "media"
+                    && !!MprisController.activePlayer?.trackArtUrl
+                source: root.visible && root.moduleId === "media"
+                    ? (MprisController.activePlayer?.trackArtUrl ?? "") : ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize.width: parent.width * 2
@@ -176,12 +181,14 @@ Item {
         spacing: root.side * 0.08
 
         Repeater {
-            model: [SystemResources.cpuUsage, SystemResources.ramUsage, SystemResources.gpuUsage]
+            model: root.moduleId === "stats" ? 3 : 0
             delegate: Rectangle {
                 required property int index
-                required property real modelData
+                readonly property real usage: index === 0 ? SystemResources.cpuUsage
+                    : index === 1 ? SystemResources.ramUsage : SystemResources.gpuUsage
                 width: root.side * 0.12
-                height: Math.max(root.side * 0.16, root.side * 0.56 * Math.max(0.04, Math.min(1, modelData / 100)))
+                height: Math.max(root.side * 0.16,
+                    root.side * 0.56 * Math.max(0.04, Math.min(1, usage / 100)))
                 anchors.verticalCenter: parent.verticalCenter
                 radius: width / 2
                 color: root.accent
@@ -197,14 +204,16 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: WeatherService.dataAvailable ? WeatherService.effectiveWeatherSymbol : "󰅤"
+            text: root.moduleId === "weather"
+                ? (WeatherService.dataAvailable ? WeatherService.effectiveWeatherSymbol : "󰅤") : ""
             color: root.foreground
             font.family: Config.theme.monoFont
             font.pixelSize: root.side * 0.32
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: WeatherService.dataAvailable ? `${Math.round(WeatherService.currentTemp)}°` : "—"
+            text: root.moduleId === "weather"
+                ? (WeatherService.dataAvailable ? `${Math.round(WeatherService.currentTemp)}°` : "—") : ""
             color: root.foreground
             font.family: Config.theme.font
             font.pixelSize: root.side * 0.17
@@ -220,7 +229,7 @@ Item {
         columnSpacing: rowSpacing
 
         Repeater {
-            model: root.contributionDays.slice(-25)
+            model: root.moduleId === "github" ? root.contributionDays.slice(-25) : []
             delegate: StyledRect {
                 required property var modelData
                 readonly property int level: typeof modelData === "number" ? modelData : modelData?.level ?? 0
@@ -267,7 +276,7 @@ Item {
         spacing: root.side * 0.08
 
         Repeater {
-            model: TasksService.queue.slice(0, 2)
+            model: root.moduleId === "tasks" ? TasksService.queue.slice(0, 2) : []
             delegate: Row {
                 required property var modelData
                 spacing: root.side * 0.06
@@ -329,13 +338,13 @@ Item {
         Gauge {
             anchors.fill: parent
             thickness: root.side * 0.055
-            value: TimerService.progress
+            value: root.moduleId === "timer" ? TimerService.progress : 0
             trackColor: root.muted
             fillColor: root.accent
         }
         Text {
             anchors.centerIn: parent
-            text: TimerService.display || "⌛"
+            text: root.moduleId === "timer" ? (TimerService.display || "⌛") : ""
             color: root.foreground
             font.family: Config.theme.monoFont
             font.pixelSize: root.side * 0.13

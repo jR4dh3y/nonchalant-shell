@@ -13,6 +13,24 @@ Item {
     required property var row
     readonly property real gap: Styling.fontSize(-2)
     readonly property var pet: PetService.pet
+    property bool petSubscribed: false
+
+    function syncPetDemand(): void {
+        if (root.visible === root.petSubscribed)
+            return
+        root.petSubscribed = root.visible
+        if (root.petSubscribed)
+            PetService.subscribe()
+        else
+            PetService.release()
+    }
+
+    onVisibleChanged: root.syncPetDemand()
+    Component.onCompleted: root.syncPetDemand()
+    Component.onDestruction: {
+        if (root.petSubscribed)
+            PetService.release()
+    }
 
     ColumnLayout {
         anchors.fill: parent

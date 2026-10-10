@@ -29,6 +29,8 @@ Item {
 
     readonly property real side: Math.min(root.width, root.height)
     readonly property var contributionDays: {
+        if (root.moduleId !== "github")
+            return []
         const weeks = GithubService.weeks ?? []
         const days = []
         for (let week = Math.max(0, weeks.length - 5); week < weeks.length; week++) {
@@ -57,7 +59,7 @@ Item {
         columnSpacing: rowSpacing
 
         Repeater {
-            model: root.contributionDays.slice(-25)
+            model: root.moduleId === "github" ? root.contributionDays.slice(-25) : []
             delegate: StyledRect {
                 required property var modelData
                 readonly property int level: typeof modelData === "number" ? modelData : modelData?.level ?? 0
@@ -128,7 +130,7 @@ Item {
         spacing: root.side * 0.05
 
         Repeater {
-            model: TasksService.queue.slice(0, 3)
+            model: root.moduleId === "tasks" ? TasksService.queue.slice(0, 3) : []
             delegate: Row {
                 required property var modelData
                 width: parent.width
@@ -196,7 +198,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 variant: "common"
                 radius: Styling.radius(-7)
-                backgroundOpacity: NetworkService.wifiConnected || NetworkService.ethernet ? 1 : 0.28
+                backgroundOpacity: root.moduleId === "network"
+                    && (NetworkService.wifiConnected || NetworkService.ethernet) ? 1 : 0.28
                 enableBorder: false
                 color: root.accent
             }
@@ -206,7 +209,8 @@ Item {
     Text {
         anchors.centerIn: parent
         visible: root.moduleId === "timer"
-        text: TimerService.running ? TimerService.display : root.glyph
+        text: root.moduleId === "timer"
+            ? (TimerService.running ? TimerService.display : root.glyph) : root.glyph
         color: root.foreground
         font.family: Config.theme.monoFont
         font.pixelSize: root.side * 0.15

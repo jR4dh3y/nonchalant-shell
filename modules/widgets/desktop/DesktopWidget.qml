@@ -103,13 +103,16 @@ Item {
         NumberAnimation { duration: Config.animDuration > 0 ? Config.animDuration : 0 }
     }
 
+    WidgetShadow {
+        visible: !root.bare
+    }
+
     StyledRect {
         anchors.fill: parent
         visible: !root.bare
         variant: DesktopWidgetService.styleOf(root.row) === "glass" ? "pane" : "common"
         backgroundOpacity: 1
         radius: Styling.radius(4)
-        enableShadow: Config.desktop.widgetShadow
         border.color: root.selected ? Colors.primary : root.ink.border
         border.width: root.selected ? 2 : 1
     }
@@ -176,6 +179,10 @@ Item {
                 if (active) {
                     DesktopWidgetService.beginWidgetDrag(root.key)
                     root.aim(centroid.scenePosition)
+                    return
+                }
+                if (!root.editing || DesktopWidgetService.dragging !== root.key) {
+                    root.clearReceiving()
                     return
                 }
 

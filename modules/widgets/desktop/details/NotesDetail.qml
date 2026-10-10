@@ -15,12 +15,21 @@ Item {
         ? root.row.note : (NotesService.noteFor(root.row)?.key ?? "")
     readonly property var note: NotesService.entry(root.selectedKey)
     readonly property real gap: Styling.fontSize(-2)
+    function selectNote(key: string): void {
+        if (key === root.selectedKey)
+            return
+        if (titleInput?.activeFocus)
+            titleInput.focus = false
+        if (bodyInput?.activeFocus)
+            bodyInput.focus = false
+        root.selectedKey = key
+    }
 
     onSelectedKeyChanged: NotesService.open(root.selectedKey)
     onRowChanged: {
         const key = typeof root.row?.note === "string" && root.row.note !== ""
             ? root.row.note : (NotesService.noteFor(root.row)?.key ?? "")
-        root.selectedKey = key
+        root.selectNote(key)
     }
 
     Component.onCompleted: NotesService.open(root.selectedKey)
@@ -40,7 +49,7 @@ Item {
                 text: "New note"
                 icon: "+"
                 highlighted: true
-                onClicked: root.selectedKey = NotesService.create("yellow")
+                onClicked: root.selectNote(NotesService.create("yellow"))
             }
 
             Text {
@@ -95,7 +104,7 @@ Item {
 
                     TapHandler {
                         gesturePolicy: TapHandler.ReleaseWithinBounds
-                        onTapped: root.selectedKey = noteRow.modelData.key
+                        onTapped: root.selectNote(noteRow.modelData.key)
                     }
                 }
 
@@ -188,7 +197,7 @@ Item {
                         if (!root.note)
                             return
                         NotesService.archive(root.note.key, true)
-                        root.selectedKey = NotesService.newest?.key ?? ""
+                        root.selectNote(NotesService.newest?.key ?? "")
                     }
                 }
             }
@@ -245,6 +254,6 @@ Item {
 
     Connections {
         target: NotesService
-        function onAdded(key: string): void { root.selectedKey = key }
+        function onAdded(key: string): void { root.selectNote(key) }
     }
 }

@@ -97,7 +97,10 @@ def scan(path, entry):
             slot[0] += tokens
             slot[1] += 1
         offset = handle.tell()
-    return {"offset": offset, "mtime": stat.st_mtime, "buckets": buckets}
+    return {
+        "offset": offset, "mtime": stat.st_mtime, "size": stat.st_size,
+        "device": stat.st_dev, "inode": stat.st_ino, "buckets": buckets,
+    }
 
 
 def total_over(hours, first, last):
@@ -114,16 +117,23 @@ def transcript_report(cache_path):
     if not TRANSCRIPTS.is_dir():
         return None
     cache = load_cache(cache_path)
-    files = cache["files"]
+    previous_files = cache["files"]
+    files = {}
     hours = {}
     for path in TRANSCRIPTS.glob("**/*.jsonl"):
         key = str(path)
-        entry = files.get(key, {})
+        entry = previous_files.get(key, {})
+        if not isinstance(entry, dict):
+            entry = {}
         try:
             stat = path.stat()
-            if entry.get("mtime") != stat.st_mtime or not entry.get("buckets"):
+            if entry.get("device") != stat.st_dev or entry.get("inode") != stat.st_ino:
+                entry = {}
+            if (entry.get("mtime") != stat.st_mtime
+                    or entry.get("size") != stat.st_size
+                    or not isinstance(entry.get("buckets"), dict)):
                 entry = scan(path, entry)
-                files[key] = entry
+            files[key] = entry
         except (OSError, ValueError, TypeError):
             continue
         for hour, values in entry.get("buckets", {}).items():
@@ -148,12 +158,19 @@ def transcript_report(cache_path):
 
     block_tokens, block_messages = total_over(hours, block_start, this_hour)
     week_tokens, week_messages = total_over(hours, this_hour - WEEK_HOURS + 1, this_hour)
-    peak_block = 0
-    peak_week = 0
-    for hour in range(ordered[0], ordered[-1] + 1):
-        peak_block = max(peak_block, total_over(hours, hour, hour + BLOCK_HOURS - 1)[0])
-    for hour in range(ordered[0], ordered[-1] + 1):
-        peak_week = max(peak_week, total_over(hours, hour, hour + WEEK_HOURS - 1)[0])
+    first_hour = ordered[0]
+    last_hour = ordered[-1]
+    peak_block = peak_week = block_window = week_window = 0
+    for hour in range(first_hour, last_hour + WEEK_HOURS):
+        tokens = hours.get(str(hour), [0, 0])[0]
+        block_window += tokens
+        week_window += tokens
+        if hour >= first_hour + BLOCK_HOURS - 1:
+            peak_block = max(peak_block, block_window)
+            block_window -= hours.get(str(hour - BLOCK_HOURS + 1), [0, 0])[0]
+        if hour >= first_hour + WEEK_HOURS - 1:
+            peak_week = max(peak_week, week_window)
+            week_window -= hours.get(str(hour - WEEK_HOURS + 1), [0, 0])[0]
     return {
         "available": True,
         "blockStart": block_start * 3600,
@@ -168,9 +185,6 @@ def transcript_report(cache_path):
 
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "limits":
-        unavailable("account usage limits are not requested")
-        return
     cache_path = Path(sys.argv[1]) if len(sys.argv) > 1 else (
         Path(os.environ.get("XDG_STATE_HOME") or HOME / ".local" / "state")
         / "quickshell" / "desktop-claude-usage.json")

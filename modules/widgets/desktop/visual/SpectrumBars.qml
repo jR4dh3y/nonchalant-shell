@@ -22,6 +22,8 @@ Item {
     readonly property int count: Math.min(64, CavaService.bandCount,
         Math.max(0, Math.floor((root.width + root.gap) / Math.max(1, root.barWidth + root.gap))))
     readonly property var wavePoints: {
+        if (root.style !== "wave")
+            return []
         const points = [Qt.point(0, root.height)]
         const total = Math.max(1, root.count)
         for (let index = 0; index < root.count; index++) {
@@ -96,6 +98,8 @@ Item {
             readonly property real peak: root.showPeaks && root.hearing
                 ? Math.max(bar.level, Math.min(1, CavaService.peaks[bar.sourceIndex] ?? 0)) : 0
             readonly property real barHeight: Math.max(2, bar.height * bar.level)
+            readonly property int segmentCount: Math.max(1,
+                Math.floor(bar.barHeight / Math.max(3, root.barWidth * 1.4)))
 
             x: (root.width - root.count * root.barWidth - (root.count - 1) * root.gap) / 2
                 + bar.index * (root.barWidth + root.gap)
@@ -115,10 +119,11 @@ Item {
 
             Repeater {
                 model: root.style === "segments"
-                    ? Math.max(1, Math.floor(bar.barHeight / Math.max(3, root.barWidth * 1.4))) : 0
+                    ? Math.max(1, Math.floor(bar.height / Math.max(3, root.barWidth * 1.4))) : 0
 
                 delegate: Rectangle {
                     required property int index
+                    visible: index < bar.segmentCount
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: index * Math.max(3, root.barWidth * 1.4)
                     width: parent.width

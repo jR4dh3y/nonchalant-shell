@@ -11,6 +11,9 @@ import qs.config
 Item {
     id: root
 
+    Keys.priority: Keys.AfterItem
+    Keys.onEscapePressed: GlobalStates.settingsWindowVisible = false
+
     property string searchQuery: ""
     property int searchCursor: 0
     property int historyCursor: 0

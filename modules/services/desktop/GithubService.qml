@@ -26,7 +26,7 @@ Singleton {
     readonly property string configuredUser: (Config.desktop.githubUser ?? "").trim()
     readonly property SystemClock clock: SystemClock {
         precision: SystemClock.Minutes
-        enabled: root.watchers > 0
+        enabled: root.watchers > 0 && root.available
     }
     readonly property string age: {
         if (!root.available)
@@ -39,7 +39,6 @@ Singleton {
     readonly property string totalLabel: root.grouped(root.total)
     readonly property int cardGrid: 7 * 9 + 6 * 3
 
-    Component.onCompleted: Qt.callLater(root.refresh)
 
     function grouped(count: int): string {
         return `${count}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -57,6 +56,8 @@ Singleton {
     }
 
     function refresh(): void {
+        if (root.watchers <= 0 || root.configuredUser === "")
+            return
         if (root.query.running) {
             root.refreshPending = root.requestedUser !== root.configuredUser
             return
@@ -116,7 +117,7 @@ Singleton {
     readonly property Timer poller: Timer {
         interval: root.pollInterval
         repeat: true
-        running: root.watchers > 0
+        running: root.watchers > 0 && root.configuredUser !== ""
         onTriggered: root.refresh()
     }
 
@@ -130,7 +131,7 @@ Singleton {
             root.refreshPending = false
             if (exitCode !== 0 && root.requestedUser === root.configuredUser)
                 root.available = false
-            if (needsRefresh)
+            if (needsRefresh && root.watchers > 0 && root.configuredUser !== "")
                 Qt.callLater(root.refresh)
         }
         stdout: StdioCollector {

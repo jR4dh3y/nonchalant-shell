@@ -14,6 +14,7 @@ Singleton {
     id: root
 
     property int watchers: 0
+    property bool restartPending: false
 
     function subscribe(): void {
         root.watchers += 1;
@@ -71,7 +72,8 @@ Singleton {
     // Optimized GPU polling avoids waking dGPUs.
     property Process monitorProcess: Process {
         id: monitorProcess
-        running: (root.watchers > 0 || GlobalStates.systemMonitorOpen || GlobalStates.islandStatsOpen)
+        running: !root.restartPending
+            && (root.watchers > 0 || GlobalStates.systemMonitorOpen || GlobalStates.islandStatsOpen)
             && root.validDisks.length > 0
         
         command: {
@@ -134,6 +136,11 @@ Singleton {
                 }
             }
         }
+
+        onExited: {
+            if (root.restartPending)
+                Qt.callLater(() => { root.restartPending = false; });
+        }
     }
 
     Component.onCompleted: validateDisks()
@@ -150,8 +157,7 @@ Singleton {
     onUpdateIntervalChanged: if (monitorProcess.running) restartMonitor()
 
     function restartMonitor() {
-        monitorProcess.running = false;
-        Qt.callLater(() => { monitorProcess.running = true; });
+        root.restartPending = true;
     }
 
     function validateDisks() {

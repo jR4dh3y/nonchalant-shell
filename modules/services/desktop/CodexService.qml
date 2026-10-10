@@ -39,7 +39,6 @@ Singleton {
         return `read ${Qt.formatDateTime(new Date(root.observed * 1000), "ddd d MMM")}`
     }
 
-    Component.onCompleted: Qt.callLater(root.refresh)
 
     function current(limit: var): bool {
         return !!limit && limit.resets * 1000 > root.clock.date.getTime()
@@ -66,7 +65,7 @@ Singleton {
     }
 
     function refresh(): void {
-        if (!root.query.running)
+        if (root.watchers > 0 && !root.query.running)
             root.query.running = true
     }
 
@@ -76,17 +75,24 @@ Singleton {
             report = JSON.parse(output)
         } catch (error) {
             console.warn("CodexService: invalid session usage response", error)
-            root.available = false
+            root.clear()
             return
         }
         if (!report || report.available !== true || !Array.isArray(report.limits)) {
-            root.available = false
+            root.clear()
             return
         }
         root.plan = report.plan ?? ""
         root.observed = Number(report.observed) || 0
         root.limits = report.limits.slice().sort((left, right) => left.minutes - right.minutes)
         root.available = true
+    }
+
+    function clear(): void {
+        root.available = false
+        root.plan = ""
+        root.observed = 0
+        root.limits = []
     }
 
     readonly property Timer poller: Timer {
@@ -103,7 +109,7 @@ Singleton {
         }
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0)
-                root.available = false
+                root.clear()
         }
     }
 }

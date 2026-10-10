@@ -38,8 +38,8 @@ ShaderEffect {
     readonly property real peaksOn: root.peaks ? 1 : 0
     readonly property real pitch: root.barWidth + root.gap
 
-    readonly property var levels: CavaService.bands
-    readonly property var highs: root.peaks ? CavaService.peaks : root.nothing
+    readonly property var levels: root.hearing ? CavaService.bands : root.nothing
+    readonly property var highs: root.hearing && root.peaks ? CavaService.peaks : root.nothing
     readonly property var nothing: new Array(CavaService.bandCount).fill(0)
 
     readonly property vector4d b0: root.four(root.levels, 0)

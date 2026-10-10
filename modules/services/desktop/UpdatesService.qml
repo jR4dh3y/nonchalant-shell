@@ -33,7 +33,6 @@ Singleton {
         return `${Math.floor(minutes / 60)} h ${minutes % 60} min ago`
     }
 
-    Component.onCompleted: Qt.callLater(root.refresh)
 
     function subscribe(): void {
         root.watchers += 1
@@ -51,7 +50,7 @@ Singleton {
     }
 
     function refresh(): void {
-        if (root.checking)
+        if (root.watchers <= 0 || root.checking)
             return
         root.checking = true
         root.query.running = true
@@ -92,7 +91,7 @@ Singleton {
                 root.available = false
             const retry = root.refreshPending
             root.refreshPending = false
-            if (retry && (!root.available || root.checkedAt <= 0
+            if (retry && root.watchers > 0 && (!root.available || root.checkedAt <= 0
                     || Date.now() - root.checkedAt >= root.pollInterval))
                 Qt.callLater(root.refresh)
         }

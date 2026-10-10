@@ -34,26 +34,31 @@ Item {
         { id: "bar", label: "Bar width" },
         { id: "gap", label: "Gap" }
     ]
-    readonly property real cardWidth: Math.max(1, Math.min(320, width - 24))
+    readonly property real cardWidth: Math.max(1,
+        Math.min(320, width - 2 * DesktopWidgetService.gutter))
     readonly property real cardGap: Styling.fontSize(0)
 
     function placeX(): real {
+        const maxX = Math.max(0, root.width - root.cardWidth)
+        const marginX = Math.min(DesktopWidgetService.gutter, maxX / 2)
+        const rightX = maxX - marginX
         if (root.edgeRow)
-            return Math.max(DesktopWidgetService.gutter, root.width - root.cardWidth - DesktopWidgetService.gutter)
-        if (root.box.x + root.box.width + root.cardGap + root.cardWidth <= root.width - DesktopWidgetService.gutter)
+            return rightX
+        if (root.box.x + root.box.width + root.cardGap + root.cardWidth <= rightX)
             return root.box.x + root.box.width + root.cardGap
-        if (root.box.x - root.cardGap - root.cardWidth >= DesktopWidgetService.gutter)
+        if (root.box.x - root.cardGap - root.cardWidth >= marginX)
             return root.box.x - root.cardGap - root.cardWidth
-        return Math.max(DesktopWidgetService.gutter,
-            Math.min(root.width - root.cardWidth - DesktopWidgetService.gutter, root.box.x))
+        return Math.max(marginX, Math.min(rightX, root.box.x))
     }
 
     function placeY(): real {
+        const maxY = Math.max(0, root.height - card.height)
+        const marginY = Math.min(DesktopWidgetService.gutter, maxY / 2)
+        const bottomY = maxY - marginY
         if (root.edgeRow)
-            return DesktopWidgetService.gutter
-        const available = root.height - column.implicitHeight - 2 * DesktopWidgetService.gutter
-        return Math.max(DesktopWidgetService.gutter,
-            Math.min(available, root.box.y + root.box.height / 2 - card.height / 2))
+            return marginY
+        return Math.max(marginY, Math.min(bottomY,
+            root.box.y + root.box.height / 2 - card.height / 2))
     }
     function setSpectrum(field: string, value: var): void {
         const changes = ({})
@@ -67,7 +72,8 @@ Item {
         x: root.placeX()
         y: root.placeY()
         width: root.cardWidth
-        height: column.implicitHeight + 28
+        height: Math.min(column.implicitHeight + 28,
+            Math.max(1, root.height - 2 * DesktopWidgetService.gutter))
         variant: "popup"
         backgroundOpacity: 0.98
         radius: Styling.radius(8)
@@ -87,13 +93,23 @@ Item {
             gesturePolicy: TapHandler.ReleaseWithinBounds
         }
 
+        Flickable {
+            id: controlsScroller
+            anchors.fill: parent
+            anchors.margins: 14
+            clip: true
+            contentWidth: width
+            contentHeight: column.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+            }
+        }
         Column {
             id: column
-
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.margins: 14
+            parent: controlsScroller.contentItem
+            width: controlsScroller.width
             spacing: 10
 
             Row {

@@ -42,6 +42,12 @@ class LyricsTests(unittest.TestCase):
             result = lyrics.lookup("The Original", "Home", "Album", 200)
         self.assertEqual(result["syncedLyrics"], "[00:01]Right words")
 
+    def test_unsearchable_title_does_not_match_arbitrary_results(self):
+        with patch.object(lyrics, "ask") as ask:
+            result = lyrics.lookup("The Original", "!!!", "Album", 200)
+        self.assertIsNone(result)
+        ask.assert_not_called()
+
     def test_multiple_timestamps_are_sorted_and_silent_lines_preserved(self):
         result = lyrics.parse({
             "syncedLyrics": "[00:20.00][00:40.50]Later\n[00:05.25]Earlier\n[00:10.00]",
