@@ -175,6 +175,7 @@ def main():
 
     if run_all or args.tier3:
         run_unittest_suite("Tier 3: Cross-Feature Interactions", "tests.integration.test_tier3_interactions", collector, args.verbose)
+        run_unittest_suite("Tier 3: Focus Input Ownership", "tests.integration.test_focus_grab_manager", collector, args.verbose)
 
     if run_all or args.tier4:
         run_unittest_suite("Tier 4: Real-World Scenarios", "tests.e2e.test_tier4_lifecycle", collector, args.verbose)

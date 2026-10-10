@@ -48,7 +48,7 @@ PanelWindow {
 
     // Assistant stays open without eating the whole screen — only its hitbox
     // receives clicks (see mask regions). Run menu / grabs still go full-screen.
-    readonly property bool needsFullScreenInput: runMenu.open || barContent.dashboardInputActive || barContent.islandActive || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: runMenu.open || barContent.dashboardInputActive || barContent.islandActive || FocusGrabManager.hasPanelGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;

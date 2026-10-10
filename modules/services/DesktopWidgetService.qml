@@ -932,7 +932,7 @@ Singleton {
         FocusGrabManager.requestGrab(grabId, () => {
             if (root.editorGrabId === grabId)
                 root.closeEditor()
-        })
+        }, false)
         return true
     }
 
@@ -1040,7 +1040,7 @@ Singleton {
         FocusGrabManager.requestGrab(grabId, () => {
             if (root.detailGrabId === grabId)
                 root.closeDetail()
-        })
+        }, false)
         return true
     }
 
