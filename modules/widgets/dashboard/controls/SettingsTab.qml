@@ -46,12 +46,37 @@ Rectangle {
 
     Connections {
         target: GlobalStates
+        function onSettingsPageRequested(): void {
+            root.applySettingsRequest();
+        }
         function onSettingsCurrentTabChanged() {
             if (root.selectedIndex !== GlobalStates.settingsCurrentTab) {
                 root.selectedIndex = GlobalStates.settingsCurrentTab;
             }
         }
     }
+
+    function applySettingsRequest(): void {
+        const pageId = GlobalStates.settingsRequestedPageId;
+        if (pageId === "")
+            return;
+        const pages = ["network", "bluetooth", "audio", "ai", "theme", "system", "shell", "desktop"];
+        const section = pages.indexOf(pageId);
+        const tabId = GlobalStates.settingsRequestedTabId;
+        GlobalStates.settingsRequestedPageId = "";
+        GlobalStates.settingsRequestedTabId = "";
+        if (section < 0)
+            return;
+        root.searchQuery = "";
+        const changed = root.currentSection !== section;
+        root.pendingSubSection = changed ? tabId : "";
+        root.selectedIndex = section;
+        root.currentSection = section;
+        if (!changed && panelLoader.item?.currentSection !== undefined)
+            panelLoader.item.currentSection = tabId;
+    }
+
+    Component.onCompleted: Qt.callLater(root.applySettingsRequest)
 
     // Focus the search input (called from parent Dashboard)
     function focusSearchInput() {
@@ -125,8 +150,8 @@ Rectangle {
         if (!subSectionId || subSectionId === "")
             return;
 
-        // Panels that support subsections: Theme(4), System(5), Shell(6)
-        if ([4, 5, 6].includes(sectionId)) {
+        // Panels that support subsections: Theme(4), System(5), Shell(6), Desktop(7)
+        if ([4, 5, 6, 7].includes(sectionId)) {
             if (panelLoader.item && panelLoader.status === Loader.Ready) {
                 panelLoader.item.currentSection = subSectionId;
             } else {
@@ -240,6 +265,12 @@ Rectangle {
             icon: Icons.gear,
             label: "Shell",
             section: 6,
+            isIcon: true
+        },
+        {
+            icon: Icons.widgets,
+            label: "Desktop",
+            section: 7,
             isIcon: true
         }
     ]
@@ -571,6 +602,10 @@ Rectangle {
                 {
                     component: "ShellPanel.qml",
                     section: 6
+                },
+                {
+                    component: "DesktopSettingsPage.qml",
+                    section: 7
                 }
             ]
 
@@ -593,7 +628,8 @@ Rectangle {
 
                 onLoaded: {
                     if (item) {
-                        item.maxContentWidth = contentArea.maxContentWidth;
+                        if (item.maxContentWidth !== undefined)
+                            item.maxContentWidth = contentArea.maxContentWidth;
                         // Apply pending subsection if any
                         if (root.pendingSubSection !== "" && item.currentSection !== undefined) {
                             item.currentSection = root.pendingSubSection;

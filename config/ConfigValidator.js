@@ -67,5 +67,17 @@ function validate(current, defaults, keyName) {
         }
     }
 
+    if (keyName === "theme") {
+        const validThemes = ["modern", "analogue", "sticker"];
+        if (validThemes.indexOf(current) === -1)
+            return defaults;
+    }
+
+    if (keyName === "petStyle") {
+        const validPetStyles = ["creature", "plush", "paper", "pixel"];
+        if (validPetStyles.indexOf(current) === -1)
+            return defaults;
+    }
+
     return current;
 }

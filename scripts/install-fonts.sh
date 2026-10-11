@@ -34,6 +34,20 @@ if ! has_font_family "JetBrains Mono"; then
     unzip -qjo "$jb_archive" 'fonts/ttf/*.ttf' -d "$shell_font_dir"
 fi
 
+if ! has_font_family "JetBrainsMono Nerd Font Mono"; then
+    (
+        nerd_archive="$(mktemp "${TMPDIR:-/tmp}/nonchalant-impasto-mono.XXXXXX.zip")"
+        trap 'unlink "$nerd_archive" 2>/dev/null || true' EXIT
+        nerd_font_dir="$font_root/nonchalant-impasto-mono"
+        mkdir -p "$nerd_font_dir"
+
+        curl --fail --location --silent --show-error \
+            "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.zip" \
+            --output "$nerd_archive"
+        unzip -qjo "$nerd_archive" 'JetBrainsMonoNerdFontMono-*.ttf' 'OFL.txt' -d "$nerd_font_dir"
+    )
+fi
+
 if ! has_font_family "League Gothic"; then
     curl --fail --location --silent --show-error \
         'https://raw.githubusercontent.com/google/fonts/main/ofl/leaguegothic/LeagueGothic%5Bwdth%5D.ttf' \
@@ -46,3 +60,4 @@ printf 'Nonchalant fonts are ready:\n'
 fc-match ':family=Phosphor-Bold'
 fc-match ':family=JetBrains Mono'
 fc-match ':family=League Gothic'
+fc-match ':family=JetBrainsMono Nerd Font Mono'

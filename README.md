@@ -17,6 +17,7 @@ release process. The fork keeps a lean runtime focus:
 - one unified bar
 - floating run menu
 - lockscreen
+- settings and desktop widgets
 - reactive JSON configuration
 
 Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
@@ -28,7 +29,9 @@ Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
 - Unified bar with workspaces/taskbar, clock, system status, and systray
 - Floating run menu and power menu
 - Wallpaper picker and secure `WlSessionLock` session lock
-- Isolated `nonchalant` config, state, cache, data, and IPC paths
+- Desktop widget editor with Modern, Analogue, and Sticker themes
+- Synchronized lyrics in desktop widgets
+- Separate configuration, per-shell state, cache, data, and IPC paths
 
 ## Showcase
 
@@ -75,6 +78,64 @@ and toggles it closed when invoked again. This can be bound from Niri with:
 Mod+Shift+W hotkey-overlay-title="Open Wallpapers" { spawn "nonchalant" "run" "wallpapers"; }
 ```
 
+### Desktop widgets
+
+```bash
+nonchalant run settings
+nonchalant run widgets
+```
+
+The widgets command toggles the desktop editor. Add a widget from the gallery,
+drag it into position, then use its inspector to choose a supported size and
+appearance. A selected widget also has a lower-right resize handle.
+Notes and audio spectra can also be placed on screen edges.
+The widget faces, gallery, inspector, photo picker, and edge-note presentation
+use Impasto's source components rather than recreated designs. Modern, Analogue,
+and Sticker retain the upstream layouts, artwork, and controls.
+Right-click a widget to arrange, edit, or remove it. Right-click the desktop
+for a new note, wallpaper settings, palette settings, or the desktop editor.
+Layout and appearance are saved in `nonchalant/config/desktop.json` under
+`$XDG_CONFIG_HOME`. Editing is suspended on fullscreen outputs and dismissed
+when its output changes workspace.
+Editing waits for the initial layout to load. Closing the editor saves committed
+changes but cancels unfinished drags instead of committing a drop. Widgets
+that cannot fit on a smaller output remain saved but hidden; they reappear when
+there is enough free space.
+The task board and detail editor stack vertically in narrow windows. The desktop
+opacity slider previews its value while dragging and saves it on release.
+
+The gallery includes media, timer, Claude, Codex, battery, volume, brightness,
+network, Bluetooth, weather, GitHub, system statistics, updates, pet, games,
+calendar, notes, tasks, clock, photos, spectrum, and lyrics. Notes, tasks, and
+game scores use Quickshell's per-shell state directory under
+`$XDG_STATE_HOME/quickshell/by-shell`.
+Claude and Codex usage comes from local session
+records, not account billing or quota APIs.
+GitHub uses the username configured in Desktop settings. Update checks use
+available package-manager tools; they do not install packages. Audio spectra
+require `cava`.
+Usage, GitHub, update checks, and resource monitoring follow their active
+consumers. Widget shadows use Impasto's `MultiEffect` layers and shadow settings.
+Unavailable providers do not display cached contribution cells or package lists
+as current data. Update widgets distinguish checking, unavailable, and up-to-date.
+
+The existing settings window includes a Desktop page for widget configuration.
+The widgets use Nonchalant's configuration store and Niri integration.
+Inter and Grape Nuts ship with the widgets. Their icon glyphs require
+JetBrainsMono Nerd Font Mono, which `scripts/install-fonts.sh` installs and
+the Nix font package includes.
+
+Lyrics follow the selected MPRIS player. Timed lines follow playback and can be
+clicked to seek; plain lyrics scroll manually. The desktop lyrics widget has its
+own active subscription. When it is visible, track title, artist,
+album, and duration are sent to [LRCLIB](https://lrclib.net). Results are cached
+under `$XDG_STATE_HOME/nonchalant/lyrics`. Hidden views do not start new lookups
+or retries. Changing tracks or closing the last active lyrics view cancels the
+old lookup and discards its output.
+Retries are scheduled by the active lyrics service, not by the Python helper.
+The lyrics helper and desktop data helpers require Python 3.
+
+
 ## Run the development tree
 
 Install Quickshell and the runtime tools needed by the shell. Install fonts once,
@@ -91,6 +152,10 @@ Or use the CLI wrapper:
 ./cli.sh
 ```
 
+Run the relevant validation suite with `python3 tests/run_tests.py --all`.
+Runtime checks use isolated Quickshell configuration and state. The desktop
+drag and configuration-race checks also require headless Weston.
+
 The installer and Nix package are still inherited scaffolding and may need
 adjustment for this fork.
 
@@ -99,6 +164,12 @@ adjustment for this fork.
 Nonchalant Shell is derived from Ambxst by Axenide. Full copyright and
 contributor history from that lineage is preserved in this repository’s Git
 history.
+
+The desktop widgets, games, and lyrics widget port incorporate
+work from [Impasto](https://github.com/andreumassanet/impasto) by Andreu Massanet,
+based on revision `6d759aa3fe16e3b40641beeb9b24e3c4afcfeefe`. That upstream is
+GPLv3-licensed; its retained source notices and
+[license](./modules/widgets/desktop/impasto/LICENSE) apply to the incorporated work.
 
 This project is licensed under the GNU Affero General Public License v3.0 or
 later. See [LICENSE](./LICENSE).

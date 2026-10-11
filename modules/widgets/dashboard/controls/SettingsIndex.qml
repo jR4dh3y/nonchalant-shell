@@ -5,6 +5,8 @@ QtObject {
     property var dynamicItems: []
 
     readonly property var staticItems: [
+        { label: "Desktop", keywords: "widgets desktop arrange editor modules theme opacity", section: 7, subSection: "modules", subLabel: "Desktop", icon: Icons.widgets, isIcon: true },
+        { label: "Desktop Widgets", keywords: "placement shadow hidden ground", section: 7, subSection: "widgets", subLabel: "Desktop > Widgets", icon: Icons.widgets, isIcon: true },
         { label: "Network", keywords: "internet wifi connection ethernet ip", section: 0, subSection: "", subLabel: "", icon: Icons.wifiHigh, isIcon: true },
         { label: "Bluetooth", keywords: "devices pairing connect", section: 1, subSection: "", subLabel: "", icon: Icons.bluetooth, isIcon: true },
         { label: "Audio Mixer", keywords: "sound volume output input mic speaker", section: 2, subSection: "", subLabel: "", icon: Icons.faders, isIcon: true },

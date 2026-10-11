@@ -11,6 +11,7 @@ with pkgs; [
 
   # Nerd Fonts
   nerd-fonts.symbols-only
+  nerd-fonts.jetbrains-mono
 
   # Noto family
   noto-fonts

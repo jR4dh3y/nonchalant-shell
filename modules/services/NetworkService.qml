@@ -48,6 +48,7 @@ Singleton {
     }
 
     property string wifiStatus: "disconnected"
+    property string connectivity: ""
 
     property string activeSsid: ""
     property string networkName: ""
@@ -375,6 +376,7 @@ Singleton {
 
                 // Section 3: Connectivity & Wi-Fi status computation
                 const connectivity = (sections[2] || "").trim();
+                root.connectivity = connectivity;
 
                 let computedWifiStatus = "disconnected";
                 if (!wifiEnabled || (rawWifiState.startsWith("unavailable") && !hasWifi)) {

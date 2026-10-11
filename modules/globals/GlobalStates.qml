@@ -165,7 +165,25 @@ Singleton {
     property bool settingsWindowVisible: false
     property int settingsTargetWorkspaceId: 0
     property string settingsTargetScreenName: ""
+    property string settingsRequestedPageId: ""
+    property string settingsRequestedTabId: ""
+    signal settingsPageRequested()
 
+    // The settings view is created lazily, so keep its destination until it consumes it.
+    function openSettings(pageId = "", tabId = ""): void {
+        root.settingsRequestedPageId = pageId
+        root.settingsRequestedTabId = tabId
+        root.settingsWindowVisible = true
+        if (pageId !== "")
+            root.settingsPageRequested()
+    }
+
+    onSettingsWindowVisibleChanged: {
+        if (!root.settingsWindowVisible) {
+            root.settingsRequestedPageId = ""
+            root.settingsRequestedTabId = ""
+        }
+    }
 
     // ASSISTANT SIDEBAR STATE
     // ═══════════════════════════════════════════════════════════════

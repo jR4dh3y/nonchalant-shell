@@ -1,0 +1,87 @@
+// ╭──────────────────────────────────────────────────────────────────────────╮
+// │                                                                          │
+// │   T   A   S   K   S       F   A   C   E                                  │
+// │   tasks on a clipboard · the next few                                    │
+// │                                                                          │
+// │   github.com/andreumassanet/impasto                                      │
+// │                                                                          │
+// ╰──────────────────────────────────────────────────────────────────────────╯
+
+import QtQuick
+import Quickshell
+
+import qs.modules.widgets.desktop.impasto.theme
+import qs.modules.widgets.desktop.impasto.services
+import qs.modules.widgets.desktop.impasto.components
+
+// The tasks on a clipboard: the next three on a 2×2, the same three beside the
+// count on a 4×2, and nine lines at 4×4.
+Item {
+    id: root
+
+    property string family: "2x2"
+    property var ink: DesktopService.inkFor(null)
+    property var row: null
+
+    readonly property string count: {
+        if (TasksService.pending === 0)
+            return TasksService.count === 0 ? "Nothing yet" : "All done"
+        const late = TasksService.overdue.length
+        return `${TasksService.pending} to do${late > 0 ? ` · ${late} late` : ""}`
+    }
+
+    Loader {
+        anchors.fill: parent
+        sourceComponent: root.family === "4x4" ? large : room
+    }
+
+    Component {
+        id: room
+
+        Instrument {
+            family: root.family
+            ink: root.ink
+            line: root.count
+            reading: `${TasksService.pending}`
+            note: TasksService.pending === 0
+                ? (TasksService.count === 0 ? "nothing yet" : "all done")
+                : TasksService.summary
+            tint: TasksService.overdue.length > 0 ? Theme.red : root.ink.text
+            filled: true
+
+            Clipboard {
+                anchors.fill: parent
+                anchors.topMargin: 8
+                ink: root.ink
+                row: root.row
+                tasks: TasksService.queue.slice(0, 3)
+            }
+
+            extra: [
+                PillButton {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    text: "Open"
+                    implicitHeight: 28
+                    onClicked: ModuleService.requestPanel("board", root.row)
+                }
+            ]
+        }
+    }
+
+    Component {
+        id: large
+
+        Item {
+            Clipboard {
+                anchors.fill: parent
+                anchors.margins: 22
+                anchors.topMargin: 30
+                ink: root.ink
+                row: root.row
+                title: `Tasks · ${root.count.toLowerCase()}`
+                tasks: TasksService.queue.slice(0, 9)
+            }
+        }
+    }
+}

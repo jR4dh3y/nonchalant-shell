@@ -12,6 +12,7 @@ import "defaults/weather.js" as WeatherDefaults
 import "defaults/lockscreen.js" as LockscreenDefaults
 import "defaults/system.js" as SystemDefaults
 import "defaults/ai.js" as AiDefaults
+import "defaults/desktop.js" as DesktopDefaults
 import "ConfigValidator.js" as ConfigValidator
 
 Singleton {
@@ -37,8 +38,9 @@ Singleton {
     property bool lockscreenReady: false
     property bool systemReady: false
     property bool aiReady: false
+    property bool desktopReady: false
 
-    property bool initialLoadComplete: themeReady && barReady && performanceReady && weatherReady && lockscreenReady && systemReady && aiReady
+    property bool initialLoadComplete: themeReady && barReady && performanceReady && weatherReady && lockscreenReady && systemReady && aiReady && desktopReady
 
     // Compatibility aliases
     property alias loader: themeLoader
@@ -493,6 +495,49 @@ Singleton {
         }
     }
 
+    FileView {
+        id: desktopLoader
+        path: root.configDirReady ? root.configDir + "/desktop.json" : ""
+        atomicWrites: true
+        watchChanges: true
+        onLoaded: {
+            if (!root.desktopReady) {
+                validateModule("desktop", desktopLoader, DesktopDefaults.data, () => {
+                    root.desktopReady = true;
+                });
+            }
+        }
+        onLoadFailed: function(error) {
+            if (!root.desktopReady) {
+                handleMissingConfig("desktop", desktopLoader, DesktopDefaults.data, () => {
+                    root.desktopReady = true;
+                });
+            }
+        }
+        onFileChanged: reload()
+        onAdapterUpdated: {
+            if (root.desktopReady)
+                desktopLoader.writeAdapter();
+        }
+
+        adapter: JsonAdapter {
+            property list<var> widgets: []
+            property string theme: "modern"
+            property string fontFamily: "Inter, Cantarell, SF Pro Text, sans-serif"
+            property string fontMono: "JetBrainsMono Nerd Font Mono, monospace"
+            property int opacity: 100
+            property bool hidden: false
+            property string ground: ""
+            property bool deckOnEmpty: false
+            property bool spectrumOnEmpty: false
+            property bool widgetShadow: false
+            property string githubUser: ""
+            property string petStyle: "creature"
+            property bool notesHandwriting: true
+            property bool clockShowsSeconds: false
+        }
+    }
+
     // ============================================
     // PERFORMANCE MODULE
     // ============================================
@@ -786,6 +831,7 @@ Singleton {
 
     // AI configuration
     property alias ai: aiLoader.adapter
+    property alias desktop: desktopLoader.adapter
 
 
     function setAiWorkingDirectory(path) {

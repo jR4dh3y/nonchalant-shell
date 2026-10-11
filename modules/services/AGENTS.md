@@ -18,7 +18,7 @@ Backend singletons bridging Wayland protocols, CLI tools (nmcli, upower, wpctl, 
 | **Media** | `MprisController.qml` | MPRIS D-Bus player control |
 | **Notifications** | `Notifications.qml` | D-Bus notification server with persistence |
 | **System Monitor** | `SystemResources.qml` | CPU, RAM, GPU, temps via Python script |
-| **GPU / VFIO** | `GpuService.qml` | VFIO / PRIME GPU management |
+| **GPU / VFIO** | `GpuService.qml` | Legacy VFIO / PRIME management. Windows runs natively in a separate installation as of 2026-10-10; do not enable the retired VM/VFIO workflow unless requested. |
 | **Compositor** | `NiriService.qml` | Native Niri IPC abstraction (windows, workspaces, focus) |
 | **Visibility** | `Visibilities.qml` | Per-screen UI visibility/layering orchestration |
 | **State** | `StateService.qml` | JSON persistence for session state (tab positions, etc.) |

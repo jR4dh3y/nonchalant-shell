@@ -10,6 +10,9 @@ Singleton {
 
     // Current weather data
     property string weatherSymbol: ""
+    property string weatherGlyph: ""
+    property string resolvedLocation: ""
+    property real feelsLike: 0.0
     property real currentTemp: 0
     property real maxTemp: 0
     property real minTemp: 0
@@ -21,6 +24,7 @@ Singleton {
 
     // 7-day forecast data
     property var forecast: []
+    property var hourly: []
 
     // Sun position data
     property string sunrise: ""  // HH:MM
@@ -368,12 +372,92 @@ Singleton {
         return "❓";
     }
 
+    // Map Open-Meteo WMO codes to the source widget's Material Nerd Font glyphs.
+    function getWeatherCodeGlyph(code, daytime) {
+        if (code === 0)
+            return daytime ? "󰖨" : "󰖔";
+        if (code === 1 || code === 2)
+            return daytime ? "󰖕" : "󰼱";
+        if (code === 3)
+            return "󰖐";
+        if (code === 45 || code === 48)
+            return "󰖑";
+        if (code >= 51 && code <= 57)
+            return "󰼳";
+        if (code === 61 || code === 80)
+            return "󰼳";
+        if ((code >= 63 && code <= 67) || (code >= 81 && code <= 82))
+            return "󰖖";
+        if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86))
+            return "󰼶";
+        if (code >= 95 && code <= 99)
+            return "󰙾";
+        return "󰖐";
+    }
+
+
     function convertTemp(temp) {
         if (Config.weather.unit === "F") {
             return (temp * 9 / 5) + 32;
         }
         return temp;
     }
+
+    function normalizeHourlyForecast(hourlyData, forecastDates) {
+        if (!hourlyData || !Array.isArray(forecastDates) || forecastDates.length < 2
+                || !Array.isArray(hourlyData.time)
+                || !Array.isArray(hourlyData.temperature_2m)
+                || !Array.isArray(hourlyData.weather_code)
+                || !Array.isArray(hourlyData.precipitation_probability)) {
+            return null;
+        }
+
+        var times = hourlyData.time;
+        var temperatures = hourlyData.temperature_2m;
+        var weatherCodes = hourlyData.weather_code;
+        var rainProbabilities = hourlyData.precipitation_probability;
+        if (times.length === 0 || temperatures.length !== times.length
+                || weatherCodes.length !== times.length || rainProbabilities.length !== times.length) {
+            return null;
+        }
+
+        var today = forecastDates[0];
+        var tomorrow = forecastDates[1];
+        var records = [];
+        for (var i = 0; i < times.length; i++) {
+            var timestamp = times[i];
+            if (typeof timestamp !== "string" || timestamp.length < 13 || timestamp.charAt(10) !== "T")
+                continue;
+
+            var date = timestamp.slice(0, 10);
+            if (date !== today && date !== tomorrow)
+                continue;
+
+            var hour = parseInt(timestamp.slice(11, 13), 10);
+            if (!isFinite(hour) || hour < 0 || hour > 23 || hour % 3 !== 0)
+                continue;
+
+            var temperature = temperatures[i];
+            var code = weatherCodes[i];
+            var rain = rainProbabilities[i];
+            if (typeof temperature !== "number" || !isFinite(temperature)
+                    || typeof code !== "number" || !isFinite(code)
+                    || typeof rain !== "number" || !isFinite(rain)) {
+                continue;
+            }
+
+            records.push({
+                hour: hour,
+                temperature: convertTemp(temperature),
+                glyph: getWeatherCodeGlyph(code, hour >= 6 && hour < 21),
+                rain: Math.floor(rain),
+                tomorrow: date === tomorrow
+            });
+        }
+
+        return records.length > 0 ? records : null;
+    }
+
 
     function handleError() {
         if (retryCount < maxRetries) {
@@ -411,65 +495,87 @@ Singleton {
                             return;
                         }
 
-                        if (data.current_weather && data.daily) {
-                            var weather = data.current_weather;
-                            var daily = data.daily;
-
-                            root.weatherCode = parseInt(weather.weathercode);
-                            root.currentTemp = convertTemp(parseFloat(weather.temperature));
-                            root.windSpeed = parseFloat(weather.windspeed);
-
-                            if (daily.temperature_2m_max && daily.temperature_2m_max.length > 0) {
-                                root.maxTemp = convertTemp(parseFloat(daily.temperature_2m_max[0]));
-                            }
-                            if (daily.temperature_2m_min && daily.temperature_2m_min.length > 0) {
-                                root.minTemp = convertTemp(parseFloat(daily.temperature_2m_min[0]));
-                            }
-
-                            if (daily.sunrise && daily.sunrise.length > 0) {
-                                root.sunrise = daily.sunrise[0].split("T")[1];
-                            }
-                            if (daily.sunset && daily.sunset.length > 0) {
-                                root.sunset = daily.sunset[0].split("T")[1];
-                            }
-
-                            // Parse 7-day forecast
-                            var forecastData = [];
-                            var dayCount = Math.min(7, daily.time ? daily.time.length : 0);
-                            for (var i = 0; i < dayCount; i++) {
-                                // Manual date parse to avoid UTC midnight issues
-                                // "YYYY-MM-DD"
-                                var dateParts = daily.time[i].split("-");
-                                var year = parseInt(dateParts[0]);
-                                var month = parseInt(dateParts[1]) - 1; // 0-indexed months
-                                var day = parseInt(dateParts[2]);
-                                
-                                var dayDate = new Date(year, month, day);
-                                var rawDayName = i === 0 ? "Today" : dayDate.toLocaleDateString(Qt.locale(), "ddd");
-                                var dayName = rawDayName.charAt(0).toUpperCase() + rawDayName.slice(1);
-                                forecastData.push({
-                                    date: daily.time[i],
-                                    dayName: dayName,
-                                    weatherCode: daily.weathercode ? daily.weathercode[i] : 0,
-                                    emoji: getWeatherCodeEmoji(daily.weathercode ? daily.weathercode[i] : 0),
-                                    maxTemp: convertTemp(daily.temperature_2m_max ? daily.temperature_2m_max[i] : 0),
-                                    minTemp: convertTemp(daily.temperature_2m_min ? daily.temperature_2m_min[i] : 0)
-                                });
-                            }
-                            root.forecast = forecastData;
-
-                            root.weatherSymbol = getWeatherCodeEmoji(root.weatherCode);
-                            root.weatherDescription = getWeatherDescription(root.weatherCode);
-                            root.calculateSunPosition();
-                            root.dataAvailable = true;
-                            root.isLoading = false;
-                            root.hasFailed = false;
-                            root.retryCount = 0;
-                        } else {
+                        if (!data.current_weather || !data.daily || !data.current || !data.hourly || !data.location) {
                             console.warn("WeatherService: Invalid response structure");
                             root.dataAvailable = false;
                             root.handleError();
+                            return;
                         }
+
+                        var weather = data.current_weather;
+                        var daily = data.daily;
+                        var current = data.current;
+                        var location = data.location;
+                        var forecastHourly = normalizeHourlyForecast(data.hourly, daily.time);
+                        var weatherCode = parseInt(weather.weathercode);
+                        var temperature = parseFloat(weather.temperature);
+                        var wind = parseFloat(weather.windspeed);
+                        var apparentTemperature = parseFloat(current.apparent_temperature);
+
+                        if (!forecastHourly || !isFinite(weatherCode) || !isFinite(temperature)
+                                || !isFinite(wind) || !isFinite(apparentTemperature)
+                                || (current.is_day !== 0 && current.is_day !== 1)
+                                || typeof location.name !== "string" || location.name.trim().length === 0) {
+                            console.warn("WeatherService: Invalid response structure");
+                            root.dataAvailable = false;
+                            root.handleError();
+                            return;
+                        }
+
+                        root.weatherCode = weatherCode;
+                        root.currentTemp = convertTemp(temperature);
+                        root.feelsLike = convertTemp(apparentTemperature);
+                        root.windSpeed = wind;
+                        root.weatherGlyph = getWeatherCodeGlyph(weatherCode, current.is_day === 1);
+                        root.resolvedLocation = location.name.trim();
+                        root.hourly = forecastHourly;
+
+                        if (daily.temperature_2m_max && daily.temperature_2m_max.length > 0) {
+                            root.maxTemp = convertTemp(parseFloat(daily.temperature_2m_max[0]));
+                        }
+                        if (daily.temperature_2m_min && daily.temperature_2m_min.length > 0) {
+                            root.minTemp = convertTemp(parseFloat(daily.temperature_2m_min[0]));
+                        }
+
+                        if (daily.sunrise && daily.sunrise.length > 0) {
+                            root.sunrise = daily.sunrise[0].split("T")[1];
+                        }
+                        if (daily.sunset && daily.sunset.length > 0) {
+                            root.sunset = daily.sunset[0].split("T")[1];
+                        }
+
+                        // Parse 7-day forecast
+                        var forecastData = [];
+                        var dayCount = Math.min(7, daily.time ? daily.time.length : 0);
+                        for (var i = 0; i < dayCount; i++) {
+                            // Manual date parse to avoid UTC midnight issues
+                            // "YYYY-MM-DD"
+                            var dateParts = daily.time[i].split("-");
+                            var year = parseInt(dateParts[0]);
+                            var month = parseInt(dateParts[1]) - 1; // 0-indexed months
+                            var day = parseInt(dateParts[2]);
+
+                            var dayDate = new Date(year, month, day);
+                            var rawDayName = i === 0 ? "Today" : dayDate.toLocaleDateString(Qt.locale(), "ddd");
+                            var dayName = rawDayName.charAt(0).toUpperCase() + rawDayName.slice(1);
+                            forecastData.push({
+                                date: daily.time[i],
+                                dayName: dayName,
+                                weatherCode: daily.weathercode ? daily.weathercode[i] : 0,
+                                emoji: getWeatherCodeEmoji(daily.weathercode ? daily.weathercode[i] : 0),
+                                maxTemp: convertTemp(daily.temperature_2m_max ? daily.temperature_2m_max[i] : 0),
+                                minTemp: convertTemp(daily.temperature_2m_min ? daily.temperature_2m_min[i] : 0)
+                            });
+                        }
+                        root.forecast = forecastData;
+
+                        root.weatherSymbol = getWeatherCodeEmoji(root.weatherCode);
+                        root.weatherDescription = getWeatherDescription(root.weatherCode);
+                        root.calculateSunPosition();
+                        root.dataAvailable = true;
+                        root.isLoading = false;
+                        root.hasFailed = false;
+                        root.retryCount = 0;
                     } catch (e) {
                         console.warn("WeatherService: JSON parse error:", e);
                         root.dataAvailable = false;
