@@ -4,13 +4,51 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.config
 import qs.modules.globals
 
 // Session locking is handled entirely by Quickshell's native ext_session_lock
-// implementation (niri). The UI uses a one-frame in-memory ScreencopyView for
-// the desktop reveal; do not invoke external screenshot or compositor tools.
+// implementation (niri). Lock/unlock fades run on LockCurtain, an overlay layer
+// composited over the live desktop; no screenshots are taken.
 Singleton {
     id: root
+
+    readonly property int curtainFadeMs: Config.animDuration > 0 ? Math.round(Config.animDuration * 1.2) : 0
+
+    // Lock-path timing. Each step logs its offset from the lock request, and
+    // UI-thread stalls are reported while the lock settles, so a slow lock
+    // shows where the time went. Nothing sensitive is logged.
+    property double traceStart: 0
+
+    function trace(step: string) {
+        if (root.traceStart > 0)
+            console.info(`Lock: ${step} +${Date.now() - root.traceStart}ms`);
+    }
+
+    Timer {
+        id: stallProbe
+        interval: 50
+        repeat: true
+        property double last: 0
+        property int ticks: 0
+        onTriggered: {
+            const now = Date.now();
+            if (last > 0 && now - last > 150)
+                root.trace(`UI thread stalled ${now - last}ms`);
+            last = now;
+            // Watch the first ~6s; the lock has settled by then.
+            if (++ticks > 120)
+                stop();
+        }
+    }
+
+    Connections {
+        target: GlobalStates
+
+        function onLockscreenSecureChanged() {
+            root.trace(GlobalStates.lockscreenSecure ? "niri confirmed lock" : "lock released");
+        }
+    }
 
     function toggle() {
         // A lock action must never become an unauthenticated unlock action.
@@ -18,71 +56,71 @@ Singleton {
             lock();
     }
 
+    // Fade the curtain in over the desktop, then engage the real lock. Its
+    // first frame matches the opaque curtain, so the handoff is invisible.
     function lock() {
-        if (GlobalStates.lockscreenVisible || root.prepActive)
+        if (GlobalStates.lockscreenVisible || GlobalStates.lockCurtainShown)
             return;
         GlobalStates.lockscreenUnlocking = false;
-        GlobalStates.lockscreenHandoff = false;
-        // Pre-capture each screen's desktop BEFORE requesting the lock so the
-        // lock surface's first frame matches the on-screen content (windows
-        // included) instead of flashing the clean wallpaper. Falls back to
-        // engaging immediately if no screen can capture.
-        const pending = GlobalStates.beginLockshotPrep();
-        if (pending > 0) {
-            root.prepActive = true;
-            prepTimeoutTimer.restart();
-        } else {
+        root.traceStart = Date.now();
+        stallProbe.last = 0;
+        stallProbe.ticks = 0;
+        stallProbe.restart();
+        root.trace("requested");
+        GlobalStates.lockCurtainShown = true;
+        if (root.curtainFadeMs > 0)
+            engageTimer.restart();
+        else
             engage();
-        }
     }
 
     function engage() {
+        root.trace("engaging session lock");
         GlobalStates.lockscreenVisible = true;
-    }
-
-    // Engages the lock once every screen has a lockshot (or gave up).
-    property bool prepActive: false
-
-    Connections {
-        target: GlobalStates
-
-        function onLockshotPendingChanged() {
-            if (!root.prepActive)
-                return;
-            if (GlobalStates.lockshotPending > 0)
-                return;
-            root.prepActive = false;
-            prepTimeoutTimer.stop();
-            root.engage();
-        }
+        secureWatchdog.restart();
     }
 
     Timer {
-        id: prepTimeoutTimer
-        interval: 400
+        id: engageTimer
+        interval: root.curtainFadeMs + 50
+        onTriggered: root.engage()
+    }
+
+    // If niri has not confirmed the lock after a while, lower the curtain so it
+    // cannot become an opaque, input-eating surface with no way out. Never
+    // release the lock request here: a slow confirmation is still a lock, and
+    // releasing it would unlock the session without authentication.
+    Timer {
+        id: secureWatchdog
+        interval: 5000
         onTriggered: {
-            if (!root.prepActive)
+            if (!GlobalStates.lockscreenVisible || GlobalStates.lockscreenSecure)
                 return;
-            // The lock surface's first frame will be the plain scrim instead of
-            // the desktop capture; log it so a gray lock frame is traceable.
-            console.warn("LockscreenService: desktop capture not ready after", prepTimeoutTimer.interval, "ms; locking without it");
-            root.prepActive = false;
-            root.engage();
+            console.warn("LockscreenService: niri has not confirmed the lock; lowering the curtain");
+            GlobalStates.lockCurtainShown = false;
         }
     }
 
     // Called only by LockScreen after PAM succeeds. Keeping this separate from
     // the IPC commands prevents `nonchalant lock` from bypassing authentication.
+    // Releasing the lock reveals the still-opaque curtain over the live
+    // desktop; lowering it fades the desktop in.
     function finishUnlock() {
         if (!GlobalStates.lockscreenVisible || !GlobalStates.lockscreenUnlocking)
             return;
+        secureWatchdog.stop();
+        root.trace("unlocking");
         GlobalStates.lockscreenVisible = false;
         GlobalStates.lockscreenUnlocking = false;
-        GlobalStates.lockscreenHandoff = false;
-        // Drop the in-memory desktop captures once the lock surfaces are gone.
-        Qt.callLater(() => GlobalStates.lockshots = {});
+        // Releasing the lock tears down the lock surfaces, which blocks the
+        // UI thread for ~100ms+. Starting the fade in the same instant made
+        // it jump a third of the way at once. Lower the curtain afterwards:
+        // it is still opaque and identical to the lock backdrop meantime.
+        Qt.callLater(() => {
+            root.trace("lock released, fading curtain out");
+            GlobalStates.lockCurtainShown = false;
+        });
     }
-
 
     IpcHandler {
         target: "lockscreen"
@@ -94,8 +132,5 @@ Singleton {
         function lock() {
             root.lock();
         }
-
     }
 }
-
-
