@@ -48,7 +48,7 @@ Rectangle {
                 }
                 if (isToday === 0)
                     return Colors.overSurface;
-                return Colors.surfaceBright;
+                return Colors.withAlpha(Colors.overSurfaceVariant, 0.7);
             }
 
             Behavior on color {

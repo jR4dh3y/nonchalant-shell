@@ -1268,8 +1268,6 @@ Item {
                         id: statsView
                         width: parent.width
                         height: implicitHeight
-
-                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
@@ -1299,8 +1297,6 @@ Item {
                         screen: root.screen
                         width: parent.width
                         height: implicitHeight
-
-                        onBackRequested: root.expand("dashboard")
                     }
                 }
 
@@ -1346,8 +1342,6 @@ Item {
                         maximumHeight: Math.max(0, root.screen.height - 32)
                         lyricsActive: root.currentMode === "media" && !root.retractingToHidden
                         height: implicitHeight
-
-                        onBackRequested: root.expand("dashboard")
                     }
                 }
 

@@ -49,79 +49,85 @@ StyledRect {
         }
     }
 
-    // Background with blur effect
-
-    Image {
-        mipmap: true
-        id: backgroundArtBlurred
+    ClippingRectangle {
         anchors.fill: parent
-        source: (MprisController.activePlayer?.trackArtUrl ?? "") !== "" ? MprisController.activePlayer.trackArtUrl : player.wallpaperPath
-        sourceSize: Qt.size(64, 64)
-        fillMode: Image.PreserveAspectCrop
-        visible: false
-        asynchronous: true
-    }
+        radius: player.radius
+        color: "transparent"
 
-    MultiEffect {
-        id: blurredEffect
-        anchors.fill: parent
-        source: backgroundArtBlurred
-        blurEnabled: true
-        blurMax: 32
-        blur: 1.0
-        opacity: (player.hasArtwork || player.wallpaperPath !== "") ? 0.25 : 0.0
-        visible: player.hasArtwork || player.wallpaperPath !== ""
-        Behavior on opacity {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration
-                easing.type: Easing.OutQuart
+        // Background with blur effect
+
+        Image {
+            mipmap: true
+            id: backgroundArtBlurred
+            anchors.fill: parent
+            source: (MprisController.activePlayer?.trackArtUrl ?? "") !== "" ? MprisController.activePlayer.trackArtUrl : player.wallpaperPath
+            sourceSize: Qt.size(64, 64)
+            fillMode: Image.PreserveAspectCrop
+            visible: false
+            asynchronous: true
+        }
+
+        MultiEffect {
+            id: blurredEffect
+            anchors.fill: parent
+            source: backgroundArtBlurred
+            blurEnabled: true
+            blurMax: 32
+            blur: 1.0
+            opacity: (player.hasArtwork || player.wallpaperPath !== "") ? 0.25 : 0.0
+            visible: player.hasArtwork || player.wallpaperPath !== ""
+            Behavior on opacity {
+                enabled: Config.animDuration > 0
+                NumberAnimation {
+                    duration: Config.animDuration
+                    easing.type: Easing.OutQuart
+                }
             }
         }
-    }
 
-    Image {
-        mipmap: true
-        id: backgroundArtFull
-        anchors.fill: parent
-        source: (MprisController.activePlayer?.trackArtUrl ?? "") !== "" ? MprisController.activePlayer.trackArtUrl : player.wallpaperPath
-        fillMode: Image.PreserveAspectCrop
-        visible: false
-        asynchronous: true
-    }
+        Image {
+            mipmap: true
+            id: backgroundArtFull
+            anchors.fill: parent
+            source: (MprisController.activePlayer?.trackArtUrl ?? "") !== "" ? MprisController.activePlayer.trackArtUrl : player.wallpaperPath
+            fillMode: Image.PreserveAspectCrop
+            visible: false
+            asynchronous: true
+        }
 
-    MultiEffect {
-        id: fullArtEffect
-        anchors.fill: parent
-        source: backgroundArtFull
-        maskEnabled: true
-        maskSource: innerAreaMask
-        maskInverted: true
-        maskThresholdMin: 0.5
-        maskSpreadAtMin: 1.0
-        opacity: (player.hasArtwork || player.wallpaperPath !== "") ? 1.0 : 0.0
-        visible: player.hasArtwork || player.wallpaperPath !== ""
-        Behavior on opacity {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration
-                easing.type: Easing.OutQuart
+        MultiEffect {
+            id: fullArtEffect
+            anchors.fill: parent
+            source: backgroundArtFull
+            maskEnabled: true
+            maskSource: innerAreaMask
+            maskInverted: true
+            maskThresholdMin: 0.5
+            maskSpreadAtMin: 1.0
+            opacity: (player.hasArtwork || player.wallpaperPath !== "") ? 1.0 : 0.0
+            visible: player.hasArtwork || player.wallpaperPath !== ""
+            Behavior on opacity {
+                enabled: Config.animDuration > 0
+                NumberAnimation {
+                    duration: Config.animDuration
+                    easing.type: Easing.OutQuart
+                }
             }
         }
-    }
 
-    Item {
-        id: innerAreaMask
-        anchors.fill: parent
-        visible: false
-        layer.enabled: true
-        Rectangle {
-            x: 4
-            y: 4
-            width: parent.width - 8
-            height: parent.height - 8
-            radius: player.radius - 4
-            color: "white"
+        Item {
+            id: innerAreaMask
+            anchors.fill: parent
+            visible: false
+            layer.enabled: true
+            Rectangle {
+                x: 4
+                y: 4
+                width: parent.width - 8
+                height: parent.height - 8
+                radius: player.radius - 4
+                color: "white"
+            }
         }
     }
 

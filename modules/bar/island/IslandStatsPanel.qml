@@ -14,8 +14,6 @@ Item {
     implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
 
-    signal backRequested()
-
     Component.onDestruction: {
         GlobalStates.islandStatsOpen = false;
     }
@@ -42,59 +40,6 @@ Item {
         anchors.right: parent.right
         anchors.margins: 14
         spacing: 10
-
-        // ═══════════════════════════════════════════════════════════════
-        // UNIFIED HEADER: Back + Title
-        // ═══════════════════════════════════════════════════════════════
-        RowLayout {
-            id: headerRow
-            Layout.fillWidth: true
-            spacing: 8
-
-            // Back button
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: width / 2
-                variant: backMouse.containsMouse ? "focus" : "common"
-                scale: backMouse.pressed ? 0.92 : 1.0
-
-                PressBehavior on scale {
-                    pressed: backMouse.pressed
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowLeft
-                    font.family: Icons.font
-                    font.pixelSize: 14
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.backRequested()
-                }
-            }
-
-            // Title
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "System Resources"
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
-                font.bold: true
-                color: Colors.overBackground
-            }
-
-            Item { Layout.fillWidth: true }
-        }
 
         // ═══════════════════════════════════════════════════════════════
         // NATIVE METRICS BODY (Single unified darker surface)

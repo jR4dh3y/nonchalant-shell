@@ -405,7 +405,7 @@ Item {
                             }
                             font.family: Icons.font
                             font.pixelSize: 22
-                            color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
+                            color: wifiCapsule.item
                         }
 
                         MouseArea {
@@ -448,7 +448,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: NetworkService.wifiEnabled ? Colors.overPrimary : Colors.overBackground
+                            color: wifiCapsule.item
                             elide: Text.ElideRight
                         }
 
@@ -501,7 +501,7 @@ Item {
                             text: root.btConnected ? Icons.bluetoothConnected : (BluetoothService.enabled ? Icons.bluetooth : Icons.bluetoothOff)
                             font.family: Icons.font
                             font.pixelSize: 22
-                            color: BluetoothService.enabled ? Colors.overPrimary : Colors.overBackground
+                            color: btCapsule.item
                         }
 
                         MouseArea {
@@ -539,7 +539,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: BluetoothService.enabled ? Colors.overPrimary : Colors.overBackground
+                            color: btCapsule.item
                             elide: Text.ElideRight
                         }
 

@@ -16,8 +16,8 @@ let
     fontDirectories = [ pkgs.dejavu_fonts phosphor ];
   };
   testTools = with pkgs; [
-    python3 quickshell niri headlessHyprland hyprland weston grim dbus mesa
-    fontconfig dejavu_fonts qmlModules phosphor nodejs wtype
+    (python3.withPackages (ps: [ ps.pillow ps.dbus-next ])) quickshell niri headlessHyprland hyprland weston grim dbus mesa
+    fontconfig dejavu_fonts qmlModules phosphor nodejs wtype wlrctl
     (lib.getBin qt6.qtdeclarative)
   ];
 in {

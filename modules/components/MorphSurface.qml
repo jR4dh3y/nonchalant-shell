@@ -21,6 +21,8 @@ Item {
     property real originWidth: contentWidth / 2
     // Grow upward (bar at the bottom of the screen) instead of downward.
     property bool fromBottom: false
+    // Pin the body to the left edge instead of centering it (left-edge dock).
+    property bool fromLeft: false
     property string variant: "popup"
     property real radius: Styling.radius(8)
     property int padding: 8
@@ -35,7 +37,7 @@ Item {
 
     property real reveal: 0
     readonly property real revealClamped: Math.max(0, Math.min(1, root.reveal))
-    readonly property real stretch: Math.min(root.maxStretch, Math.max(0, root.reveal - 1) * root.bodyHeight)
+    readonly property real stretch: Math.min(root.maxStretch, Math.max(0, root.reveal - 1) * (root.fromLeft ? root.bodyWidth : root.bodyHeight))
 
     width: contentWidth
     height: contentHeight
@@ -98,9 +100,9 @@ Item {
         variant: root.variant
         enableShadow: false
         visible: !root.fullyHidden
-        width: body.startWidth + (root.bodyWidth - body.startWidth) * root.revealClamped
-        height: root.bodyHeight * root.revealClamped + root.stretch
-        x: Math.round((root.width - width) / 2)
+        width: body.startWidth + (root.bodyWidth - body.startWidth) * root.revealClamped + (root.fromLeft ? root.stretch : 0)
+        height: root.fromLeft ? root.bodyHeight : root.bodyHeight * root.revealClamped + root.stretch
+        x: root.fromLeft ? 0 : Math.round((root.width - width) / 2)
         y: root.fromBottom ? root.height - height : 0
         radius: Math.min(root.radius, height / 2)
         animateRadius: false
@@ -108,7 +110,7 @@ Item {
         Item {
             id: page
 
-            readonly property real restDrift: root.fromBottom ? Motion.drift : -Motion.drift
+            readonly property real restDrift: !root.fromLeft && root.fromBottom ? Motion.drift : -Motion.drift
             property real drift: restDrift
 
             // Cancel the body's own offset so the content stays put while the
@@ -121,7 +123,8 @@ Item {
             height: root.contentHeight - root.padding * 2
             opacity: 0
             transform: Translate {
-                y: page.drift
+                x: root.fromLeft ? page.drift : 0
+                y: root.fromLeft ? 0 : page.drift
             }
 
             states: State {

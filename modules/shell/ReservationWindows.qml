@@ -20,6 +20,13 @@ Item {
 
     readonly property int sidebarMargin: 4
 
+    readonly property string barStyle: Config.bar?.style ?? "default"
+    // Only a visible, space-taking bar reserves an edge. Unpinned island and
+    // pills layouts float over content and reserve nothing.
+    readonly property bool barReserves: Config.barReady && root.barEnabled
+        && ((root.barStyle !== "island" && root.barStyle !== "pills") || (Config.bar?.pinned ?? false))
+    readonly property int barZone: root.barSize + root.barOuterMargin
+
     Item {
         id: noInputRegion
         width: 0
@@ -41,9 +48,8 @@ Item {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         WlrLayershell.namespace: "nonchalant:reservation:top"
 
-        exclusiveZone: Config.barReady && root.barEnabled && root.barPosition === "top"
-            && (!((Config.bar?.style ?? "default") === "island" || (Config.bar?.style ?? "default") === "pills") || (Config.bar?.pinned ?? false))
-            ? root.barSize + root.barOuterMargin
+        exclusiveZone: root.barReserves && root.barStyle !== "left" && root.barPosition === "top"
+            ? root.barZone
             : 0
         exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore
 
@@ -66,9 +72,8 @@ Item {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         WlrLayershell.namespace: "nonchalant:reservation:bottom"
 
-        exclusiveZone: Config.barReady && root.barEnabled && root.barPosition === "bottom"
-            && (!((Config.bar?.style ?? "default") === "island" || (Config.bar?.style ?? "default") === "pills") || (Config.bar?.pinned ?? false))
-            ? root.barSize + root.barOuterMargin
+        exclusiveZone: root.barReserves && root.barStyle !== "left" && root.barPosition === "bottom"
+            ? root.barZone
             : 0
         exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore
 
@@ -91,11 +96,14 @@ Item {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         WlrLayershell.namespace: "nonchalant:reservation:left"
 
-        exclusiveZone: root.sidebarEnabled
-            && root.sidebarPinned
-            && root.sidebarPosition === "left"
-            ? root.sidebarWidth + root.sidebarMargin
-            : 0
+        // The left sidebar begins beside the dock, so reserve their combined
+        // footprint in one exclusive zone.
+        exclusiveZone: Math.max(
+            root.barReserves && root.barStyle === "left" ? root.barZone : 0,
+            root.sidebarEnabled && root.sidebarPinned && root.sidebarPosition === "left"
+                ? root.sidebarWidth + root.sidebarMargin
+                    + (root.barReserves && root.barStyle === "left" ? root.barZone : 0)
+                : 0)
         exclusionMode: exclusiveZone > 0 ? ExclusionMode.Normal : ExclusionMode.Ignore
 
         mask: Region {

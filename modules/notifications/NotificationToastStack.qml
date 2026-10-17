@@ -19,13 +19,15 @@ Item {
     readonly property Item hitbox: (!isIsland && hasPopups) ? toastColumn : null
     readonly property int animMs: Config.animDuration > 0 ? Config.animDuration : 0
     readonly property bool isIsland: (Config.bar?.style ?? "default") === "island" || (Config.bar?.style ?? "default") === "pills"
+    readonly property bool isLeft: (Config.bar?.style ?? "default") === "left"
+    readonly property int edgeMargin: 12
     readonly property real cornerRadius: Styling.radius(4)
 
     visible: !isIsland && (hasPopups || exitingCount > 0)
     width: isIsland ? Math.min(420, (parent ? parent.width - 32 : 420)) : 360
     height: Math.max(toastColumn.implicitHeight, 1)
-    x: isIsland ? (parent ? Math.round((parent.width - width) / 2) : 0) : (parent ? parent.width - width - 12 : 0)
-    y: isIsland ? 38 : 56
+    x: isIsland ? (parent ? Math.round((parent.width - width) / 2) : 0) : (parent ? parent.width - width - root.edgeMargin : 0)
+    y: isIsland ? 38 : (isLeft ? root.edgeMargin : 56)
     z: isIsland ? 50 : 200
 
     property int exitingCount: 0

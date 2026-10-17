@@ -19,7 +19,8 @@ Item {
     readonly property Item hitbox: menuSurface.fullyHidden ? null : menuSurface.body
     property PanelWindow barPanel: Visibilities.getBarPanelForScreen(screen.name)
     readonly property int edgeGap: 8
-    readonly property bool bottomEdge: (Config.bar?.position ?? "top") === "bottom"
+    readonly property bool bottomEdge: !leftEdge && (Config.bar?.position ?? "top") === "bottom"
+    readonly property bool leftEdge: (Config.bar?.style ?? "default") === "left"
     readonly property real barClearance: {
         if (!barPanel || !barPanel.barEnabled)
             return edgeGap;
@@ -42,10 +43,10 @@ Item {
     Item {
         id: edgeRegion
 
-        x: 0
-        y: root.bottomEdge ? 0 : root.barClearance
-        width: root.width
-        height: Math.max(0, root.height - root.barClearance)
+        x: root.leftEdge ? root.barClearance : 0
+        y: root.leftEdge ? 0 : (root.bottomEdge ? 0 : root.barClearance)
+        width: root.leftEdge ? Math.max(0, root.width - root.barClearance) : root.width
+        height: root.leftEdge ? root.height : Math.max(0, root.height - root.barClearance)
         clip: true
 
         MorphSurface {
@@ -55,8 +56,9 @@ Item {
             contentWidth: launcherLoader.item ? launcherLoader.item.implicitWidth + padding * 2 : 0
             contentHeight: launcherLoader.item ? launcherLoader.item.implicitHeight + padding * 2 : 0
             fromBottom: root.bottomEdge
-            x: Math.round((edgeRegion.width - width) / 2)
-            y: root.bottomEdge ? edgeRegion.height - height : 0
+            fromLeft: root.leftEdge
+            x: root.leftEdge ? 0 : Math.round((edgeRegion.width - width) / 2)
+            y: root.leftEdge ? root.edgeGap : (root.bottomEdge ? edgeRegion.height - height : 0)
 
             Loader {
                 id: launcherLoader

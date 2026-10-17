@@ -39,7 +39,7 @@ class BarConfigModel:
 
     @style.setter
     def style(self, val: Any):
-        valid = ["default", "island", "pills"]
+        valid = ["default", "island", "pills", "left"]
         new_val = val if (isinstance(val, str) and val in valid) else "default"
         if self._style != new_val:
             self._style = new_val

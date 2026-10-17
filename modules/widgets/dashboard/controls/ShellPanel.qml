@@ -379,7 +379,7 @@ Item {
                     variant: isSelected ? "primary" : (isHovered ? "focus" : "common")
                     enableShadow: false
                     Layout.fillWidth: true
-                    height: 36
+                    Layout.preferredHeight: 36
                     radius: isSelected ? Styling.radius(0) / 2 : Styling.radius(0)
 
                     Text {
@@ -595,6 +595,11 @@ Item {
                                     label: "Pills",
                                     value: "pills",
                                     icon: Icons.dotsThree
+                                },
+                                {
+                                    label: "Left",
+                                    value: "left",
+                                    icon: Icons.arrowLeft
                                 }
                             ]
                             value: Config.bar?.style ?? "default"
@@ -606,6 +611,7 @@ Item {
                         }
 
                         SelectorRow {
+                            visible: (Config.bar?.style ?? "default") === "default"
                             label: "Position"
                             options: [
                                 {

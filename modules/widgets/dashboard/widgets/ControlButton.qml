@@ -14,6 +14,10 @@ StyledRect {
     signal rightClicked
     signal longPressed
 
+    property bool externalHighlight: false
+    backgroundOpacity: root.externalHighlight ? 0 : -1
+    enableBorder: !root.externalHighlight
+
     property bool isHovered: mouseArea.containsMouse
 
     variant: {
@@ -30,6 +34,12 @@ StyledRect {
     scale: mouseArea.pressed ? 0.90 : 1.0
 
     PressBehavior on scale {
+        pressed: mouseArea.pressed
+    }
+
+    HoverTint {
+        visible: root.externalHighlight
+        hovered: root.isHovered && !root.isActive
         pressed: mouseArea.pressed
     }
 

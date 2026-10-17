@@ -1,35 +1,49 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import Quickshell
 import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.modules.theme
 import qs.modules.services
 import qs.modules.components
-import qs.config
 
 MouseArea {
     id: root
 
     required property SystemTrayItem item
     property int trayItemSize: 20
+    property int hitboxSize: trayItemSize
+    property bool vertical: false
     property bool isHovered: false
+    property bool menuInFlyout: false
+    property bool showHoverBackground: false
+    signal menuRequested()
+
+    function openMenu(): void {
+        if (root.menuInFlyout)
+            root.menuRequested();
+        else
+            systrayPopup.toggle();
+    }
 
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     Layout.fillHeight: true
-    implicitWidth: trayItemSize
-    implicitHeight: trayItemSize
+    implicitWidth: hitboxSize
+    implicitHeight: hitboxSize
 
     onClicked: event => {
         switch (event.button) {
         case Qt.LeftButton:
-            Visibilities.closeActiveBarPopup();
-            item.activate();
+            if (item.onlyMenu && item.hasMenu) {
+                root.openMenu();
+            } else {
+                Visibilities.closeActiveBarPopup();
+                item.activate();
+            }
             break;
         case Qt.RightButton:
             if (item.hasMenu) {
-                systrayPopup.toggle();
+                root.openMenu();
             }
             break;
         }
@@ -44,108 +58,17 @@ MouseArea {
         contentWidth: 220
         // Height adapts to content, with a max limit if needed.
         // Must include vertical padding (8 top + 8 bottom = 16)
-        contentHeight: Math.min(itemsColumn.implicitHeight + 16, 400)
+        contentHeight: Math.min(trayMenu.implicitHeight + 16, 400)
 
         popupPadding: 8
         // 8px standard margin + 8px SysTray container padding to ensure correct offset from the main bar
         visualMargin: 16
 
-        // Using QsMenuOpener to access menu items
-        QsMenuOpener {
-            id: menuOpener
-            menu: root.item.menu
-        }
-
-        ScrollView {
+        SysTrayMenu {
+            id: trayMenu
             anchors.fill: parent
-            contentWidth: availableWidth
-            clip: true
-
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-            ColumnLayout {
-                id: itemsColumn
-                width: parent.width
-                spacing: 2
-
-                Repeater {
-                    model: menuOpener.children ? menuOpener.children.values : []
-
-                    delegate: ColumnLayout {
-                        required property var modelData
-
-                        Layout.fillWidth: true
-                        spacing: 2
-
-                        property bool submenuExpanded: false
-
-                        SystrayMenuItem {
-                            Layout.fillWidth: true
-
-                            textStr: modelData.text || ""
-                            iconSource: modelData.icon || ""
-                            isImageIcon: iconSource.indexOf("/") !== -1 || iconSource.indexOf(".") !== -1
-                            isSeparator: modelData.isSeparator || false
-                            hasSubmenu: modelData.hasChildren || false
-                            expanded: parent.submenuExpanded
-                            buttonType: modelData.buttonType || 0
-                            checkState: modelData.checkState || 0
-
-                            onClicked: {
-                                if (modelData.hasChildren) {
-                                    parent.submenuExpanded = !parent.submenuExpanded;
-                                } else {
-                                    if (modelData.triggered) {
-                                        modelData.triggered();
-                                    } else if (modelData.activate) {
-                                        modelData.activate();
-                                    }
-                                    systrayPopup.close();
-                                }
-                            }
-                        }
-
-                        // Submenu children — uses its own QsMenuOpener to trigger lazy loading
-                        ColumnLayout {
-                            visible: submenuExpanded && modelData.hasChildren
-                            Layout.fillWidth: true
-                            spacing: 2
-
-                            QsMenuOpener {
-                                id: subMenuOpener
-                                menu: modelData.hasChildren ? modelData : null
-                            }
-
-                            Repeater {
-                                model: subMenuOpener.children ? subMenuOpener.children.values : []
-
-                                delegate: SystrayMenuItem {
-                                    required property var modelData
-
-                                    Layout.fillWidth: true
-                                    depth: 1
-
-                                    textStr: modelData.text || ""
-                                    iconSource: modelData.icon || ""
-                                    isImageIcon: iconSource.indexOf("/") !== -1 || iconSource.indexOf(".") !== -1
-                                    isSeparator: modelData.isSeparator || false
-                                    buttonType: modelData.buttonType || 0
-                                    checkState: modelData.checkState || 0
-
-                                    onClicked: {
-                                        if (modelData.triggered) {
-                                            modelData.triggered();
-                                        } else if (modelData.activate) {
-                                            modelData.activate();
-                                        }
-                                        systrayPopup.close();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            menu: root.menuInFlyout ? null : (root.item?.menu ?? null)
+            onActionTriggered: systrayPopup.close()
         }
     }
 
@@ -158,18 +81,26 @@ MouseArea {
             pressed: root.pressed
         }
 
+        StyledRect {
+            anchors.fill: parent
+            variant: "focus"
+            backgroundOpacity: root.showHoverBackground && (root.isHovered || root.pressed) ? -1 : 0
+            enableBorder: false
+            radius: Styling.radius(0)
+        }
+
         IconImage {
             id: trayIcon
             source: {
-                const iconPath = root.item.icon.toString();
+                const iconPath = String(root.item?.icon ?? "");
                 if (iconPath.includes("spotify")) {
                     return Quickshell.iconPath("spotify-client");
                 }
-                return root.item.icon;
+                return root.item?.icon ?? "";
             }
             anchors.centerIn: parent
-            width: parent.width
-            height: parent.height
+            width: root.trayItemSize
+            height: root.trayItemSize
             smooth: true
         }
 
@@ -180,9 +111,11 @@ MouseArea {
     }
 
     StyledToolTip {
+        x: root.vertical ? root.width + 8 : (root.width - width) / 2
+        y: root.vertical ? (root.height - height) / 2 : -height
         show: root.isHovered
-        tooltipText: root.item.tooltipTitle || root.item.title
-        description: root.item.tooltipDescription || ""
+        tooltipText: root.item?.tooltipTitle || root.item?.title || ""
+        description: root.item?.tooltipDescription || ""
     }
 
     HoverHandler {

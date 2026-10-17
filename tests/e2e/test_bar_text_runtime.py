@@ -16,6 +16,7 @@ import Quickshell
 import Quickshell.Io
 import qs.config
 import qs.modules.bar.layouts
+import qs.modules.bar.workspaces
 import qs.modules.services
 import qs.modules.services.compositor
 import qs.modules.theme
@@ -40,7 +41,10 @@ ShellRoot {
         visible: true
         implicitWidth: 1200
         implicitHeight: 900
+        Item { id: screenHost; property ShellScreen screen: Quickshell.screens[0] }
         Loader { id: bar; anchors.fill: parent }
+        Component { id: left; LeftBar { screen: Quickshell.screens[0] } }
+        Component { id: taskbar; NonchalantTaskbar { bar: screenHost } }
         Component { id: island; IslandBar { screen: Quickshell.screens[0] } }
         Component { id: pills; PillsBar { screen: Quickshell.screens[0] } }
         Process {
@@ -66,6 +70,26 @@ ShellRoot {
                         "Bar must not render a pin toggle")
                 }
                 for (const child of item.children ?? []) verifyNoPinIcon(child)
+            }
+
+            function test_workspace_initialization() {
+                compositorState.workspaces = [testWorkspace]
+                compositorState.windows = [testWindow]
+                const components = [left, taskbar, left, taskbar]
+                for (let index = 0; index < components.length; index++) {
+                    const component = components[index]
+                    bar.sourceComponent = component
+                    tryVerify(() => bar.item !== null)
+                    compare(bar.item.workspaceIds.join(","), "1",
+                        "A newly created switcher must populate an already loaded workspace list")
+                    tryVerify(() => bar.item.activeWorkspaceButton !== null)
+                    const button = bar.item.activeWorkspaceButton
+                    testWorkspace.name = "Renamed " + index
+                    compare(bar.item.activeWorkspaceButton, button,
+                        "A metadata update must not recreate workspace delegates")
+                    bar.sourceComponent = undefined
+                }
+                console.log("BAR_WORKSPACE_INITIALIZATION_PASSED")
             }
 
             function test_pin_command() {
@@ -319,6 +343,7 @@ class BarTextRuntimeTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("BAR_CONTEXT_TEXT_RUNTIME_FINISHED", output, output)
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
+            self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)
             for layout in ("island", "pills"):
                 self.assertIn("BAR_CONTEXT_TEXT_PASSED_" + layout, output, output)
                 self.assertIn("BAR_INTERRUPTED_RETRACTION_PASSED_" + layout, output, output)

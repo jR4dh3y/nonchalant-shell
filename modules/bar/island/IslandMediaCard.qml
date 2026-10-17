@@ -15,6 +15,8 @@ import qs.config
 StyledRect {
     id: root
     property bool lyricsActive: false
+    property bool showLyrics: true
+    property bool squareArtwork: false
 
     implicitWidth: 460
     implicitHeight: mainColumn.implicitHeight + 24
@@ -38,37 +40,53 @@ StyledRect {
 
     signal expandRequested()
 
-    // Background: blurred album art while media has artwork, plain wallpaper otherwise
-    Image {
-        id: bgArt
+    ClippingRectangle {
         anchors.fill: parent
-        source: root.hasArtwork ? root.trackArt : root.wallpaperUrl
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        clip: true
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            blurEnabled: root.hasArtwork || root.wallpaperUrl !== ""
-            blurMax: 32
-            blur: 0.75
+        radius: root.radius
+        color: "transparent"
+
+        // Background: blurred album art while media has artwork, plain wallpaper otherwise
+        Image {
+            id: bgArt
+            anchors.fill: parent
+            source: root.hasArtwork ? root.trackArt : (root.squareArtwork ? "" : root.wallpaperUrl)
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            clip: true
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                blurEnabled: !root.squareArtwork && (root.hasArtwork || root.wallpaperUrl !== "")
+                blurMax: 32
+                blur: 0.75
+            }
+            opacity: root.hasArtwork ? 1.0 : (!root.squareArtwork && root.wallpaperUrl !== "" ? 0.35 : 0.0)
+            Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
         }
-        opacity: root.hasArtwork ? 1.0 : (root.wallpaperUrl !== "" ? 0.35 : 0.0)
-        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+        // Gradient overlay for contrast
+        Rectangle {
+            anchors.fill: parent
+            color: "transparent"
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: root.squareArtwork ? "transparent" : "#44000000" }
+                GradientStop { position: 1.0; color: root.squareArtwork ? Qt.alpha(Colors.background, 0.95) : "#88000000" }
+            }
+        }
     }
 
-    // Gradient overlay for contrast
-    Rectangle {
-        anchors.fill: parent
-        color: "transparent"
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#44000000" }
-            GradientStop { position: 1.0; color: "#88000000" }
-        }
+    StyledText {
+        anchors.centerIn: parent
+        visible: root.squareArtwork && !root.hasArtwork
+        text: Icons.disc
+        font.family: Icons.font
+        font.pixelSize: Styling.fontSize(36)
+        color: Colors.overSurfaceVariant
     }
 
     ColumnLayout {
         id: mainColumn
-        anchors.top: parent.top
+        anchors.top: root.squareArtwork ? undefined : parent.top
+        anchors.bottom: root.squareArtwork ? parent.bottom : undefined
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 12
@@ -96,6 +114,7 @@ StyledRect {
                     spacing: 10
 
                     Item {
+                        visible: !root.squareArtwork
                         implicitWidth: 40
                         implicitHeight: 40
                         Layout.alignment: Qt.AlignVCenter
@@ -285,12 +304,13 @@ StyledRect {
         }
 
         LyricsView {
+            visible: root.showLyrics && (!collapseWhenEmpty || (hasTrack && lyricsEnabled && LyricsService.available))
             collapseWhenEmpty: true
             Layout.fillWidth: true
             Layout.preferredHeight: 22
             mode: "compact"
-                    lyricsEnabled: Config.bar?.lyricsEnabled ?? true
-            active: root.lyricsActive
+            lyricsEnabled: Config.bar?.lyricsEnabled ?? true
+            active: root.lyricsActive && root.showLyrics
         }
 
         // Bottom row: Interactive Waveform progress bar

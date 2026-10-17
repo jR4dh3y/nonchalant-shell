@@ -375,6 +375,7 @@ Popup {
                 Layout.preferredHeight: 36
                 text: "Apply"
                 background: StyledRect {
+                    id: applyBackground
                     variant: applyButton.hovered ? "primaryfocus" : "primary"
                     radius: Styling.radius(-3)
                 }
@@ -385,7 +386,7 @@ Popup {
                     font.family: Styling.defaultFont
                     font.pixelSize: Styling.fontSize(-1)
                     font.weight: Font.Medium
-                    color: Styling.srItem("overprimary")
+                    color: applyBackground.item
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }

@@ -346,8 +346,8 @@ class TestTier2_AdditionalFeatureBoundaries(unittest.TestCase):
             self.assertEqual(cfg.style, target)
 
     def test_b42_settings_selector_out_of_bounds_index(self):
-        options = ["default", "island"]
-        for bad_idx in [-1, 2, 999, -100]:
+        options = ["default", "island", "left"]
+        for bad_idx in [-1, 3, 999, -100]:
             safe_val = options[bad_idx] if 0 <= bad_idx < len(options) else "default"
             self.assertEqual(safe_val, "default")
 
