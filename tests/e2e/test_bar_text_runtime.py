@@ -153,21 +153,26 @@ ShellRoot {
                 return null
             }
 
-            function test_vertical_connectivity() {
+            function test_vertical_device_status() {
                 const originalStyle = Config.bar.style
                 Config.bar.style = "left"
                 bar.sourceComponent = left
                 tryVerify(() => bar.item !== null)
                 const clock = component(bar.item, "Clock")
-                const trigger = findChild(bar.item, "verticalConnectivityButton")
+                const trigger = findChild(bar.item, "verticalDeviceStatusButton")
                 verify(clock !== null && trigger !== undefined)
+                const brightness = findChild(bar.item, "verticalBrightnessControl")
+                verify(brightness !== undefined)
+                verify(trigger.y > brightness.y, "Combined status belongs below brightness")
+                compare(component(bar.item, "BatteryIndicator"), null,
+                    "There must be no separate battery control")
                 mouseClick(trigger)
-                tryCompare(clock, "connectivityMenuActive", true)
+                tryCompare(clock, "deviceMenuActive", true)
                 compare(clock.controlMode, "wifi")
                 wait(Motion.expandDuration + 100)
                 const owner = Visibilities.activeBarPopup
                 verify(owner !== null)
-                function tab(mode) { return findChild(bar.item, "connectivityTab-" + mode) }
+                function tab(mode) { return findChild(bar.item, "deviceStatusTab-" + mode) }
                 tryVerify(() => tab("wifi") !== undefined)
                 compare(tab("wifi").selected, true)
                 mouseClick(tab("bluetooth"))
@@ -185,26 +190,31 @@ ShellRoot {
                 // Clicking an already selected tab keeps the popup open.
                 mouseClick(tab("bluetooth"))
                 compare(clock.menuOpen, true)
-                // The one bar control closes either tab and remembers it on reopen.
+                mouseClick(tab("battery"))
+                tryCompare(clock, "controlMode", "battery")
+                tryVerify(() => tab("battery")?.selected === true)
+                compare(clock.deviceMenuActive, true)
+                compare(Visibilities.activeBarPopup, owner)
+                // The one bar control closes every device tab and remembers it on reopen.
                 mouseClick(trigger)
                 tryCompare(clock, "menuOpen", false)
                 compare(Visibilities.activeBarPopup, null)
                 mouseClick(trigger)
-                tryCompare(clock, "connectivityMenuActive", true)
-                compare(clock.controlMode, "bluetooth")
+                tryCompare(clock, "deviceMenuActive", true)
+                compare(clock.controlMode, "battery")
                 wait(Motion.expandDuration + 100)
                 const menu = component(bar.item, "VerticalControlMenu")
                 menu.forceActiveFocus()
                 keyClick(Qt.Key_Left)
-                tryCompare(clock, "controlMode", "wifi")
-                keyClick(Qt.Key_Right)
                 tryCompare(clock, "controlMode", "bluetooth")
+                keyClick(Qt.Key_Right)
+                tryCompare(clock, "controlMode", "battery")
                 // Back still dismisses the flyout; direct commands pick the right tab.
-                const panel = component(bar.item, "IslandBluetoothPanel")
+                const panel = component(bar.item, "IslandBatteryPanel")
                 wait(80)
                 mouseClick(panel, 28, 28)
                 tryCompare(clock, "menuOpen", false)
-                for (const mode of ["wifi", "bluetooth"]) {
+                for (const mode of ["wifi", "bluetooth", "battery"]) {
                     clock.openControlMenu(mode)
                     tryCompare(clock, "menuOpen", true)
                     compare(clock.controlMode, mode)
@@ -218,7 +228,7 @@ ShellRoot {
                 tryCompare(clock, "menuOpen", false)
                 compare(Visibilities.activeBarPopup, null)
                 Config.bar.style = originalStyle
-                console.log("BAR_CONNECTIVITY_PASSED")
+                console.log("BAR_DEVICE_STATUS_PASSED")
             }
 
             function test_pin_command() {
@@ -481,7 +491,7 @@ class BarTextRuntimeTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("BAR_CONTEXT_TEXT_RUNTIME_FINISHED", output, output)
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
-            self.assertIn("BAR_CONNECTIVITY_PASSED", output, output)
+            self.assertIn("BAR_DEVICE_STATUS_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_OCCUPANCY_PASSED", output, output)
             for layout in ("island", "pills"):

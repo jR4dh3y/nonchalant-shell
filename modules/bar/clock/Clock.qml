@@ -46,9 +46,10 @@ Item {
     }
 
     property string controlMode: ""
-    property string lastConnectivityMode: "wifi"
-    readonly property bool connectivityMenuActive: root.vertical && dashboardPopup.isOpen
-        && (root.controlMode === "wifi" || root.controlMode === "bluetooth")
+    readonly property list<string> deviceModes: ["wifi", "bluetooth", "battery"]
+    property string lastDeviceMode: "wifi"
+    readonly property bool deviceMenuActive: root.vertical && dashboardPopup.isOpen
+        && root.deviceModes.indexOf(root.controlMode) !== -1
     property string dashboardSection: "notifications"
     readonly property bool systemMonitorActive: root.vertical && dashboardPopup.isOpen && !root.controlMode && root.dashboardSection === "stats"
 
@@ -77,17 +78,17 @@ Item {
     function showControlMenu(mode: string): void {
         if (!root.vertical)
             return;
-        if (mode === "wifi" || mode === "bluetooth")
-            root.lastConnectivityMode = mode;
+        if (root.deviceModes.indexOf(mode) !== -1)
+            root.lastDeviceMode = mode;
         root.controlMode = mode;
         dashboardPopup.open();
     }
 
-    function toggleConnectivityMenu(): void {
-        if (root.connectivityMenuActive)
+    function toggleDeviceMenu(): void {
+        if (root.deviceMenuActive)
             dashboardPopup.close();
         else
-            root.showControlMenu(root.lastConnectivityMode);
+            root.showControlMenu(root.lastDeviceMode);
     }
 
     function showDashboardSection(section: string): void {

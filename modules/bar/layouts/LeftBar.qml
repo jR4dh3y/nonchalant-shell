@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
-import QtQuick.Shapes
 import Quickshell
 import qs.config
 import qs.modules.bar.clock
@@ -392,54 +391,6 @@ Item {
                         }
 
                         DockIconButton {
-                            id: connectivityButton
-                            objectName: "verticalConnectivityButton"
-                            showLabel: false
-                            selected: clock.connectivityMenuActive
-                            tooltipText: root.networkTooltip + " · " + (!BluetoothService.enabled
-                                ? "Bluetooth off" : (BluetoothService.firstConnectedDeviceName || "Bluetooth on"))
-                            description: "Open Wi-Fi and Bluetooth"
-                            onClicked: clock.toggleConnectivityMenu()
-
-                            // Keep the familiar Wi-Fi mark intact. Bluetooth owns
-                            // the surrounding arc and the small rune in its opening.
-                            Item {
-                                anchors.centerIn: parent
-                                width: Styling.fontSize(4) * 1.5
-                                height: width
-                                Shape {
-                                    width: 28
-                                    height: 28
-                                    scale: parent.width / 28
-                                    transformOrigin: Item.TopLeft
-                                    preferredRendererType: Shape.CurveRenderer
-                                    ShapePath {
-                                        strokeColor: Qt.alpha(connectivityButton.foregroundColor, BluetoothService.enabled ? 1 : 0.4)
-                                        strokeWidth: 1.8
-                                        capStyle: ShapePath.RoundCap
-                                        fillColor: "transparent"
-                                        PathSvg { path: "M 7.3 23 A 12 12 0 1 1 20.7 23" }
-                                    }
-                                    ShapePath {
-                                        strokeColor: Qt.alpha(connectivityButton.foregroundColor, NetworkService.wifiEnabled ? 1 : 0.4)
-                                        strokeWidth: 2
-                                        capStyle: ShapePath.RoundCap
-                                        fillColor: "transparent"
-                                        PathSvg { path: "M 7.5 11 Q 14 6 20.5 11 M 10 13.7 Q 14 10.5 18 13.7 M 13.9 16.7 L 14.1 16.7" }
-                                    }
-                                    ShapePath {
-                                        strokeColor: Qt.alpha(connectivityButton.foregroundColor, BluetoothService.enabled ? 1 : 0.4)
-                                        strokeWidth: 1.5
-                                        capStyle: ShapePath.RoundCap
-                                        joinStyle: ShapePath.RoundJoin
-                                        fillColor: "transparent"
-                                        PathSvg { path: "M 14 20 V 28 L 17.3 25.3 L 11.5 21.4 M 11.5 26.6 L 17.3 22.7 L 14 20" }
-                                    }
-                                }
-                            }
-                        }
-
-                        DockIconButton {
                             id: soundButton
                             iconText: Audio.sink?.audio?.muted ? Icons.speakerSlash : Icons.speakerHigh
                             muted: Audio.sink?.audio?.muted ?? false
@@ -475,14 +426,26 @@ Item {
                             bar: root
                         }
 
-                        BatteryIndicator {
-                            Layout.alignment: Qt.AlignHCenter
-                            flat: true
-                            showMeter: false
-                            usePopup: false
-                            onActivated: clock.openControlMenu("battery")
-                            meterSize: root.controlSize
-                            bar: root
+                        DockIconButton {
+                            id: deviceStatusButton
+                            objectName: "verticalDeviceStatusButton"
+                            showLabel: false
+                            selected: clock.deviceMenuActive
+                            tooltipText: (Battery.available ? Math.round(Battery.percentage) + "% battery"
+                                + (Battery.isCharging ? " · Charging" : (Battery.isPluggedIn ? " · Plugged in" : "")) : "AC power")
+                                + "\n" + root.networkTooltip + " · " + (!BluetoothService.enabled
+                                ? "Bluetooth off" : (BluetoothService.firstConnectedDeviceName || "Bluetooth on"))
+                            description: "Open Wi-Fi, Bluetooth and battery"
+                            onClicked: clock.toggleDeviceMenu()
+
+                            DeviceStatusIcon {
+                                objectName: "verticalDeviceStatusIcon"
+                                anchors.centerIn: parent
+                                width: implicitWidth
+                                height: implicitHeight
+                                foregroundColor: deviceStatusButton.foregroundColor
+                                selected: deviceStatusButton.selected
+                            }
                         }
 
                         Separator {

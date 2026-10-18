@@ -13,6 +13,7 @@ Item {
     property string mode: "wifi"
     property real maximumSize: Infinity
     property bool lyricsActive: false
+    readonly property list<string> deviceModes: ["wifi", "bluetooth", "battery"]
     signal backRequested()
     signal closeRequested()
     signal modeRequested(string mode)
@@ -24,24 +25,34 @@ Item {
     }
 
     Keys.onEscapePressed: root.closeRequested()
-    Keys.onLeftPressed: if (root.mode === "bluetooth") root.modeRequested("wifi")
-    Keys.onRightPressed: if (root.mode === "wifi") root.modeRequested("bluetooth")
+    function changeDeviceTab(offset: int): bool {
+        const current = root.deviceModes.indexOf(root.mode);
+        if (current === -1)
+            return false;
+        const next = Math.max(0, Math.min(root.deviceModes.length - 1, current + offset));
+        if (next !== current)
+            root.modeRequested(root.deviceModes[next]);
+        return true;
+    }
+
+    Keys.onLeftPressed: event => { event.accepted = root.changeDeviceTab(-1); }
+    Keys.onRightPressed: event => { event.accepted = root.changeDeviceTab(1); }
 
     Component {
-        id: connectivityTitle
+        id: deviceTitle
         RowLayout {
             spacing: Styling.fontSize(0) * 0.2
             Repeater {
-                model: ["wifi", "bluetooth"]
+                model: root.deviceModes
                 Button {
                     id: tab
                     required property string modelData
                     readonly property bool selected: root.mode === tab.modelData
-                    objectName: "connectivityTab-" + tab.modelData
+                    objectName: "deviceStatusTab-" + tab.modelData
                     implicitWidth: Styling.fontSize(0) * 2.4
                     implicitHeight: implicitWidth
                     padding: 0
-                    Accessible.name: tab.modelData === "wifi" ? "Wi-Fi" : "Bluetooth"
+                    Accessible.name: tab.modelData === "wifi" ? "Wi-Fi" : (tab.modelData === "bluetooth" ? "Bluetooth" : "Battery and power")
                     Accessible.role: Accessible.PageTab
                     Accessible.selected: tab.selected
                     scale: tab.pressed ? 0.92 : 1
@@ -54,7 +65,7 @@ Item {
                         HoverTint { hovered: tab.hovered; pressed: tab.pressed }
                     }
                     contentItem: StyledText {
-                        text: tab.modelData === "wifi" ? Icons.wifiHigh : Icons.bluetooth
+                        text: tab.modelData === "wifi" ? Icons.wifiHigh : (tab.modelData === "bluetooth" ? Icons.bluetooth : Icons.batteryHigh)
                         font.family: Icons.font
                         font.pixelSize: Styling.fontSize(5)
                         color: tab.selected ? tabSurface.item : Colors.overBackground
@@ -90,9 +101,9 @@ Item {
 
     Component { id: soundPanel; IslandSoundPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
     Component { id: micPanel; IslandMicPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
-    Component { id: wifiPanel; IslandWifiPanel { backTooltip: "Close menu"; titleComponent: connectivityTitle; onBackRequested: root.backRequested() } }
-    Component { id: bluetoothPanel; IslandBluetoothPanel { backTooltip: "Close menu"; titleComponent: connectivityTitle; onBackRequested: root.backRequested() } }
-    Component { id: batteryPanel; IslandBatteryPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
+    Component { id: wifiPanel; IslandWifiPanel { backTooltip: "Close menu"; titleComponent: deviceTitle; onBackRequested: root.backRequested() } }
+    Component { id: bluetoothPanel; IslandBluetoothPanel { backTooltip: "Close menu"; titleComponent: deviceTitle; onBackRequested: root.backRequested() } }
+    Component { id: batteryPanel; IslandBatteryPanel { backTooltip: "Close menu"; titleComponent: deviceTitle; onBackRequested: root.backRequested() } }
     Component {
         id: mediaPanel
         IslandMediaCenterPanel {
