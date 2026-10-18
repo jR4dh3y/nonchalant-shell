@@ -340,21 +340,6 @@ Item {
                                         tooltipText: workspace?.isNamed ? workspace.name : "Workspace " + (workspace?.idx ?? "")
                                         description: windows.length + (windows.length === 1 ? " window" : " windows")
 
-                                        StyledRect {
-                                            objectName: "verticalWorkspaceOccupied-" + workspaceButton.modelData
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                            anchors.bottom: parent.bottom
-                                            anchors.bottomMargin: root.contentPadding / 2
-                                            width: Math.round(root.controlSize / 9)
-                                            height: width
-                                            radius: width / 2
-                                            variant: "focus"
-                                            color: workspaceButton.foregroundColor
-                                            enableBorder: false
-                                            enableShadow: false
-                                            visible: workspaceButton.occupied && !workspaceButton.selected
-                                        }
-
                                         WorkspaceWindowList {
                                             id: windowList
                                             objectName: "verticalWorkspaceWindows-" + workspaceButton.modelData

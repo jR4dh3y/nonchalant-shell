@@ -118,30 +118,28 @@ ShellRoot {
                 tryVerify(() => bar.item !== null)
                 const occupied = findChild(bar.item, "verticalWorkspaceButton-2")
                 const empty = findChild(bar.item, "verticalWorkspaceButton-3")
-                const occupiedDot = findChild(bar.item, "verticalWorkspaceOccupied-2")
-                const emptyDot = findChild(bar.item, "verticalWorkspaceOccupied-3")
                 verify(occupied !== undefined && empty !== undefined)
-                tryCompare(occupiedDot, "visible", true)
-                compare(emptyDot.visible, false)
                 compare(occupied.foregroundColor, Styling.srItem("overprimary"))
                 compare(empty.foregroundColor, Colors.overBackground)
                 compare(occupied.description, "1 window")
                 const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
                 if (snapshots) grabImage(bar.item.barHitbox).save(snapshots + "/workspace-occupancy.png")
                 testWindow.workspaceId = "3"
-                tryCompare(occupiedDot, "visible", false)
-                tryCompare(emptyDot, "visible", true)
+                tryCompare(occupied, "foregroundColor", Colors.overBackground)
+                tryCompare(empty, "foregroundColor", Styling.srItem("overprimary"))
                 compare(occupied.description, "0 windows")
                 compare(empty.description, "1 window")
                 testWorkspace.active = false
                 thirdWorkspace.active = true
-                tryCompare(empty, "showWindows", true)
-                compare(emptyDot.visible, false, "The active app list replaces the occupancy marker")
+                tryVerify(() => findChild(bar.item, "verticalWorkspaceButton-3")?.showWindows === true)
                 compositorState.windows = []
-                tryCompare(empty, "showLabel", true)
-                compare(emptyDot.visible, false)
-                testWorkspace.active = true
+                tryVerify(() => findChild(bar.item, "verticalWorkspaceButton-3")?.showLabel === true)
                 thirdWorkspace.active = false
+                testWorkspace.active = true
+                // Changing the visible workspace set can recreate delegates.
+                tryVerify(() => Qt.colorEqual(
+                    findChild(bar.item, "verticalWorkspaceButton-3")?.foregroundColor ?? "transparent",
+                    Colors.overBackground))
                 testWindow.workspaceId = "1"
                 console.log("BAR_WORKSPACE_OCCUPANCY_PASSED")
             }
