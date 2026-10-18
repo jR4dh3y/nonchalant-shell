@@ -401,32 +401,39 @@ Item {
                             description: "Open Wi-Fi and Bluetooth"
                             onClicked: clock.toggleConnectivityMenu()
 
-                            // Wi-Fi arcs and the Bluetooth rune form one compact status mark.
+                            // Keep the familiar Wi-Fi mark intact. Bluetooth owns
+                            // the surrounding arc and the small rune in its opening.
                             Item {
                                 anchors.centerIn: parent
-                                width: Styling.fontSize(4) * 1.35
+                                width: Styling.fontSize(4) * 1.5
                                 height: width
                                 Shape {
-                                    width: 24
-                                    height: 24
-                                    scale: parent.width / 24
+                                    width: 28
+                                    height: 28
+                                    scale: parent.width / 28
                                     transformOrigin: Item.TopLeft
                                     preferredRendererType: Shape.CurveRenderer
+                                    ShapePath {
+                                        strokeColor: Qt.alpha(connectivityButton.foregroundColor, BluetoothService.enabled ? 1 : 0.4)
+                                        strokeWidth: 1.8
+                                        capStyle: ShapePath.RoundCap
+                                        fillColor: "transparent"
+                                        PathSvg { path: "M 7.3 23 A 12 12 0 1 1 20.7 23" }
+                                    }
                                     ShapePath {
                                         strokeColor: Qt.alpha(connectivityButton.foregroundColor, NetworkService.wifiEnabled ? 1 : 0.4)
                                         strokeWidth: 2
                                         capStyle: ShapePath.RoundCap
                                         fillColor: "transparent"
-                                        strokeStyle: ShapePath.SolidLine
-                                        PathSvg { path: "M 3 6 Q 12 -1 21 6 M 6 9 Q 12 4 18 9" }
+                                        PathSvg { path: "M 7.5 11 Q 14 6 20.5 11 M 10 13.7 Q 14 10.5 18 13.7 M 13.9 16.7 L 14.1 16.7" }
                                     }
                                     ShapePath {
                                         strokeColor: Qt.alpha(connectivityButton.foregroundColor, BluetoothService.enabled ? 1 : 0.4)
-                                        strokeWidth: 1.8
+                                        strokeWidth: 1.5
                                         capStyle: ShapePath.RoundCap
                                         joinStyle: ShapePath.RoundJoin
                                         fillColor: "transparent"
-                                        PathSvg { path: "M 12 10 L 12 23 L 17 18 L 8 11 M 8 22 L 17 15 L 12 10" }
+                                        PathSvg { path: "M 14 20 V 28 L 17.3 25.3 L 11.5 21.4 M 11.5 26.6 L 17.3 22.7 L 14 20" }
                                     }
                                 }
                             }
