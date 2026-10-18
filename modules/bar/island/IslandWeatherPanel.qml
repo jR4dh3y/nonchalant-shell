@@ -16,6 +16,8 @@ Item {
     implicitHeight: mainColumn.implicitHeight + 28
 
     signal backRequested()
+    property bool showHeader: true
+    property bool fillSky: false
 
     Component.onCompleted: {
         if (!WeatherService.dataAvailable && !WeatherService.isLoading) {
@@ -29,6 +31,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 14
+        height: root.fillSky ? Math.max(implicitHeight, root.height - anchors.margins * 2) : implicitHeight
         spacing: 10
 
         // ═══════════════════════════════════════════════════════════════
@@ -36,6 +39,7 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             id: headerRow
+            visible: root.showHeader
             Layout.fillWidth: true
             spacing: 8
 
@@ -155,6 +159,8 @@ Item {
         ClippingRectangle {
             id: skyCardItem
             Layout.fillWidth: true
+            Layout.fillHeight: root.fillSky
+            Layout.minimumHeight: 140
             implicitHeight: 140
             radius: Styling.radius(2)
             clip: true
@@ -171,6 +177,7 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         StyledRect {
             id: forecastCard
+            objectName: "weatherForecastCard"
             Layout.fillWidth: true
             implicitHeight: 96
             radius: Styling.radius(2)

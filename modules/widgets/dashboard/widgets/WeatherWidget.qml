@@ -833,6 +833,7 @@ ClippingRectangle {
 
             // Outer glow
             Rectangle {
+                objectName: "weatherCelestialGlow"
                 anchors.centerIn: parent
                 width: parent.width + 12
                 height: parent.height + 12
@@ -841,6 +842,13 @@ ClippingRectangle {
                 border.color: WeatherService.effectiveIsDay ? Qt.rgba(1, 0.95, 0.7, 0.4) : Qt.rgba(1, 1, 1, 0.2)
                 border.width: 3
                 z: -1
+
+                SequentialAnimation on opacity {
+                    running: root.animationsEnabled && root.visible && Motion.enabled
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 0.35; duration: Motion.expandDuration * 8; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 0.8; duration: Motion.expandDuration * 8; easing.type: Easing.InOutSine }
+                }
             }
 
             // Inner glow

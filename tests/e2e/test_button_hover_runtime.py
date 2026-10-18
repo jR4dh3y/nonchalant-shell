@@ -85,7 +85,7 @@ ShellRoot {
             function test_shared_highlight_hover_and_exit() {
                 const highlight = findChild(controls, "dashboardViewHighlight")
                 verify(highlight !== null)
-                for (const section of ["notifications", "wallpapers", "stats"]) {
+                for (const section of ["notifications", "wallpapers", "stats", "weather"]) {
                     controls.dashboardSection = section
                     const button = controls.selectedControl
                     verify(button !== null)

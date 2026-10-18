@@ -14,7 +14,8 @@ Item {
     signal sectionRequested(string section)
     readonly property Item selectedControl: root.dashboardSection === "notifications" ? notificationsButton
         : root.dashboardSection === "wallpapers" ? wallpapersButton
-        : root.dashboardSection === "stats" ? statsButton : null
+        : root.dashboardSection === "stats" ? statsButton
+        : root.dashboardSection === "weather" ? weatherButton : null
     implicitWidth: viewIsland.implicitWidth
     implicitHeight: viewIsland.implicitHeight + staticIsland.implicitHeight + islands.spacing * 2
 
@@ -83,6 +84,18 @@ Item {
                     tooltipText: "System Monitor"
                     onClicked: root.sectionRequested("stats")
                 }
+
+                ControlButton {
+                    id: weatherButton
+                    externalHighlight: true
+                    objectName: "dashboardWeatherButton"
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    iconName: Icons.cloud
+                    isActive: root.dashboardSection === "weather"
+                    tooltipText: "Weather"
+                    onClicked: root.sectionRequested("weather")
+                }
             }
         }
 
@@ -109,22 +122,6 @@ Item {
                     isActive: GlobalStates.settingsWindowVisible
                     tooltipText: "Settings"
                     onClicked: GlobalShortcuts.toggleSettings()
-                }
-
-                CircularControl {
-                    Layout.preferredWidth: 48
-                    Layout.preferredHeight: 48
-                    icon: Icons.nightLight
-                    value: NightLightService.normalizedTemperature
-                    accentColor: Styling.srItem("overprimary")
-                    isToggleable: true
-                    isToggled: NightLightService.active
-                    showMeter: NightLightService.active
-                    tooltipText: NightLightService.active
-                        ? "Night Light: " + NightLightService.temperature + " K"
-                        : "Night Light: Off"
-                    onControlValueChanged: newValue => NightLightService.setTemperatureFromNormalized(newValue)
-                    onToggled: NightLightService.toggle()
                 }
             }
         }

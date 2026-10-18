@@ -1,6 +1,7 @@
 """Check bar rendering and transitions without touching the desktop session."""
 
 import os
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -23,6 +24,7 @@ import qs.modules.theme
 
 ShellRoot {
     CompositorState { id: compositorState }
+    CompositorOutput { id: testOutput; name: Quickshell.screens[0].name; focused: true }
     CompositorWorkspace {
         id: testWorkspace
         Component.onCompleted: this.id = "1"
@@ -262,7 +264,7 @@ ShellRoot {
                         + bar.item.contentPadding <= audio.mapToItem(bar.item, 0, 0).y)
                     verify(clock.height > clock.width, "Clock stays elongated")
                     const meters = gauges(audio, []).concat(gauges(brightness, []), gauges(status, []))
-                    compare(meters.length, 4, "Two audio halves, brightness, and battery")
+                    compare(meters.length, 5, "Audio halves, display halves, and battery share their gauge geometry")
                     for (const meter of meters) {
                         compare(meter.controlSize, main.width)
                         compare(meter.meterRadius, meters[0].meterRadius)
@@ -335,17 +337,198 @@ ShellRoot {
                 console.log("BAR_PIN_IPC_PASSED")
             }
 
+            function test_vertical_display_control() {
+                try {
+                    const originalStyle = Config.bar.style
+                    Config.bar.style = "left"
+                    bar.sourceComponent = left
+                    tryVerify(() => bar.item !== null)
+                    const display = findChild(bar.item, "verticalBrightnessDroplet")
+                    const brightness = findChild(display, "verticalBrightnessControl")
+                    const temperature = findChild(display, "verticalTemperatureControl")
+                    const monitor = Brightness.getMonitorForScreen(Quickshell.screens[0])
+                    const other = Brightness.monitors.find(item => item.screen === null)
+                    verify(monitor !== undefined && other !== undefined)
+                    tryCompare(NightLightService, "currentTemperature", 6500)
+                    compare(display.split, false)
+                    compare(temperature.visible, false)
+                    compare(brightness.height, display.height)
+                    Brightness.syncBrightness = false
+                    mouseWheel(brightness, brightness.width / 2, brightness.height / 2, 0, 120)
+                    compare(monitor.brightness, 0.55)
+                    compare(other.brightness, 0.5, "Unsynced brightness must target only this screen")
+                    mouseClick(brightness)
+                    tryCompare(display, "split", true)
+                    verify(display.splitProgress < 1, "Opening must animate instead of snapping")
+                    tryCompare(display, "splitProgress", 1)
+                    compare(temperature.visible, true)
+                    compare(brightness.height, display.height / 2)
+                    compare(temperature.y, display.height / 2)
+                    tryCompare(NightLightService, "currentTemperature", NightLightService.temperature)
+                    const saved = NightLightService.temperature
+                    mouseWheel(temperature, temperature.width / 2, temperature.height / 2, 0, -120)
+                    compare(NightLightService.temperature, saved - 100)
+                    compare(monitor.brightness, 0.55, "Temperature scroll must leave brightness alone")
+                    Brightness.syncBrightness = true
+                    mouseWheel(brightness, brightness.width / 2, brightness.height / 2, 0, 120)
+                    compare(monitor.brightness, 0.6)
+                    compare(other.brightness, 0.6, "Synced brightness must update other ready monitors")
+                    other.ready = false
+                    brightness.forceActiveFocus()
+                    keyClick(Qt.Key_Down)
+                    compare(monitor.brightness, 0.55)
+                    compare(other.brightness, 0.6, "An unavailable monitor must not receive brightness writes")
+                    temperature.forceActiveFocus()
+                    keyClick(Qt.Key_Up)
+                    compare(NightLightService.temperature, saved)
+                    mouseMove(bar, bar.width - 1, 1)
+                    tryCompare(component(temperature, "HoverTint"), "hovered", false)
+                    compare(component(temperature, "StyledRect").variant, "pane",
+                        "Keyboard focus and night light must not latch a selected fill")
+                    NightLightService.setTemperature(NightLightService.minTemperature)
+                    mouseWheel(temperature, temperature.width / 2, temperature.height / 2, 0, -120)
+                    compare(NightLightService.temperature, NightLightService.minTemperature)
+                    NightLightService.setTemperature(NightLightService.maxTemperature)
+                    tryCompare(display, "split", false)
+                    tryCompare(display, "splitProgress", 0)
+                    mouseClick(brightness)
+                    tryCompare(display, "split", true)
+                    tryCompare(display, "splitProgress", 1)
+                    compare(NightLightService.temperature, NightLightService.maxTemperature - 100,
+                        "Enabling from neutral must restore an active night-light temperature")
+                    NightLightService.setTemperature(saved - 100)
+                    tryCompare(NightLightService, "currentTemperature", saved - 100)
+                    const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
+                    if (snapshots) grabImage(bar).save(snapshots + "/display-split.png")
+                    mouseClick(temperature)
+                    tryCompare(display, "split", false)
+                    verify(display.splitProgress > 0, "The lower half must retract instead of disappearing")
+                    compare(temperature.enabled, false)
+                    tryCompare(NightLightService, "currentTemperature", 6500)
+                    tryCompare(temperature, "visible", false)
+                    mouseClick(brightness)
+                    tryCompare(display, "split", true)
+                    tryCompare(display, "splitProgress", 1)
+                    compare(NightLightService.temperature, saved - 100, "Re-enabling must retain the saved temperature")
+                    brightness.forceActiveFocus()
+                    keyClick(Qt.Key_Space)
+                    tryCompare(display, "split", false)
+                    tryCompare(NightLightService, "currentTemperature", 6500)
+                    other.ready = true
+                    Brightness.syncBrightness = false
+                    Config.bar.style = originalStyle
+                    console.log("BAR_DISPLAY_CONTROL_PASSED")
+                } catch (error) {
+                    console.error("TEST_ASSERTION", error.stack)
+                    throw error
+                }
+            }
+
+            function test_vertical_weather_section() {
+                try {
+                    const originalStyle = Config.bar.style
+                    Config.bar.style = "left"
+                    bar.sourceComponent = left
+                    tryVerify(() => bar.item !== null)
+                    const clock = findChild(bar.item, "verticalClockDroplet")
+                    // The offscreen platform has an unnamed screen; register its controller explicitly.
+                    Visibilities.registerDashboardController(clock.bar.screen.name, clock)
+                    clock.showDashboardSection("stats")
+                    wait(Motion.expandDuration + 100)
+                    const stats = findChild(bar.item, "dashboardStatsButton")
+                    const weather = findChild(bar.item, "dashboardWeatherButton")
+                    verify(stats !== undefined && weather !== undefined)
+                    verify(weather.y > stats.y, "Weather is the fourth tab after System Monitor")
+                    const controls = component(bar.item, "VerticalDashboardControls")
+                    compare(component(controls, "CircularControl"), null, "Night light has moved out of the vertical dashboard")
+                    mouseClick(weather)
+                    tryCompare(clock, "dashboardSection", "weather")
+                    const pane = findChild(bar.item, "dashboardWeatherSection")
+                    tryCompare(pane, "selected", true)
+                    tryVerify(() => pane.item !== null)
+                    compare(component(pane.item, "IslandWeatherPanel").showHeader, false,
+                        "Vertical weather keeps the animated sky without island navigation")
+                    const sky = component(pane.item, "WeatherWidget")
+                    verify(sky !== null)
+                    tryVerify(() => sky.height > 140, 2000, "The sky fills the available dashboard height")
+                    const weatherPanel = component(pane.item, "IslandWeatherPanel")
+                    const forecastCard = findChild(weatherPanel, "weatherForecastCard")
+                    verify(weatherPanel.height - forecastCard.mapToItem(weatherPanel, 0, forecastCard.height).y <= 15,
+                        "The forecast belongs at the bottom without unused space")
+                    compare(findChild(bar.item, "dashboardMediaRow").visible, false, "No player must hide the media and lyrics row")
+                    const owner = Visibilities.activeBarPopup
+                    compare(findChild(bar.item, "dashboardViewHighlight").targetItem, weather)
+                    tryCompare(WeatherService, "isLoading", false)
+                    compare(WeatherService.dataAvailable, false, "Fixture starts with unavailable weather")
+                    WeatherService.currentTemp = 24
+                    WeatherService.weatherCode = 0
+                    WeatherService.weatherDescription = "Clear sky"
+                    WeatherService.weatherSymbol = "☀"
+                    WeatherService.maxTemp = 28
+                    WeatherService.minTemp = 17
+                    WeatherService.forecast = [
+                        {dayName: "Mon", emoji: "☀️", maxTemp: 28, minTemp: 17},
+                        {dayName: "Tue", emoji: "⛅", maxTemp: 26, minTemp: 16},
+                        {dayName: "Wed", emoji: "☀️", maxTemp: 27, minTemp: 18},
+                        {dayName: "Thu", emoji: "☀️", maxTemp: 29, minTemp: 18},
+                        {dayName: "Fri", emoji: "☁️", maxTemp: 25, minTemp: 15}]
+
+                    WeatherService.dataAvailable = true
+                    WeatherService.hasFailed = false
+                    mouseMove(bar, bar.width - 1, 1)
+                    const glow = findChild(sky, "weatherCelestialGlow")
+                    const initialGlow = glow.opacity
+                    wait(200)
+                    verify(Math.abs(glow.opacity - initialGlow) > 0.001, "The celestial glow must animate while visible")
+                    const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
+                    if (snapshots) {
+                        WeatherService.debugMode = true
+                        WeatherService.debugHour = 23
+                        wait(1200)
+                        grabImage(bar).save(snapshots + "/dashboard-weather-night.png")
+                        WeatherService.debugHour = 12
+                        wait(1200)
+                        grabImage(bar).save(snapshots + "/dashboard-weather-day.png")
+                        WeatherService.debugMode = false
+                    }
+                    component(bar.item, "DashboardSidePane").forceActiveFocus()
+                    keyClick(Qt.Key_Tab, Qt.ControlModifier)
+                    tryCompare(clock, "dashboardSection", "notifications")
+                    keyClick(Qt.Key_Tab, Qt.ControlModifier | Qt.ShiftModifier)
+                    tryCompare(clock, "dashboardSection", "weather")
+                    compare(Visibilities.activeBarPopup, owner)
+                    keyClick(Qt.Key_Escape)
+                    tryCompare(clock, "menuOpen", false)
+                    compositorState.outputs = [testOutput]
+                    GlobalShortcuts.run("weather")
+                    tryCompare(clock, "menuOpen", true)
+                    compare(clock.dashboardSection, "weather")
+                    GlobalShortcuts.run("weather")
+                    compare(clock.dashboardSection, "notifications")
+                    clock.toggleCenterMenu()
+                    tryCompare(clock, "menuOpen", false)
+                    Config.bar.style = originalStyle
+                    console.log("BAR_WEATHER_SECTION_PASSED")
+                } catch (error) {
+                    console.error("TEST_ASSERTION", error.stack)
+                    throw error
+                }
+            }
+
             function initTestCase() {
                 tryVerify(() => CompositorService.backend !== null)
                 CompositorService.backend.state = compositorState
             }
 
             function cleanup() {
+                const clock = bar.item ? findChild(bar.item, "verticalClockDroplet") : null
+                if (clock) Visibilities.unregisterDashboardController(clock.bar.screen.name, clock)
                 bar.sourceComponent = undefined
                 Notifications.dismissAllPopups()
                 Notifications.silent = false
                 compositorState.workspaces = []
                 compositorState.windows = []
+                compositorState.outputs = []
             }
 
             function test_notifications_data() {
@@ -537,6 +720,25 @@ def install_fake_audio_nodes(path):
     path.write_text(source)
 
 
+def install_fake_brightness_monitors(path):
+    """Keep monitor selection/sync policy while replacing hardware I/O."""
+    source = path.read_text()
+    start = source.index("    component BrightnessMonitor: QtObject {")
+    end = source.index("    Component {\n        id: monitorComp", start)
+    source = source[:start] + """    component BrightnessMonitor: QtObject {
+        required property ShellScreen screen
+        property bool ready: true
+        property real brightness: 0.5
+        function setBrightness(value: real): void {
+            brightness = Math.max(0, Math.min(1, value));
+        }
+    }
+
+""" + source[end:]
+    source = source.replace("Quickshell.screens.map(screen =>", "Quickshell.screens.concat([null]).map(screen =>")
+    path.write_text(source)
+
+
 @unittest.skipUnless(shutil.which("qs"), "Quickshell is required for runtime checks")
 class BarTextRuntimeTests(unittest.TestCase):
     def test_bar_labels_and_pin_command(self):
@@ -551,6 +753,14 @@ class BarTextRuntimeTests(unittest.TestCase):
                     (modules / source.name).symlink_to(source, target_is_directory=source.is_dir())
             shutil.copytree(ROOT / "modules/services", modules / "services")
             install_fake_audio_nodes(modules / "services/Audio.qml")
+            install_fake_brightness_monitors(modules / "services/Brightness.qml")
+            weather = modules / "services/WeatherService.qml"
+            weather.write_text(weather.read_text().replace(
+                'Quickshell.shellDir + "/scripts/weather.sh"',
+                json.dumps(str(fixture / "weather.sh"))).replace(
+                    'readonly property int maxRetries: 3', 'readonly property int maxRetries: 0'))
+            (fixture / "weather.sh").write_text("#!/bin/sh\nprintf '%s\\n' '{\"error\":\"Fixture offline\"}'\n")
+            (fixture / "weather.sh").chmod(0o755)
             shortcuts = modules / "services/GlobalShortcuts.qml"
             shortcuts.write_text(shortcuts.read_text().replace(
                 '"/tmp/nonchalant_ipc.pipe"', '"' + str(fixture / "ipc.pipe") + '"'))
@@ -571,6 +781,24 @@ class BarTextRuntimeTests(unittest.TestCase):
                 stub = binaries / command
                 stub.write_text("#!/bin/sh\nexit 0\n")
                 stub.chmod(0o755)
+            gamma = fixture / "gamma.json"
+            gamma.write_text(json.dumps({"temperature": 6500, "writes": []}))
+            busctl = binaries / "busctl"
+            busctl.write_text("#!/usr/bin/python3\n" + f"""import json, sys
+from pathlib import Path
+path = Path({str(gamma)!r})
+state = json.loads(path.read_text())
+args = sys.argv[1:]
+if args[:3] == ['--user', 'set-property', 'rs.wl-gammarelay']:
+    state['temperature'] = int(args[-1])
+    state['writes'].append(state['temperature'])
+    path.write_text(json.dumps(state))
+elif args[:3] == ['--user', 'get-property', 'rs.wl-gammarelay']:
+    print('q', state['temperature'])
+else:
+    sys.exit(1)
+""")
+            busctl.chmod(0o755)
             runtime = fixture / "runtime"
             runtime.mkdir(mode=0o700)
             env = {
@@ -606,6 +834,8 @@ class BarTextRuntimeTests(unittest.TestCase):
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
             self.assertIn("BAR_DEVICE_STATUS_PASSED", output, output)
             self.assertIn("BAR_DROPLETS_AUDIO_PASSED", output, output)
+            self.assertIn("BAR_DISPLAY_CONTROL_PASSED", output, output)
+            self.assertIn("BAR_WEATHER_SECTION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_OCCUPANCY_PASSED", output, output)
             for layout in ("island", "pills"):

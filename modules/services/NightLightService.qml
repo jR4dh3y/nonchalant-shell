@@ -45,7 +45,8 @@ Singleton {
     function toggle() {
         root.active = !root.active;
         if (root.active)
-            applyTemperature(root.temperature);
+            // The neutral endpoint is off; enabling must request a warmer value.
+            setTemperature(Math.min(root.temperature, maxTemperature - 100));
         else
             applyTemperature(maxTemperature);
         if (StateService.initialized)

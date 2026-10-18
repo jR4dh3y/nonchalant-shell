@@ -92,6 +92,7 @@ Item {
 
         MorphSurface {
             id: powerSurface
+            objectName: "powerMenuMorph"
 
             contentWidth: powerMenuView.implicitWidth + padding * 2
             contentHeight: powerMenuView.implicitHeight + padding * 2
@@ -100,7 +101,7 @@ Item {
             radius: Styling.radius(16)
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: root.bottomOffset
+            anchors.bottomMargin: root.bottomOffset * powerSurface.revealClamped
 
             // Unmap only once the surface has fully retracted.
             onFullyHiddenChanged: {

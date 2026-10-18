@@ -411,24 +411,11 @@ Item {
                         onMenuRequested: mode => clock.openControlMenu(mode)
                     }
 
-                    StyledRect {
+                    VerticalDisplayControl {
                         objectName: "verticalBrightnessDroplet"
                         Layout.alignment: Qt.AlignHCenter
-                        implicitWidth: root.barWidth
-                        implicitHeight: root.barWidth
-                        variant: "pane"
-                        radius: width / 2
-                        enableBorder: false
-                        enableShadow: false
-
-                        BrightnessSlider {
-                            objectName: "verticalBrightnessControl"
-                            anchors.fill: parent
-                            flat: true
-                            meterSize: root.barWidth
-                            iconSize: Styling.fontSize(3)
-                            bar: root
-                        }
+                        controlSize: root.barWidth
+                        bar: root
                     }
 
                     DockIconButton {

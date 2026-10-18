@@ -55,6 +55,7 @@ Item {
     readonly property bool deviceMenuActive: root.vertical && dashboardPopup.isOpen
         && root.deviceModes.indexOf(root.controlMode) !== -1
     property string dashboardSection: "notifications"
+    readonly property list<string> dashboardSections: ["notifications", "wallpapers", "stats", "weather"]
     readonly property bool systemMonitorActive: root.vertical && dashboardPopup.isOpen && !root.controlMode && root.dashboardSection === "stats"
 
     onSystemMonitorActiveChanged: {
@@ -68,8 +69,8 @@ Item {
     function openControlMenu(mode: string): void {
         if (!root.vertical)
             return;
-        if (mode === "stats") {
-            root.toggleDashboardSection("stats");
+        if (mode === "stats" || mode === "weather") {
+            root.toggleDashboardSection(mode);
             return;
         }
         if (dashboardPopup.isOpen && root.controlMode === mode) {
@@ -106,6 +107,12 @@ Item {
     function toggleDashboardSection(section: string): void {
         root.showDashboardSection(dashboardPopup.isOpen && !root.controlMode && root.dashboardSection === section
             ? "notifications" : section);
+    }
+
+    function cycleDashboardSection(offset: int): void {
+        const current = Math.max(0, root.dashboardSections.indexOf(root.dashboardSection));
+        root.showDashboardSection(root.dashboardSections[
+            (current + offset + root.dashboardSections.length) % root.dashboardSections.length]);
     }
 
     function toggleCenterMenu() {

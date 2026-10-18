@@ -200,11 +200,11 @@ Item {
     Shortcut {
         id: nextTabShortcut
         sequence: "Ctrl+Tab"
-        enabled: GlobalStates.dashboardOpen
+        enabled: root.isVisible && (GlobalStates.dashboardOpen || root.forceVisible)
 
         onActivated: {
             if (root.verticalBar) {
-                root.dashboardController?.toggleDashboardSection("wallpapers");
+                root.dashboardController?.cycleDashboardSection(1);
                 return;
             }
             let nextIndex = (root.currentTab + 1) % root.tabCount;
@@ -215,11 +215,11 @@ Item {
     Shortcut {
         id: prevTabShortcut
         sequence: "Ctrl+Shift+Tab"
-        enabled: GlobalStates.dashboardOpen
+        enabled: root.isVisible && (GlobalStates.dashboardOpen || root.forceVisible)
 
         onActivated: {
             if (root.verticalBar) {
-                root.dashboardController?.toggleDashboardSection("wallpapers");
+                root.dashboardController?.cycleDashboardSection(-1);
                 return;
             }
             let prevIndex = root.currentTab - 1;
