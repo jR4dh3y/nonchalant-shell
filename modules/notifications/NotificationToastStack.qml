@@ -173,7 +173,7 @@ Item {
                 StyledRect {
                     id: toastCard
                     anchors.fill: parent
-                    variant: "popup"
+                    variant: "pane"
                     radius: root.isIsland ? root.cornerRadius : Styling.radius(8)
                     enableShadow: false
                     enableBorder: true

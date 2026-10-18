@@ -32,6 +32,7 @@ ToggleButton {
     BarPopup {
         id: monitorPopup
         anchorItem: root
+        variant: "pane"
         popupPadding: root.contentPadding
 
         contentWidth: metricsLoader.item ? metricsLoader.item.implicitWidth + popupPadding * 2 : 0

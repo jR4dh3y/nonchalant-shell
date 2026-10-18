@@ -23,7 +23,8 @@ Item {
     property bool fromBottom: false
     // Pin the body to the left edge instead of centering it (left-edge dock).
     property bool fromLeft: false
-    property string variant: "popup"
+    // Shell panels share the island's outer layer; context menus override it.
+    property string variant: "pane"
     property real radius: Styling.radius(8)
     property int padding: 8
     // Upper bound for the spring's stretch past the resting height; keep it

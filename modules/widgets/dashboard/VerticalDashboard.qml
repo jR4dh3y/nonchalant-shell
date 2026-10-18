@@ -63,7 +63,7 @@ Item {
         }
 
         StyledRect {
-            variant: "popup"
+            variant: "pane"
             radius: Styling.radius(4)
             Layout.fillWidth: true
             Layout.fillHeight: true
