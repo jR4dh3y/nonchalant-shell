@@ -16,6 +16,7 @@ Item {
     implicitWidth: 400
     implicitHeight: 340
 
+    property string backTooltip: "Back to dashboard"
     signal backRequested()
 
     Component.onCompleted: {
@@ -76,7 +77,7 @@ Item {
 
                 StyledToolTip {
                     show: backMouse.containsMouse
-                    tooltipText: "Back to dashboard"
+                    tooltipText: root.backTooltip
                 }
             }
 

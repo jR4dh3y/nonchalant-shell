@@ -13,6 +13,7 @@ Item {
     implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
 
+    property string backTooltip: "Back to dashboard"
     signal backRequested()
 
     function getBatteryColor(): color {
@@ -63,6 +64,11 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.backRequested()
+                }
+
+                StyledToolTip {
+                    show: backMouse.containsMouse
+                    tooltipText: root.backTooltip
                 }
             }
 

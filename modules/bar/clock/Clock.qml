@@ -744,7 +744,7 @@ Item {
                         lyricsActive: dashboardPopup.isOpen && root.controlMode === "media"
                         maximumSize: Math.max(0, Math.min(dashboardPopup.width - dashboardPopup.edgeGap,
                             dashboardPopup.height - dashboardPopup.edgeGap * 2) - dashboardSurface.padding * 2)
-                        onBackRequested: root.toggleCenterMenu()
+                        onBackRequested: dashboardPopup.close()
                         onCloseRequested: dashboardPopup.close()
                     }
                 }

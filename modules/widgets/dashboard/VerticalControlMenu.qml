@@ -36,11 +36,11 @@ Item {
         }
     }
 
-    Component { id: soundPanel; IslandSoundPanel { onBackRequested: root.backRequested() } }
-    Component { id: micPanel; IslandMicPanel { onBackRequested: root.backRequested() } }
-    Component { id: wifiPanel; IslandWifiPanel { onBackRequested: root.backRequested() } }
-    Component { id: bluetoothPanel; IslandBluetoothPanel { onBackRequested: root.backRequested() } }
-    Component { id: batteryPanel; IslandBatteryPanel { onBackRequested: root.backRequested() } }
+    Component { id: soundPanel; IslandSoundPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
+    Component { id: micPanel; IslandMicPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
+    Component { id: wifiPanel; IslandWifiPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
+    Component { id: bluetoothPanel; IslandBluetoothPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
+    Component { id: batteryPanel; IslandBatteryPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
     Component {
         id: mediaPanel
         IslandMediaCenterPanel {
