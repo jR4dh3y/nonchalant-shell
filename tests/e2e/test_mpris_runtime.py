@@ -288,6 +288,7 @@ def exercise(fixture, video_id="invalid", player_name="nonchalant_test",
         timestamp = time.monotonic()
         track = 1
         seek_count = 0
+        seek_on_position_read = None
         source = video_id
 
         def current_position(self):
@@ -324,9 +325,22 @@ def exercise(fixture, video_id="invalid", player_name="nonchalant_test",
                     "HasTrackList": False, "SupportedUriSchemes": dbus.Array([], signature="s"),
                     "SupportedMimeTypes": dbus.Array([], signature="s")}
 
-        @dbus.service.method("org.freedesktop.DBus.Properties", in_signature="ss", out_signature="v")
-        def Get(self, requested, key):
-            return self.GetAll(requested)[key]
+        @dbus.service.method("org.freedesktop.DBus.Properties", in_signature="ss", out_signature="v",
+                             async_callbacks=("reply", "error"))
+        def Get(self, requested, key, reply, error):
+            value = self.GetAll(requested)[key]
+            if requested == interface and key == "Position" and self.seek_on_position_read is not None:
+                self.move_position(self.seek_on_position_read)
+                self.seek_on_position_read = None
+                self.Seeked(dbus.Int64(self.position * 1_000_000))
+
+                def finish():
+                    reply(value)
+                    return GLib.SOURCE_REMOVE
+
+                GLib.timeout_add(80, finish)
+            else:
+                reply(value)
 
         @dbus.service.signal("org.freedesktop.DBus.Properties", signature="sa{sv}as")
         def PropertiesChanged(self, requested, changed, invalidated):
@@ -345,6 +359,11 @@ def exercise(fixture, video_id="invalid", player_name="nonchalant_test",
         def SilentMovePosition(self, seconds):
             # Cider can correct its own clock without emitting Seeked.
             self.move_position(int(seconds))
+
+        @dbus.service.method("org.nonchalant.Test", in_signature="x")
+        def SeekOnNextPositionRead(self, seconds):
+            # Return the pre-seek value after the client receives Seeked.
+            self.seek_on_position_read = int(seconds)
 
         @dbus.service.method("org.nonchalant.Test", in_signature="x")
         def SetDuration(self, seconds):

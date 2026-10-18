@@ -137,13 +137,21 @@ samples, slow/failed queries, and pending responses are guarded; other players
 retain their existing clock. This uses `gdbus`, not a Cider plugin or a fixed
 lyric delay.
 
+Each request also captures Quickshell's raw position. A reply is rejected if
+that anchor moves beyond normal playback advancement while the request is in
+flight. This covers seeks from sliders, the waveform, and external players
+without requiring each control to invalidate the Cider clock. The private
+MPRIS fixture holds a pre-seek reply for 80 ms, emits a forward or backward
+`Seeked` event, and then returns the stale value. The regression fails without
+the guard and passes while paused and playing, including the next valid read.
+
 A separate reproduced provider bug is also fixed: Cider strips punctuation from
 library IDs in MPRIS (`i.library` becomes `ilibrary`). Literal comparison rejected
 valid library recordings and silently fell back to LRCLIB. The helper now accepts
 Cider's exported ID form while preserving title/artist/identity checks. This is
 not claimed to explain the same-song intermittent drift.
 
-Both regressions failed before their respective fixes. The runtime check now
+These regressions failed before their respective fixes. The runtime check now
 covers silent corrections in both directions, line selection in compact/detail,
 normal word fill, pause, seek, rate changes, interludes, track changes, pending
 query cancellation on player switching, and shutdown when no lyric view watches.

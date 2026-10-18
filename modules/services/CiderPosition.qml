@@ -20,6 +20,7 @@ Singleton {
     property int requestEpoch: 0
     property string requestTrack: ""
     property real requestAt: 0
+    property real requestRawPosition: 0
     property bool queryActive: false
     property bool queryExited: false
     property bool outputFinished: false
@@ -63,6 +64,7 @@ Singleton {
         root.requestEpoch = root.epoch;
         root.requestTrack = root.track;
         root.requestAt = Date.now();
+        root.requestRawPosition = player.position;
         root.queryActive = true;
         root.queryExited = false;
         root.outputFinished = false;
@@ -89,6 +91,11 @@ Singleton {
         if (!root.enabled || root.requestEpoch !== root.epoch || root.requestTrack !== root.track
                 || now < root.requestAt || now - root.requestAt > 250)
             return;
+        const rawPosition = MprisController.activePlayer?.position ?? 0;
+        const advance = root.playing ? (now - root.requestAt) / 1000 * root.rate : 0;
+        // A seek while the request was in flight makes its reply stale.
+        if (Math.abs(rawPosition - root.requestRawPosition - advance) > 0.1)
+            return;
         const match = text.match(/^\(\s*<int64\s+(-?\d+)>\s*,?\s*\)\s*$/);
         if (!match)
             return;
@@ -97,7 +104,7 @@ Singleton {
             return;
         // The value was read between request and response; use their midpoint.
         root.samplePosition = position + (root.playing ? (now - root.requestAt) / 2000 * root.rate : 0);
-        root.sampleRawPosition = MprisController.activePlayer?.position ?? 0;
+        root.sampleRawPosition = rawPosition;
         root.sampleAt = now;
     }
 

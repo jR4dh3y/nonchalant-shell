@@ -245,6 +245,29 @@ ShellRoot {
                     tryCompare(LyricsService, "queryActive", false)
                     tryCompare(CiderPosition, "enabled", false)
                     tryCompare(CiderPosition, "queryActive", false)
+                    for (const [before, after, state] of [
+                            [1, 4, "Paused"], [4, 1, "Paused"],
+                            [1, 4, "Playing"], [4, 1, "Playing"]]) {
+                        update("SetPlayback", state)
+                        update("MovePosition", before)
+                        update("SeekOnNextPositionRead", after)
+                        compact.active = true
+                        tryCompare(CiderPosition, "queryActive", true)
+                        tryVerify(() => Math.abs(MprisController.activePlayer.position - after) < 0.3)
+                        tryCompare(CiderPosition, "queryActive", false)
+                        compare(CiderPosition.sampleAt, 0,
+                            "A reply read before a seek must not become a new clock anchor")
+                        verify(Math.abs(LyricsService.playbackPosition - MprisController.activePlayer.position) < 0.1,
+                            "A delayed reply must not move the lyrics back across a seek")
+                        CiderPosition.refresh()
+                        tryVerify(() => CiderPosition.sampleAt > 0)
+                        verify(Math.abs(LyricsService.playbackPosition - MprisController.activePlayer.position) < 0.1,
+                            "The next position request must recover normally")
+                        compact.active = false
+                        tryCompare(CiderPosition, "enabled", false)
+                        tryCompare(CiderPosition, "queryActive", false)
+                    }
+                    console.log("CIDER_PENDING_SEEK_REPLY_PASSED")
                     console.log("CIDER_LYRICS_RUNTIME_PASSED")
                     Qt.quit()
                 } catch (error) {
@@ -324,6 +347,7 @@ class CiderLyricsRuntimeTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("CIDER_LYRICS_RUNTIME_PASSED", output, output)
+            self.assertIn("CIDER_PENDING_SEEK_REPLY_PASSED", output, output)
             if backend == "rhi":
                 self.assertIn("CIDER_LYRICS_GPU_PASSED", output, output)
             self.assertNotIn("Binding loop", output, output)
