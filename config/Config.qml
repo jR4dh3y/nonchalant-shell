@@ -268,7 +268,7 @@ Singleton {
                 property string halftoneDotColor: "primary"
                 property string halftoneBackgroundColor: "overPrimaryContainer"
                 property list<var> border: ["overBackground", 0]
-                property string itemColor: "overPrimary"
+                property string itemColor: "primaryContainer"
                 property real opacity: 1.0
             }
 

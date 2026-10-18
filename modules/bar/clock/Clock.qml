@@ -19,6 +19,10 @@ Item {
 
     required property Item bar
     property bool isHovered: false
+    // Vertical rail uses two digit rows with the date in its tooltip.
+    property bool vertical: false
+    property int verticalWidth: Math.max(36, Config.theme.fontSize + 20)
+    property Item mediaAnchor: null
 
     property bool layerEnabled: false
     
@@ -41,33 +45,84 @@ Item {
             + remainder.toString().padStart(2, "0");
     }
 
+    property string controlMode: ""
+    property string dashboardSection: "notifications"
+    readonly property bool systemMonitorActive: root.vertical && dashboardPopup.isOpen && !root.controlMode && root.dashboardSection === "stats"
+
+    onSystemMonitorActiveChanged: {
+        const screenName = root.bar?.screen?.name ?? "";
+        if (root.systemMonitorActive)
+            GlobalStates.systemMonitorPopupScreen = screenName;
+        else if (GlobalStates.systemMonitorPopupScreen === screenName)
+            GlobalStates.systemMonitorPopupScreen = "";
+    }
+
+    function openControlMenu(mode: string): void {
+        if (!root.vertical)
+            return;
+        if (mode === "stats") {
+            root.toggleDashboardSection("stats");
+            return;
+        }
+        if (dashboardPopup.isOpen && root.controlMode === mode) {
+            dashboardPopup.close();
+            return;
+        }
+        root.controlMode = mode;
+        dashboardPopup.open();
+    }
+
+    function showDashboardSection(section: string): void {
+        root.controlMode = "";
+        root.dashboardSection = section;
+        GlobalStates.dashboardCurrentTab = 0;
+        dashboardPopup.open();
+        Qt.callLater(() => dashboardLoader.item?.focusCurrentTab());
+    }
+
+    function toggleDashboardSection(section: string): void {
+        root.showDashboardSection(dashboardPopup.isOpen && !root.controlMode && root.dashboardSection === section
+            ? "notifications" : section);
+    }
+
     function toggleCenterMenu() {
-        if (dashboardPopup.isOpen) {
+        if (dashboardPopup.isOpen && (!root.vertical || (!root.controlMode && root.dashboardSection === "notifications"))) {
             dashboardPopup.close();
             return;
         }
 
+        root.controlMode = "";
+        root.dashboardSection = "notifications";
         GlobalStates.dashboardCurrentTab = 0;
         // claimBarPopup closes any sibling popup (e.g. weather) in the same turn.
         dashboardPopup.open();
     }
 
     function toggleWallpapers() {
+        if (root.vertical) {
+            root.toggleDashboardSection("wallpapers");
+            return;
+        }
         if (dashboardPopup.isOpen && GlobalStates.dashboardCurrentTab === 1) {
             dashboardPopup.close();
             return;
         }
 
+        root.controlMode = "";
         GlobalStates.dashboardCurrentTab = 1;
         dashboardPopup.open();
     }
 
     readonly property bool weatherAvailable: WeatherService.dataAvailable
+    // The pomodoro countdown temporarily replaces the wall clock.
+    readonly property string timeText: pomodoroWidget.isRunning || pomodoroWidget.alarmActive || pomodoroWidget.isResuming
+        ? root.formatDuration(pomodoroWidget.timeLeft)
+        : root.currentTime
 
     implicitWidth: buttonBg.implicitWidth
-    implicitHeight: 36
+    implicitHeight: buttonBg.implicitHeight
     Layout.preferredWidth: buttonBg.implicitWidth
-    Layout.preferredHeight: 36
+    Layout.preferredHeight: buttonBg.implicitHeight
 
     HoverHandler {
         onHoveredChanged: root.isHovered = hovered
@@ -76,7 +131,14 @@ Item {
     // Main button
     StyledRect {
         id: buttonBg
-        variant: root.anyPopupOpen ? "primary" : "bg"
+        variant: root.vertical ? (root.anyPopupOpen ? "focus" : "common") : (root.anyPopupOpen ? "primary" : "bg")
+        backgroundOpacity: root.vertical && !root.anyPopupOpen ? 0 : -1
+        enableBorder: !root.vertical
+        scale: verticalClockMouse.pressed ? 0.94 : 1.0
+
+        PressBehavior on scale {
+            pressed: verticalClockMouse.pressed
+        }
         anchors.fill: parent
         enableShadow: root.layerEnabled
 
@@ -85,8 +147,8 @@ Item {
         bottomLeftRadius: root.startRadius
         bottomRightRadius: root.endRadius
 
-        implicitWidth: rowLayout.implicitWidth + 24
-        implicitHeight: 36
+        implicitWidth: root.vertical ? root.verticalWidth : rowLayout.implicitWidth + 24
+        implicitHeight: root.vertical ? verticalContent.implicitHeight + 8 : 36
 
         HoverTint {
             hovered: root.isHovered && !root.anyPopupOpen
@@ -95,6 +157,7 @@ Item {
         RowLayout {
             id: rowLayout
             anchors.centerIn: parent
+            visible: !root.vertical
             spacing: 8
 
             Item {
@@ -178,9 +241,7 @@ Item {
                 StyledText {
                     id: timeDisplay
                     anchors.centerIn: parent
-                    text: pomodoroWidget.isRunning || pomodoroWidget.alarmActive || pomodoroWidget.isResuming
-                        ? root.formatDuration(pomodoroWidget.timeLeft)
-                        : root.currentTime
+                    text: root.timeText
                     color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
@@ -202,12 +263,70 @@ Item {
             }
         }
 
+        ColumnLayout {
+            id: verticalContent
+            anchors.centerIn: parent
+            visible: root.vertical
+            spacing: 0
+
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: root.timeText.split(":")[0].padStart(2, "0")
+                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                font.family: Config.theme.monoFont
+                font.pixelSize: Styling.fontSize(2)
+                font.weight: Font.DemiBold
+            }
+
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: (root.timeText.split(":")[1] ?? "00").split(" ")[0]
+                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                font.family: Config.theme.monoFont
+                font.pixelSize: Styling.fontSize(2)
+                opacity: 0.65
+            }
+
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                visible: Config.bar.use12hFormat && root.timeText === root.currentTime
+                text: root.currentTime.split(" ")[1] ?? ""
+                font.pixelSize: Styling.fontSize(-4)
+                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+            }
+        }
+
+        MouseArea {
+            id: verticalClockMouse
+            anchors.fill: parent
+            enabled: root.vertical
+            visible: root.vertical
+            hoverEnabled: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+            cursorShape: Qt.PointingHandCursor
+            onClicked: mouse => {
+                if (mouse.button === Qt.MiddleButton)
+                    pomodoroWidget.toggleTimer();
+                else if (mouse.button === Qt.RightButton)
+                    timePopup.toggle();
+                else
+                    root.toggleCenterMenu();
+            }
+        }
+
+        StyledToolTip {
+            x: buttonBg.width + 8
+            y: (buttonBg.height - height) / 2
+            show: root.vertical && root.isHovered && !root.anyPopupOpen
+            tooltipText: root.currentFullDate
+            description: "Dashboard · Right-click for timer"
+        }
     }
 
     // Compact countdown timer.
     BarPopup {
         id: timePopup
-        anchorItem: timeAnchor
+        anchorItem: root.vertical ? buttonBg : timeAnchor
         grabFocus: true
 
         contentWidth: 316
@@ -525,16 +644,23 @@ Item {
         parent: root.bar
 
         property bool isOpen: false
-        readonly property bool bottomBar: (Config.bar?.position ?? "top") === "bottom"
+        readonly property string menuMode: root.vertical ? root.controlMode : ""
+        readonly property bool bottomBar: !leftBar && (Config.bar?.position ?? "top") === "bottom"
+        readonly property bool leftBar: (Config.bar?.style ?? "default") === "left"
         readonly property int edgeGap: 8
         readonly property real barClearance: root.bar.totalBarHeight + edgeGap
         readonly property Item hitbox: dashboardSurface.fullyHidden ? null : dashboardSurface.body
+        readonly property real mediaAnchorY: root.mediaAnchor?.parent
+            ? root.mediaAnchor.parent.mapToItem(dashboardPopup,
+                root.mediaAnchor.x, root.mediaAnchor.y + root.mediaAnchor.height / 2).y
+            : dashboardPopup.height
 
         z: 1000
-        x: 0
-        y: bottomBar ? 0 : barClearance
-        width: parent.width
-        height: Math.max(0, parent.height - barClearance)
+        // Right of the dock on a left bar, otherwise below/above it.
+        x: leftBar ? barClearance : 0
+        y: leftBar ? 0 : (bottomBar ? 0 : barClearance)
+        width: leftBar ? Math.max(0, parent.width - barClearance) : parent.width
+        height: leftBar ? parent.height : Math.max(0, parent.height - barClearance)
         visible: isOpen || !dashboardSurface.fullyHidden
 
         function open() {
@@ -573,21 +699,63 @@ Item {
         MorphSurface {
             id: dashboardSurface
 
+            variant: root.vertical && !root.controlMode ? "transparent" : "popup"
+            padding: root.vertical && !root.controlMode ? 0 : 8
             shown: dashboardPopup.isOpen
-            contentWidth: dashboardLoader.item ? dashboardLoader.item.implicitWidth + padding * 2 : 916
-            contentHeight: dashboardLoader.item ? dashboardLoader.item.implicitHeight + padding * 2 : 360
+            contentWidth: Math.min(dashboardPopup.leftBar ? Math.max(0, dashboardPopup.width - dashboardPopup.edgeGap) : Infinity,
+                dashboardLoader.item ? dashboardLoader.item.implicitWidth + padding * 2 : 916)
+            contentHeight: Math.min(dashboardPopup.leftBar ? Math.max(0, dashboardPopup.height - dashboardPopup.edgeGap * 2) : Infinity,
+                dashboardLoader.item ? dashboardLoader.item.implicitHeight + padding * 2 : 360)
             originWidth: buttonBg.width
             fromBottom: dashboardPopup.bottomBar
-            x: Math.round((dashboardPopup.width - width) / 2)
-            y: dashboardPopup.bottomBar ? dashboardPopup.height - height : 0
+            fromLeft: dashboardPopup.leftBar
+            x: dashboardPopup.leftBar ? 0 : Math.round((dashboardPopup.width - width) / 2)
+            y: {
+                if (!dashboardPopup.leftBar)
+                    return dashboardPopup.bottomBar ? dashboardPopup.height - height : 0;
+                const desiredY = root.controlMode === "media" && (root.mediaAnchor?.visible ?? false)
+                    ? dashboardPopup.mediaAnchorY - height / 2
+                    : dashboardPopup.height - height - dashboardPopup.edgeGap;
+                return Math.max(dashboardPopup.edgeGap,
+                    Math.min(dashboardPopup.height - height - dashboardPopup.edgeGap, desiredY));
+            }
 
             Loader {
                 id: dashboardLoader
                 // Always warm: weather→dashboard must not hitch on first create.
                 active: true
                 anchors.fill: parent
+                onLoaded: {
+                    if (dashboardPopup.isOpen)
+                        Qt.callLater(() => dashboardLoader.item?.focusCurrentTab());
+                }
 
-                sourceComponent: Component {
+                sourceComponent: root.vertical
+                    ? (root.controlMode ? verticalControlMenu : verticalDashboard)
+                    : horizontalDashboard
+
+                Component {
+                    id: verticalControlMenu
+                    VerticalControlMenu {
+                        mode: root.controlMode
+                        lyricsActive: dashboardPopup.isOpen && root.controlMode === "media"
+                        maximumSize: Math.max(0, Math.min(dashboardPopup.width - dashboardPopup.edgeGap,
+                            dashboardPopup.height - dashboardPopup.edgeGap * 2) - dashboardSurface.padding * 2)
+                        onBackRequested: root.toggleCenterMenu()
+                        onCloseRequested: dashboardPopup.close()
+                    }
+                }
+
+                Component {
+                    id: verticalDashboard
+                    VerticalDashboard {
+                        screenName: root.bar?.screen?.name ?? ""
+                        onCloseRequested: dashboardPopup.close()
+                    }
+                }
+
+                Component {
+                    id: horizontalDashboard
                     DashboardView {
                         screenName: root.bar?.screen?.name ?? ""
                         popupMode: true
@@ -639,6 +807,8 @@ Item {
             Visibilities.unregisterDashboardController(screenName, root);
         if (GlobalStates.dashboardPopupScreen === screenName)
             GlobalStates.dashboardPopupScreen = "";
+        if (GlobalStates.systemMonitorPopupScreen === screenName)
+            GlobalStates.systemMonitorPopupScreen = "";
     }
 
     Component.onCompleted: {

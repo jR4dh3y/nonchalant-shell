@@ -210,6 +210,9 @@ Item {
                     id: schemeButton
                     Layout.fillWidth: true
                     Layout.preferredHeight: 40
+                    padding: 0
+                    leftPadding: 8
+                    rightPadding: 8
                     text: getCurrentDisplayName()
                     focus: true
                     // Keep focus inside the selector while picking so the list
@@ -296,16 +299,21 @@ Item {
                         radius: Styling.radius(0)
                     }
 
-                    contentItem: Text {
-                        text: parent.text
-                        color: Colors.overSurface
-                        font.family: Config.theme.font
-                        font.pixelSize: Config.theme.fontSize
-                        renderType: Text.NativeRendering
-                        font.hintingPreference: Font.PreferFullHinting
-                        verticalAlignment: Text.AlignVCenter
-                        leftPadding: 8
-                        elide: Text.ElideRight
+                    contentItem: Item {
+                        implicitWidth: schemeLabel.implicitWidth
+                        implicitHeight: schemeLabel.implicitHeight
+                        clip: true
+
+                        StyledText {
+                            id: schemeLabel
+                            text: schemeButton.text
+                            color: Colors.overSurface
+                            width: Math.min(Math.ceil(implicitWidth), parent.width)
+                            height: Math.ceil(implicitHeight)
+                            x: Math.round((parent.width - width) / 2)
+                            y: Math.round((parent.height - height) / 2)
+                            elide: Text.ElideRight
+                        }
                     }
                 }
 

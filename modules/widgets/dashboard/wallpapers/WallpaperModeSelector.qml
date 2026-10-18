@@ -139,6 +139,9 @@ Item {
                 id: modeButton
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
+                padding: 0
+                leftPadding: 8
+                rightPadding: 8
                 text: root.modeListExpanded
                     ? modes[selectedModeIndex >= 0 ? selectedModeIndex : 0].label
                     : root.currentModeLabel()
@@ -211,9 +214,6 @@ Item {
                     }
 
                 contentItem: RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
                     spacing: 4
 
                     Text {
@@ -224,6 +224,7 @@ Item {
                         font.pixelSize: Config.theme.fontSize
                         renderType: Text.NativeRendering
                         font.hintingPreference: Font.PreferFullHinting
+                        horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
                     }

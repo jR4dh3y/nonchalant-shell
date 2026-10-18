@@ -25,6 +25,14 @@ function validate(current, defaults, keyName) {
         for (const key in defaults) {
             result[key] = validate(current[key], defaults[key], key);
         }
+        // Repair the old hover pair while preserving custom foregrounds and backgrounds.
+        if (keyName === "srPrimaryFocus"
+                && result.itemColor === "overPrimary"
+                && result.gradientType === "linear"
+                && result.gradient.length === 1
+                && result.gradient[0]?.[0] === "overPrimaryContainer") {
+            result.itemColor = defaults.itemColor;
+        }
         return result;
     }
 
@@ -47,7 +55,7 @@ function validate(current, defaults, keyName) {
     }
 
     if (keyName === "style") {
-        const validStyles = ["default", "island", "pills"];
+        const validStyles = ["default", "island", "pills", "left"];
         if (validStyles.indexOf(current) === -1) {
             return defaults;
         }

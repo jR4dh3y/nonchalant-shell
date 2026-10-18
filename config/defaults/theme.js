@@ -165,7 +165,7 @@ var data = {
         "halftoneDotColor": "primary",
         "halftoneBackgroundColor": "overPrimaryContainer",
         "border": ["overBackground", 0],
-        "itemColor": "overPrimary",
+        "itemColor": "primaryContainer",
         "opacity": 1.0
     },
     "srOverPrimary": {

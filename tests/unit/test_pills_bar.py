@@ -169,7 +169,8 @@ class TestPillsBarLayout(unittest.TestCase):
 
     def test_reservation_windows_integration(self):
         """ReservationWindows does not reserve space for pills unless pinned."""
-        self.assertIn('Config.bar?.style ?? "default") === "pills"', self.reservation_content)
+        self.assertIn('((root.barStyle !== "island" && root.barStyle !== "pills") || (Config.bar?.pinned ?? false))', self.reservation_content)
+        self.assertIn('exclusiveZone: root.barReserves && root.barStyle !== "left"', self.reservation_content)
 
     def test_settings_style_selector_option(self):
         """ShellPanel Settings includes Pills in the Style selector."""

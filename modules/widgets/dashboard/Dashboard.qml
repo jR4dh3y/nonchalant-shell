@@ -26,6 +26,8 @@ Item {
     }
 
     property string screenName: ""
+    readonly property bool verticalBar: Config.bar?.style === "left"
+    readonly property Item dashboardController: Visibilities.dashboardControllers[root.screenName] ?? null
     property int currentTab: GlobalStates.dashboardCurrentTab
     readonly property bool lyricsActive: root.currentTab === 0
         && root.screenName !== "" && GlobalStates.dashboardPopupScreen === root.screenName
@@ -33,8 +35,10 @@ Item {
     readonly property int tabCount: 2
     readonly property real nonAnimWidth: currentTab === 0 ? 600 : 400
 
-    implicitWidth: nonAnimWidth
-    implicitHeight: 430
+    implicitWidth: root.verticalBar ? (widgetsTabLoader.item?.implicitWidth ?? nonAnimWidth) : nonAnimWidth
+    implicitHeight: Config.bar?.style === "left" && currentTab === 0
+        ? (widgetsTabLoader.item?.implicitHeight ?? 430)
+        : 430
 
     function focusCurrentTab() {
         const activeLoader = root.currentTab === 1
@@ -52,7 +56,7 @@ Item {
     focus: true
 
     Component.onCompleted: {
-        root.currentTab = Math.max(0, Math.min(GlobalStates.dashboardCurrentTab, root.tabCount - 1));
+        root.currentTab = root.verticalBar ? 0 : Math.max(0, Math.min(GlobalStates.dashboardCurrentTab, root.tabCount - 1));
         GlobalStates.dashboardCurrentTab = root.currentTab;
     }
 
@@ -95,7 +99,7 @@ Item {
                     NumberAnimation { id: animInOpacity; duration: tabTransitionAnim.duration; easing.type: Easing.OutCubic; to: 1 }
 
                     onFinished: {
-                        root.restoreTabBindings();
+                        stack.restoreTabBindings();
                         root.focusCurrentTab();
                     }
                 }
@@ -114,6 +118,11 @@ Item {
 
                 // Function to navigate to a specific tab
                 function navigateToTab(index) {
+                    if (root.verticalBar) {
+                        if (index === 1)
+                            root.dashboardController?.showDashboardSection("wallpapers");
+                        return;
+                    }
                     if (index >= 0 && index < root.tabCount && index !== root.currentTab) {
                         const oldIndex = root.currentTab;
                         root.currentTab = index;
@@ -153,7 +162,7 @@ Item {
                             tabTransitionAnim.restart();
                         } else {
                             tabTransitionAnim.stop();
-                            root.restoreTabBindings();
+                            stack.restoreTabBindings();
                             root.focusCurrentTab();
                         }
                     }
@@ -176,7 +185,7 @@ Item {
                     id: wallpapersTabLoader
                     width: parent.width
                     height: parent.height
-                    active: root.currentTab === 1 || (Config.performance.dashboardPersistTabs && Config.performance.dashboardMaxPersistentTabs > 1) || opacity > 0
+                    active: !root.verticalBar && (root.currentTab === 1 || (Config.performance.dashboardPersistTabs && Config.performance.dashboardMaxPersistentTabs > 1) || opacity > 0)
                     sourceComponent: wallpapersComponent
                     visible: root.currentTab === 1
                     opacity: root.currentTab === 1 ? 1 : 0
@@ -194,6 +203,10 @@ Item {
         enabled: GlobalStates.dashboardOpen
 
         onActivated: {
+            if (root.verticalBar) {
+                root.dashboardController?.toggleDashboardSection("wallpapers");
+                return;
+            }
             let nextIndex = (root.currentTab + 1) % root.tabCount;
             stack.navigateToTab(nextIndex);
         }
@@ -205,6 +218,10 @@ Item {
         enabled: GlobalStates.dashboardOpen
 
         onActivated: {
+            if (root.verticalBar) {
+                root.dashboardController?.toggleDashboardSection("wallpapers");
+                return;
+            }
             let prevIndex = root.currentTab - 1;
             if (prevIndex < 0) {
                 prevIndex = root.tabCount - 1;
@@ -217,7 +234,10 @@ Item {
     // Component definitions for better performance (defined once, reused)
     Component {
         id: widgetsComponent
-        WidgetsTab { lyricsActive: root.lyricsActive }
+        WidgetsTab {
+            lyricsActive: root.lyricsActive
+            screenName: root.screenName
+        }
     }
 
     Component {

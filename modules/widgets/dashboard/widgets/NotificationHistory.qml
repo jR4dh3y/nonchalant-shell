@@ -17,7 +17,7 @@ Item {
 
     Shortcut {
         sequence: "Ctrl+L"
-        enabled: GlobalStates.dashboardOpen && GlobalStates.dashboardCurrentTab === 0 && !isClearing
+        enabled: root.visible && root.enabled && GlobalStates.dashboardOpen && GlobalStates.dashboardCurrentTab === 0 && !isClearing
         onActivated: discardAllWithAnimation()
     }
 

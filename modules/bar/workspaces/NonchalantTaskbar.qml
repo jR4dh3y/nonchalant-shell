@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Widgets
 import qs.config
 import qs.modules.components
 import qs.modules.services
@@ -18,17 +17,18 @@ Item {
     property bool showBackground: true
 
     readonly property list<CompositorWorkspace> visibleWorkspaces: CompositorService.workspacesForOutput(root.bar.screen.name)
+    // Keep delegates alive when only workspace/window state changes.
+    readonly property string workspaceOrder: JSON.stringify(visibleWorkspaces.map(workspace => workspace.id))
+    property list<string> workspaceIds: []
+    onWorkspaceOrderChanged: workspaceIds = visibleWorkspaces.map(workspace => workspace.id)
+    Component.onCompleted: workspaceIds = visibleWorkspaces.map(workspace => workspace.id)
+
     readonly property int activeWorkspaceIndex: visibleWorkspaces.findIndex(workspace => workspace.active)
     readonly property Item activeWorkspaceButton: {
         const count = workspaceRepeater.count;
         return activeWorkspaceIndex >= 0 && activeWorkspaceIndex < count
             ? workspaceRepeater.itemAt(activeWorkspaceIndex)
             : null;
-    }
-
-    function iconForWindow(window) {
-        const entry = DesktopEntries.heuristicLookup(window.appId);
-        return entry?.icon || AppSearch.guessIcon(window.appId) || "image-missing";
     }
 
     implicitWidth: workspaceRow.implicitWidth + 8
@@ -91,17 +91,17 @@ Item {
 
         Repeater {
             id: workspaceRepeater
-            model: root.visibleWorkspaces
+            model: root.workspaceIds
 
             Item {
                 id: workspaceButton
 
-                required property CompositorWorkspace modelData
-                readonly property CompositorWorkspace workspace: modelData
-                readonly property bool active: workspace.active
-                readonly property list<CompositorWindow> windows: CompositorService.windowsForWorkspace(workspace.id)
+                required property string modelData
+                readonly property CompositorWorkspace workspace: CompositorService.workspaceById(modelData)
+                readonly property bool active: workspace?.active ?? false
+                readonly property list<CompositorWindow> windows: CompositorService.windowsForWorkspace(modelData)
                 readonly property bool occupied: windows.length > 0
-                readonly property string displayName: workspace.isNamed ? workspace.name : String(workspace.idx)
+                readonly property string displayName: workspace?.isNamed ? workspace.name : String(workspace?.idx ?? "")
                 readonly property bool showLabel: !active || !occupied
 
                 Layout.preferredWidth: showLabel ? workspaceName.implicitWidth + 16 : Math.max(32, appsRow.implicitWidth + 10)
@@ -140,7 +140,7 @@ Item {
                     // Opacity-only show/hide — scale resamples glyphs soft.
                     opacity: workspaceButton.showLabel ? 1 : 0
                     text: workspaceButton.displayName
-                    color: workspaceButton.workspace.is_urgent
+                    color: workspaceButton.workspace?.is_urgent
                         ? Colors.red
                         : (workspaceButton.active
                             ? activeIndicator.item
@@ -158,14 +158,14 @@ Item {
                     }
                 }
 
-                Row {
+                WorkspaceWindowList {
                     id: appsRow
+                    windows: workspaceButton.windows
                     z: 2
                     anchors.centerIn: parent
                     visible: opacity > 0
                     opacity: workspaceButton.active && workspaceButton.occupied ? 1 : 0
                     scale: workspaceButton.active && workspaceButton.occupied ? 1 : 0.85
-                    spacing: 3
 
                     Behavior on opacity {
                         enabled: Config.animDuration > 0
@@ -183,110 +183,6 @@ Item {
                             easing.overshoot: 1.1
                         }
                     }
-
-                    Repeater {
-                        model: workspaceButton.windows
-
-                        Item {
-                            id: appButton
-
-                            required property var modelData
-                            readonly property CompositorWindow windowData: modelData
-                            readonly property string iconName: root.iconForWindow(windowData)
-
-                            width: 24
-                            height: 24
-                            scale: appMouse.pressed ? 0.92 : 1.0
-
-                            PressBehavior on scale {
-                                pressed: appMouse.pressed
-                            }
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: Styling.radius(-4)
-                                color: appButton.windowData.is_focused ? Colors.primary : Styling.srItem("overprimary")
-                                opacity: appButton.windowData.is_focused ? 1 : (appMouse.containsMouse ? 0.18 : 0)
-                                border.width: appButton.windowData.is_focused ? 1 : 0
-                                border.color: Colors.primaryFixed
-
-                                Behavior on opacity {
-                                    NumberAnimation { duration: Math.min(Config.animDuration, 150) }
-                                }
-                            }
-
-                            // Keep icon artwork inside the themed app badge.
-                            ClippingRectangle {
-                                id: appIconClip
-                                anchors.centerIn: parent
-                                width: appButton.width - 2
-                                height: width
-                                radius: Styling.radius(-5)
-                                color: "transparent"
-                                clip: true
-
-                                IconImage {
-                                    id: appIcon
-                                    anchors.centerIn: parent
-                                    // Keep even dimensions inside the even-sized
-                                    // badge so centerIn does not round to one side.
-                                    width: appButton.windowData.is_focused ? 16 : 14
-                                    height: width
-                                    opacity: appButton.windowData.is_focused ? 1 : 0.62
-                                    source: "image://icon/" + appButton.iconName
-                                    asynchronous: true
-
-                                    Behavior on width {
-                                        enabled: Config.animDuration > 0
-                                        NumberAnimation {
-                                            duration: Math.min(Config.animDuration, 150)
-                                            easing.type: Easing.OutQuad
-                                        }
-                                    }
-
-                                    Behavior on opacity {
-                                        enabled: Config.animDuration > 0
-                                        NumberAnimation {
-                                            duration: Math.min(Config.animDuration, 150)
-                                            easing.type: Easing.OutQuad
-                                        }
-                                    }
-
-                                    onStatusChanged: {
-                                        if (status === Image.Error && appButton.iconName !== "image-missing")
-                                            source = "image://icon/image-missing";
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 1
-                                width: 10
-                                height: 2
-                                radius: 1
-                                color: Colors.primaryFixed
-                                visible: appButton.windowData.is_focused
-                            }
-
-                            MouseArea {
-                                id: appMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: mouse => {
-                                    mouse.accepted = true;
-                                    CompositorService.focusWindow(appButton.windowData.id);
-                                }
-                            }
-
-                            StyledToolTip {
-                                show: appMouse.containsMouse
-                                tooltipText: appButton.windowData.title || appButton.windowData.appId
-                            }
-                        }
-                    }
                 }
 
                 MouseArea {
@@ -295,7 +191,7 @@ Item {
                     z: 1
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: CompositorService.focusWorkspace(workspaceButton.workspace.id)
+                    onClicked: CompositorService.focusWorkspace(workspaceButton.modelData)
                 }
             }
         }

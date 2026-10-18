@@ -14,6 +14,7 @@ Item {
     property bool isHovered: false
     property bool layerEnabled: false
     property bool flat: false
+    property bool showMeter: true
     property int meterSize: 36
 
     property real radius: 0
@@ -73,7 +74,7 @@ Item {
             anchors.centerIn: parent
             width: root.flat ? (root.meterSize - 2) : 32
             height: width
-            visible: Battery.available
+            visible: Battery.available && root.showMeter
 
             property real angle: (Battery.percentage / 100) * (360 - 2 * gapAngle)
             property real radius: root.flat ? (root.meterSize / 2 - 4.5) : 12
@@ -147,9 +148,9 @@ Item {
         StyledText {
             id: batteryIcon
             anchors.centerIn: parent
-            text: Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
+            text: !root.showMeter && Battery.available ? Battery.getBatteryIcon() : Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
             font.family: Icons.font
-            font.pixelSize: root.flat ? (Battery.available ? 11 : 14) : (Battery.available ? 14 : 18)
+            font.pixelSize: !root.showMeter ? Styling.fontSize(4) : root.flat ? (Battery.available ? 11 : 14) : (Battery.available ? 14 : 18)
             color: root.popupOpen ? buttonBg.item : Colors.overBackground
 
             Behavior on color {

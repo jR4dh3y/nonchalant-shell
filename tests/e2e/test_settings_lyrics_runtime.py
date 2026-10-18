@@ -17,10 +17,13 @@ import qs.config
 import qs.modules.globals
 import qs.modules.services
 import qs.modules.components
+import qs.modules.widgets.dashboard
+import qs.modules.widgets.dashboard.widgets
 import qs.modules.widgets.dashboard.controls
 
 ShellRoot {
     FloatingWindow {
+        id: testWindow
         visible: true
         implicitWidth: 1000
         implicitHeight: 800
@@ -28,6 +31,14 @@ ShellRoot {
         ThemePanel { id: compactTheme; width: 1000; visible: false }
         LyricsView { id: lyrics; width: 200; height: 22 }
         CustomColorPicker { id: picker; parent: settings }
+        Component { id: verticalDashboard; VerticalDashboard { screenName: "lyrics-test" } }
+        Component { id: verticalMediaMenu; VerticalControlMenu { mode: "media" } }
+        Component {
+            id: controlIslands
+            VerticalDashboardControls {
+                onSectionRequested: section => dashboardSection = section
+            }
+        }
         TestCase {
             name: "SettingsLyricsRuntime"
             when: Config.initialLoadComplete
@@ -43,6 +54,63 @@ ShellRoot {
                 compare(String(loader.source), settings.pageFor(pageId).component)
                 tryCompare(loader, "status", Loader.Ready, 5000)
                 tryCompare(settings, "loadedPageId", pageId, 5000)
+            }
+
+            function test_bar_position_only_for_default_style() {
+                settings.go("shell", "bar")
+                expectPage("shell")
+                const panel = findChild(settings, "settingsPanelLoader").item
+                function findSelector(item, label) {
+                    if (item.label === label && item.options !== undefined)
+                        return item
+                    for (const child of item.children ?? []) {
+                        const selector = findSelector(child, label)
+                        if (selector !== null)
+                            return selector
+                    }
+                    return null
+                }
+                const selector = findSelector(panel, "Position")
+                const styles = findSelector(panel, "Style")
+                verify(selector !== null)
+                verify(styles !== null)
+                compare(styles.options.map(option => option.value).join(","), "default,island,pills,left")
+                function findOption(item, value) {
+                    if (item.modelData?.value === value)
+                        return item
+                    for (const child of item.children ?? []) {
+                        const option = findOption(child, value)
+                        if (option !== null)
+                            return option
+                    }
+                    return null
+                }
+                const previousStyle = Config.bar.style
+                const previousPosition = Config.bar.position
+                try {
+                    Config.bar.position = "bottom"
+                    for (const style of ["default", "island", "pills", "left", "default"]) {
+                        const target = findOption(styles, style)
+                        verify(target !== null)
+                        tryVerify(() => target.width > 0 && target.height > 0)
+                        mouseClick(target, target.width / 2, target.height / 2, Qt.LeftButton)
+                        tryCompare(Config.bar, "style", style)
+                        tryCompare(selector, "visible", style === "default")
+                        compare(Config.bar.position, "bottom")
+                        compare(selector.value, "bottom")
+                        for (const value of ["default", "island", "pills", "left"]) {
+                            const option = findOption(styles, value)
+                            verify(option !== null, value + " option exists")
+                            tryCompare(option, "visible", true)
+                            tryVerify(() => option.width > 0 && option.height > 0, 1000,
+                                value + " option has visible geometry")
+                        }
+                    }
+                } finally {
+                    Config.bar.style = previousStyle
+                    Config.bar.position = previousPosition
+                }
+                console.log("SETTINGS_BAR_POSITION_RUNTIME_PASSED")
             }
 
             function test_search_navigation_follows_display_order() {
@@ -161,6 +229,142 @@ ShellRoot {
                 console.log("SETTINGS_LAYOUT_RUNTIME_PASSED")
             }
 
+            function test_vertical_dashboard_control_islands() {
+                const controls = createTemporaryObject(controlIslands, testWindow.contentItem,
+                    {width: 64, height: 420, z: 100})
+                verify(controls !== null)
+                const top = findChild(controls, "dashboardViewControlsIsland")
+                const bottom = findChild(controls, "dashboardStaticControlsIsland")
+                tryVerify(() => top.height > 0 && bottom.height > 0)
+                compare(top.y, 0)
+                compare(bottom.y + bottom.height, controls.height)
+                verify(bottom.y > top.y + top.height, "islands have a visible gap")
+                const buttons = [
+                    ["dashboardWallpapersButton", "wallpapers"],
+                    ["dashboardStatsButton", "stats"],
+                    ["dashboardNotificationsButton", "notifications"]
+                ]
+                for (const [name, section] of buttons) {
+                    const button = findChild(controls, name)
+                    verify(button !== null)
+                    mouseClick(button, button.width / 2, button.height / 2, Qt.LeftButton)
+                    compare(controls.dashboardSection, section)
+                    compare(button.isActive, true)
+                    for (const [otherName, otherSection] of buttons)
+                        compare(findChild(controls, otherName).isActive, otherSection === section)
+                }
+                const highlight = findChild(controls, "dashboardViewHighlight")
+                verify(highlight !== null)
+                const notifications = findChild(controls, "dashboardNotificationsButton")
+                const wallpapers = findChild(controls, "dashboardWallpapersButton")
+                const stats = findChild(controls, "dashboardStatsButton")
+                const previousDuration = Config.theme.animDuration
+                function aligned(button) {
+                    const target = button.mapToItem(highlight.parent, 0, 0)
+                    return Math.abs(highlight.y - target.y) < 0.1
+                        && Math.abs(highlight.height - button.height) < 0.1
+                }
+                try {
+                    Config.theme.animDuration = 300
+                    tryVerify(() => aligned(notifications))
+                    tryCompare(highlight, "morphing", true)
+                    const fromY = highlight.y
+                    controls.dashboardSection = "stats"
+                    const targetY = stats.mapToItem(highlight.parent, 0, 0).y
+                    tryVerify(() => highlight.y > fromY && highlight.y < targetY, 1000,
+                        "shared highlight travels between buttons")
+                    tryVerify(() => aligned(stats))
+                    controls.dashboardSection = "wallpapers"
+                    wait(40)
+                    controls.dashboardSection = "notifications"
+                    tryVerify(() => aligned(notifications), 1000,
+                        "rapid changes settle at the latest selected view")
+                    for (const button of [notifications, wallpapers, stats])
+                        compare(button.backgroundOpacity, 0)
+                    Config.theme.animDuration = 0
+                    controls.dashboardSection = "wallpapers"
+                    tryVerify(() => aligned(wallpapers))
+                } finally {
+                    Config.theme.animDuration = previousDuration
+                }
+                console.log("VERTICAL_DASHBOARD_CONTROL_ISLANDS_PASSED")
+            }
+
+            function test_vertical_dashboard_split_media_and_lyrics() {
+                const previousStyle = Config.bar.style
+                const previousScreen = GlobalStates.dashboardPopupScreen
+                const previousLyricsEnabled = Config.bar.lyricsEnabled
+                let panel = null
+                try {
+                    Config.bar.style = "left"
+                    Config.bar.lyricsEnabled = true
+                    panel = createTemporaryObject(verticalDashboard, testWindow.contentItem,
+                        {width: 768, height: 600, z: 100})
+                    verify(panel !== null)
+                    const media = findChild(panel, "dashboardMediaCard")
+                    const detail = findChild(panel, "dashboardLyrics")
+                    const row = findChild(panel, "dashboardMediaRow")
+                    verify(media !== null && detail !== null && row !== null)
+                    tryVerify(() => media.width > 0 && detail.width > 0)
+                    const left = media.mapToItem(panel, 0, 0)
+                    const right = detail.parent.mapToItem(panel, 0, 0)
+                    verify(right.x >= left.x + media.width, "lyrics sit beside the player")
+                    compare(right.y, left.y)
+                    compare(detail.parent.height, media.height)
+                    compare(media.width, media.height)
+                    compare(detail.parent.width, detail.parent.height)
+                    compare(media.width, detail.parent.width)
+                    compare(media.squareArtwork, true)
+                    compare(media.showLyrics, false)
+                    compare(detail.mode, "detail")
+                    GlobalStates.dashboardPopupScreen = "lyrics-test"
+                    tryCompare(LyricsService, "watchers", 1, 1000)
+                    Config.bar.lyricsEnabled = false
+                    tryCompare(LyricsService, "watchers", 0, 1000)
+                    Config.bar.lyricsEnabled = true
+                    tryCompare(LyricsService, "watchers", 1, 1000)
+                    GlobalStates.dashboardPopupScreen = ""
+                    tryCompare(LyricsService, "watchers", 0, 1000)
+                } finally {
+                    if (panel) panel.destroy()
+                    GlobalStates.dashboardPopupScreen = previousScreen
+                    Config.bar.lyricsEnabled = previousLyricsEnabled
+                    Config.bar.style = previousStyle
+                }
+                console.log("VERTICAL_DASHBOARD_SPLIT_LYRICS_PASSED")
+            }
+
+            function test_vertical_media_menu_lyrics_lifetime() {
+                const previousLyricsEnabled = Config.bar.lyricsEnabled
+                let menu = null
+                try {
+                    Config.bar.lyricsEnabled = true
+                    menu = createTemporaryObject(verticalMediaMenu, testWindow.contentItem,
+                        {width: 392, height: 392, z: 100})
+                    verify(menu !== null)
+                    compare(LyricsService.watchers, 0)
+                    menu.lyricsActive = true
+                    tryCompare(LyricsService, "watchers", 1, 1000)
+                    Config.bar.lyricsEnabled = false
+                    tryCompare(LyricsService, "watchers", 0, 1000)
+                    Config.bar.lyricsEnabled = true
+                    tryCompare(LyricsService, "watchers", 1, 1000)
+                    menu.lyricsActive = false
+                    tryCompare(LyricsService, "watchers", 0, 1000)
+                    menu.lyricsActive = true
+                    tryCompare(LyricsService, "watchers", 1, 1000)
+                    menu.mode = "wifi"
+                    tryCompare(LyricsService, "watchers", 0, 1000)
+                    menu.mode = "media"
+                    tryCompare(LyricsService, "watchers", 1, 1000)
+                } finally {
+                    if (menu) menu.destroy()
+                    Config.bar.lyricsEnabled = previousLyricsEnabled
+                }
+                tryCompare(LyricsService, "watchers", 0, 1000)
+                console.log("VERTICAL_MEDIA_LYRICS_LIFETIME_PASSED")
+            }
+
             function cleanupTestCase() { Qt.quit() }
         }
     }
@@ -209,6 +413,10 @@ class SettingsLyricsRuntimeTests(unittest.TestCase):
             self.assertIn("SETTINGS_LAYOUT_RUNTIME_PASSED", output, output)
             self.assertIn("SETTINGS_SEARCH_ORDER_PASSED", output, output)
             self.assertIn("SETTINGS_COLOR_HUES_PASSED", output, output)
+            self.assertIn("SETTINGS_BAR_POSITION_RUNTIME_PASSED", output, output)
+            self.assertIn("VERTICAL_MEDIA_LYRICS_LIFETIME_PASSED", output, output)
+            self.assertIn("VERTICAL_DASHBOARD_CONTROL_ISLANDS_PASSED", output, output)
+            self.assertIn("VERTICAL_DASHBOARD_SPLIT_LYRICS_PASSED", output, output)
             self.assertNotIn("SETTINGS_LYRICS_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("FAIL!", output, output)
 

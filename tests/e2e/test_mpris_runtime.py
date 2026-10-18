@@ -195,6 +195,16 @@ ShellRoot {
                 tryVerify(() => centerLyrics.visible, 1000)
                 tryVerify(() => center.implicitHeight > emptyHeight + 100, 1000)
                 tryVerify(() => card.implicitHeight > emptyCardHeight + 20, 1000)
+                const cardLyrics = controlOfType(card, "LyricsView")
+                tryCompare(cardLyrics, "visible", true)
+                card.showLyrics = false
+                tryCompare(cardLyrics, "visible", false)
+                tryCompare(card, "implicitHeight", emptyCardHeight)
+                tryCompare(LyricsService, "watchers", 1)
+                card.showLyrics = true
+                tryCompare(cardLyrics, "visible", true)
+                tryVerify(() => card.implicitHeight > emptyCardHeight + 20, 1000)
+                tryCompare(LyricsService, "watchers", 2)
                 compare(LyricsService.watchers, 2)
                 LyricsService.lines = []
                 LyricsService.status = "missing"
@@ -443,8 +453,14 @@ print(json.dumps({'id': video_id, 'duration': 444 if video_id == 'slowtrack01' e
             }
             env.pop("WAYLAND_DISPLAY", None)
             env.pop("DBUS_SESSION_BUS_ADDRESS", None)
+            bus_config = runtime / "dbus.conf"
+            bus_config.write_text('<busconfig><type>session</type><auth>EXTERNAL</auth>'
+                f'<listen>unix:path={runtime / "bus"}</listen>'
+                '<policy context="default"><allow send_destination="*"/>'
+                '<allow receive_sender="*"/><allow own="*"/></policy></busconfig>')
             result = subprocess.run(
-                ["dbus-run-session", "--", sys.executable, __file__, "--exercise", str(fixture)],
+                ["dbus-run-session", f"--config-file={bus_config}", "--",
+                 sys.executable, __file__, "--exercise", str(fixture)],
                 env=env, capture_output=True, text=True, timeout=30,
             )
             output = result.stdout + result.stderr

@@ -11,18 +11,24 @@ import qs.modules.components
 import qs.modules.globals
 import qs.config
 
-Item {
+StyledRect {
     id: root
 
-    implicitWidth: 420
-    implicitHeight: mainCol.implicitHeight + 28
+    variant: "pane"
+    backgroundOpacity: 0
+    enableBorder: false
+    radius: Styling.radius(0)
 
-    signal backRequested()
+    implicitWidth: 420
+    implicitHeight: squareArtwork ? width : mainCol.implicitHeight + 28
+
     property bool lyricsActive: false
+    property bool squareArtwork: false
+    readonly property real contentHeightLimit: squareArtwork ? height : maximumHeight
     property real maximumHeight: 0
-    readonly property real fixedContentHeight: headerRow.implicitHeight
-        + heroRow.implicitHeight + waveformRow.Layout.preferredHeight
-        + playbackRow.implicitHeight + mainCol.spacing * 3 + 28
+    readonly property real fixedContentHeight: heroRow.implicitHeight
+        + waveformRow.Layout.preferredHeight + playbackRow.implicitHeight
+        + mainCol.spacing * (squareArtwork ? 3 : 2) + 28
 
     readonly property bool hasPlayer: MprisController.activePlayer !== null
     readonly property bool isPlaying: MprisController.isPlaying
@@ -38,155 +44,47 @@ Item {
         return frame ? "file://" + frame : (path ? "file://" + path : "");
     }
 
-    Image {
-        id: bgArt
+    ClippingRectangle {
         anchors.fill: parent
-        source: root.hasArtwork ? root.trackArt : root.wallpaperUrl
-        fillMode: Image.PreserveAspectCrop
-        asynchronous: true
-        clip: true
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            blurEnabled: root.hasArtwork || root.wallpaperUrl !== ""
-            blurMax: 36
-            blur: 0.8
-        }
-        opacity: root.hasArtwork ? 0.35 : (root.wallpaperUrl !== "" ? 0.18 : 0.0)
-        Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-    }
+        radius: root.radius
+        color: "transparent"
 
-    Rectangle {
-        anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#55000000" }
-            GradientStop { position: 0.5; color: "#77000000" }
-            GradientStop { position: 1.0; color: "#aa000000" }
+        Image {
+            id: bgArt
+            objectName: "mediaCenterArtwork"
+            anchors.fill: parent
+            source: root.hasArtwork ? root.trackArt : root.wallpaperUrl
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            clip: true
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                blurEnabled: root.hasArtwork || root.wallpaperUrl !== ""
+                blurMax: 36
+                blur: root.squareArtwork ? 0.4 : 0.8
+            }
+            opacity: root.hasArtwork ? (root.squareArtwork ? 0.8 : 0.35) : (root.wallpaperUrl !== "" ? 0.18 : 0.0)
+            Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: root.squareArtwork ? Qt.alpha(Colors.background, 0.45) : "#55000000" }
+                GradientStop { position: 0.5; color: root.squareArtwork ? Qt.alpha(Colors.background, 0.25) : "#77000000" }
+                GradientStop { position: 1.0; color: root.squareArtwork ? Qt.alpha(Colors.background, 0.85) : "#aa000000" }
+            }
         }
     }
 
     ColumnLayout {
         id: mainCol
         anchors.top: parent.top
+        anchors.bottom: root.squareArtwork ? parent.bottom : undefined
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 14
         spacing: 12
-
-        // ═══════════════════════════════════════════════════════════════
-        // HEADER: Back button + Title + (Right) Player Switcher + Close
-        // ═══════════════════════════════════════════════════════════════
-        RowLayout {
-            id: headerRow
-            Layout.fillWidth: true
-            spacing: 8
-
-            // Back button
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: 14
-                variant: backMouse.containsMouse ? "focus" : "common"
-                scale: backMouse.pressed ? 0.92 : 1.0
-                PressBehavior on scale {
-                    pressed: backMouse.pressed
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.arrowLeft
-                    font.family: Icons.font
-                    font.pixelSize: 14
-                    color: Colors.overBackground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.backRequested()
-                }
-
-                StyledToolTip {
-                    show: backMouse.containsMouse
-                    tooltipText: "Back"
-                }
-            }
-
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "Media Center"
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
-                font.bold: true
-                color: Colors.overBackground
-            }
-
-            Item { Layout.fillWidth: true }
-
-            // Single Icon Player Switcher (placed on the right before the close button)
-            StyledRect {
-                id: switchPlayerBtn
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: 14
-                variant: playerMouse.containsMouse ? "focus" : "common"
-                scale: playerMouse.pressed ? 0.92 : 1.0
-                PressBehavior on scale {
-                    pressed: playerMouse.pressed
-                }
-
-                Text {
-                    id: playerIconText
-                    anchors.centerIn: parent
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: Icons.disc
-                    font.family: Icons.font
-                    font.pixelSize: 14
-                    color: Colors.primary
-
-                    Behavior on rotation {
-                        NumberAnimation { duration: 320; easing.type: Easing.OutBack }
-                    }
-                }
-
-                // Dot indicator for multiple active players
-                Rectangle {
-                    visible: MprisController.filteredPlayers.length > 1
-                    anchors.top: parent.top
-                    anchors.right: parent.right
-                    anchors.margins: 4
-                    width: 5
-                    height: 5
-                    radius: 2.5
-                    color: Colors.primary
-                }
-
-                MouseArea {
-                    id: playerMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: MprisController.filteredPlayers.length > 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        playerIconText.rotation += 180;
-                        if (MprisController.filteredPlayers.length > 1) {
-                            MprisController.cyclePlayer(1);
-                        }
-                    }
-                }
-
-                StyledToolTip {
-                    show: playerMouse.containsMouse
-                    tooltipText: MprisController.filteredPlayers.length > 1
-                        ? ("Switch player (current: " + (MprisController.activePlayer?.identity || "Player") + ")")
-                        : (MprisController.activePlayer?.identity || "No other players")
-                }
-            }
-        }
 
         // ═══════════════════════════════════════════════════════════════
         // HERO: Artwork + Track Typography
@@ -194,9 +92,11 @@ Item {
         RowLayout {
             id: heroRow
             Layout.fillWidth: true
+            Layout.fillHeight: false
             spacing: 16
 
             Item {
+                visible: !root.squareArtwork
                 implicitWidth: 96
                 implicitHeight: 96
                 Layout.alignment: Qt.AlignVCenter
@@ -293,28 +193,23 @@ Item {
 
                     Behavior on opacity { NumberAnimation { duration: 160 } }
                 }
-
-                Text {
-                    renderType: Text.NativeRendering
-                    font.hintingPreference: Font.PreferFullHinting
-                    text: MprisController.activePlayer?.identity || "Now Playing"
-                    font.family: Config.theme.monoFont
-                    font.pixelSize: Styling.fontSize(-2)
-                    color: Colors.overSurfaceVariant
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
             }
+        }
+
+        Item {
+            visible: root.squareArtwork
+            Layout.fillHeight: true
         }
 
         LyricsView {
             collapseWhenEmpty: true
             Layout.fillWidth: true
-            Layout.preferredHeight: root.maximumHeight > 0
-                ? Math.max(0, Math.min(implicitHeight, root.maximumHeight - root.fixedContentHeight - mainCol.spacing))
+            Layout.fillHeight: false
+            Layout.preferredHeight: root.contentHeightLimit > 0
+                ? Math.max(0, Math.min(implicitHeight, root.contentHeightLimit - root.fixedContentHeight - mainCol.spacing))
                 : implicitHeight
             mode: "detail"
-                lyricsEnabled: Config.bar?.lyricsEnabled ?? true
+            lyricsEnabled: Config.bar?.lyricsEnabled ?? true
             active: root.lyricsActive
         }
 
@@ -324,6 +219,7 @@ Item {
         IslandWaveformBar {
             id: waveformRow
             Layout.fillWidth: true
+            Layout.fillHeight: false
             Layout.preferredHeight: 38
         }
 
@@ -332,7 +228,9 @@ Item {
         // ═══════════════════════════════════════════════════════════════
         RowLayout {
             id: playbackRow
+            objectName: "mediaCenterPlayback"
             Layout.fillWidth: true
+            Layout.fillHeight: false
             Layout.alignment: Qt.AlignHCenter
             spacing: 12
 

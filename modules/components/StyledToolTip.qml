@@ -36,7 +36,7 @@ ToolTip {
     text: tooltipText
     delay: 1000
     timeout: -1
-    visible: root.show && root.ownerAvailable() && (!root.requireHover || ownerHover.hovered)
+    visible: root.show && root.ownerAvailable() && (!root.requireHover || (ownerHover?.hovered ?? false))
         && root.tooltipText.length > 0
 
     background: StyledRect {

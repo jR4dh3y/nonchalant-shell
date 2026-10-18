@@ -1456,13 +1456,19 @@ Item {
                                                         variant: "surface"
                                                         radius: Styling.radius(6)
 
-                                                        Image {
+                                                        ClippingRectangle {
                                                             anchors.fill: parent
                                                             anchors.margins: 2
-                                                            source: "data:" + modelData.mimeType + ";base64," + modelData.base64
-                                                            fillMode: Image.PreserveAspectCrop
-                                                            sourceSize.width: 48
-                                                            sourceSize.height: 48
+                                                            radius: Math.max(0, parent.radius - anchors.margins)
+                                                            color: "transparent"
+
+                                                            Image {
+                                                                anchors.fill: parent
+                                                                source: "data:" + modelData.mimeType + ";base64," + modelData.base64
+                                                                fillMode: Image.PreserveAspectCrop
+                                                                sourceSize.width: 48
+                                                                sourceSize.height: 48
+                                                            }
                                                         }
                                                     }
 

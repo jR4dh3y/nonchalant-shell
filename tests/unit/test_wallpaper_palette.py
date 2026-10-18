@@ -73,8 +73,8 @@ const setScheme = new Function('scheme', 'wallpaperConfig', 'Qt', 'runMatugenFor
 const manager = {setMatugenScheme(value) {
     setScheme(value, config, {callLater(callback) {callback()}}, () => generations++, quiet);
 }};
-const run = new Function('command', 'GlobalStates', 'console', data.command);
-run('wallpaper-colors', {wallpaperManager: manager}, quiet);
+const run = new Function('command', 'GlobalStates', 'Config', 'console', data.command);
+run('wallpaper-colors', {wallpaperManager: manager}, {bar: {style: 'default'}}, quiet);
 console.log(JSON.stringify({adapter: config.adapter, generations}));
 """],
             input=json.dumps({"command": command.group(1), "scheme": scheme.group(1)}),

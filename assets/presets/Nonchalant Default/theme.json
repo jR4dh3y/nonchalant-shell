@@ -235,7 +235,7 @@
             "overBackground",
             0
         ],
-        "itemColor": "overPrimary",
+        "itemColor": "primaryContainer",
         "opacity": 1
     },
     "srOverPrimary": {

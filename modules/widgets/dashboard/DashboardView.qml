@@ -1,4 +1,5 @@
 import QtQuick
+import qs.config
 import qs.modules.globals
 import qs.modules.widgets.dashboard
 import qs.modules.services
@@ -6,8 +7,8 @@ import qs.modules.services
 Item {
     id: root
 
-    implicitWidth: 900
-    implicitHeight: 56 + 48 * 6
+    implicitWidth: Config.bar?.style === "left" ? dashboardItem.implicitWidth : 900
+    implicitHeight: Config.bar?.style === "left" ? dashboardItem.implicitHeight : 56 + 48 * 6
     property string screenName: ""
     property bool popupMode: false
 

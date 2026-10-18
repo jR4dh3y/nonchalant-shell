@@ -32,7 +32,7 @@ PanelWindow {
             return WlrKeyboardFocus.Exclusive;
         // Bar popups are child surfaces of this panel. The parent layer must
         // request keyboard focus or input continues to the client underneath.
-        if (barContent.timerInputActive || barContent.dashboardInputActive)
+        if (barContent.keyboardInputActive)
             return WlrKeyboardFocus.Exclusive;
         // Request compositor ownership before focusing the assistant input.
         // Requiring activeFocus here is circular: the field cannot gain focus
@@ -60,6 +60,7 @@ PanelWindow {
     readonly property alias barOuterMargin: barContent.baseOuterMargin
     readonly property alias totalBarHeight: barContent.totalBarHeight
     readonly property string barPosition: Config.bar?.position ?? "top"
+    readonly property string barStyle: Config.bar?.style ?? "default"
     readonly property Item assistantSidebar: assistantSidebarLoader.item
 
 
@@ -197,11 +198,17 @@ PanelWindow {
                     targetScreen: unifiedPanel.targetScreen
 
                     anchors.topMargin: unifiedPanel.barEnabled
+                        && unifiedPanel.barStyle !== "left"
                         && unifiedPanel.barPosition === "top"
                         ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
                         : 0
                     anchors.bottomMargin: unifiedPanel.barEnabled
+                        && unifiedPanel.barStyle !== "left"
                         && unifiedPanel.barPosition === "bottom"
+                        ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
+                        : 0
+                    anchors.leftMargin: unifiedPanel.barEnabled
+                        && unifiedPanel.barStyle === "left"
                         ? unifiedPanel.barTargetHeight + unifiedPanel.barOuterMargin
                         : 0
                 }

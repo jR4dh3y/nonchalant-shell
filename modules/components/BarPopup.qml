@@ -42,14 +42,20 @@ PopupWindow {
     implicitWidth: totalWidth
     implicitHeight: totalHeight
 
-    readonly property bool bottomBar: (Config.bar?.position ?? "top") === "bottom"
+    readonly property bool bottomBar: !leftBar && (Config.bar?.position ?? "top") === "bottom"
+    readonly property bool leftBar: (Config.bar?.style ?? "default") === "left"
 
-    // Open away from the configured screen edge.
+    // Open away from the configured screen edge. A left dock opens sideways,
+    // vertically centered on the anchor pill.
     anchor.item: anchorItem
-    anchor.rect.x: (anchorItem.width - totalWidth) / 2
-    anchor.rect.y: bottomBar
-        ? -totalHeight - visualMargin + shadowMargin
-        : anchorItem.height + visualMargin - shadowMargin
+    anchor.rect.x: leftBar
+        ? anchorItem.width + visualMargin - shadowMargin
+        : (anchorItem.width - totalWidth) / 2
+    anchor.rect.y: leftBar
+        ? (anchorItem.height - totalHeight) / 2
+        : (bottomBar
+            ? -totalHeight - visualMargin + shadowMargin
+            : anchorItem.height + visualMargin - shadowMargin)
     anchor.rect.width: 0
     anchor.rect.height: 0
 
@@ -80,6 +86,7 @@ PopupWindow {
         contentHeight: root.contentHeight
         originWidth: root.anchorItem.width
         fromBottom: root.bottomBar
+        fromLeft: root.leftBar
         variant: root.variant
         padding: root.popupPadding
         maxStretch: root.shadowMargin - 2

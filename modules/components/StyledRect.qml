@@ -4,12 +4,13 @@ import Quickshell.Widgets
 import qs.config
 import qs.modules.theme
 
-ClippingRectangle {
+// Paint rounded chrome directly; children keep a rectangular bounds clip.
+// Put artwork in its own ClippingRectangle, never the foreground labels.
+Rectangle {
     id: root
 
     clip: true
     antialiasing: true
-    contentUnderBorder: true
 
     required property string variant
 
@@ -112,101 +113,115 @@ ClippingRectangle {
         }
     }
 
-    // Linear gradient - procedural (no texture)
+    // Only procedural backgrounds need a texture mask. Keep foreground text
+    // in the window scene graph so fractional scaling rasterizes it once.
     Loader {
         anchors.fill: parent
-        active: root.gradientType === "linear" && root.needsGradientShader
+        active: root.needsGradientShader || root.gradientType === "halftone"
 
-        sourceComponent: ShaderEffect {
-            opacity: root.rectOpacity
+        sourceComponent: ClippingRectangle {
+            color: "transparent"
+            contentUnderBorder: false
+            radius: root.radius
+            topLeftRadius: root.topLeftRadius
+            topRightRadius: root.topRightRadius
+            bottomLeftRadius: root.bottomLeftRadius
+            bottomRightRadius: root.bottomRightRadius
+            // Leave the stroke to the native rectangle; mask only its inset fill.
+            border.width: root.border.width
+            border.color: "transparent"
 
-            property real angle: root.gradientAngle
-            property real canvasWidth: width
-            property real canvasHeight: height
-            property int numStops: root.numGradientStops
+            // Linear gradient - procedural (no texture)
+            Loader {
+                anchors.fill: parent
+                active: root.gradientType === "linear" && root.needsGradientShader
 
-            property vector4d stopColor0: root.resolveStopColor(0)
-            property vector4d stopColor1: root.resolveStopColor(1)
-            property vector4d stopColor2: root.resolveStopColor(2)
-            property vector4d stopColor3: root.resolveStopColor(3)
-            property vector4d stopColor4: root.resolveStopColor(4)
-            property vector4d stopColor5: root.resolveStopColor(5)
-            property vector4d stopColor6: root.resolveStopColor(6)
-            property vector4d stopColor7: root.resolveStopColor(7)
+                sourceComponent: ShaderEffect {
+                    opacity: root.rectOpacity
 
-            property vector4d stopPositionsPack0: root.stopPositionsPack0
-            property vector4d stopPositionsPack1: root.stopPositionsPack1
+                    property real angle: root.gradientAngle
+                    property real canvasWidth: width
+                    property real canvasHeight: height
+                    property int numStops: root.numGradientStops
 
-            vertexShader: "linear_gradient.vert.qsb"
-            fragmentShader: "linear_gradient.frag.qsb"
-        }
-    }
+                    property vector4d stopColor0: root.resolveStopColor(0)
+                    property vector4d stopColor1: root.resolveStopColor(1)
+                    property vector4d stopColor2: root.resolveStopColor(2)
+                    property vector4d stopColor3: root.resolveStopColor(3)
+                    property vector4d stopColor4: root.resolveStopColor(4)
+                    property vector4d stopColor5: root.resolveStopColor(5)
+                    property vector4d stopColor6: root.resolveStopColor(6)
+                    property vector4d stopColor7: root.resolveStopColor(7)
 
-    // Radial gradient - procedural (no texture)
-    Loader {
-        anchors.fill: parent
-        active: root.gradientType === "radial" && root.needsGradientShader
+                    property vector4d stopPositionsPack0: root.stopPositionsPack0
+                    property vector4d stopPositionsPack1: root.stopPositionsPack1
 
-        sourceComponent: ShaderEffect {
-            opacity: root.rectOpacity
-
-            property real centerX: root.gradientCenterX
-            property real centerY: root.gradientCenterY
-            property real canvasWidth: width
-            property real canvasHeight: height
-            property int numStops: root.numGradientStops
-
-            property vector4d stopColor0: root.resolveStopColor(0)
-            property vector4d stopColor1: root.resolveStopColor(1)
-            property vector4d stopColor2: root.resolveStopColor(2)
-            property vector4d stopColor3: root.resolveStopColor(3)
-            property vector4d stopColor4: root.resolveStopColor(4)
-            property vector4d stopColor5: root.resolveStopColor(5)
-            property vector4d stopColor6: root.resolveStopColor(6)
-            property vector4d stopColor7: root.resolveStopColor(7)
-
-            property vector4d stopPositionsPack0: root.stopPositionsPack0
-            property vector4d stopPositionsPack1: root.stopPositionsPack1
-
-            vertexShader: "radial_gradient.vert.qsb"
-            fragmentShader: "radial_gradient.frag.qsb"
-        }
-    }
-
-    // Halftone gradient - no texture needed, purely procedural
-    Loader {
-        anchors.fill: parent
-        active: root.gradientType === "halftone"
-
-        sourceComponent: ShaderEffect {
-            opacity: root.rectOpacity
-
-            property real angle: root.gradientAngle
-            property real dotMinSize: root.halftoneDotMin
-            property real dotMaxSize: root.halftoneDotMax
-            property real gradientStart: root.halftoneStart
-            property real gradientEnd: root.halftoneEnd
-            property vector4d dotColor: {
-                const c = root.halftoneDotColor || Qt.rgba(1, 1, 1, 1);
-                return Qt.vector4d(c.r, c.g, c.b, c.a);
+                    vertexShader: "linear_gradient.vert.qsb"
+                    fragmentShader: "linear_gradient.frag.qsb"
+                }
             }
-            property vector4d backgroundColor: {
-                const c = root.halftoneBackgroundColor || Qt.rgba(0, 0.5, 1, 1);
-                return Qt.vector4d(c.r, c.g, c.b, c.a);
-            }
-            property real canvasWidth: width
-            property real canvasHeight: height
 
-            vertexShader: "halftone.vert.qsb"
-            fragmentShader: "halftone.frag.qsb"
+            // Radial gradient - procedural (no texture)
+            Loader {
+                anchors.fill: parent
+                active: root.gradientType === "radial" && root.needsGradientShader
+
+                sourceComponent: ShaderEffect {
+                    opacity: root.rectOpacity
+
+                    property real centerX: root.gradientCenterX
+                    property real centerY: root.gradientCenterY
+                    property real canvasWidth: width
+                    property real canvasHeight: height
+                    property int numStops: root.numGradientStops
+
+                    property vector4d stopColor0: root.resolveStopColor(0)
+                    property vector4d stopColor1: root.resolveStopColor(1)
+                    property vector4d stopColor2: root.resolveStopColor(2)
+                    property vector4d stopColor3: root.resolveStopColor(3)
+                    property vector4d stopColor4: root.resolveStopColor(4)
+                    property vector4d stopColor5: root.resolveStopColor(5)
+                    property vector4d stopColor6: root.resolveStopColor(6)
+                    property vector4d stopColor7: root.resolveStopColor(7)
+
+                    property vector4d stopPositionsPack0: root.stopPositionsPack0
+                    property vector4d stopPositionsPack1: root.stopPositionsPack1
+
+                    vertexShader: "radial_gradient.vert.qsb"
+                    fragmentShader: "radial_gradient.frag.qsb"
+                }
+            }
+
+            // Halftone gradient - no texture needed, purely procedural
+            Loader {
+                anchors.fill: parent
+                active: root.gradientType === "halftone"
+
+                sourceComponent: ShaderEffect {
+                    opacity: root.rectOpacity
+
+                    property real angle: root.gradientAngle
+                    property real dotMinSize: root.halftoneDotMin
+                    property real dotMaxSize: root.halftoneDotMax
+                    property real gradientStart: root.halftoneStart
+                    property real gradientEnd: root.halftoneEnd
+                    property vector4d dotColor: {
+                        const c = root.halftoneDotColor || Qt.rgba(1, 1, 1, 1);
+                        return Qt.vector4d(c.r, c.g, c.b, c.a);
+                    }
+                    property vector4d backgroundColor: {
+                        const c = root.halftoneBackgroundColor || Qt.rgba(0, 0.5, 1, 1);
+                        return Qt.vector4d(c.r, c.g, c.b, c.a);
+                    }
+                    property real canvasWidth: width
+                    property real canvasHeight: height
+
+                    vertexShader: "halftone.vert.qsb"
+                    fragmentShader: "halftone.frag.qsb"
+                }
+            }
         }
     }
-
-    // enableShadow is kept for API compatibility, but we intentionally do
-    // NOT apply layer.effect/MultiEffect on this item. That path rasterizes
-    // every child (including Text) into an FBO and makes bold bar labels
-    // look soft/hazy. Widget chrome shadows live on dedicated shadow items
-    // instead of on text-bearing containers.
 
     border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
     border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0
