@@ -28,7 +28,25 @@ ShellRoot {
         Component.onCompleted: this.id = "1"
         active: true
         output: Quickshell.screens[0].name
-        windows: compositorState.windows.length
+        windows: compositorState.windows.filter(window => window.workspaceId === "1").length
+    }
+    CompositorWorkspace {
+        id: secondWorkspace
+        Component.onCompleted: this.id = "2"
+        idx: 2
+        name: "2"
+        isNamed: true
+        output: Quickshell.screens[0].name
+        windows: compositorState.windows.filter(window => window.workspaceId === "2").length
+    }
+    CompositorWorkspace {
+        id: thirdWorkspace
+        Component.onCompleted: this.id = "3"
+        idx: 3
+        name: "3"
+        isNamed: true
+        output: Quickshell.screens[0].name
+        windows: compositorState.windows.filter(window => window.workspaceId === "3").length
     }
     CompositorWindow {
         id: testWindow
@@ -90,6 +108,42 @@ ShellRoot {
                     bar.sourceComponent = undefined
                 }
                 console.log("BAR_WORKSPACE_INITIALIZATION_PASSED")
+            }
+
+            function test_vertical_workspace_occupancy() {
+                compositorState.workspaces = [testWorkspace, secondWorkspace, thirdWorkspace]
+                testWindow.workspaceId = "2"
+                compositorState.windows = [testWindow]
+                bar.sourceComponent = left
+                tryVerify(() => bar.item !== null)
+                const occupied = findChild(bar.item, "verticalWorkspaceButton-2")
+                const empty = findChild(bar.item, "verticalWorkspaceButton-3")
+                const occupiedDot = findChild(bar.item, "verticalWorkspaceOccupied-2")
+                const emptyDot = findChild(bar.item, "verticalWorkspaceOccupied-3")
+                verify(occupied !== undefined && empty !== undefined)
+                tryCompare(occupiedDot, "visible", true)
+                compare(emptyDot.visible, false)
+                compare(occupied.foregroundColor, Styling.srItem("overprimary"))
+                compare(empty.foregroundColor, Colors.overBackground)
+                compare(occupied.description, "1 window")
+                const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
+                if (snapshots) grabImage(bar.item.barHitbox).save(snapshots + "/workspace-occupancy.png")
+                testWindow.workspaceId = "3"
+                tryCompare(occupiedDot, "visible", false)
+                tryCompare(emptyDot, "visible", true)
+                compare(occupied.description, "0 windows")
+                compare(empty.description, "1 window")
+                testWorkspace.active = false
+                thirdWorkspace.active = true
+                tryCompare(empty, "showWindows", true)
+                compare(emptyDot.visible, false, "The active app list replaces the occupancy marker")
+                compositorState.windows = []
+                tryCompare(empty, "showLabel", true)
+                compare(emptyDot.visible, false)
+                testWorkspace.active = true
+                thirdWorkspace.active = false
+                testWindow.workspaceId = "1"
+                console.log("BAR_WORKSPACE_OCCUPANCY_PASSED")
             }
 
             function test_pin_command() {
@@ -344,6 +398,7 @@ class BarTextRuntimeTests(unittest.TestCase):
             self.assertIn("BAR_CONTEXT_TEXT_RUNTIME_FINISHED", output, output)
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)
+            self.assertIn("BAR_WORKSPACE_OCCUPANCY_PASSED", output, output)
             for layout in ("island", "pills"):
                 self.assertIn("BAR_CONTEXT_TEXT_PASSED_" + layout, output, output)
                 self.assertIn("BAR_INTERRUPTED_RETRACTION_PASSED_" + layout, output, output)

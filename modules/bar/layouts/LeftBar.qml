@@ -96,6 +96,9 @@ Item {
         property bool showLabel: true
         property bool occupied: false
         property bool urgent: false
+        readonly property color foregroundColor: button.urgent ? Colors.red
+            : button.selected ? buttonSurface.item
+            : button.occupied ? Styling.srItem("overprimary") : Colors.overBackground
 
         signal scrolled(real delta)
         signal secondaryClicked
@@ -134,7 +137,7 @@ Item {
             font.family: button.textLabel ? Config.theme.font : Icons.font
             font.pixelSize: button.textLabel ? Config.theme.fontSize : Styling.fontSize(4)
             font.weight: button.selected || button.occupied ? Font.DemiBold : Font.Medium
-            color: button.urgent ? Colors.red : (button.selected ? buttonSurface.item : Colors.overBackground)
+            color: button.foregroundColor
             opacity: button.muted ? 0.5 : 1
         }
 
@@ -159,7 +162,7 @@ Item {
             layer.enabled: true
             layer.effect: MultiEffect {
                 colorization: 1.0
-                colorizationColor: button.urgent ? Colors.red : (button.selected ? buttonSurface.item : Colors.overBackground)
+                colorizationColor: button.foregroundColor
             }
         }
 
@@ -332,10 +335,26 @@ Item {
                                         iconText: String(workspace?.idx ?? "")
                                         textLabel: true
                                         selected: workspace?.active ?? false
-                                        occupied: (workspace?.windows ?? 0) > 0
+                                        occupied: windows.length > 0
                                         urgent: workspace?.is_urgent ?? false
                                         tooltipText: workspace?.isNamed ? workspace.name : "Workspace " + (workspace?.idx ?? "")
-                                        description: (workspace?.windows ?? 0) + ((workspace?.windows ?? 0) === 1 ? " window" : " windows")
+                                        description: windows.length + (windows.length === 1 ? " window" : " windows")
+
+                                        StyledRect {
+                                            objectName: "verticalWorkspaceOccupied-" + workspaceButton.modelData
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            anchors.bottom: parent.bottom
+                                            anchors.bottomMargin: root.contentPadding / 2
+                                            width: Math.round(root.controlSize / 9)
+                                            height: width
+                                            radius: width / 2
+                                            variant: "focus"
+                                            color: workspaceButton.foregroundColor
+                                            enableBorder: false
+                                            enableShadow: false
+                                            visible: workspaceButton.occupied && !workspaceButton.selected
+                                        }
+
                                         WorkspaceWindowList {
                                             id: windowList
                                             objectName: "verticalWorkspaceWindows-" + workspaceButton.modelData
