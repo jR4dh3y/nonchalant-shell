@@ -42,18 +42,6 @@ Item {
         variant: "primary"
         radius: Styling.radius(-4)
         scale: root.focusedButton?.scale ?? 1
-
-        StyledRect {
-            variant: "primary"
-            enableBorder: false
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 1
-            width: root.buttonSize - 14
-            height: 2
-            radius: 1
-            color: Colors.primaryFixed
-        }
     }
 
     function iconForWindow(window: CompositorWindow): string {
