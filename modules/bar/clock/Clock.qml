@@ -327,6 +327,7 @@ Item {
     BarPopup {
         id: timePopup
         anchorItem: root.vertical ? buttonBg : timeAnchor
+        edgeItem: root.bar?.barHitbox ?? anchorItem
         contentVariant: "pane"
         grabFocus: true
 
@@ -350,6 +351,7 @@ Item {
     BarPopup {
         id: clockPopup
         anchorItem: buttonBg
+        edgeItem: root.bar?.barHitbox ?? anchorItem
         contentVariant: "pane"
         contentWidth: popupContent.width + popupPadding * 2
         contentHeight: WeatherService.dataAvailable ? popupContent.height + popupPadding * 2 : 0

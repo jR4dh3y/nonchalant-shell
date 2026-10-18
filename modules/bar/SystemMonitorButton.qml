@@ -32,6 +32,7 @@ ToggleButton {
     BarPopup {
         id: monitorPopup
         anchorItem: root
+        edgeItem: root.bar?.barHitbox ?? anchorItem
         contentVariant: "pane"
         popupPadding: root.contentPadding
 

@@ -15,6 +15,9 @@ PopupWindow {
 
     // Required: the item this popup anchors to
     required property Item anchorItem
+    // Measure the visual gap from the bar's outer edge, while keeping the
+    // originating control as the vertical/morph anchor.
+    property Item edgeItem: anchorItem
     // Content to display inside the popup
     default property alias contentData: surface.content
 
@@ -48,17 +51,26 @@ PopupWindow {
 
     // Open away from the configured screen edge. A left dock opens sideways,
     // vertically centered on the anchor pill.
-    anchor.item: anchorItem
-    anchor.rect.x: leftBar
-        ? anchorItem.width + visualMargin - shadowMargin
-        : (anchorItem.width - totalWidth) / 2
-    anchor.rect.y: leftBar
-        ? (anchorItem.height - totalHeight) / 2
-        : (bottomBar
-            ? -totalHeight - visualMargin + shadowMargin
-            : anchorItem.height + visualMargin - shadowMargin)
-    anchor.rect.width: 0
-    anchor.rect.height: 0
+    anchor.window: root.anchorItem ? root.anchorItem.QsWindow.window : null
+    anchor.rect.width: 1
+    anchor.rect.height: 1
+    anchor.onAnchoring: {
+        const windowContent = root.anchor.window?.contentItem;
+        if (!windowContent)
+            return;
+        // Coordinate mappings are not reactive. Resolve after the control's
+        // layout has settled, each time the native popup is positioned.
+        const origin = root.anchorItem.mapToItem(windowContent, 0, 0);
+        const edge = root.edgeItem.mapToItem(windowContent, root.edgeItem.width, 0);
+        root.anchor.rect.x = root.leftBar
+            ? edge.x + root.visualMargin - root.shadowMargin
+            : origin.x + (root.anchorItem.width - root.totalWidth) / 2;
+        root.anchor.rect.y = origin.y + (root.leftBar
+            ? (root.anchorItem.height - root.totalHeight) / 2
+            : root.bottomBar
+                ? -root.totalHeight - root.visualMargin + root.shadowMargin
+                : root.anchorItem.height + root.visualMargin - root.shadowMargin);
+    }
 
     color: "transparent"
     visible: false

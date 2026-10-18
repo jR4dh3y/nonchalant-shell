@@ -408,6 +408,7 @@ Item {
                             TrayFlyout {
                                 id: trayPopup
                                 anchorItem: trayButton
+                                edgeItem: root.barHitbox
                                 controlSize: root.controlSize
                                 maximumHeight: Math.max(root.controlSize * 2, root.height / 2)
                             }
