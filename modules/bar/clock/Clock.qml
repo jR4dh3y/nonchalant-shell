@@ -37,6 +37,9 @@ Item {
     readonly property Item dashboardHitbox: dashboardPopup.hitbox
     readonly property bool timeToolsOpen: timePopup.isOpen
     readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
+    readonly property color clockItemColor: root.detached
+        ? Styling.srItem(root.anyPopupOpen ? "focus" : "pane")
+        : (root.anyPopupOpen ? buttonBg.item : Colors.overBackground)
 
     function formatDuration(seconds) {
         const safeSeconds = Math.max(0, seconds);
@@ -149,11 +152,14 @@ Item {
     }
 
     // Main button
-    StyledRect {
+    FloatingSurface {
         id: buttonBg
-        variant: root.vertical ? (root.anyPopupOpen ? "focus" : (root.detached ? "pane" : "common")) : (root.anyPopupOpen ? "primary" : "bg")
+        variant: root.detached ? "popup" : (root.vertical ? (root.anyPopupOpen ? "focus" : "common") : (root.anyPopupOpen ? "primary" : "bg"))
+        contentVariant: root.detached ? (root.anyPopupOpen ? "focus" : "pane") : ""
+        contentInset: root.detached ? Math.round(root.verticalWidth / 10) : 0
+        radius: root.detached ? root.verticalWidth / 2 : root.radius
         backgroundOpacity: root.vertical && !root.detached && !root.anyPopupOpen ? 0 : -1
-        enableBorder: !root.vertical
+        enableBorder: root.detached || !root.vertical
         scale: verticalClockMouse.pressed ? 0.94 : 1.0
 
         PressBehavior on scale {
@@ -168,7 +174,7 @@ Item {
         bottomRightRadius: root.endRadius
 
         implicitWidth: root.vertical ? root.verticalWidth : rowLayout.implicitWidth + 24
-        implicitHeight: root.vertical ? Math.max(verticalContent.implicitHeight + 8, root.detached ? root.verticalWidth * 1.4 : 0) : 36
+        implicitHeight: root.vertical ? Math.max(verticalContent.implicitHeight + contentInset * 2 + 8, root.detached ? root.verticalWidth * 1.4 : 0) : 36
 
         HoverTint {
             hovered: root.isHovered && !root.anyPopupOpen
@@ -195,7 +201,7 @@ Item {
                     text: root.weatherAvailable
                         ? WeatherService.weatherSymbol + " " + Math.round(WeatherService.currentTemp) + "°"
                         : root.currentDayAbbrev
-                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                    color: root.clockItemColor
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -228,7 +234,7 @@ Item {
                     id: dateDisplay
                     anchors.centerIn: parent
                     text: root.currentFullDate
-                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                    color: root.clockItemColor
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.weight: Font.Medium
@@ -262,7 +268,7 @@ Item {
                     id: timeDisplay
                     anchors.centerIn: parent
                     text: root.timeText
-                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                    color: root.clockItemColor
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -292,7 +298,7 @@ Item {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 text: root.timeText.split(":")[0].padStart(2, "0")
-                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                color: root.clockItemColor
                 font.family: Config.theme.monoFont
                 font.pixelSize: Styling.fontSize(root.detached ? 6 : 2)
                 font.weight: Font.DemiBold
@@ -301,7 +307,7 @@ Item {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 text: (root.timeText.split(":")[1] ?? "00").split(" ")[0]
-                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                color: root.clockItemColor
                 font.family: Config.theme.monoFont
                 font.pixelSize: Styling.fontSize(root.detached ? 6 : 2)
                 opacity: 0.65
@@ -312,7 +318,7 @@ Item {
                 visible: Config.bar.use12hFormat && root.timeText === root.currentTime
                 text: root.currentTime.split(" ")[1] ?? ""
                 font.pixelSize: Styling.fontSize(root.detached ? -2 : -4)
-                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                color: root.clockItemColor
             }
         }
 
