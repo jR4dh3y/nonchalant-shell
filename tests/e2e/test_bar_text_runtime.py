@@ -272,6 +272,22 @@ ShellRoot {
                 }
                 const sound = findChild(audio, "verticalSoundControl")
                 const mic = findChild(audio, "verticalMicControl")
+                const soundHover = component(sound, "HoverTint")
+                const micHover = component(mic, "HoverTint")
+                function snapshotAudio(state) {
+                    const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
+                    if (snapshots) grabImage(bar).save(snapshots + "/audio-" + state + ".png")
+                }
+                mouseMove(sound, sound.width / 2, sound.height / 2)
+                tryCompare(soundHover, "hovered", true)
+                compare(micHover.hovered, false)
+                wait(Motion.hoverDuration)
+                snapshotAudio("speaker-hover")
+                mouseMove(mic, mic.width / 2, mic.height / 2)
+                tryCompare(micHover, "hovered", true)
+                compare(soundHover.hovered, false)
+                wait(Motion.hoverDuration)
+                snapshotAudio("microphone-hover")
                 Audio.protectionEnabled = false
                 Audio.setVolume(0.4)
                 Audio.setMicVolume(0.65)
@@ -289,9 +305,15 @@ ShellRoot {
                 mouseClick(sound, sound.width / 2, sound.height / 2)
                 tryCompare(clock, "controlMode", "sound")
                 compare(clock.menuOpen, true)
+                compare(sound.selected, true)
+                compare(mic.selected, false)
+                snapshotAudio("speaker-selected")
                 mouseClick(mic, mic.width / 2, mic.height / 2)
                 tryCompare(clock, "controlMode", "mic")
                 compare(clock.menuOpen, true)
+                compare(sound.selected, false)
+                compare(mic.selected, true)
+                snapshotAudio("microphone-selected")
                 mouseClick(mic, mic.width / 2, mic.height / 2)
                 tryCompare(clock, "menuOpen", false)
                 Audio.sink.audio.muted = false

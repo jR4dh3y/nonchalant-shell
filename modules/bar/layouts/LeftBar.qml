@@ -426,7 +426,7 @@ Item {
                             anchors.fill: parent
                             flat: true
                             meterSize: root.barWidth
-                            iconSize: Styling.fontSize(2)
+                            iconSize: Styling.fontSize(3)
                             bar: root
                         }
                     }
