@@ -16,6 +16,7 @@ Item {
     implicitWidth: 400
     implicitHeight: Math.min(480, mainColumn.implicitHeight + 28)
 
+    property string backTooltip: "Back to dashboard"
     signal backRequested()
 
     readonly property real micVolume: Audio.source?.audio?.volume ?? 0.0
@@ -80,7 +81,7 @@ Item {
 
                 StyledToolTip {
                     show: backMouse.containsMouse
-                    tooltipText: "Back to dashboard"
+                    tooltipText: root.backTooltip
                 }
             }
 

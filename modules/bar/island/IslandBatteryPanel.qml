@@ -13,6 +13,8 @@ Item {
     implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
 
+    property string backTooltip: "Back to dashboard"
+    property Component titleComponent: defaultTitle
     signal backRequested()
 
     function getBatteryColor(): color {
@@ -21,6 +23,17 @@ Item {
         if (pct <= 20) return Colors.red;
         if (pct <= 50) return Colors.yellow;
         return Colors.green;
+    }
+
+    Component {
+        id: defaultTitle
+        StyledText {
+            text: "Battery & Power"
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(1)
+            font.bold: true
+            color: Colors.overBackground
+        }
     }
 
     ColumnLayout {
@@ -64,16 +77,15 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.backRequested()
                 }
+
+                StyledToolTip {
+                    show: backMouse.containsMouse
+                    tooltipText: root.backTooltip
+                }
             }
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "Battery & Power"
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
-                font.bold: true
-                color: Colors.overBackground
+            Loader {
+                sourceComponent: root.titleComponent
             }
 
             Item { Layout.fillWidth: true }

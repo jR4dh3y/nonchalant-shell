@@ -57,6 +57,13 @@ Singleton {
         return monitors.find(m => m.screen === screen);
     }
 
+    function setBrightnessForScreen(screen: ShellScreen, value: real): void {
+        for (const monitor of root.monitors) {
+            if (monitor?.ready && (root.syncBrightness || monitor.screen === screen))
+                monitor.setBrightness(value);
+        }
+    }
+
     function increaseBrightness(): void {
         const focusedName = CompositorService.focusedMonitor?.name;
         if (!focusedName)

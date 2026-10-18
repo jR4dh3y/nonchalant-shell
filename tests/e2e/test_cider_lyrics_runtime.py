@@ -194,6 +194,24 @@ ShellRoot {
                     tryCompare(lines, "currentIndex", 0)
                     const detailText = findChild(lines.currentItem, "detailLyricText")
                     tryVerify(() => detailText.text === "One <two>" && detailText.characterProgress < 3)
+                    // Reproduce Cider silently correcting its exported position.
+                    // A 500 ms correction is below Cider's 1.5 s Seeked threshold.
+                    verify(LyricsService.seekTo(3.5))
+                    wait(40)
+                    update("SilentMovePosition", 4)
+                    verify(Math.abs(MprisController.activePlayer.position - 3.5) < 0.1)
+                    tryCompare(LyricsService, "current", 2, 1500)
+                    verify(Math.abs(LyricsService.playbackPosition - 4) < 0.1)
+                    compare(text.text, "Last line")
+                    tryCompare(lines, "currentIndex", 2)
+                    update("SetPlayback", "Playing")
+                    update("SilentMovePosition", 3)
+                    tryCompare(LyricsService, "current", 1, 1000)
+                    verify(LyricsService.playbackPosition >= 3 && LyricsService.playbackPosition < 4,
+                        "A silent backward correction must also work during playback")
+                    update("SetPlayback", "Paused")
+                    verify(LyricsService.seekTo(0))
+                    tryCompare(LyricsService, "current", 0)
                     Config.lockscreen.lyricsEnabled = true
                     GlobalStates.lockscreenVisible = true
                     tryCompare(LyricsService, "watchers", 3)
@@ -206,18 +224,50 @@ ShellRoot {
                     tryVerify(() => LyricsService.readFor === LyricsService.track && LyricsService.source === "lrclib", 5000)
                     compare(LyricsService.lines[0].text, "Fallback")
                     compare(LyricsService.lines[0].words.length, 0)
+                    CiderPosition.refresh()
                     MprisController.trackedPlayer = MprisController.filteredPlayers.find(
                         player => player.dbusName === "org.mpris.MediaPlayer2.nonchalant_test")
                     compare(LyricsService.ciderPlayer, false)
+                    tryCompare(CiderPosition, "enabled", false)
+                    tryCompare(CiderPosition, "queryActive", false)
+                    compare(CiderPosition.sampleAt, 0)
                     compare(LyricsService.ciderTrackId, "")
                     tryVerify(() => LyricsService.readFor === LyricsService.track && LyricsService.source === "lrclib", 5000)
                     compare(LyricsService.lines[0].text, "Fallback")
                     verify(!text.text.includes("<font"), "Cider word highlighting must not leak into another player")
+                    MprisController.trackedPlayer = MprisController.filteredPlayers.find(
+                        player => player.dbusName === "org.mpris.MediaPlayer2.cider")
+                    tryCompare(CiderPosition, "enabled", true)
                     compact.active = false
                     detail.active = false
                     GlobalStates.lockscreenVisible = false
                     tryCompare(LyricsService, "watchers", 0)
                     tryCompare(LyricsService, "queryActive", false)
+                    tryCompare(CiderPosition, "enabled", false)
+                    tryCompare(CiderPosition, "queryActive", false)
+                    for (const [before, after, state] of [
+                            [1, 4, "Paused"], [4, 1, "Paused"],
+                            [1, 4, "Playing"], [4, 1, "Playing"]]) {
+                        update("SetPlayback", state)
+                        update("MovePosition", before)
+                        update("SeekOnNextPositionRead", after)
+                        compact.active = true
+                        tryCompare(CiderPosition, "queryActive", true)
+                        tryVerify(() => Math.abs(MprisController.activePlayer.position - after) < 0.3)
+                        tryCompare(CiderPosition, "queryActive", false)
+                        compare(CiderPosition.sampleAt, 0,
+                            "A reply read before a seek must not become a new clock anchor")
+                        verify(Math.abs(LyricsService.playbackPosition - MprisController.activePlayer.position) < 0.1,
+                            "A delayed reply must not move the lyrics back across a seek")
+                        CiderPosition.refresh()
+                        tryVerify(() => CiderPosition.sampleAt > 0)
+                        verify(Math.abs(LyricsService.playbackPosition - MprisController.activePlayer.position) < 0.1,
+                            "The next position request must recover normally")
+                        compact.active = false
+                        tryCompare(CiderPosition, "enabled", false)
+                        tryCompare(CiderPosition, "queryActive", false)
+                    }
+                    console.log("CIDER_PENDING_SEEK_REPLY_PASSED")
                     console.log("CIDER_LYRICS_RUNTIME_PASSED")
                     Qt.quit()
                 } catch (error) {
@@ -297,6 +347,7 @@ class CiderLyricsRuntimeTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("CIDER_LYRICS_RUNTIME_PASSED", output, output)
+            self.assertIn("CIDER_PENDING_SEEK_REPLY_PASSED", output, output)
             if backend == "rhi":
                 self.assertIn("CIDER_LYRICS_GPU_PASSED", output, output)
             self.assertNotIn("Binding loop", output, output)

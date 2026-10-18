@@ -215,6 +215,8 @@ def main():
         run_unittest_suite("Tier 4: MPRIS Duration Runtime", "tests.e2e.test_mpris_runtime", collector, args.verbose)
         run_unittest_suite("Tier 4: Cider Lyrics Runtime", "tests.e2e.test_cider_lyrics_runtime", collector, args.verbose)
         run_unittest_suite("Tier 4: Bar Context Text Runtime", "tests.e2e.test_bar_text_runtime", collector, args.verbose)
+        run_unittest_suite("Tier 4: Bottom Flyout Runtime", "tests.e2e.test_bottom_flyout_runtime", collector, args.verbose)
+        run_unittest_suite("Tier 4: Button Hover Runtime", "tests.e2e.test_button_hover_runtime", collector, args.verbose)
         run_unittest_suite("Tier 4: Pills Runtime", "tests.e2e.test_pills_runtime", collector, args.verbose)
         run_unittest_suite("Tier 4: Tooltip Lifecycle Runtime", "tests.e2e.test_tooltip_runtime", collector, args.verbose)
 

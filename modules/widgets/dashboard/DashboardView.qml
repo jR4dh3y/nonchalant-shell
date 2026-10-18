@@ -18,6 +18,15 @@ Item {
         dashboardItem.focusCurrentTab();
     }
 
+    Timer {
+        id: focusTimer
+        interval: 0
+        onTriggered: {
+            if (root.visible)
+                dashboardItem.focusCurrentTab();
+        }
+    }
+
     Dashboard {
         id: dashboardItem
         anchors.fill: parent
@@ -37,11 +46,7 @@ Item {
             }
         }
 
-        Component.onCompleted: {
-            Qt.callLater(() => {
-                dashboardItem.focusCurrentTab();
-            });
-        }
+        Component.onCompleted: focusTimer.restart()
 
         Connections {
             target: GlobalStates
@@ -50,10 +55,7 @@ Item {
                 if (!root.popupMode)
                     return;
 
-                Qt.callLater(() => {
-                    if (root.visible)
-                        dashboardItem.focusCurrentTab();
-                });
+                focusTimer.restart();
             }
         }
     }

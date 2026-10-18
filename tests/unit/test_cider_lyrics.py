@@ -84,6 +84,17 @@ class CiderLyricsTests(unittest.TestCase):
         self.assertEqual(request.call_args_list[-1].args[0],
                          "https://amp-api.music.apple.com/v1/catalog/us/songs/123/syllable-lyrics")
 
+    def test_cider_mpris_library_id_keeps_exact_lyrics_instead_of_falling_back(self):
+        # Cider exports i.library as .../track/ilibrary on D-Bus.
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"XDG_STATE_HOME": directory}), \
+                patch.object(cider, "request_json", side_effect=self.responses()) as request, \
+                patch.object(lyrics, "lookup", return_value={"syncedLyrics": "[00:09]Different timing"}) as fallback:
+            result = lyrics.report("Artist", "Title", "Album", 200, "", "ilibrary")
+        self.assertEqual(result["source"], "cider")
+        self.assertEqual(result["lines"][0]["t"], 1)
+        fallback.assert_not_called()
+        self.assertTrue(request.call_args_list[-1].args[0].endswith("/songs/123/syllable-lyrics"))
+
     def test_track_id_or_metadata_mismatch_does_not_use_the_open_cider_track(self):
         for artist, title, track in (("Artist", "Title", "999"), ("Other", "Title", "123"),
                                      ("Artist", "Other", "123")):

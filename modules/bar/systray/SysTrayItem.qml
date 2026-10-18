@@ -82,6 +82,8 @@ MouseArea {
         }
 
         StyledRect {
+            // Keep newly visible hover chrome behind the icon's render nodes.
+            z: -1
             anchors.fill: parent
             variant: "focus"
             backgroundOpacity: root.showHoverBackground && (root.isHovered || root.pressed) ? -1 : 0

@@ -21,6 +21,7 @@ Item {
     property bool isHovered: false
     // Vertical rail uses two digit rows with the date in its tooltip.
     property bool vertical: false
+    property bool detached: false
     property int verticalWidth: Math.max(36, Config.theme.fontSize + 20)
     property Item mediaAnchor: null
 
@@ -36,6 +37,9 @@ Item {
     readonly property Item dashboardHitbox: dashboardPopup.hitbox
     readonly property bool timeToolsOpen: timePopup.isOpen
     readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
+    readonly property color clockItemColor: root.detached
+        ? Styling.srItem(root.anyPopupOpen ? "focus" : "pane")
+        : (root.anyPopupOpen ? buttonBg.item : Colors.overBackground)
 
     function formatDuration(seconds) {
         const safeSeconds = Math.max(0, seconds);
@@ -46,7 +50,12 @@ Item {
     }
 
     property string controlMode: ""
+    readonly property list<string> deviceModes: ["wifi", "bluetooth", "battery"]
+    property string lastDeviceMode: "wifi"
+    readonly property bool deviceMenuActive: root.vertical && dashboardPopup.isOpen
+        && root.deviceModes.indexOf(root.controlMode) !== -1
     property string dashboardSection: "notifications"
+    readonly property list<string> dashboardSections: ["notifications", "wallpapers", "stats", "weather"]
     readonly property bool systemMonitorActive: root.vertical && dashboardPopup.isOpen && !root.controlMode && root.dashboardSection === "stats"
 
     onSystemMonitorActiveChanged: {
@@ -60,16 +69,31 @@ Item {
     function openControlMenu(mode: string): void {
         if (!root.vertical)
             return;
-        if (mode === "stats") {
-            root.toggleDashboardSection("stats");
+        if (mode === "stats" || mode === "weather") {
+            root.toggleDashboardSection(mode);
             return;
         }
         if (dashboardPopup.isOpen && root.controlMode === mode) {
             dashboardPopup.close();
             return;
         }
+        root.showControlMenu(mode);
+    }
+
+    function showControlMenu(mode: string): void {
+        if (!root.vertical)
+            return;
+        if (root.deviceModes.indexOf(mode) !== -1)
+            root.lastDeviceMode = mode;
         root.controlMode = mode;
         dashboardPopup.open();
+    }
+
+    function toggleDeviceMenu(): void {
+        if (root.deviceMenuActive)
+            dashboardPopup.close();
+        else
+            root.showControlMenu(root.lastDeviceMode);
     }
 
     function showDashboardSection(section: string): void {
@@ -83,6 +107,12 @@ Item {
     function toggleDashboardSection(section: string): void {
         root.showDashboardSection(dashboardPopup.isOpen && !root.controlMode && root.dashboardSection === section
             ? "notifications" : section);
+    }
+
+    function cycleDashboardSection(offset: int): void {
+        const current = Math.max(0, root.dashboardSections.indexOf(root.dashboardSection));
+        root.showDashboardSection(root.dashboardSections[
+            (current + offset + root.dashboardSections.length) % root.dashboardSections.length]);
     }
 
     function toggleCenterMenu() {
@@ -129,11 +159,14 @@ Item {
     }
 
     // Main button
-    StyledRect {
+    FloatingSurface {
         id: buttonBg
-        variant: root.vertical ? (root.anyPopupOpen ? "focus" : "common") : (root.anyPopupOpen ? "primary" : "bg")
-        backgroundOpacity: root.vertical && !root.anyPopupOpen ? 0 : -1
-        enableBorder: !root.vertical
+        variant: root.detached ? "popup" : (root.vertical ? (root.anyPopupOpen ? "focus" : "common") : (root.anyPopupOpen ? "primary" : "bg"))
+        contentVariant: root.detached ? (root.anyPopupOpen ? "focus" : "pane") : ""
+        contentInset: root.detached ? Math.round(root.verticalWidth / 10) : 0
+        radius: root.detached ? root.verticalWidth / 2 : root.radius
+        backgroundOpacity: root.vertical && !root.detached && !root.anyPopupOpen ? 0 : -1
+        enableBorder: root.detached || !root.vertical
         scale: verticalClockMouse.pressed ? 0.94 : 1.0
 
         PressBehavior on scale {
@@ -148,7 +181,7 @@ Item {
         bottomRightRadius: root.endRadius
 
         implicitWidth: root.vertical ? root.verticalWidth : rowLayout.implicitWidth + 24
-        implicitHeight: root.vertical ? verticalContent.implicitHeight + 8 : 36
+        implicitHeight: root.vertical ? Math.max(verticalContent.implicitHeight + contentInset * 2 + 8, root.detached ? root.verticalWidth * 1.4 : 0) : 36
 
         HoverTint {
             hovered: root.isHovered && !root.anyPopupOpen
@@ -175,7 +208,7 @@ Item {
                     text: root.weatherAvailable
                         ? WeatherService.weatherSymbol + " " + Math.round(WeatherService.currentTemp) + "°"
                         : root.currentDayAbbrev
-                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                    color: root.clockItemColor
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -208,7 +241,7 @@ Item {
                     id: dateDisplay
                     anchors.centerIn: parent
                     text: root.currentFullDate
-                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                    color: root.clockItemColor
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.weight: Font.Medium
@@ -242,7 +275,7 @@ Item {
                     id: timeDisplay
                     anchors.centerIn: parent
                     text: root.timeText
-                    color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                    color: root.clockItemColor
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     font.bold: true
@@ -272,18 +305,18 @@ Item {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 text: root.timeText.split(":")[0].padStart(2, "0")
-                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                color: root.clockItemColor
                 font.family: Config.theme.monoFont
-                font.pixelSize: Styling.fontSize(2)
+                font.pixelSize: Styling.fontSize(root.detached ? 6 : 2)
                 font.weight: Font.DemiBold
             }
 
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 text: (root.timeText.split(":")[1] ?? "00").split(" ")[0]
-                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                color: root.clockItemColor
                 font.family: Config.theme.monoFont
-                font.pixelSize: Styling.fontSize(2)
+                font.pixelSize: Styling.fontSize(root.detached ? 6 : 2)
                 opacity: 0.65
             }
 
@@ -291,8 +324,8 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 visible: Config.bar.use12hFormat && root.timeText === root.currentTime
                 text: root.currentTime.split(" ")[1] ?? ""
-                font.pixelSize: Styling.fontSize(-4)
-                color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
+                font.pixelSize: Styling.fontSize(root.detached ? -2 : -4)
+                color: root.clockItemColor
             }
         }
 
@@ -327,6 +360,8 @@ Item {
     BarPopup {
         id: timePopup
         anchorItem: root.vertical ? buttonBg : timeAnchor
+        edgeItem: root.bar?.barHitbox ?? anchorItem
+        contentVariant: "pane"
         grabFocus: true
 
         contentWidth: 316
@@ -349,6 +384,8 @@ Item {
     BarPopup {
         id: clockPopup
         anchorItem: buttonBg
+        edgeItem: root.bar?.barHitbox ?? anchorItem
+        contentVariant: "pane"
         contentWidth: popupContent.width + popupPadding * 2
         contentHeight: WeatherService.dataAvailable ? popupContent.height + popupPadding * 2 : 0
 
@@ -700,6 +737,7 @@ Item {
             id: dashboardSurface
 
             variant: root.vertical && !root.controlMode ? "transparent" : "popup"
+            contentVariant: root.vertical && root.controlMode ? "pane" : ""
             padding: root.vertical && !root.controlMode ? 0 : 8
             shown: dashboardPopup.isOpen
             contentWidth: Math.min(dashboardPopup.leftBar ? Math.max(0, dashboardPopup.width - dashboardPopup.edgeGap) : Infinity,
@@ -738,10 +776,11 @@ Item {
                     id: verticalControlMenu
                     VerticalControlMenu {
                         mode: root.controlMode
+                        onModeRequested: mode => root.showControlMenu(mode)
                         lyricsActive: dashboardPopup.isOpen && root.controlMode === "media"
                         maximumSize: Math.max(0, Math.min(dashboardPopup.width - dashboardPopup.edgeGap,
                             dashboardPopup.height - dashboardPopup.edgeGap * 2) - dashboardSurface.padding * 2)
-                        onBackRequested: root.toggleCenterMenu()
+                        onBackRequested: dashboardPopup.close()
                         onCloseRequested: dashboardPopup.close()
                     }
                 }

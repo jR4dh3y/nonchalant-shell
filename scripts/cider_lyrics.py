@@ -131,7 +131,14 @@ def report(artist, title, track_id):
         now = request_json(local + "/v1/playback/now-playing", local_headers)["info"]
         params = now["playParams"]
         identities = {params.get(key) for key in ("id", "catalogId", "reportingId", "libraryId")}
-        if track_id and track_id not in identities:
+        # Cider strips punctuation from e.id when constructing its MPRIS
+        # object path. Match that exported form as well as the original ID,
+        # otherwise library tracks silently fall through to another provider.
+        if track_id and not any(
+            isinstance(identity, str) and (
+                track_id == identity or track_id == re.sub(r"[^a-zA-Z 0-9]+", "", identity)
+            ) for identity in identities
+        ):
             return None
         if now["name"].casefold() != title.casefold() or (
             artist and now["artistName"].casefold() != artist.casefold()

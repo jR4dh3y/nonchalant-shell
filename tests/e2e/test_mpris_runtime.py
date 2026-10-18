@@ -25,6 +25,7 @@ import qs.modules.components
 import qs.modules.bar.island
 import qs.modules.bar.layouts
 import qs.modules.widgets.dashboard.widgets
+import qs.modules.widgets.dashboard
 
 ShellRoot {
     FloatingWindow {
@@ -39,6 +40,7 @@ ShellRoot {
         IslandMediaCard { id: card; width: 420; height: implicitHeight; x: 500; y: 500 }
         Process { id: control }
         Loader { id: barLoader; anchors.fill: parent }
+        Component { id: dashboardComponent; VerticalDashboard {} }
         Component { id: pillsComponent; PillsBar { screen: Quickshell.screens[0] } }
         TestCase {
             name: "MprisDurationRuntime"
@@ -69,6 +71,42 @@ ShellRoot {
                 tryVerify(() => Math.abs(lockSlider.value - expected) < 0.001, 1000,
                     "Lock player progress must follow position and duration while paused")
                 verify(Math.abs(waveform.progress - expected) < 0.001)
+            }
+
+            function test_dashboard_media_visibility() {
+                const originalStyle = Config.bar.style
+                Config.bar.style = "left"
+                barLoader.sourceComponent = dashboardComponent
+                tryVerify(() => barLoader.item !== null)
+                const row = findChild(barLoader.item, "dashboardMediaRow")
+                const lyrics = findChild(barLoader.item, "dashboardLyrics")
+                update("SetPlayback", "Paused")
+                tryCompare(row, "visible", true, 2000)
+                tryCompare(lyrics, "active", true, 2000)
+                const media = findChild(barLoader.item, "dashboardMediaCard")
+                tryVerify(() => media.width > 0 && lyrics.width > 0)
+                const left = media.mapToItem(barLoader.item, 0, 0)
+                const right = lyrics.parent.mapToItem(barLoader.item, 0, 0)
+                verify(right.x >= left.x + media.width, "Lyrics sit beside the active player")
+                compare(right.y, left.y)
+                compare(media.width, media.height)
+                compare(lyrics.parent.width, lyrics.parent.height)
+                compare(media.width, lyrics.parent.width)
+                compare(media.squareArtwork, true)
+                compare(media.showLyrics, false)
+                compare(lyrics.mode, "detail")
+                const expandedHeight = barLoader.item.implicitHeight
+                update("SetPlayback", "Stopped")
+                tryCompare(row, "visible", false, 2000)
+                tryCompare(lyrics, "active", false, 2000)
+                tryVerify(() => barLoader.item.implicitHeight < expandedHeight)
+                update("SetPlayback", "Playing")
+                tryCompare(row, "visible", true, 2000)
+                update("SetPlayback", "Paused")
+                tryCompare(row, "visible", true, 2000)
+                barLoader.sourceComponent = undefined
+                Config.bar.style = originalStyle
+                console.log("DASHBOARD_MEDIA_VISIBILITY_PASSED")
             }
 
             function test_pills_playback_label_reserves_visualizer_width() {
@@ -288,6 +326,7 @@ def exercise(fixture, video_id="invalid", player_name="nonchalant_test",
         timestamp = time.monotonic()
         track = 1
         seek_count = 0
+        seek_on_position_read = None
         source = video_id
 
         def current_position(self):
@@ -324,9 +363,22 @@ def exercise(fixture, video_id="invalid", player_name="nonchalant_test",
                     "HasTrackList": False, "SupportedUriSchemes": dbus.Array([], signature="s"),
                     "SupportedMimeTypes": dbus.Array([], signature="s")}
 
-        @dbus.service.method("org.freedesktop.DBus.Properties", in_signature="ss", out_signature="v")
-        def Get(self, requested, key):
-            return self.GetAll(requested)[key]
+        @dbus.service.method("org.freedesktop.DBus.Properties", in_signature="ss", out_signature="v",
+                             async_callbacks=("reply", "error"))
+        def Get(self, requested, key, reply, error):
+            value = self.GetAll(requested)[key]
+            if requested == interface and key == "Position" and self.seek_on_position_read is not None:
+                self.move_position(self.seek_on_position_read)
+                self.seek_on_position_read = None
+                self.Seeked(dbus.Int64(self.position * 1_000_000))
+
+                def finish():
+                    reply(value)
+                    return GLib.SOURCE_REMOVE
+
+                GLib.timeout_add(80, finish)
+            else:
+                reply(value)
 
         @dbus.service.signal("org.freedesktop.DBus.Properties", signature="sa{sv}as")
         def PropertiesChanged(self, requested, changed, invalidated):
@@ -340,6 +392,16 @@ def exercise(fixture, video_id="invalid", player_name="nonchalant_test",
         def MovePosition(self, seconds):
             self.move_position(int(seconds))
             self.Seeked(dbus.Int64(self.position * 1_000_000))
+
+        @dbus.service.method("org.nonchalant.Test", in_signature="x")
+        def SilentMovePosition(self, seconds):
+            # Cider can correct its own clock without emitting Seeked.
+            self.move_position(int(seconds))
+
+        @dbus.service.method("org.nonchalant.Test", in_signature="x")
+        def SeekOnNextPositionRead(self, seconds):
+            # Return the pre-seek value after the client receives Seeked.
+            self.seek_on_position_read = int(seconds)
 
         @dbus.service.method("org.nonchalant.Test", in_signature="x")
         def SetDuration(self, seconds):
@@ -468,6 +530,7 @@ print(json.dumps({'id': video_id, 'duration': 444 if video_id == 'slowtrack01' e
             self.assertIn("MPRIS_DURATION_RUNTIME_PASSED", output, output)
             self.assertIn("LOCKSCREEN_CURRENT_LYRIC_RUNTIME_PASSED", output, output)
             self.assertIn("PILLS_PLAYING_LABEL_PASSED", output, output)
+            self.assertIn("DASHBOARD_MEDIA_VISIBILITY_PASSED", output, output)
             self.assertNotIn("MPRIS_DURATION_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("Binding loop", output, output)
             canceled_pid = home / ".local/state/slow-extractor.pid"

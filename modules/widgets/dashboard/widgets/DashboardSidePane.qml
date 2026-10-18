@@ -91,4 +91,31 @@ Item {
             }
         }
     }
+
+    SectionLoader {
+        objectName: "dashboardWeatherSection"
+        selected: root.section === "weather"
+        sourceComponent: StyledRect {
+            variant: "pane"
+            radius: Styling.radius(4)
+
+            Flickable {
+                id: weatherViewport
+                anchors.fill: parent
+                contentWidth: width
+                contentHeight: weather.height
+                flickableDirection: Flickable.VerticalFlick
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
+
+                IslandWeatherPanel {
+                    id: weather
+                    width: parent.width
+                    height: Math.max(implicitHeight, weatherViewport.height)
+                    showHeader: false
+                    fillSky: true
+                }
+            }
+        }
+    }
 }

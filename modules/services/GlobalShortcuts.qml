@@ -41,7 +41,7 @@ Singleton {
         console.log("IPC run command received:", command);
         if (Config.bar?.style === "left") {
             const mode = ({ "system-monitor": "stats", resources: "stats", audio: "sound", microphone: "mic", network: "wifi", powerprofile: "battery", music: "media", player: "media" })[command] ?? command;
-            if (["wifi", "bluetooth", "sound", "mic", "battery", "media", "stats"].indexOf(mode) !== -1) {
+            if (["wifi", "bluetooth", "sound", "mic", "battery", "media", "stats", "weather"].indexOf(mode) !== -1) {
                 const controller = Visibilities.getDashboardControllerForActive();
                 if (controller)
                     controller.openControlMenu(mode);

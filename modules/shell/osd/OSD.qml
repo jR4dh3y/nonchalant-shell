@@ -48,6 +48,7 @@ PanelWindow {
     // Pinches out into a pill from a round nub, like the island's OSD.
     MorphSurface {
         id: osdSurface
+        objectName: "osdMorph"
 
         shown: root.showing
         contentWidth: 220
@@ -58,7 +59,7 @@ PanelWindow {
         radius: Styling.radius(16)
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.bottomOffset
+        anchors.bottomMargin: root.bottomOffset * osdSurface.revealClamped
 
         RowLayout {
             anchors.fill: parent

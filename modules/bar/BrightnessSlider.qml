@@ -14,15 +14,5 @@ CircularBarMeter {
     tooltipText: "Brightness " + Math.round(value * 100) + "%"
     clickEnabled: false
 
-    onAdjusted: newValue => {
-        if (Brightness.syncBrightness) {
-            for (let i = 0; i < Brightness.monitors.length; i++) {
-                const monitor = Brightness.monitors[i];
-                if (monitor?.ready)
-                    monitor.setBrightness(newValue);
-            }
-        } else if (currentMonitor?.ready) {
-            currentMonitor.setBrightness(newValue);
-        }
-    }
+    onAdjusted: newValue => Brightness.setBrightnessForScreen(root.bar.screen, newValue)
 }

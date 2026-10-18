@@ -65,6 +65,7 @@ Singleton {
     readonly property string ssd: ""
     readonly property string hdd: ""
     readonly property string temperature: ""
+    readonly property string cloud: "\uE1AA"
     readonly property string at: ""
     readonly property string gear: ""
     readonly property string glassMinus: ""

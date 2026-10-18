@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Services.Mpris
 import qs.modules.globals
 import qs.modules.components
 import qs.modules.theme
@@ -28,7 +29,11 @@ Item {
         spacing: 8
 
         RowLayout {
+            id: mediaRow
             objectName: "dashboardMediaRow"
+            visible: MprisController.activePlayer !== null
+                && MprisController.activePlayer.playbackState !== MprisPlaybackState.Stopped
+                && MprisController.trackTitle.trim().length > 0
             Layout.preferredWidth: root.mediaCardSize * 2 + spacing
             Layout.alignment: Qt.AlignLeft
             Layout.minimumHeight: root.mediaCardSize
@@ -57,7 +62,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 12
                     mode: "detail"
-                    active: root.visible && GlobalStates.dashboardPopupScreen === root.screenName
+                    active: mediaRow.visible && root.visible && GlobalStates.dashboardPopupScreen === root.screenName
                 }
             }
         }

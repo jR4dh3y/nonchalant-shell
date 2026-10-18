@@ -16,6 +16,8 @@ Item {
     implicitWidth: 400
     implicitHeight: 340
 
+    property string backTooltip: "Back to dashboard"
+    property Component titleComponent: defaultTitle
     signal backRequested()
 
     Component.onCompleted: {
@@ -32,6 +34,18 @@ Item {
 
     Component.onDestruction: {
         BluetoothService.stopDiscovery();
+    }
+
+    Component {
+        id: defaultTitle
+        StyledText {
+            text: "Bluetooth"
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(1)
+            font.bold: true
+            color: Colors.overBackground
+            elide: Text.ElideRight
+        }
     }
 
     ColumnLayout {
@@ -76,24 +90,18 @@ Item {
 
                 StyledToolTip {
                     show: backMouse.containsMouse
-                    tooltipText: "Back to dashboard"
+                    tooltipText: root.backTooltip
                 }
             }
 
-            // Title
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "Bluetooth"
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
-                font.bold: true
-                color: Colors.overBackground
-                elide: Text.ElideRight
+            Loader {
+                sourceComponent: root.titleComponent
             }
 
             // Scanning status
             Text {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting
                 visible: BluetoothService.discovering
@@ -104,7 +112,7 @@ Item {
                 elide: Text.ElideRight
             }
 
-            Item { Layout.fillWidth: true }
+            Item { Layout.fillWidth: true; visible: !BluetoothService.discovering }
 
             // Action 1: Open Blueman Manager (popOpen / ↗)
             StyledRect {

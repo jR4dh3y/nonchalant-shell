@@ -290,7 +290,7 @@ ShellRoot {
                 console.log("VERTICAL_DASHBOARD_CONTROL_ISLANDS_PASSED")
             }
 
-            function test_vertical_dashboard_split_media_and_lyrics() {
+            function test_vertical_dashboard_hides_inactive_media_and_lyrics() {
                 const previousStyle = Config.bar.style
                 const previousScreen = GlobalStates.dashboardPopupScreen
                 const previousLyricsEnabled = Config.bar.lyricsEnabled
@@ -305,24 +305,15 @@ ShellRoot {
                     const detail = findChild(panel, "dashboardLyrics")
                     const row = findChild(panel, "dashboardMediaRow")
                     verify(media !== null && detail !== null && row !== null)
-                    tryVerify(() => media.width > 0 && detail.width > 0)
-                    const left = media.mapToItem(panel, 0, 0)
-                    const right = detail.parent.mapToItem(panel, 0, 0)
-                    verify(right.x >= left.x + media.width, "lyrics sit beside the player")
-                    compare(right.y, left.y)
-                    compare(detail.parent.height, media.height)
-                    compare(media.width, media.height)
-                    compare(detail.parent.width, detail.parent.height)
-                    compare(media.width, detail.parent.width)
-                    compare(media.squareArtwork, true)
-                    compare(media.showLyrics, false)
-                    compare(detail.mode, "detail")
+                    compare(MprisController.activePlayer, null)
+                    compare(row.visible, false, "No player must hide the media and lyrics row")
+                    compare(detail.active, false)
                     GlobalStates.dashboardPopupScreen = "lyrics-test"
-                    tryCompare(LyricsService, "watchers", 1, 1000)
+                    tryCompare(LyricsService, "watchers", 0, 1000)
                     Config.bar.lyricsEnabled = false
                     tryCompare(LyricsService, "watchers", 0, 1000)
                     Config.bar.lyricsEnabled = true
-                    tryCompare(LyricsService, "watchers", 1, 1000)
+                    tryCompare(LyricsService, "watchers", 0, 1000)
                     GlobalStates.dashboardPopupScreen = ""
                     tryCompare(LyricsService, "watchers", 0, 1000)
                 } finally {
@@ -331,7 +322,7 @@ ShellRoot {
                     Config.bar.lyricsEnabled = previousLyricsEnabled
                     Config.bar.style = previousStyle
                 }
-                console.log("VERTICAL_DASHBOARD_SPLIT_LYRICS_PASSED")
+                console.log("VERTICAL_DASHBOARD_INACTIVE_MEDIA_PASSED")
             }
 
             function test_vertical_media_menu_lyrics_lifetime() {
@@ -416,7 +407,7 @@ class SettingsLyricsRuntimeTests(unittest.TestCase):
             self.assertIn("SETTINGS_BAR_POSITION_RUNTIME_PASSED", output, output)
             self.assertIn("VERTICAL_MEDIA_LYRICS_LIFETIME_PASSED", output, output)
             self.assertIn("VERTICAL_DASHBOARD_CONTROL_ISLANDS_PASSED", output, output)
-            self.assertIn("VERTICAL_DASHBOARD_SPLIT_LYRICS_PASSED", output, output)
+            self.assertIn("VERTICAL_DASHBOARD_INACTIVE_MEDIA_PASSED", output, output)
             self.assertNotIn("SETTINGS_LYRICS_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("FAIL!", output, output)
 

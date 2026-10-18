@@ -36,6 +36,7 @@ CORE_FILES=(
     "modules/shell/UnifiedShellPanel.qml"
     "modules/widgets/dashboard/controls/ShellPanel.qml"
     "modules/services/LyricsService.qml"
+    "modules/services/CiderPosition.qml"
     "modules/services/MediaDuration.qml"
     "modules/services/SystemResources.qml"
     "modules/components/LyricsView.qml"

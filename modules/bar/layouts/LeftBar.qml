@@ -53,15 +53,6 @@ Item {
             ? workspaceRepeater.itemAt(activeWorkspaceIndex) : null;
     }
 
-    readonly property string networkIcon: {
-        if (NetworkService.ethernet)
-            return Icons.ethernet;
-        if (!NetworkService.wifiEnabled)
-            return Icons.wifiOff;
-        if (!NetworkService.wifiConnected)
-            return Icons.wifiNone;
-        return NetworkService.wifiIconForStrength(NetworkService.networkStrength);
-    }
     readonly property string networkTooltip: {
         if (NetworkService.ethernet)
             return "Ethernet";
@@ -89,6 +80,7 @@ Item {
         property string iconText: ""
         property string iconSource: ""
         property string description: ""
+        property bool detached: false
         property bool selected: false
         property bool externalHighlight: false
         property bool muted: false
@@ -96,13 +88,16 @@ Item {
         property bool showLabel: true
         property bool occupied: false
         property bool urgent: false
+        readonly property color foregroundColor: button.urgent ? Colors.red
+            : button.selected ? buttonSurface.item
+            : button.occupied ? Styling.srItem("overprimary") : Colors.overBackground
 
         signal scrolled(real delta)
         signal secondaryClicked
         signal clicked
 
-        implicitWidth: root.controlSize
-        implicitHeight: root.controlSize
+        implicitWidth: button.detached ? root.barWidth : root.controlSize
+        implicitHeight: implicitWidth
         Layout.alignment: Qt.AlignHCenter
         Accessible.role: Accessible.Button
         Accessible.name: tooltipText
@@ -115,10 +110,10 @@ Item {
         StyledRect {
             id: buttonSurface
             anchors.fill: parent
-            variant: button.selected ? "focus" : "common"
-            backgroundOpacity: button.selected && !button.externalHighlight ? 1 : 0
-            enableBorder: !button.externalHighlight
-            radius: root.outerRadius
+            variant: button.selected ? "focus" : (button.detached ? "pane" : "common")
+            backgroundOpacity: button.detached || (button.selected && !button.externalHighlight) ? 1 : 0
+            enableBorder: !button.externalHighlight && !button.detached
+            radius: button.detached ? width / 2 : root.outerRadius
             enableShadow: false
 
             HoverTint {
@@ -132,9 +127,9 @@ Item {
             visible: button.showLabel && button.iconSource === ""
             text: button.iconText
             font.family: button.textLabel ? Config.theme.font : Icons.font
-            font.pixelSize: button.textLabel ? Config.theme.fontSize : Styling.fontSize(4)
+            font.pixelSize: button.textLabel ? Config.theme.fontSize : Styling.fontSize(4) * (button.detached ? 1.2 : 1)
             font.weight: button.selected || button.occupied ? Font.DemiBold : Font.Medium
-            color: button.urgent ? Colors.red : (button.selected ? buttonSurface.item : Colors.overBackground)
+            color: button.foregroundColor
             opacity: button.muted ? 0.5 : 1
         }
 
@@ -159,7 +154,7 @@ Item {
             layer.enabled: true
             layer.effect: MultiEffect {
                 colorization: 1.0
-                colorizationColor: button.urgent ? Colors.red : (button.selected ? buttonSurface.item : Colors.overBackground)
+                colorizationColor: button.foregroundColor
             }
         }
 
@@ -250,225 +245,214 @@ Item {
             ]
 
             StyledRect {
-                anchors.fill: parent
+                id: mainPill
+                objectName: "verticalMainPill"
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: Math.max(0, dockContent.y + bottomControls.y - root.contentPadding)
                 variant: "pane"
-                radius: Styling.radius(0)
+                radius: width / 2
                 backgroundOpacity: 1
+            }
 
-                Item {
-                    id: dockContent
-                    anchors.fill: parent
-                    anchors.margins: root.contentPadding
+            Item {
+                id: dockContent
+                anchors.fill: parent
+                anchors.margins: root.contentPadding
+                readonly property real mainBottom: Math.max(0, mainPill.height - y - root.contentPadding)
 
-                    ColumnLayout {
-                        id: topControls
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: Math.max(0, (mediaPill.visible ? mediaPill.y : bottomControls.y) - spacing)
-                        spacing: 4
+                ColumnLayout {
+                    id: topControls
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: Math.max(0, (mediaPill.visible ? mediaPill.y : dockContent.mainBottom) - spacing)
+                    spacing: 4
 
-                        DockIconButton {
-                            iconSource: Qt.resolvedUrl("../../../assets/nonchalant/nonchalant-icon.svg")
-                            tooltipText: "Run menu"
-                            selected: Visibilities.currentActiveModule === "launcher"
-                            onClicked: GlobalShortcuts.toggleLauncher()
+                    DockIconButton {
+                        iconSource: Qt.resolvedUrl("../../../assets/nonchalant/nonchalant-icon.svg")
+                        tooltipText: "Run menu"
+                        selected: Visibilities.currentActiveModule === "launcher"
+                        onClicked: GlobalShortcuts.toggleLauncher()
+                    }
+
+                    Separator {
+                        Layout.fillWidth: false
+                        Layout.preferredWidth: root.controlSize / 2
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: 4
+                        Layout.bottomMargin: 4
+                    }
+
+                    Flickable {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        contentHeight: workspaceColumn.implicitHeight
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        // Keep the target stable when compositor updates recreate delegates.
+                        Item {
+                            id: workspaceHighlightTarget
+                            visible: false
+                            x: (workspaceColumn.width - root.controlSize) / 2
+                            y: Math.max(0, root.activeWorkspaceIndex) * (root.controlSize + workspaceColumn.spacing)
+                            width: root.controlSize
+                            height: Math.max(root.controlSize, root.activeWorkspaceButton?.implicitHeight ?? 0)
                         }
 
-                        Separator {
-                            Layout.fillWidth: false
-                            Layout.preferredWidth: root.controlSize / 2
-                            Layout.alignment: Qt.AlignHCenter
-                            Layout.topMargin: 4
-                            Layout.bottomMargin: 4
+                        ElasticHighlight {
+                            objectName: "verticalWorkspaceHighlight"
+                            targetItem: workspaceHighlightTarget
+                            variant: "focus"
+                            radius: root.outerRadius
+                            opacity: root.activeWorkspaceIndex >= 0 ? 1 : 0
+                            scale: root.activeWorkspaceButton?.scale ?? 1
                         }
 
-                        Flickable {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            contentHeight: workspaceColumn.implicitHeight
-                            clip: true
-                            boundsBehavior: Flickable.StopAtBounds
+                        ColumnLayout {
+                            id: workspaceColumn
+                            z: 1
+                            width: parent.width
+                            spacing: 4
 
-                            // Keep the target stable when compositor updates recreate delegates.
-                            Item {
-                                id: workspaceHighlightTarget
-                                visible: false
-                                x: (workspaceColumn.width - root.controlSize) / 2
-                                y: Math.max(0, root.activeWorkspaceIndex) * (root.controlSize + workspaceColumn.spacing)
-                                width: root.controlSize
-                                height: Math.max(root.controlSize, root.activeWorkspaceButton?.implicitHeight ?? 0)
-                            }
+                            Repeater {
+                                id: workspaceRepeater
+                                model: root.workspaceIds
 
-                            ElasticHighlight {
-                                objectName: "verticalWorkspaceHighlight"
-                                targetItem: workspaceHighlightTarget
-                                variant: "focus"
-                                radius: root.outerRadius
-                                opacity: root.activeWorkspaceIndex >= 0 ? 1 : 0
-                                scale: root.activeWorkspaceButton?.scale ?? 1
-                            }
+                                DockIconButton {
+                                    id: workspaceButton
+                                    required property string modelData
+                                    readonly property CompositorWorkspace workspace: CompositorService.workspaceById(modelData)
+                                    readonly property list<CompositorWindow> windows: CompositorService.windowsForWorkspace(modelData)
+                                    readonly property bool showWindows: selected && windows.length > 0
+                                    implicitHeight: showWindows ? Math.max(root.controlSize, windowList.implicitHeight + root.contentPadding) : root.controlSize
+                                    showLabel: !showWindows
+                                    objectName: "verticalWorkspaceButton-" + modelData
+                                    externalHighlight: true
+                                    iconText: String(workspace?.idx ?? "")
+                                    textLabel: true
+                                    selected: workspace?.active ?? false
+                                    occupied: windows.length > 0
+                                    urgent: workspace?.is_urgent ?? false
+                                    tooltipText: workspace?.isNamed ? workspace.name : "Workspace " + (workspace?.idx ?? "")
+                                    description: windows.length + (windows.length === 1 ? " window" : " windows")
 
-                            ColumnLayout {
-                                id: workspaceColumn
-                                z: 1
-                                width: parent.width
-                                spacing: 4
+                                    WorkspaceWindowList {
+                                        id: windowList
+                                        objectName: "verticalWorkspaceWindows-" + workspaceButton.modelData
+                                        z: 1
+                                        anchors.centerIn: parent
+                                        vertical: true
+                                        windows: workspaceButton.showWindows ? workspaceButton.windows : []
+                                        visible: workspaceButton.showWindows
+                                    }
 
-                                Repeater {
-                                    id: workspaceRepeater
-                                    model: root.workspaceIds
-
-                                    DockIconButton {
-                                        id: workspaceButton
-                                        required property string modelData
-                                        readonly property CompositorWorkspace workspace: CompositorService.workspaceById(modelData)
-                                        readonly property list<CompositorWindow> windows: CompositorService.windowsForWorkspace(modelData)
-                                        readonly property bool showWindows: selected && windows.length > 0
-                                        implicitHeight: showWindows ? Math.max(root.controlSize, windowList.implicitHeight + root.contentPadding) : root.controlSize
-                                        showLabel: !showWindows
-                                        objectName: "verticalWorkspaceButton-" + modelData
-                                        externalHighlight: true
-                                        iconText: String(workspace?.idx ?? "")
-                                        textLabel: true
-                                        selected: workspace?.active ?? false
-                                        occupied: (workspace?.windows ?? 0) > 0
-                                        urgent: workspace?.is_urgent ?? false
-                                        tooltipText: workspace?.isNamed ? workspace.name : "Workspace " + (workspace?.idx ?? "")
-                                        description: (workspace?.windows ?? 0) + ((workspace?.windows ?? 0) === 1 ? " window" : " windows")
-                                        WorkspaceWindowList {
-                                            id: windowList
-                                            objectName: "verticalWorkspaceWindows-" + workspaceButton.modelData
-                                            z: 1
-                                            anchors.centerIn: parent
-                                            vertical: true
-                                            windows: workspaceButton.showWindows ? workspaceButton.windows : []
-                                            visible: workspaceButton.showWindows
-                                        }
-
-                                        onClicked: CompositorService.focusWorkspace(modelData)
-                                        onScrolled: delta => {
-                                            if (delta !== 0)
-                                                CompositorService.focusAdjacentWorkspace(root.screen.name, delta < 0 ? 1 : -1);
-                                        }
+                                    onClicked: CompositorService.focusWorkspace(modelData)
+                                    onScrolled: delta => {
+                                        if (delta !== 0)
+                                            CompositorService.focusAdjacentWorkspace(root.screen.name, delta < 0 ? 1 : -1);
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    VerticalMediaWidget {
-                        id: mediaPill
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        y: Math.min((dockContent.height - height) / 2,
-                            bottomControls.y - height - topControls.spacing)
-                        width: implicitWidth
-                        height: implicitHeight
-                        buttonSize: root.controlSize
-                        maximumHeight: Math.min(root.controlSize * 5, root.height / 4,
-                            Math.max(root.controlSize, (bottomControls.y - dockContent.height / 2 - topControls.spacing) * 2))
-                        onActivated: clock.openControlMenu("media")
+                VerticalMediaWidget {
+                    id: mediaPill
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: Math.min((dockContent.height - height) / 2,
+                        dockContent.mainBottom - height)
+                    width: implicitWidth
+                    height: implicitHeight
+                    buttonSize: root.controlSize
+                    maximumHeight: Math.min(root.controlSize * 5, root.height / 4,
+                        Math.max(root.controlSize, (dockContent.mainBottom - dockContent.height / 2 - topControls.spacing) * 2))
+                    onActivated: clock.openControlMenu("media")
+                }
+
+                ColumnLayout {
+                    id: bottomControls
+                    objectName: "verticalDroplets"
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: -root.contentPadding
+                    anchors.rightMargin: -root.contentPadding
+                    anchors.bottomMargin: -root.contentPadding
+                    spacing: root.contentPadding
+
+                    DockIconButton {
+                        id: trayButton
+                        detached: true
+                        objectName: "verticalTrayButton"
+                        visible: trayPopup.hasItems
+                        iconText: trayPopup.isOpen ? Icons.caretLeft : Icons.caretRight
+                        tooltipText: "System tray"
+                        selected: trayPopup.isOpen
+                        onClicked: trayPopup.toggle()
+
+                        TrayFlyout {
+                            id: trayPopup
+                            anchorItem: trayButton
+                            edgeItem: root.barHitbox
+                            controlSize: root.controlSize
+                            maximumHeight: Math.max(root.controlSize * 2, root.height / 2)
+                        }
                     }
 
-                    ColumnLayout {
-                        id: bottomControls
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        spacing: topControls.spacing
+                    VerticalAudioControl {
+                        objectName: "verticalAudioControl"
+                        Layout.alignment: Qt.AlignHCenter
+                        controlSize: root.barWidth
+                        selectedMode: clock.menuOpen ? clock.controlMode : ""
+                        onMenuRequested: mode => clock.openControlMenu(mode)
+                    }
 
-                        DockIconButton {
-                            id: trayButton
-                            objectName: "verticalTrayButton"
-                            visible: trayPopup.hasItems
-                            iconText: trayPopup.isOpen ? Icons.caretLeft : Icons.caretRight
-                            tooltipText: "System tray"
-                            selected: trayPopup.isOpen
-                            onClicked: trayPopup.toggle()
+                    VerticalDisplayControl {
+                        objectName: "verticalBrightnessDroplet"
+                        Layout.alignment: Qt.AlignHCenter
+                        controlSize: root.barWidth
+                        bar: root
+                    }
 
-                            TrayFlyout {
-                                id: trayPopup
-                                anchorItem: trayButton
-                                controlSize: root.controlSize
-                                maximumHeight: Math.max(root.controlSize * 2, root.height / 2)
-                            }
+                    DockIconButton {
+                        id: deviceStatusButton
+                        detached: true
+                        objectName: "verticalDeviceStatusButton"
+                        showLabel: false
+                        selected: clock.deviceMenuActive
+                        tooltipText: (Battery.available ? Math.round(Battery.percentage) + "% battery"
+                            + (Battery.isCharging ? " · Charging" : (Battery.isPluggedIn ? " · Plugged in" : "")) : "AC power")
+                            + "\n" + root.networkTooltip + " · " + (!BluetoothService.enabled
+                            ? "Bluetooth off" : (BluetoothService.firstConnectedDeviceName || "Bluetooth on"))
+                        description: "Open Wi-Fi, Bluetooth and battery"
+                        onClicked: clock.toggleDeviceMenu()
+
+                        DeviceStatusIcon {
+                            objectName: "verticalDeviceStatusIcon"
+                            anchors.centerIn: parent
+                            width: root.barWidth
+                            height: width
+                            foregroundColor: deviceStatusButton.foregroundColor
+                            selected: deviceStatusButton.selected
                         }
+                    }
 
-                        DockIconButton {
-                            id: networkButton
-                            iconText: root.networkIcon
-                            tooltipText: root.networkTooltip
-                            description: "Open network menu"
-                            onClicked: clock.openControlMenu("wifi")
-                        }
-
-                        DockIconButton {
-                            iconText: !BluetoothService.enabled ? Icons.bluetoothOff
-                                : (BluetoothService.connected ? Icons.bluetoothConnected : Icons.bluetooth)
-                            muted: !BluetoothService.enabled
-                            tooltipText: !BluetoothService.enabled ? "Bluetooth off"
-                                : (BluetoothService.firstConnectedDeviceName || "Bluetooth")
-                            description: "Open Bluetooth menu"
-                            onClicked: clock.openControlMenu("bluetooth")
-                        }
-
-                        DockIconButton {
-                            id: soundButton
-                            iconText: Audio.sink?.audio?.muted ? Icons.speakerSlash : Icons.speakerHigh
-                            muted: Audio.sink?.audio?.muted ?? false
-                            tooltipText: (muted ? "Muted" : "Volume " + Math.round(Audio.value * 100) + "%")
-                            description: "Click for sound · Right-click to mute · Scroll to adjust"
-                            onClicked: clock.openControlMenu("sound")
-                            onSecondaryClicked: Audio.toggleMute()
-                            onScrolled: delta => {
-                                if (delta !== 0)
-                                    Audio.setVolume(Math.max(0, Math.min(1, Audio.value + (delta > 0 ? 0.05 : -0.05))));
-                            }
-                        }
-
-                        DockIconButton {
-                            id: micButton
-                            iconText: Audio.source?.audio?.muted ? Icons.micSlash : Icons.mic
-                            muted: Audio.source?.audio?.muted ?? false
-                            tooltipText: muted ? "Microphone muted" : "Microphone " + Math.round((Audio.source?.audio?.volume ?? 0) * 100) + "%"
-                            description: "Click for microphone · Right-click to mute · Scroll to adjust"
-                            onClicked: clock.openControlMenu("mic")
-                            onSecondaryClicked: Audio.toggleMicMute()
-                            onScrolled: delta => {
-                                if (delta !== 0)
-                                    Audio.setMicVolume(Math.max(0, Math.min(1, (Audio.source?.audio?.volume ?? 0) + (delta > 0 ? 0.05 : -0.05))));
-                            }
-                        }
-
-                        BatteryIndicator {
-                            Layout.alignment: Qt.AlignHCenter
-                            flat: true
-                            showMeter: false
-                            usePopup: false
-                            onActivated: clock.openControlMenu("battery")
-                            meterSize: root.controlSize
-                            bar: root
-                        }
-
-                        Separator {
-                            Layout.fillWidth: false
-                            Layout.preferredWidth: root.controlSize / 2
-                            Layout.alignment: Qt.AlignHCenter
-                            Layout.topMargin: 4
-                            Layout.bottomMargin: 4
-                        }
-
-                        Clock {
-                            id: clock
-                            Layout.alignment: Qt.AlignHCenter
-                            vertical: true
-                            verticalWidth: root.controlSize
-                            mediaAnchor: mediaPill
-                            bar: root
-                            layerEnabled: root.shadowsEnabled
-                            startRadius: root.outerRadius
-                            endRadius: root.outerRadius
-                        }
+                    Clock {
+                        id: clock
+                        objectName: "verticalClockDroplet"
+                        detached: true
+                        Layout.alignment: Qt.AlignHCenter
+                        vertical: true
+                        verticalWidth: root.barWidth
+                        mediaAnchor: mediaPill
+                        bar: root
+                        layerEnabled: root.shadowsEnabled
+                        startRadius: root.barWidth / 2
+                        endRadius: root.barWidth / 2
                     }
                 }
             }
