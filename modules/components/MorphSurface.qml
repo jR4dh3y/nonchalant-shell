@@ -23,8 +23,8 @@ Item {
     property bool fromBottom: false
     // Pin the body to the left edge instead of centering it (left-edge dock).
     property bool fromLeft: false
-    // Shell panels share the island's outer layer; context menus override it.
-    property string variant: "pane"
+    property string variant: "popup"
+    property string contentVariant: "pane"
     property real radius: Styling.radius(8)
     property int padding: 8
     // Upper bound for the spring's stretch past the resting height; keep it
@@ -93,12 +93,14 @@ Item {
 
     Component.onCompleted: root.reveal = root.shown ? 1 : 0
 
-    StyledRect {
+    FloatingSurface {
         id: body
 
         readonly property real startWidth: Math.max(0, Math.min(root.originWidth, root.bodyWidth))
 
         variant: root.variant
+        contentVariant: root.contentVariant
+        contentInset: root.padding
         enableShadow: false
         visible: !root.fullyHidden
         width: body.startWidth + (root.bodyWidth - body.startWidth) * root.revealClamped + (root.fromLeft ? root.stretch : 0)

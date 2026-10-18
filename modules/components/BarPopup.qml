@@ -23,6 +23,7 @@ PopupWindow {
     property int visualMargin: 8  // Distance from bar
     property int shadowMargin: 16  // Room around the surface for the spring stretch
     property string variant: "popup"  // StyledRect variant for background
+    property string contentVariant: ""
 
     // Behavior configuration
     property bool closeOnFocusLost: true
@@ -88,6 +89,7 @@ PopupWindow {
         fromBottom: root.bottomBar
         fromLeft: root.leftBar
         variant: root.variant
+        contentVariant: root.contentVariant
         padding: root.popupPadding
         maxStretch: root.shadowMargin - 2
 

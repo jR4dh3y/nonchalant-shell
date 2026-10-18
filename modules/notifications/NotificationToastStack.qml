@@ -170,10 +170,10 @@ Item {
                     }
                 }
 
-                StyledRect {
+                FloatingSurface {
                     id: toastCard
                     anchors.fill: parent
-                    variant: "pane"
+                    contentVariant: "pane"
                     radius: root.isIsland ? root.cornerRadius : Styling.radius(8)
                     enableShadow: false
                     enableBorder: true

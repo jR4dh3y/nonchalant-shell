@@ -327,7 +327,7 @@ Item {
     BarPopup {
         id: timePopup
         anchorItem: root.vertical ? buttonBg : timeAnchor
-        variant: "pane"
+        contentVariant: "pane"
         grabFocus: true
 
         contentWidth: 316
@@ -350,7 +350,7 @@ Item {
     BarPopup {
         id: clockPopup
         anchorItem: buttonBg
-        variant: "pane"
+        contentVariant: "pane"
         contentWidth: popupContent.width + popupPadding * 2
         contentHeight: WeatherService.dataAvailable ? popupContent.height + popupPadding * 2 : 0
 
@@ -701,7 +701,8 @@ Item {
         MorphSurface {
             id: dashboardSurface
 
-            variant: root.vertical && !root.controlMode ? "transparent" : "pane"
+            variant: root.vertical && !root.controlMode ? "transparent" : "popup"
+            contentVariant: root.vertical && root.controlMode ? "pane" : ""
             padding: root.vertical && !root.controlMode ? 0 : 8
             shown: dashboardPopup.isOpen
             contentWidth: Math.min(dashboardPopup.leftBar ? Math.max(0, dashboardPopup.width - dashboardPopup.edgeGap) : Infinity,

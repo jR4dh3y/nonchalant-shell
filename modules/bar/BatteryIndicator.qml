@@ -182,7 +182,7 @@ Item {
     BarPopup {
         id: batteryPopup
         anchorItem: buttonBg
-        variant: "pane"
+        contentVariant: "pane"
 
         contentWidth: Math.max(280, mainColumn.implicitWidth + batteryPopup.popupPadding * 2)
         // Fixed height calculation to prevent expansion animation on first open
