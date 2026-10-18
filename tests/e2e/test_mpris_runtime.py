@@ -342,6 +342,11 @@ def exercise(fixture, video_id="invalid", player_name="nonchalant_test",
             self.Seeked(dbus.Int64(self.position * 1_000_000))
 
         @dbus.service.method("org.nonchalant.Test", in_signature="x")
+        def SilentMovePosition(self, seconds):
+            # Cider can correct its own clock without emitting Seeked.
+            self.move_position(int(seconds))
+
+        @dbus.service.method("org.nonchalant.Test", in_signature="x")
         def SetDuration(self, seconds):
             self.duration = int(seconds)
             self.PropertiesChanged(interface, {"Metadata": self.metadata()}, [])

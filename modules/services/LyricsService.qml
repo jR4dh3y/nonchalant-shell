@@ -67,6 +67,20 @@ Singleton {
 
     readonly property real lead: 0
 
+    Binding {
+        target: CiderPosition
+        property: "enabled"
+        value: root.wanted && root.ciderPlayer
+    }
+
+    Connections {
+        target: CiderPosition
+        function onSampleAtChanged() {
+            if (root.wanted && root.ciderPlayer)
+                root.place();
+        }
+    }
+
     onTrackChanged: root.resetTrack()
     onWantedChanged: {
         if (root.wanted) {
@@ -142,10 +156,10 @@ Singleton {
     }
 
     function place(): void {
-        // This getter already advances with the player's rate in Quickshell.
-        // Reading the controller's cached position or extrapolating it again
-        // introduces a second clock and makes pause/rate/seek timing disagree.
-        root.playbackPosition = MprisController.activePlayer?.position ?? 0;
+        // Quickshell advances this getter between notifications. Cider can
+        // silently reanchor its exported clock, so refresh that source for lyrics.
+        const rawPosition = MprisController.activePlayer?.position ?? 0;
+        root.playbackPosition = root.ciderPlayer ? CiderPosition.positionFor(rawPosition) : rawPosition;
         if (!root.available || !root.synced) {
             root.current = -1;
             root.timelineIndex = -1;
@@ -173,6 +187,8 @@ Singleton {
 
         const length = MprisController.length;
         const target = Math.max(0, Math.min(length > 0 ? length : seconds, seconds));
+        if (root.ciderPlayer)
+            CiderPosition.invalidate();
         player.position = target;
         root.place();
         return true;

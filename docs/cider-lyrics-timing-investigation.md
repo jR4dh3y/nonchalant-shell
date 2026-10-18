@@ -1,7 +1,7 @@
 # Cider lyric timing investigation
 
 Date: 2026-10-18. Branch: `investigate/cider-lyrics-timing`, based on
-`fix/left-bar-surface-colors` at `925d0ab8`.
+`fix/left-bar-surface-colors` (including popup-frame restoration `40aeeaaa`).
 
 ## Finding
 
@@ -107,3 +107,56 @@ Raw live samples and probe logs were saved under
 `/tmp/nonchalant-cider-live-fsjol3el`; the initial end-of-track sample is under
 `/tmp/nonchalant-cider-clock-rqkey4mb`. These are temporary local artifacts and
 contain no authentication headers or account tokens.
+
+## Intermittent timing: reproduced stale MPRIS anchor
+
+The user clarified that **the same song** can be about one line off and later
+match again. This makes per-recording differences insufficient as an explanation.
+It also means that the constant audio-latency correction identified above was not
+established as the cause of this intermittent behavior.
+
+The installed Cider MPRIS exporter replaces its own position anchor on each
+`musickit:playbackTimeChanged`, but emits `Seeked` only when the correction exceeds
+1,500,000 microseconds (1.5 seconds). Quickshell keeps a separate advancing anchor.
+Its `positionChanged()` signal only notifies readers; the shell's 250 ms timer
+emits that signal without requesting a new D-Bus Position value. See
+[Quickshell's implementation](https://github.com/quickshell-mirror/quickshell/blob/master/src/services/mpris/player.cpp)
+(`positionMs`, `onExportedPositionChanged`, and `onSeek`).
+
+A private D-Bus regression test reproduces the failure with a 500 ms correction:
+the player silently moves from 3.5 s to 4 s, while Quickshell remains at 3.5 s.
+The existing shell continues displaying the old cue. The test also checks a
+silent backward correction during playback. These checks model Cider's
+notification behavior without controlling the user's player or desktop.
+
+`fix/cider-lyrics-sync` refreshes Cider's D-Bus Position every 500 ms while lyrics
+are wanted, then advances that sample at the player rate between reads. The
+shared `LyricsService` uses it for line selection and word fill across compact,
+detail, and lockscreen views. Seeks, playback/rate changes, track changes, stale
+samples, slow/failed queries, and pending responses are guarded; other players
+retain their existing clock. This uses `gdbus`, not a Cider plugin or a fixed
+lyric delay.
+
+A separate reproduced provider bug is also fixed: Cider strips punctuation from
+library IDs in MPRIS (`i.library` becomes `ilibrary`). Literal comparison rejected
+valid library recordings and silently fell back to LRCLIB. The helper now accepts
+Cider's exported ID form while preserving title/artist/identity checks. This is
+not claimed to explain the same-song intermittent drift.
+
+Both regressions failed before their respective fixes. The runtime check now
+covers silent corrections in both directions, line selection in compact/detail,
+normal word fill, pause, seek, rate changes, interludes, track changes, pending
+query cancellation on player switching, and shutdown when no lyric view watches.
+
+The optional clock companion is preserved separately on
+`experiment/cider-lyrics-clock-companion`. The user approved its installation,
+which `/plugins/list` confirmed; activation was not verified and is not required
+or used by this branch. No live measurement has established the user's actual
+audio-latency offset. The stale-anchor reproduction supports this fix, while a
+long live comparison during an actual mismatch remains unobserved.
+
+Final checks: 33 parser/provider unit tests and both isolated media runtime tests
+passed (35 tests total). Both changed QML services passed syntax checks, and
+`git diff --check` passed. The runtime tests use offscreen rendering, private
+HOME/XDG paths, and a private D-Bus session; they do not access the user's
+compositor or control live Cider playback.
