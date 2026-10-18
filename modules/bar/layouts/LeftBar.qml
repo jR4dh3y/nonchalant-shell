@@ -440,6 +440,14 @@ Item {
                             }
                         }
 
+                        BrightnessSlider {
+                            objectName: "verticalBrightnessControl"
+                            Layout.alignment: Qt.AlignHCenter
+                            flat: true
+                            meterSize: root.controlSize
+                            bar: root
+                        }
+
                         BatteryIndicator {
                             Layout.alignment: Qt.AlignHCenter
                             flat: true
