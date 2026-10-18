@@ -144,6 +144,83 @@ ShellRoot {
                 console.log("BAR_WORKSPACE_OCCUPANCY_PASSED")
             }
 
+            function component(item, type) {
+                if (String(item).startsWith(type)) return item
+                for (const child of item.children ?? []) {
+                    const found = component(child, type)
+                    if (found) return found
+                }
+                return null
+            }
+
+            function test_vertical_connectivity() {
+                const originalStyle = Config.bar.style
+                Config.bar.style = "left"
+                bar.sourceComponent = left
+                tryVerify(() => bar.item !== null)
+                const clock = component(bar.item, "Clock")
+                const trigger = findChild(bar.item, "verticalConnectivityButton")
+                verify(clock !== null && trigger !== undefined)
+                mouseClick(trigger)
+                tryCompare(clock, "connectivityMenuActive", true)
+                compare(clock.controlMode, "wifi")
+                wait(Motion.expandDuration + 100)
+                const owner = Visibilities.activeBarPopup
+                verify(owner !== null)
+                function tab(mode) { return findChild(bar.item, "connectivityTab-" + mode) }
+                tryVerify(() => tab("wifi") !== undefined)
+                compare(tab("wifi").selected, true)
+                mouseClick(tab("bluetooth"))
+                tryCompare(clock, "controlMode", "bluetooth")
+                tryVerify(() => tab("bluetooth")?.selected === true)
+                compare(clock.menuOpen, true)
+                compare(Visibilities.activeBarPopup, owner)
+                wait(80)
+                // The clicked tab is destroyed with its old panel. Keyboard
+                // navigation must keep working without manually restoring focus.
+                keyClick(Qt.Key_Left)
+                tryCompare(clock, "controlMode", "wifi")
+                keyClick(Qt.Key_Right)
+                tryCompare(clock, "controlMode", "bluetooth")
+                // Clicking an already selected tab keeps the popup open.
+                mouseClick(tab("bluetooth"))
+                compare(clock.menuOpen, true)
+                // The one bar control closes either tab and remembers it on reopen.
+                mouseClick(trigger)
+                tryCompare(clock, "menuOpen", false)
+                compare(Visibilities.activeBarPopup, null)
+                mouseClick(trigger)
+                tryCompare(clock, "connectivityMenuActive", true)
+                compare(clock.controlMode, "bluetooth")
+                wait(Motion.expandDuration + 100)
+                const menu = component(bar.item, "VerticalControlMenu")
+                menu.forceActiveFocus()
+                keyClick(Qt.Key_Left)
+                tryCompare(clock, "controlMode", "wifi")
+                keyClick(Qt.Key_Right)
+                tryCompare(clock, "controlMode", "bluetooth")
+                // Back still dismisses the flyout; direct commands pick the right tab.
+                const panel = component(bar.item, "IslandBluetoothPanel")
+                wait(80)
+                mouseClick(panel, 28, 28)
+                tryCompare(clock, "menuOpen", false)
+                for (const mode of ["wifi", "bluetooth"]) {
+                    clock.openControlMenu(mode)
+                    tryCompare(clock, "menuOpen", true)
+                    compare(clock.controlMode, mode)
+                    tryVerify(() => tab(mode)?.selected === true)
+                    clock.openControlMenu(mode)
+                    tryCompare(clock, "menuOpen", false)
+                }
+                clock.openControlMenu("wifi")
+                component(bar.item, "VerticalControlMenu").forceActiveFocus()
+                keyClick(Qt.Key_Escape)
+                tryCompare(clock, "menuOpen", false)
+                compare(Visibilities.activeBarPopup, null)
+                Config.bar.style = originalStyle
+                console.log("BAR_CONNECTIVITY_PASSED")
+            }
+
             function test_pin_command() {
                 verify(GlobalShortcuts.ipcHandler !== null)
                 Config.bar.pinned = false
@@ -364,11 +441,20 @@ class BarTextRuntimeTests(unittest.TestCase):
             if fonts.is_dir():
                 (home / ".local/share").mkdir(parents=True)
                 (home / ".local/share/fonts").symlink_to(fonts, target_is_directory=True)
+            # Menu initialization must not address the user's network adapters.
+            binaries = fixture / "bin"
+            binaries.mkdir()
+            for command in ("nmcli", "bluetoothctl", "ddcutil", "brightnessctl"):
+                stub = binaries / command
+                stub.write_text("#!/bin/sh\nexit 0\n")
+                stub.chmod(0o755)
             runtime = fixture / "runtime"
             runtime.mkdir(mode=0o700)
             env = {
                 **os.environ,
                 "HOME": str(home),
+                "PATH": str(binaries) + os.pathsep + os.environ["PATH"],
+                "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=" + str(fixture / "no-system-bus"),
                 "XDG_CONFIG_HOME": str(home / ".config"),
                 "XDG_STATE_HOME": str(home / ".local/state"),
                 "XDG_DATA_HOME": str(home / ".local/share"),
@@ -395,6 +481,7 @@ class BarTextRuntimeTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             self.assertIn("BAR_CONTEXT_TEXT_RUNTIME_FINISHED", output, output)
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
+            self.assertIn("BAR_CONNECTIVITY_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_OCCUPANCY_PASSED", output, output)
             for layout in ("island", "pills"):

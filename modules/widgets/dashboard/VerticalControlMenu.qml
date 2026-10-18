@@ -1,7 +1,10 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 import qs.modules.bar.island
+import qs.modules.components
 import qs.modules.theme
 
 Item {
@@ -12,6 +15,7 @@ Item {
     property bool lyricsActive: false
     signal backRequested()
     signal closeRequested()
+    signal modeRequested(string mode)
     implicitWidth: mode === "media" ? Math.min(Styling.fontSize(0) * 28, maximumSize) : 400
     implicitHeight: panelLoader.item?.implicitHeight ?? 340
 
@@ -20,10 +24,58 @@ Item {
     }
 
     Keys.onEscapePressed: root.closeRequested()
+    Keys.onLeftPressed: if (root.mode === "bluetooth") root.modeRequested("wifi")
+    Keys.onRightPressed: if (root.mode === "wifi") root.modeRequested("bluetooth")
+
+    Component {
+        id: connectivityTitle
+        RowLayout {
+            spacing: Styling.fontSize(0) * 0.2
+            Repeater {
+                model: ["wifi", "bluetooth"]
+                Button {
+                    id: tab
+                    required property string modelData
+                    readonly property bool selected: root.mode === tab.modelData
+                    objectName: "connectivityTab-" + tab.modelData
+                    implicitWidth: Styling.fontSize(0) * 2.4
+                    implicitHeight: implicitWidth
+                    padding: 0
+                    Accessible.name: tab.modelData === "wifi" ? "Wi-Fi" : "Bluetooth"
+                    Accessible.role: Accessible.PageTab
+                    Accessible.selected: tab.selected
+                    scale: tab.pressed ? 0.92 : 1
+                    PressBehavior on scale { pressed: tab.pressed }
+                    background: StyledRect {
+                        id: tabSurface
+                        variant: tab.selected ? "focus" : "common"
+                        backgroundOpacity: tab.selected || tab.visualFocus ? 1 : 0
+                        radius: width / 2
+                        HoverTint { hovered: tab.hovered; pressed: tab.pressed }
+                    }
+                    contentItem: StyledText {
+                        text: tab.modelData === "wifi" ? Icons.wifiHigh : Icons.bluetooth
+                        font.family: Icons.font
+                        font.pixelSize: Styling.fontSize(5)
+                        color: tab.selected ? tabSurface.item : Colors.overBackground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    onClicked: if (!tab.selected) root.modeRequested(tab.modelData)
+                    StyledToolTip {
+                        show: tab.hovered
+                        tooltipText: tab.Accessible.name
+                    }
+                }
+            }
+        }
+    }
 
     Loader {
         id: panelLoader
         anchors.fill: parent
+        // A selected tab replaces its own panel, including the focused button.
+        onLoaded: root.focusCurrentTab()
         sourceComponent: {
             switch (root.mode) {
             case "sound": return soundPanel;
@@ -38,8 +90,8 @@ Item {
 
     Component { id: soundPanel; IslandSoundPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
     Component { id: micPanel; IslandMicPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
-    Component { id: wifiPanel; IslandWifiPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
-    Component { id: bluetoothPanel; IslandBluetoothPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
+    Component { id: wifiPanel; IslandWifiPanel { backTooltip: "Close menu"; titleComponent: connectivityTitle; onBackRequested: root.backRequested() } }
+    Component { id: bluetoothPanel; IslandBluetoothPanel { backTooltip: "Close menu"; titleComponent: connectivityTitle; onBackRequested: root.backRequested() } }
     Component { id: batteryPanel; IslandBatteryPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
     Component {
         id: mediaPanel

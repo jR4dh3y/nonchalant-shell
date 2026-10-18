@@ -46,6 +46,9 @@ Item {
     }
 
     property string controlMode: ""
+    property string lastConnectivityMode: "wifi"
+    readonly property bool connectivityMenuActive: root.vertical && dashboardPopup.isOpen
+        && (root.controlMode === "wifi" || root.controlMode === "bluetooth")
     property string dashboardSection: "notifications"
     readonly property bool systemMonitorActive: root.vertical && dashboardPopup.isOpen && !root.controlMode && root.dashboardSection === "stats"
 
@@ -68,8 +71,23 @@ Item {
             dashboardPopup.close();
             return;
         }
+        root.showControlMenu(mode);
+    }
+
+    function showControlMenu(mode: string): void {
+        if (!root.vertical)
+            return;
+        if (mode === "wifi" || mode === "bluetooth")
+            root.lastConnectivityMode = mode;
         root.controlMode = mode;
         dashboardPopup.open();
+    }
+
+    function toggleConnectivityMenu(): void {
+        if (root.connectivityMenuActive)
+            dashboardPopup.close();
+        else
+            root.showControlMenu(root.lastConnectivityMode);
     }
 
     function showDashboardSection(section: string): void {
@@ -743,6 +761,7 @@ Item {
                     id: verticalControlMenu
                     VerticalControlMenu {
                         mode: root.controlMode
+                        onModeRequested: mode => root.showControlMenu(mode)
                         lyricsActive: dashboardPopup.isOpen && root.controlMode === "media"
                         maximumSize: Math.max(0, Math.min(dashboardPopup.width - dashboardPopup.edgeGap,
                             dashboardPopup.height - dashboardPopup.edgeGap * 2) - dashboardSurface.padding * 2)

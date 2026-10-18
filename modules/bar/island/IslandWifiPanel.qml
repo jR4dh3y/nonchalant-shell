@@ -17,10 +17,23 @@ Item {
     implicitHeight: 340
 
     property string backTooltip: "Back to dashboard"
+    property Component titleComponent: defaultTitle
     signal backRequested()
 
     Component.onCompleted: {
         NetworkService.rescanWifi();
+    }
+
+    Component {
+        id: defaultTitle
+        StyledText {
+            text: "Wi-Fi"
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(1)
+            font.bold: true
+            color: Colors.overBackground
+            elide: Text.ElideRight
+        }
     }
 
     ColumnLayout {
@@ -69,20 +82,14 @@ Item {
                 }
             }
 
-            // Title
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "Wi-Fi"
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
-                font.bold: true
-                color: Colors.overBackground
-                elide: Text.ElideRight
+            Loader {
+                sourceComponent: root.titleComponent
             }
 
             // Status label (connecting, limited, or VPN)
             Text {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting
                 visible: NetworkService.wifiConnecting || NetworkService.wifiStatus === "limited" || NetworkService.vpnConnected
@@ -93,7 +100,7 @@ Item {
                 elide: Text.ElideRight
             }
 
-            Item { Layout.fillWidth: true }
+            Item { Layout.fillWidth: true; visible: !(NetworkService.wifiConnecting || NetworkService.wifiStatus === "limited" || NetworkService.vpnConnected) }
 
             // Action 1: Captive Portal (Globe)
             StyledRect {

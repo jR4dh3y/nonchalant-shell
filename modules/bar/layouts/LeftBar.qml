@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import QtQuick.Shapes
 import Quickshell
 import qs.config
 import qs.modules.bar.clock
@@ -53,15 +54,6 @@ Item {
             ? workspaceRepeater.itemAt(activeWorkspaceIndex) : null;
     }
 
-    readonly property string networkIcon: {
-        if (NetworkService.ethernet)
-            return Icons.ethernet;
-        if (!NetworkService.wifiEnabled)
-            return Icons.wifiOff;
-        if (!NetworkService.wifiConnected)
-            return Icons.wifiNone;
-        return NetworkService.wifiIconForStrength(NetworkService.networkStrength);
-    }
     readonly property string networkTooltip: {
         if (NetworkService.ethernet)
             return "Ethernet";
@@ -400,21 +392,44 @@ Item {
                         }
 
                         DockIconButton {
-                            id: networkButton
-                            iconText: root.networkIcon
-                            tooltipText: root.networkTooltip
-                            description: "Open network menu"
-                            onClicked: clock.openControlMenu("wifi")
-                        }
+                            id: connectivityButton
+                            objectName: "verticalConnectivityButton"
+                            showLabel: false
+                            selected: clock.connectivityMenuActive
+                            tooltipText: root.networkTooltip + " · " + (!BluetoothService.enabled
+                                ? "Bluetooth off" : (BluetoothService.firstConnectedDeviceName || "Bluetooth on"))
+                            description: "Open Wi-Fi and Bluetooth"
+                            onClicked: clock.toggleConnectivityMenu()
 
-                        DockIconButton {
-                            iconText: !BluetoothService.enabled ? Icons.bluetoothOff
-                                : (BluetoothService.connected ? Icons.bluetoothConnected : Icons.bluetooth)
-                            muted: !BluetoothService.enabled
-                            tooltipText: !BluetoothService.enabled ? "Bluetooth off"
-                                : (BluetoothService.firstConnectedDeviceName || "Bluetooth")
-                            description: "Open Bluetooth menu"
-                            onClicked: clock.openControlMenu("bluetooth")
+                            // Wi-Fi arcs and the Bluetooth rune form one compact status mark.
+                            Item {
+                                anchors.centerIn: parent
+                                width: Styling.fontSize(4) * 1.35
+                                height: width
+                                Shape {
+                                    width: 24
+                                    height: 24
+                                    scale: parent.width / 24
+                                    transformOrigin: Item.TopLeft
+                                    preferredRendererType: Shape.CurveRenderer
+                                    ShapePath {
+                                        strokeColor: Qt.alpha(connectivityButton.foregroundColor, NetworkService.wifiEnabled ? 1 : 0.4)
+                                        strokeWidth: 2
+                                        capStyle: ShapePath.RoundCap
+                                        fillColor: "transparent"
+                                        strokeStyle: ShapePath.SolidLine
+                                        PathSvg { path: "M 3 6 Q 12 -1 21 6 M 6 9 Q 12 4 18 9" }
+                                    }
+                                    ShapePath {
+                                        strokeColor: Qt.alpha(connectivityButton.foregroundColor, BluetoothService.enabled ? 1 : 0.4)
+                                        strokeWidth: 1.8
+                                        capStyle: ShapePath.RoundCap
+                                        joinStyle: ShapePath.RoundJoin
+                                        fillColor: "transparent"
+                                        PathSvg { path: "M 12 10 L 12 23 L 17 18 L 8 11 M 8 22 L 17 15 L 12 10" }
+                                    }
+                                }
+                            }
                         }
 
                         DockIconButton {
