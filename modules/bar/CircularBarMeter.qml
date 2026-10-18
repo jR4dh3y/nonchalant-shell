@@ -3,10 +3,8 @@ import QtQuick
 import QtQuick.Layouts
 import qs.modules.components
 import qs.modules.theme
-import qs.config
 
-// Compact scrollable meter used by the permanent bar controls.  Its arc
-// deliberately matches BatteryIndicator's speedometer geometry.
+// Scrollable bar meter; flat controls share the droplet radial geometry.
 Item {
     id: root
 
@@ -19,6 +17,7 @@ Item {
     property real endRadius: Styling.radius(0)
     property real value: 0
     property string icon: ""
+    property real iconSize: root.flat ? 11 : 14
     property color progressColor: Styling.srItem("overprimary")
     property string tooltipText: ""
     property bool clickEnabled: true
@@ -63,71 +62,25 @@ Item {
             hoverOpacity: root.flat ? 0.12 : 0.2
         }
 
-        Item {
-            id: progressMeter
+        BarRadialMeter {
             anchors.centerIn: parent
-            width: root.flat ? (root.meterSize - 2) : 32
-            height: width
-
-            property real angle: root.normalizedValue * (360 - 2 * gapAngle)
-            property real meterRadius: root.flat ? (root.meterSize / 2 - 4.5) : 12
-            property real lineWidth: root.flat ? 2.2 : 3
-            property real gapAngle: 45
-
-            Canvas {
-                id: canvas
-                anchors.fill: parent
-                antialiasing: true
-
-                onPaint: {
-                    const ctx = getContext("2d");
-                    ctx.reset();
-                    const centerX = width / 2;
-                    const centerY = height / 2;
-                    const start = Math.PI / 2 + progressMeter.gapAngle * Math.PI / 180;
-                    const total = (360 - 2 * progressMeter.gapAngle) * Math.PI / 180;
-                    const progress = progressMeter.angle * Math.PI / 180;
-
-                    ctx.lineCap = "round";
-                    ctx.lineWidth = progressMeter.lineWidth;
-                    ctx.strokeStyle = root.flat ? Qt.rgba(1, 1, 1, 0.14) : Colors.outlineVariant;
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, progressMeter.meterRadius, start + progress, start + total, false);
-                    ctx.stroke();
-
-                    if (progressMeter.angle > 0) {
-                        ctx.strokeStyle = root.progressColor;
-                        ctx.beginPath();
-                        ctx.arc(centerX, centerY, progressMeter.meterRadius, start, start + progress, false);
-                        ctx.stroke();
-                    }
-                }
-
-                Connections {
-                    target: progressMeter
-                    function onAngleChanged() { canvas.requestPaint(); }
-                }
-
-                Connections {
-                    target: root
-                    function onProgressColorChanged() { canvas.requestPaint(); }
-                }
-            }
-
-            Behavior on angle {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: 240
-                    easing.type: Easing.OutCubic
-                }
-            }
+            width: controlSize
+            height: controlSize
+            controlSize: root.flat ? root.meterSize : 32
+            meterRadius: root.flat ? standardRadius : 12
+            lineWidth: root.flat ? standardLineWidth : 3
+            startAngle: root.flat ? 140 : 135
+            spanAngle: root.flat ? 260 : 270
+            trackColor: root.flat ? Qt.alpha(Colors.overBackground, 0.24) : Colors.outlineVariant
+            value: root.normalizedValue
+            progressColor: root.progressColor
         }
 
         StyledText {
             anchors.centerIn: parent
             text: root.icon
             font.family: Icons.font
-            font.pixelSize: root.flat ? 11 : 14
+            font.pixelSize: root.iconSize
             color: Colors.overBackground
         }
 

@@ -163,7 +163,8 @@ ShellRoot {
                 verify(clock !== null && trigger !== undefined)
                 const brightness = findChild(bar.item, "verticalBrightnessControl")
                 verify(brightness !== undefined)
-                verify(trigger.y > brightness.y, "Combined status belongs below brightness")
+                verify(trigger.mapToItem(bar.item, 0, 0).y > brightness.mapToItem(bar.item, 0, brightness.height).y,
+                    "Combined status belongs below brightness")
                 compare(component(bar.item, "BatteryIndicator"), null,
                     "There must be no separate battery control")
                 mouseClick(trigger)
@@ -229,6 +230,75 @@ ShellRoot {
                 compare(Visibilities.activeBarPopup, null)
                 Config.bar.style = originalStyle
                 console.log("BAR_DEVICE_STATUS_PASSED")
+            }
+
+            function test_vertical_droplets_and_audio() {
+                const originalStyle = Config.bar.style
+                const originalSize = Config.theme.fontSize
+                Config.bar.style = "left"
+                bar.sourceComponent = left
+                tryVerify(() => bar.item !== null)
+                const main = findChild(bar.item, "verticalMainPill")
+                const audio = findChild(bar.item, "verticalAudioControl")
+                const brightness = findChild(bar.item, "verticalBrightnessDroplet")
+                const status = findChild(bar.item, "verticalDeviceStatusButton")
+                const clock = findChild(bar.item, "verticalClockDroplet")
+                const droplets = [audio, brightness, status, clock]
+                function gauges(item, found) {
+                    if (String(item).startsWith("BarRadialMeter")) found.push(item)
+                    for (const child of item.children ?? []) gauges(child, found)
+                    return found
+                }
+                for (const size of [13, 22]) {
+                    Config.theme.fontSize = size
+                    wait(80)
+                    for (const droplet of droplets) {
+                        compare(droplet.width, main.width, "Droplets must match the main pill width")
+                        const pillCenter = main.mapToItem(bar.item, main.width / 2, 0).x
+                        const center = droplet.mapToItem(bar.item, droplet.width / 2, 0).x
+                        compare(center, pillCenter)
+                    }
+                    verify(main.mapToItem(bar.item, 0, main.height).y
+                        + bar.item.contentPadding <= audio.mapToItem(bar.item, 0, 0).y)
+                    verify(clock.height > clock.width, "Clock stays elongated")
+                    const meters = gauges(audio, []).concat(gauges(brightness, []), gauges(status, []))
+                    compare(meters.length, 4, "Two audio halves, brightness, and battery")
+                    for (const meter of meters) {
+                        compare(meter.controlSize, main.width)
+                        compare(meter.meterRadius, meters[0].meterRadius)
+                        compare(meter.lineWidth, meters[0].lineWidth)
+                        compare(meter.trackColor, meters[0].trackColor)
+                    }
+                }
+                const sound = findChild(audio, "verticalSoundControl")
+                const mic = findChild(audio, "verticalMicControl")
+                Audio.protectionEnabled = false
+                Audio.setVolume(0.4)
+                Audio.setMicVolume(0.65)
+                mouseWheel(sound, sound.width / 2, sound.height / 2, 0, 120)
+                tryVerify(() => Math.abs(Audio.value - 0.45) < 0.001)
+                compare(Audio.source.audio.volume, 0.65)
+                mouseWheel(mic, mic.width / 2, mic.height / 2, 0, -120)
+                tryVerify(() => Math.abs(Audio.source.audio.volume - 0.6) < 0.001)
+                verify(Math.abs(Audio.value - 0.45) < 0.001)
+                mouseClick(sound, sound.width / 2, sound.height / 2, Qt.RightButton)
+                compare(Audio.sink.audio.muted, true)
+                compare(Audio.source.audio.muted, false)
+                mouseClick(mic, mic.width / 2, mic.height / 2, Qt.RightButton)
+                compare(Audio.source.audio.muted, true)
+                mouseClick(sound, sound.width / 2, sound.height / 2)
+                tryCompare(clock, "controlMode", "sound")
+                compare(clock.menuOpen, true)
+                mouseClick(mic, mic.width / 2, mic.height / 2)
+                tryCompare(clock, "controlMode", "mic")
+                compare(clock.menuOpen, true)
+                mouseClick(mic, mic.width / 2, mic.height / 2)
+                tryCompare(clock, "menuOpen", false)
+                Audio.sink.audio.muted = false
+                Audio.source.audio.muted = false
+                Config.theme.fontSize = originalSize
+                Config.bar.style = originalStyle
+                console.log("BAR_DROPLETS_AUDIO_PASSED")
             }
 
             function test_pin_command() {
@@ -425,6 +495,26 @@ ShellRoot {
 '''
 
 
+def install_fake_audio_nodes(path):
+    """Keep the real audio methods while replacing native nodes in private fixtures."""
+    source = path.read_text()
+    for name, level in (("sink", 0.4), ("source", 0.65)):
+        native = "property PwNode " + name + ": Pipewire.defaultAudio" + ("Sink" if name == "sink" else "Source")
+        replacement = """property QtObject %s: QtObject {
+        property bool ready: true
+        property string name: "Test %s"
+        property QtObject audio: QtObject {
+            property real volume: %s
+            property bool muted: false
+        }
+    }""" % (name, name, level)
+        if native not in source:
+            raise AssertionError("Audio fixture no longer matches the native node declaration")
+        source = source.replace(native, replacement)
+    source = source.replace("    PwObjectTracker {\n        objects: [sink, source]\n    }", "")
+    path.write_text(source)
+
+
 @unittest.skipUnless(shutil.which("qs"), "Quickshell is required for runtime checks")
 class BarTextRuntimeTests(unittest.TestCase):
     def test_bar_labels_and_pin_command(self):
@@ -438,6 +528,7 @@ class BarTextRuntimeTests(unittest.TestCase):
                 if source.name != "services":
                     (modules / source.name).symlink_to(source, target_is_directory=source.is_dir())
             shutil.copytree(ROOT / "modules/services", modules / "services")
+            install_fake_audio_nodes(modules / "services/Audio.qml")
             shortcuts = modules / "services/GlobalShortcuts.qml"
             shortcuts.write_text(shortcuts.read_text().replace(
                 '"/tmp/nonchalant_ipc.pipe"', '"' + str(fixture / "ipc.pipe") + '"'))
@@ -492,6 +583,7 @@ class BarTextRuntimeTests(unittest.TestCase):
             self.assertIn("BAR_CONTEXT_TEXT_RUNTIME_FINISHED", output, output)
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
             self.assertIn("BAR_DEVICE_STATUS_PASSED", output, output)
+            self.assertIn("BAR_DROPLETS_AUDIO_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_OCCUPANCY_PASSED", output, output)
             for layout in ("island", "pills"):

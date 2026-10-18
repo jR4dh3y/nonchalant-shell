@@ -21,6 +21,7 @@ Item {
     property bool isHovered: false
     // Vertical rail uses two digit rows with the date in its tooltip.
     property bool vertical: false
+    property bool detached: false
     property int verticalWidth: Math.max(36, Config.theme.fontSize + 20)
     property Item mediaAnchor: null
 
@@ -150,8 +151,8 @@ Item {
     // Main button
     StyledRect {
         id: buttonBg
-        variant: root.vertical ? (root.anyPopupOpen ? "focus" : "common") : (root.anyPopupOpen ? "primary" : "bg")
-        backgroundOpacity: root.vertical && !root.anyPopupOpen ? 0 : -1
+        variant: root.vertical ? (root.anyPopupOpen ? "focus" : (root.detached ? "pane" : "common")) : (root.anyPopupOpen ? "primary" : "bg")
+        backgroundOpacity: root.vertical && !root.detached && !root.anyPopupOpen ? 0 : -1
         enableBorder: !root.vertical
         scale: verticalClockMouse.pressed ? 0.94 : 1.0
 
@@ -167,7 +168,7 @@ Item {
         bottomRightRadius: root.endRadius
 
         implicitWidth: root.vertical ? root.verticalWidth : rowLayout.implicitWidth + 24
-        implicitHeight: root.vertical ? verticalContent.implicitHeight + 8 : 36
+        implicitHeight: root.vertical ? Math.max(verticalContent.implicitHeight + 8, root.detached ? root.verticalWidth * 1.4 : 0) : 36
 
         HoverTint {
             hovered: root.isHovered && !root.anyPopupOpen
@@ -293,7 +294,7 @@ Item {
                 text: root.timeText.split(":")[0].padStart(2, "0")
                 color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                 font.family: Config.theme.monoFont
-                font.pixelSize: Styling.fontSize(2)
+                font.pixelSize: Styling.fontSize(root.detached ? 6 : 2)
                 font.weight: Font.DemiBold
             }
 
@@ -302,7 +303,7 @@ Item {
                 text: (root.timeText.split(":")[1] ?? "00").split(" ")[0]
                 color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
                 font.family: Config.theme.monoFont
-                font.pixelSize: Styling.fontSize(2)
+                font.pixelSize: Styling.fontSize(root.detached ? 6 : 2)
                 opacity: 0.65
             }
 
@@ -310,7 +311,7 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 visible: Config.bar.use12hFormat && root.timeText === root.currentTime
                 text: root.currentTime.split(" ")[1] ?? ""
-                font.pixelSize: Styling.fontSize(-4)
+                font.pixelSize: Styling.fontSize(root.detached ? -2 : -4)
                 color: root.anyPopupOpen ? buttonBg.item : Colors.overBackground
             }
         }

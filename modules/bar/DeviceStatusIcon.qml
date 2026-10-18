@@ -16,69 +16,60 @@ Item {
         ? Math.max(1, Math.min(4, Math.ceil(NetworkService.networkStrength / 25))) : 0
     readonly property color chargeColor: !Battery.available ? root.foregroundColor
         : Battery.isCharging ? Colors.green
-        : Battery.percentage <= 20 ? Colors.red : root.foregroundColor
+        : Battery.percentage <= 20 ? Colors.red : Styling.srItem("overprimary")
 
     implicitWidth: Math.round(Styling.fontSize(4) * 1.6)
     implicitHeight: implicitWidth
 
     function dotColor(index: int): color {
-        return Qt.alpha(root.foregroundColor, index < root.wifiDots ? 1 : 0.28);
+        return Qt.alpha(root.foregroundColor, index < root.wifiDots ? 1 : 0.24);
+    }
+
+    BarRadialMeter {
+        id: gauge
+        anchors.fill: parent
+        controlSize: Math.min(root.width, root.height)
+        foregroundColor: root.foregroundColor
+        progressColor: root.chargeColor
+        value: root.chargeLevel
+    }
+
+    function dotPosition(index: int): point {
+        const angle = (120 - index * 20) * Math.PI / 180;
+        return Qt.point(root.width / 2 + gauge.meterRadius * Math.cos(angle),
+            root.height / 2 + gauge.meterRadius * Math.sin(angle));
     }
 
     Shape {
-        width: 32
-        height: 32
-        scale: root.width / 32
-        transformOrigin: Item.TopLeft
+        anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
-
-        // One circular contour: the gauge leaves 100 degrees for four dots,
-        // spaced every 20 degrees along the same radius.
-        ShapePath {
-            strokeColor: Qt.alpha(root.foregroundColor, 0.28)
-            strokeWidth: 3
-            capStyle: ShapePath.RoundCap
-            fillColor: "transparent"
-            PathAngleArc {
-                centerX: 16; centerY: 16
-                radiusX: 12.3; radiusY: 12.3
-                startAngle: 140; sweepAngle: 260
-            }
-        }
-        ShapePath {
-            strokeColor: root.chargeLevel > 0 ? root.chargeColor : "transparent"
-            strokeWidth: 3
-            capStyle: ShapePath.RoundCap
-            fillColor: "transparent"
-            PathAngleArc {
-                centerX: 16; centerY: 16
-                radiusX: 12.3; radiusY: 12.3
-                startAngle: 140; sweepAngle: 260 * root.chargeLevel
-            }
-        }
         ShapePath {
             strokeColor: root.dotColor(0)
-            strokeWidth: 2.8
+            strokeWidth: gauge.lineWidth * 1.15
             capStyle: ShapePath.RoundCap
-            PathSvg { path: "M 9.85 26.65 L 9.86 26.65" }
+            PathMove { x: root.dotPosition(0).x; y: root.dotPosition(0).y }
+            PathLine { x: root.dotPosition(0).x + 0.01; y: root.dotPosition(0).y }
         }
         ShapePath {
             strokeColor: root.dotColor(1)
-            strokeWidth: 2.8
+            strokeWidth: gauge.lineWidth * 1.15
             capStyle: ShapePath.RoundCap
-            PathSvg { path: "M 13.864 28.113 L 13.874 28.113" }
+            PathMove { x: root.dotPosition(1).x; y: root.dotPosition(1).y }
+            PathLine { x: root.dotPosition(1).x + 0.01; y: root.dotPosition(1).y }
         }
         ShapePath {
             strokeColor: root.dotColor(2)
-            strokeWidth: 2.8
+            strokeWidth: gauge.lineWidth * 1.15
             capStyle: ShapePath.RoundCap
-            PathSvg { path: "M 18.136 28.113 L 18.146 28.113" }
+            PathMove { x: root.dotPosition(2).x; y: root.dotPosition(2).y }
+            PathLine { x: root.dotPosition(2).x + 0.01; y: root.dotPosition(2).y }
         }
         ShapePath {
             strokeColor: root.dotColor(3)
-            strokeWidth: 2.8
+            strokeWidth: gauge.lineWidth * 1.15
             capStyle: ShapePath.RoundCap
-            PathSvg { path: "M 22.15 26.65 L 22.16 26.65" }
+            PathMove { x: root.dotPosition(3).x; y: root.dotPosition(3).y }
+            PathLine { x: root.dotPosition(3).x + 0.01; y: root.dotPosition(3).y }
         }
     }
 
@@ -87,16 +78,16 @@ Item {
         anchors.verticalCenterOffset: -root.height * 0.025
         text: Icons.bluetooth
         font.family: Icons.font
-        font.pixelSize: Math.round(root.width * 0.48)
+        font.pixelSize: Math.round(root.width * 0.35)
         color: Qt.alpha(root.foregroundColor, BluetoothService.enabled ? 1 : 0.38)
     }
 
     StyledRect {
         objectName: "deviceStatusChargingBadge"
         visible: Battery.isCharging
-        x: root.width * 0.68
-        y: -root.height * 0.01
-        width: root.width * 0.42
+        x: root.width * 0.65
+        y: root.height * 0.085
+        width: root.width * 0.26
         height: width
         radius: width / 2
         variant: root.selected ? "focus" : "pane"
