@@ -53,7 +53,9 @@ Item {
             id: menuSurface
 
             shown: root.open
-            contentWidth: launcherLoader.item ? launcherLoader.item.implicitWidth + padding * 2 : 0
+            contentWidth: launcherLoader.item
+                ? (root.leftEdge ? Math.round(launcherLoader.item.implicitWidth * 0.9)
+                    : launcherLoader.item.implicitWidth) + padding * 2 : 0
             contentHeight: launcherLoader.item ? launcherLoader.item.implicitHeight + padding * 2 : 0
             fromBottom: root.bottomEdge
             fromLeft: root.leftEdge
