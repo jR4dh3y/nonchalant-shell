@@ -12,10 +12,10 @@ Rectangle {
 
     anchors.fill: parent
     radius: parent?.radius ?? 0
-    topLeftRadius: parent?.topLeftRadius ?? parent?.radius ?? 0
-    topRightRadius: parent?.topRightRadius ?? parent?.radius ?? 0
-    bottomLeftRadius: parent?.bottomLeftRadius ?? parent?.radius ?? 0
-    bottomRightRadius: parent?.bottomRightRadius ?? parent?.radius ?? 0
+    topLeftRadius: parent?.topLeftRadius ?? root.radius
+    topRightRadius: parent?.topRightRadius ?? root.radius
+    bottomLeftRadius: parent?.bottomLeftRadius ?? root.radius
+    bottomRightRadius: parent?.bottomRightRadius ?? root.radius
     color: Styling.srItem("overprimary")
     opacity: root.pressed ? root.pressedOpacity : (root.hovered ? root.hoverOpacity : 0)
 

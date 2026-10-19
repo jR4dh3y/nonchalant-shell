@@ -15,6 +15,8 @@ import QtTest
 import Quickshell
 import qs.config
 import qs.modules.theme
+import qs.modules.components
+import qs.modules.bar.systray
 import qs.modules.widgets.dashboard.widgets
 import qs.modules.widgets.dashboard.widgets.calendar
 
@@ -23,7 +25,7 @@ ShellRoot {
         id: window
         visible: true
         implicitWidth: 720
-        implicitHeight: 420
+        implicitHeight: 600
         color: Colors.background
         VerticalDashboardControls {
             id: controls
@@ -39,6 +41,22 @@ ShellRoot {
         Calendar {
             id: calendar
             x: 300; y: 20; width: 380; height: 380
+        }
+        Item {
+            id: roundedOwner
+            x: 20; y: 440; width: 160; height: 60
+            HoverTint {
+                id: explicitRadius
+                radius: 24
+                hovered: true
+                hoverOpacity: 1
+            }
+        }
+        SystrayMenuItem {
+            id: trayAction
+            x: 220; y: 440; width: 220
+            textStr: "Last tray action"
+            hoverEnabled: true
         }
         TestCase {
             name: "ButtonHoverContrast"
@@ -152,6 +170,30 @@ ShellRoot {
                 console.log("CALENDAR_OFF_MONTH_CONTRAST_PASSED")
             }
 
+            function test_explicit_hover_radius_and_tray_corners() {
+                try {
+                    for (const corner of ["topLeftRadius", "topRightRadius", "bottomLeftRadius", "bottomRightRadius"])
+                        compare(explicitRadius[corner], explicitRadius.radius)
+                    const image = grabImage(roundedOwner)
+                    compare(image.pixel(0, 0), Colors.background, "The explicit radius must leave the background visible")
+                    verify(image.pixel(80, 30) !== Colors.background, "The hover fill must still paint its center")
+                    mouseMove(trayAction, trayAction.width / 2, trayAction.height / 2)
+                    tryCompare(trayAction, "hovered", true)
+                    const tint = trayAction.background.children[0]
+                    verify(tint.radius > 0)
+                    compare(tint.bottomLeftRadius, tint.radius)
+                    compare(tint.bottomRightRadius, tint.radius)
+                    const tray = grabImage(trayAction)
+                    compare(tray.pixel(0, tray.height - 1), Colors.background,
+                        "Last tray row must leave the background visible at its bottom corner")
+                    compare(tray.pixel(tray.width - 1, tray.height - 1), Colors.background)
+                    console.log("HOVER_RADIUS_AND_TRAY_CORNERS_PASSED")
+                } catch (error) {
+                    console.error("HOVER_RADIUS_ASSERTION", error.stack)
+                    throw error
+                }
+            }
+
             function cleanupTestCase() { Qt.quit() }
         }
         Timer {
@@ -223,6 +265,7 @@ class ButtonHoverRuntimeTests(unittest.TestCase):
                 self.assertIn("STANDALONE_HOVER_CONTRAST_PASSED", output, output)
                 self.assertIn("SHARED_HOVER_CONTRAST_PASSED", output, output)
                 self.assertIn("CALENDAR_OFF_MONTH_CONTRAST_PASSED", output, output)
+                self.assertIn("HOVER_RADIUS_AND_TRAY_CORNERS_PASSED", output, output)
                 self.assertNotIn("FAIL!", output, output)
                 self.assertNotIn("BUTTON_HOVER_TIMEOUT", output, output)
                 self.assertNotIn("Binding loop", output, output)
