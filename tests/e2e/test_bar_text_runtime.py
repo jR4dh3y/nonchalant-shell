@@ -180,11 +180,13 @@ ShellRoot {
                 tryVerify(() => tab("wifi") !== undefined)
                 compare(tab("wifi").selected, true)
                 const wifiHeight = component(bar.item, "VerticalControlMenu").implicitHeight
+                compare(findChild(bar.item, "wifiBackButton").visible, false)
                 mouseClick(tab("bluetooth"))
                 tryCompare(clock, "controlMode", "bluetooth")
                 tryVerify(() => tab("bluetooth")?.selected === true)
                 compare(clock.menuOpen, true)
                 compare(Visibilities.activeBarPopup, owner)
+                compare(findChild(bar.item, "bluetoothBackButton").visible, false)
                 compare(clock.clockSelected, false)
                 wait(80)
                 // The clicked tab is destroyed with its old panel. Keyboard
@@ -203,6 +205,7 @@ ShellRoot {
                 compare(Visibilities.activeBarPopup, owner)
                 compare(component(bar.item, "VerticalControlMenu").implicitHeight, wifiHeight,
                     "Device tabs must keep the flyout at the same height")
+                compare(findChild(bar.item, "batteryBackButton").visible, false)
                 verify(findChild(bar.item, "batteryPowerRate") !== undefined)
                 verify(findChild(bar.item, "batteryHealth") !== undefined)
                 const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
@@ -222,10 +225,8 @@ ShellRoot {
                 tryCompare(clock, "controlMode", "bluetooth")
                 keyClick(Qt.Key_Right)
                 tryCompare(clock, "controlMode", "battery")
-                // Back still dismisses the flyout; direct commands pick the right tab.
-                const panel = component(bar.item, "IslandBatteryPanel")
-                wait(80)
-                mouseClick(panel, 28, 28)
+                // Escape dismisses without a redundant back button.
+                keyClick(Qt.Key_Escape)
                 tryCompare(clock, "menuOpen", false)
                 for (const mode of ["wifi", "bluetooth", "battery"]) {
                     clock.openControlMenu(mode)

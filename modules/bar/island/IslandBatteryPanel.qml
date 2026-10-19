@@ -15,6 +15,7 @@ Item {
     implicitHeight: Math.max(340, mainColumn.implicitHeight + 28)
 
     property string backTooltip: "Back to dashboard"
+    property bool showBackButton: true
     property Component titleComponent: defaultTitle
     // Health is reported by the physical battery, not the aggregate display device.
     readonly property UPowerDevice healthDevice: UPower.devices.values.find(device => device.isLaptopBattery && device.healthSupported) ?? null
@@ -54,6 +55,8 @@ Item {
             spacing: 8
 
             StyledRect {
+                visible: root.showBackButton
+                objectName: "batteryBackButton"
                 implicitWidth: 28
                 implicitHeight: 28
                 radius: 14
