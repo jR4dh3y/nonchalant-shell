@@ -38,3 +38,8 @@ critical-battery notification action. Physical power-profile writes are not
 performed. The tray screenshot check also converts logical bounds to physical
 pixels; its crop is checked at output scales 1, 1.2, and 2. Native Hyprland
 fractional-scale execution is unavailable on this host.
+
+Power-profile labels keep a stable medium weight and centered icon/text groups.
+Hover uses a light wash, keyboard focus uses an outline, and the selected pill
+remains the strongest state. Tooltips appear only when a label is truncated.
+Native captures cover hover, focus, selection, and enlarged text.

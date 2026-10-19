@@ -301,10 +301,10 @@ Item {
                     id: profileSelector
                     objectName: "powerProfileSelector"
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Math.max(38, Styling.fontSize(0) * 2.6)
+                    Layout.preferredHeight: Styling.fontSize(0) * 3
                     variant: "focus"
                     radius: height / 2
-                    readonly property real inset: Styling.fontSize(-4) * 0.3
+                    readonly property real inset: Styling.fontSize(-4) * 0.4
 
                     ElasticHighlight {
                         id: profileHighlight
@@ -334,7 +334,7 @@ Item {
                                 objectName: "powerProfileTab-" + modelData
                                 width: profileTabs.width / root.profileModes.length
                                 height: profileTabs.height
-                                padding: Styling.fontSize(-4) * 0.4
+                                padding: Styling.fontSize(-4) * 0.6
                                 enabled: PowerProfile.isAvailable && PowerProfile.availableProfiles.indexOf(modelData) !== -1
                                 Accessible.name: modelData === "power-saver" ? "Power Saver" : PowerProfile.getProfileDisplayName(modelData)
                                 Accessible.role: Accessible.RadioButton
@@ -343,31 +343,43 @@ Item {
                                 PressBehavior on scale { pressed: profileButton.pressed }
                                 background: StyledRect {
                                     variant: "focus"
-                                    backgroundOpacity: profileButton.visualFocus ? 1 : 0
+                                    backgroundOpacity: 0
                                     radius: height / 2
-                                    HoverTint { hovered: profileButton.hovered; pressed: profileButton.pressed }
-                                }
-                                contentItem: RowLayout {
-                                    spacing: Styling.fontSize(-4) * 0.5
-                                    StyledText {
-                                        text: PowerProfile.getProfileIcon(profileButton.modelData)
-                                        font.family: Icons.font
-                                        font.pixelSize: Styling.fontSize(-1)
-                                        color: profileButton.selected ? profileHighlight.item : Colors.overBackground
+                                    border.width: profileButton.visualFocus ? Math.max(1, Math.round(Styling.fontSize(-4) / 8)) : 0
+                                    border.color: Colors.primary
+                                    HoverTint {
+                                        hovered: profileButton.hovered && !profileButton.selected
+                                        pressed: profileButton.pressed
+                                        hoverOpacity: 0.08
+                                        pressedOpacity: 0.12
                                     }
-                                    StyledText {
-                                        Layout.fillWidth: true
-                                        text: profileButton.Accessible.name
-                                        font.family: Config.theme.font
-                                        font.pixelSize: Styling.fontSize(-2)
-                                        font.bold: profileButton.selected
-                                        color: profileButton.selected ? profileHighlight.item : Colors.overBackground
-                                        elide: Text.ElideRight
+                                }
+                                contentItem: Item {
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        width: Math.min(implicitWidth, parent.width)
+                                        spacing: Styling.fontSize(-4) * 0.5
+                                        StyledText {
+                                            text: PowerProfile.getProfileIcon(profileButton.modelData)
+                                            font.family: Icons.font
+                                            font.pixelSize: Styling.fontSize(-1)
+                                            color: profileButton.selected ? profileHighlight.item : Colors.overBackground
+                                        }
+                                        StyledText {
+                                            id: profileLabel
+                                            Layout.fillWidth: true
+                                            text: profileButton.Accessible.name
+                                            font.family: Config.theme.font
+                                            font.pixelSize: Styling.fontSize(-2)
+                                            font.weight: Font.Medium
+                                            color: profileButton.selected ? profileHighlight.item : Colors.overBackground
+                                            elide: Text.ElideRight
+                                        }
                                     }
                                 }
                                 onClicked: if (!selected) PowerProfile.setProfile(profileButton.modelData)
                                 StyledToolTip {
-                                    show: profileButton.hovered
+                                    show: profileButton.hovered && profileLabel.truncated
                                     tooltipText: profileButton.Accessible.name
                                 }
                             }
