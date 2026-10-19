@@ -22,6 +22,8 @@ Content stays at its resting size and position, preserving native text rendering
 | Dashboard return into clock | Collapse width, height, and position together; reverse a partial close | Component geometry assertions and native Niri captures |
 | Notifications/wallpapers/stats/weather | Same close path; animations disabled closes immediately | Component checks for all four sections |
 | Horizontal dashboard, launcher, OSD, power menu, other bar popups | No origin item, so existing reveal geometry and fade timings remain | Source audit and wider runtime suite |
+| Battery power profiles | Shared sliding track and selected state use the shell service, with qualified UPower imports | Component clicks across left/island/pills plus private CLI readback |
+| Low-battery notification action | The same import collision no longer shadows the shell power-profile service | Real notification action dispatch to private CLI |
 | Audio service and physical devices | No routing, volume policy, or persistence changes | Mock audio boundary; physical hardware changes not exercised |
 | Multi-monitor output | Source mapping stays inside each clock's panel | Single-output runtime only |
 
@@ -29,3 +31,8 @@ Run the component checks with `python -m unittest tests.e2e.test_bar_text_runtim
 and the wider suite with `python tests/run_tests.py --all`. Native checks use the
 private compositor runner documented in `tests/runtime/README.md`. Never restart
 the user's shell or address their compositor sockets for tests.
+
+The power-profile regression test exercises all three profiles through the real
+service and a private `powerprofilesctl` executable, including readback and the
+critical-battery notification action. Physical power-profile writes are not
+performed.

@@ -67,6 +67,12 @@ ShellRoot {
         Component { id: taskbar; NonchalantTaskbar { bar: screenHost } }
         Component { id: island; IslandBar { screen: Quickshell.screens[0] } }
         Component { id: pills; PillsBar { screen: Quickshell.screens[0] } }
+        FileView {
+            id: profileState
+            path: Quickshell.env("NONCHALANT_TEST_PROFILE_STATE")
+            watchChanges: true
+            onFileChanged: reload()
+        }
         Process {
             id: pinCommand
             command: ["qs", "ipc", "-p", Quickshell.shellDir, "call", "nonchalant", "run", "bar-pin"]
@@ -446,6 +452,61 @@ ShellRoot {
                 Config.bar.style = originalStyle
                 Config.theme.animDuration = originalDuration
                 console.log("BAR_DASHBOARD_RETURN_PASSED")
+            }
+
+            function test_power_profile_selector() {
+                const originalStyle = Config.bar.style
+                const originalDuration = Config.theme.animDuration
+                Config.theme.animDuration = 100
+                PowerProfile.initialize()
+                tryCompare(PowerProfile, "isAvailable", true)
+                tryCompare(PowerProfile, "currentProfile", "performance")
+                for (const layout of [{style: "left", component: left},
+                        {style: "island", component: island}, {style: "pills", component: pills}]) {
+                    Config.bar.style = layout.style
+                    bar.sourceComponent = layout.component
+                    tryVerify(() => bar.item !== null)
+                    if (layout.style === "left")
+                        findChild(bar.item, "verticalClockDroplet").openControlMenu("battery")
+                    else
+                        bar.item.expand("battery")
+                    wait(Motion.expandDuration + 100)
+                    const panel = component(bar.item, "IslandBatteryPanel")
+                    const selector = findChild(panel, "powerProfileSelector")
+                    const highlight = findChild(panel, "powerProfileHighlight")
+                    const tab = mode => findChild(panel, "powerProfileTab-" + mode)
+                    tryVerify(() => selector.visible)
+                    tryCompare(highlight, "targetItem", tab("performance"))
+                    for (const mode of ["power-saver", "balanced", "performance"]) {
+                        mouseClick(tab(mode))
+                        tryCompare(PowerProfile, "currentProfile", mode)
+                        tryCompare(highlight, "targetItem", tab(mode))
+                        tryVerify(() => JSON.parse(profileState.text()).lastRead === mode, 2000,
+                            "Selection must reach the real service's private CLI backend")
+                        tryVerify(() => Math.abs(highlight.x - (highlight.targetItem.x + highlight.originX)) < 0.1)
+                        for (const other of ["power-saver", "balanced", "performance"]) {
+                            compare(tab(other).selected, other === mode)
+                        }
+                    }
+                    // The existing critical-battery notification action shares the service.
+                    if (layout.style === "left") {
+                        Battery.sendBatteryAlert(10, 10)
+                        const alert = Notifications.list.find(item => item.replaceKey === "battery-low-alert")
+                        verify(alert !== undefined)
+                        Notifications.attemptInvokeAction(alert.id, "enable-power-saver")
+                        tryCompare(PowerProfile, "currentProfile", "power-saver")
+                        tryVerify(() => JSON.parse(profileState.text()).lastRead === "power-saver")
+                        mouseClick(tab("performance"))
+                        tryCompare(PowerProfile, "currentProfile", "performance")
+                        tryVerify(() => JSON.parse(profileState.text()).lastRead === "performance")
+                        findChild(bar.item, "verticalClockDroplet").openControlMenu("battery")
+                    } else {
+                        bar.item.collapse()
+                    }
+                }
+                Config.bar.style = originalStyle
+                Config.theme.animDuration = originalDuration
+                console.log("BAR_POWER_PROFILE_SELECTOR_PASSED")
             }
 
             function test_standalone_audio_navigation() {
@@ -926,6 +987,32 @@ class BarTextRuntimeTests(unittest.TestCase):
                 stub = binaries / command
                 stub.write_text("#!/bin/sh\nexit 0\n")
                 stub.chmod(0o755)
+            profile_state = fixture / "power-profile.json"
+            profile_state.write_text(json.dumps({"current": "performance", "lastRead": "", "writes": []}))
+            profiles = binaries / "powerprofilesctl"
+            profiles.write_text("#!/usr/bin/python3\n" + f"""import json, sys
+from pathlib import Path
+path = Path({str(profile_state)!r})
+state = json.loads(path.read_text())
+command = sys.argv[1]
+if command == 'version':
+    print('test 1')
+elif command == 'get':
+    state['lastRead'] = state['current']
+    path.write_text(json.dumps(state))
+    print(state['current'])
+elif command == 'list':
+    print('power-saver:')
+    print('balanced:')
+    print('performance:')
+elif command == 'set':
+    state['current'] = sys.argv[2]
+    state['writes'].append(sys.argv[2])
+    path.write_text(json.dumps(state))
+else:
+    sys.exit(1)
+""")
+            profiles.chmod(0o755)
             gamma = fixture / "gamma.json"
             gamma.write_text(json.dumps({"temperature": 6500, "writes": []}))
             busctl = binaries / "busctl"
@@ -949,6 +1036,7 @@ else:
             env = {
                 **os.environ,
                 "HOME": str(home),
+                "NONCHALANT_TEST_PROFILE_STATE": str(profile_state),
                 "PATH": str(binaries) + os.pathsep + os.environ["PATH"],
                 "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=" + str(fixture / "no-system-bus"),
                 "XDG_CONFIG_HOME": str(home / ".config"),
@@ -981,6 +1069,10 @@ else:
             self.assertIn("BAR_DROPLETS_AUDIO_PASSED", output, output)
             self.assertIn("BAR_DASHBOARD_RETURN_PASSED", output, output)
             self.assertIn("BAR_STANDALONE_AUDIO_PASSED", output, output)
+            self.assertIn("BAR_POWER_PROFILE_SELECTOR_PASSED", output, output)
+            self.assertEqual(json.loads(profile_state.read_text())["writes"],
+                ["power-saver", "balanced", "performance", "power-saver", "performance"]
+                + ["power-saver", "balanced", "performance"] * 2)
             self.assertIn("BAR_DISPLAY_CONTROL_PASSED", output, output)
             self.assertIn("BAR_WEATHER_SECTION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)
