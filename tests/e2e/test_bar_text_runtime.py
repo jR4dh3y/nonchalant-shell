@@ -171,6 +171,7 @@ ShellRoot {
                     "There must be no separate battery control")
                 mouseClick(trigger)
                 tryCompare(clock, "deviceMenuActive", true)
+                compare(clock.clockSelected, false, "Device menus must not select the clock")
                 compare(clock.controlMode, "wifi")
                 wait(Motion.expandDuration + 100)
                 const owner = Visibilities.activeBarPopup
@@ -183,6 +184,7 @@ ShellRoot {
                 tryVerify(() => tab("bluetooth")?.selected === true)
                 compare(clock.menuOpen, true)
                 compare(Visibilities.activeBarPopup, owner)
+                compare(clock.clockSelected, false)
                 wait(80)
                 // The clicked tab is destroyed with its old panel. Keyboard
                 // navigation must keep working without manually restoring focus.
@@ -198,6 +200,7 @@ ShellRoot {
                 tryVerify(() => tab("battery")?.selected === true)
                 compare(clock.deviceMenuActive, true)
                 compare(Visibilities.activeBarPopup, owner)
+                compare(clock.clockSelected, false)
                 // The one bar control closes every device tab and remembers it on reopen.
                 mouseClick(trigger)
                 tryCompare(clock, "menuOpen", false)
@@ -221,6 +224,7 @@ ShellRoot {
                     clock.openControlMenu(mode)
                     tryCompare(clock, "menuOpen", true)
                     compare(clock.controlMode, mode)
+                    compare(clock.clockSelected, false)
                     tryVerify(() => tab(mode)?.selected === true)
                     clock.openControlMenu(mode)
                     tryCompare(clock, "menuOpen", false)
@@ -230,6 +234,17 @@ ShellRoot {
                 keyClick(Qt.Key_Escape)
                 tryCompare(clock, "menuOpen", false)
                 compare(Visibilities.activeBarPopup, null)
+                for (const mode of ["sound", "mic", "media"]) {
+                    clock.openControlMenu(mode)
+                    tryCompare(clock, "menuOpen", true)
+                    compare(clock.clockSelected, false, mode + " must not select the clock")
+                    clock.openControlMenu(mode)
+                    tryCompare(clock, "menuOpen", false)
+                }
+                clock.toggleCenterMenu()
+                tryCompare(clock, "clockSelected", true)
+                clock.toggleCenterMenu()
+                tryCompare(clock, "clockSelected", false)
                 Config.bar.style = originalStyle
                 console.log("BAR_DEVICE_STATUS_PASSED")
             }
