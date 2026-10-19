@@ -179,18 +179,26 @@ ShellRoot {
                 function tab(mode) { return findChild(bar.item, "deviceStatusTab-" + mode) }
                 tryVerify(() => tab("wifi") !== undefined)
                 compare(tab("wifi").selected, true)
+                const selector = findChild(bar.item, "deviceStatusSelector")
+                const highlight = findChild(bar.item, "deviceStatusHighlight")
+                tryCompare(highlight, "targetItem", tab("wifi"), 1000,
+                    "The first-open selector must resolve its selected button")
                 const wifiHeight = component(bar.item, "VerticalControlMenu").implicitHeight
+                const initialX = highlight.x
                 compare(findChild(bar.item, "wifiBackButton").visible, false)
                 mouseClick(tab("bluetooth"))
                 tryCompare(clock, "controlMode", "bluetooth")
                 tryVerify(() => tab("bluetooth")?.selected === true)
                 compare(clock.menuOpen, true)
                 compare(Visibilities.activeBarPopup, owner)
+                compare(findChild(bar.item, "deviceStatusSelector"), selector,
+                    "Tab switching must keep the shared sliding selector alive")
                 compare(findChild(bar.item, "bluetoothBackButton").visible, false)
+                tryVerify(() => highlight.x > initialX)
+                tryVerify(() => Math.abs(highlight.x - (highlight.targetItem.x + highlight.originX)) < 0.1)
                 compare(clock.clockSelected, false)
                 wait(80)
-                // The clicked tab is destroyed with its old panel. Keyboard
-                // navigation must keep working without manually restoring focus.
+                // Keyboard navigation must keep working after panel replacement.
                 keyClick(Qt.Key_Left)
                 tryCompare(clock, "controlMode", "wifi")
                 keyClick(Qt.Key_Right)
@@ -234,6 +242,7 @@ ShellRoot {
                     compare(clock.controlMode, mode)
                     compare(clock.clockSelected, false)
                     tryVerify(() => tab(mode)?.selected === true)
+                    tryCompare(findChild(bar.item, "deviceStatusHighlight"), "targetItem", tab(mode))
                     clock.openControlMenu(mode)
                     tryCompare(clock, "menuOpen", false)
                 }

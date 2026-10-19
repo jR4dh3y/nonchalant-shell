@@ -14,6 +14,7 @@ Item {
     property real maximumSize: Infinity
     property bool lyricsActive: false
     readonly property list<string> deviceModes: ["wifi", "bluetooth", "battery"]
+    property Item selectedDeviceTab: null
     signal backRequested()
     signal closeRequested()
     signal modeRequested(string mode)
@@ -23,6 +24,12 @@ Item {
     function focusCurrentTab(): void {
         root.forceActiveFocus();
     }
+
+    function updateSelectedDeviceTab(): void {
+        root.selectedDeviceTab = deviceTabRepeater?.itemAt(root.deviceModes.indexOf(root.mode)) ?? null;
+    }
+
+    onModeChanged: root.updateSelectedDeviceTab()
 
     Keys.onEscapePressed: root.closeRequested()
     function changeDeviceTab(offset: int): bool {
@@ -40,16 +47,53 @@ Item {
 
     Component {
         id: deviceTitle
-        RowLayout {
-            spacing: Styling.fontSize(0) * 0.2
+        Item {
+            implicitWidth: deviceSelector.implicitWidth
+            implicitHeight: deviceSelector.implicitHeight
+        }
+    }
+
+    // Keep the selector alive while the panel loader swaps its content.
+    StyledRect {
+        id: deviceSelector
+        objectName: "deviceStatusSelector"
+        visible: root.deviceModes.indexOf(root.mode) !== -1
+        x: 14
+        y: 14
+        z: 1
+        variant: "focus"
+        radius: height / 2
+        readonly property real inset: Styling.fontSize(0) * 0.5
+        implicitWidth: deviceTabs.implicitWidth + inset * 2
+        implicitHeight: deviceTabs.implicitHeight + inset * 2
+        width: implicitWidth
+        height: implicitHeight
+
+        ElasticHighlight {
+            id: tabHighlight
+            objectName: "deviceStatusHighlight"
+            targetItem: root.selectedDeviceTab
+            originX: deviceTabs.x
+            originY: deviceTabs.y
+            radius: height / 2
+            scale: targetItem?.scale ?? 1
+        }
+
+        Row {
+            id: deviceTabs
+            anchors.centerIn: parent
             Repeater {
+                id: deviceTabRepeater
                 model: root.deviceModes
+                onItemAdded: root.updateSelectedDeviceTab()
+                onItemRemoved: root.updateSelectedDeviceTab()
+
                 Button {
                     id: tab
                     required property string modelData
                     readonly property bool selected: root.mode === tab.modelData
                     objectName: "deviceStatusTab-" + tab.modelData
-                    implicitWidth: Styling.fontSize(0) * 2.4
+                    implicitWidth: Styling.fontSize(0) * 2.2
                     implicitHeight: implicitWidth
                     padding: 0
                     Accessible.name: tab.modelData === "wifi" ? "Wi-Fi" : (tab.modelData === "bluetooth" ? "Bluetooth" : "Battery and power")
@@ -58,9 +102,8 @@ Item {
                     scale: tab.pressed ? 0.92 : 1
                     PressBehavior on scale { pressed: tab.pressed }
                     background: StyledRect {
-                        id: tabSurface
-                        variant: tab.selected ? "focus" : "common"
-                        backgroundOpacity: tab.selected || tab.visualFocus ? 1 : 0
+                        variant: "focus"
+                        backgroundOpacity: tab.visualFocus ? 1 : 0
                         radius: width / 2
                         HoverTint { hovered: tab.hovered; pressed: tab.pressed }
                     }
@@ -68,7 +111,7 @@ Item {
                         text: tab.modelData === "wifi" ? Icons.wifiHigh : (tab.modelData === "bluetooth" ? Icons.bluetooth : Icons.batteryHigh)
                         font.family: Icons.font
                         font.pixelSize: Styling.fontSize(5)
-                        color: tab.selected ? tabSurface.item : Colors.overBackground
+                        color: tab.selected ? tabHighlight.item : Colors.overBackground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -85,7 +128,6 @@ Item {
     Loader {
         id: panelLoader
         anchors.fill: parent
-        // A selected tab replaces its own panel, including the focused button.
         onLoaded: root.focusCurrentTab()
         sourceComponent: {
             switch (root.mode) {
