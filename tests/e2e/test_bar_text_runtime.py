@@ -179,6 +179,7 @@ ShellRoot {
                 function tab(mode) { return findChild(bar.item, "deviceStatusTab-" + mode) }
                 tryVerify(() => tab("wifi") !== undefined)
                 compare(tab("wifi").selected, true)
+                const wifiHeight = component(bar.item, "VerticalControlMenu").implicitHeight
                 mouseClick(tab("bluetooth"))
                 tryCompare(clock, "controlMode", "bluetooth")
                 tryVerify(() => tab("bluetooth")?.selected === true)
@@ -200,6 +201,12 @@ ShellRoot {
                 tryVerify(() => tab("battery")?.selected === true)
                 compare(clock.deviceMenuActive, true)
                 compare(Visibilities.activeBarPopup, owner)
+                compare(component(bar.item, "VerticalControlMenu").implicitHeight, wifiHeight,
+                    "Device tabs must keep the flyout at the same height")
+                verify(findChild(bar.item, "batteryPowerRate") !== undefined)
+                verify(findChild(bar.item, "batteryHealth") !== undefined)
+                const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
+                if (snapshots) grabImage(component(bar.item, "VerticalControlMenu")).save(snapshots + "/battery-menu.png")
                 compare(clock.clockSelected, false)
                 // The one bar control closes every device tab and remembers it on reopen.
                 mouseClick(trigger)

@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Services.UPower
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
@@ -11,10 +12,12 @@ Item {
     id: root
 
     implicitWidth: 420
-    implicitHeight: mainColumn.implicitHeight + 28
+    implicitHeight: Math.max(340, mainColumn.implicitHeight + 28)
 
     property string backTooltip: "Back to dashboard"
     property Component titleComponent: defaultTitle
+    // Health is reported by the physical battery, not the aggregate display device.
+    readonly property UPowerDevice healthDevice: UPower.devices.values.find(device => device.isLaptopBattery && device.healthSupported) ?? null
     signal backRequested()
 
     function getBatteryColor(): color {
@@ -39,6 +42,7 @@ Item {
     ColumnLayout {
         id: mainColumn
         anchors.top: parent.top
+        anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 14
@@ -207,7 +211,55 @@ Item {
             }
         }
 
-        // 2. Power Profile Selector Card
+        StyledRect {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: Styling.fontSize(0) * 4
+            radius: Styling.radius(2)
+            variant: "internalbg"
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 12
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    StyledText {
+                        text: Battery.isCharging ? "Charge rate" : "Power draw"
+                        font.pixelSize: Styling.fontSize(-2)
+                        color: Colors.overSurfaceVariant
+                    }
+                    StyledText {
+                        objectName: "batteryPowerRate"
+                        text: Battery.available ? Math.abs(Battery.primaryDevice.changeRate).toFixed(1) + " W" : "Unavailable"
+                        font.family: Config.theme.monoFont
+                        font.pixelSize: Styling.fontSize(1)
+                        color: Colors.overBackground
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    StyledText {
+                        text: "Battery health"
+                        font.pixelSize: Styling.fontSize(-2)
+                        color: Colors.overSurfaceVariant
+                    }
+                    StyledText {
+                        objectName: "batteryHealth"
+                        text: root.healthDevice ? Math.round(root.healthDevice.healthPercentage) + "%" : "Unavailable"
+                        font.family: Config.theme.monoFont
+                        font.pixelSize: Styling.fontSize(1)
+                        color: Colors.overBackground
+                    }
+                }
+            }
+        }
+
+        // Power Profile Selector Card
         StyledRect {
             Layout.fillWidth: true
             Layout.preferredHeight: 80
