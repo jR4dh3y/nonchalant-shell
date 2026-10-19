@@ -258,6 +258,35 @@ def check_tray(session, shell, passed):
     icon = item("trayFlyoutItem_test-0")
     assert icon["geometry"][0] > button_geometry[0] + button_geometry[2], icon
     assert state()["trayButton"]["geometry"] == button_geometry, "tray opening moved bar controls"
+
+    from PIL import Image
+
+    def icon_pixels(path, target):
+        x, y, width, height = target["geometry"]
+        with Image.open(path) as image:
+            pixels = image.convert("RGB").crop((round(x), round(y), round(x + width), round(y + height)))
+            return sum(1 for red, green, blue in pixels.get_flattened_data()
+                       if blue > green > red and blue - red > 80)
+
+    for cycle in range(3):
+        for index in range(2):
+            target = item(f"trayFlyoutItem_test-{index}")
+            session.run(["wlrctl", "pointer", "move", "10000", "10000"])
+            time.sleep(0.15)
+            before = session.root / f"tray-icon-{cycle}-{index}-before.png"
+            session.run(["grim", str(before)])
+            expected = icon_pixels(before, target)
+            assert expected > 0, "Transparent tray fixture did not render"
+            x, y, width, height = target["geometry"]
+            session.run(["wlrctl", "pointer", "move", "-10000", "-10000"])
+            session.run(["wlrctl", "pointer", "move", str(round(x + width / 2)), str(round(y + height / 2))])
+            for frame, delay in enumerate((0, 0.02, 0.1)):
+                time.sleep(delay)
+                screenshot = session.root / f"tray-icon-{cycle}-{index}-hover-{frame}.png"
+                session.run(["grim", str(screenshot)])
+                assert icon_pixels(screenshot, target) == expected, (
+                    f"Hover chrome obscured tray icon {index} in cycle {cycle}, frame {frame}")
+    passed.append("transparent tray icons remain visible in first hover frames and repeated pointer transitions")
     session.run(["grim", str(session.root / "tray-grid.png")])
     click(state()["trayButton"])
     session.wait("tray reverse toggle", lambda: not state()["trayOpen"])

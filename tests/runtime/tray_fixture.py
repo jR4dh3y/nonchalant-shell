@@ -112,7 +112,10 @@ class TrayItem(ServiceInterface):
 
     @dbus_property(access=PropertyAccess.READ)
     def IconPixmap(self) -> "a(iiay)":
-        return [[16, 16, bytes([255, 70, 140, 210]) * 256]]
+        pixels = bytes(channel for y in range(16) for x in range(16)
+                       for channel in ([255, 70, 140, 210] if abs(x - 7.5) + abs(y - 7.5) < 7
+                                       else [0, 0, 0, 0]))
+        return [[16, 16, pixels]]
 
     @dbus_property(access=PropertyAccess.READ)
     def AttentionIconName(self) -> "s":

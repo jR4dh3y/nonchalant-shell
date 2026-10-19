@@ -16,6 +16,11 @@ For `--style left`, the runner also opens the Wi-Fi, sound, microphone, Bluetoot
 
 The left-bar run registers real StatusNotifierItems and DBusMenu services on its private D-Bus session using `tray_fixture.py` and the test-only `dbus-next` package. It clicks the tray trigger and app icons with a virtual pointer, checks activation and menu dispatch, menu-only apps, disabled actions, nested menus and back navigation. It also checks Escape, outside-click and reverse-toggle dismissal, replacement by another popup, live item registration/removal, and that opening or growing the flyout leaves the bar controls in place. Tray grid and menu screenshots are saved with the other artifacts.
 
+The tray fixture has transparent icon pixels. The runner compares their visible
+pixels before hover and during the first rendered hover frames across repeated
+pointer transitions. Opaque square fixtures do not expose the batching regression
+where a hover background briefly covers an icon.
+
 The integration checks click the shared workspace app icons in left and island layouts using a virtual pointer, verify that their highlight travels and settles in both directions, and check updates after a window moves. They also exercise actual window mapping, focus, adjacent workspace navigation, moving a specific window without following focus, fullscreen entry and exit, safe failure for an invalid close target, and closing a particular window while preserving another. `--shell` also launches the complete shell, verifies launcher/dashboard/power-menu opening and reverse dismissal, opens settings through its real IPC entry point, and captures screenshots. A read-only test IPC component is added only to the private copy to inspect actual island and overlay state.
 
 Use `--power-cycle` to check the standalone monitor-power fallback before starting Quickshell. Its environment selects only the disposable compositor. The runner restores its test outputs before cleanup. Result JSON includes separate counts for QML errors, binding/type warnings, and unavailable optional helper tools; compare those counts with a baseline run rather than treating every unavailable hardware helper as a compositor regression.

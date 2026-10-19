@@ -82,8 +82,6 @@ MouseArea {
         }
 
         StyledRect {
-            // Keep newly visible hover chrome behind the icon's render nodes.
-            z: -1
             anchors.fill: parent
             variant: "focus"
             backgroundOpacity: root.showHoverBackground && (root.isHovered || root.pressed) ? -1 : 0
@@ -91,24 +89,31 @@ MouseArea {
             radius: Styling.radius(0)
         }
 
-        IconImage {
-            id: trayIcon
-            source: {
-                const iconPath = String(root.item?.icon ?? "");
-                if (iconPath.includes("spotify")) {
-                    return Quickshell.iconPath("spotify-client");
-                }
-                return root.item?.icon ?? "";
-            }
-            anchors.centerIn: parent
-            width: root.trayItemSize
-            height: root.trayItemSize
-            smooth: true
-        }
+        // Isolate image render nodes from opaque hover chrome in scene-graph batches.
+        Item {
+            z: 1
+            anchors.fill: parent
+            layer.enabled: root.showHoverBackground
 
-        Tinted {
-            sourceItem: trayIcon
-            anchors.fill: trayIcon
+            IconImage {
+                id: trayIcon
+                source: {
+                    const iconPath = String(root.item?.icon ?? "");
+                    if (iconPath.includes("spotify")) {
+                        return Quickshell.iconPath("spotify-client");
+                    }
+                    return root.item?.icon ?? "";
+                }
+                anchors.centerIn: parent
+                width: root.trayItemSize
+                height: root.trayItemSize
+                smooth: true
+            }
+
+            Tinted {
+                sourceItem: trayIcon
+                anchors.fill: trayIcon
+            }
         }
     }
 
