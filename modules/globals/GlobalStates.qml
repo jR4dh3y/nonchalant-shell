@@ -101,61 +101,14 @@ Singleton {
     readonly property bool systemMonitorOpen: (systemMonitorPopupScreen !== "") || islandStatsOpen
 
     // Lockscreen state
+    // True from the lock request until niri is released after unlock.
     property bool lockscreenVisible: false
-    // Legacy flags (unlock is immediate; kept so older bindings do not break).
+    // PAM succeeded; lock surfaces are running their exit animation.
     property bool lockscreenUnlocking: false
-    property bool lockscreenHandoff: false
-    property real lockscreenHandoffOpacity: 1
-
-    // Lockshot prep: per-screen desktop captures taken just BEFORE the lock
-    // request so the lock surface's first frame matches the on-screen content
-    // (windows included) instead of flashing the clean wallpaper. Each
-    // Wallpaper window registers a prep handler; LockscreenService waits for
-    // all of them (with a timeout) before engaging the lock.
-    property var lockPrepHandlers: ({})
-    // screen name -> ItemGrabResult. Holding the result keeps its in-memory
-    // image (and itemgrabber URL) alive until the lock is released.
-    property var lockshots: ({})
-    property int lockshotPending: 0
-
-    function registerLockPrep(screenName, handler) {
-        const map = Object.assign({}, lockPrepHandlers);
-        map[screenName] = handler;
-        lockPrepHandlers = map;
-    }
-
-    function unregisterLockPrep(screenName) {
-        const map = Object.assign({}, lockPrepHandlers);
-        delete map[screenName];
-        lockPrepHandlers = map;
-    }
-
-    // Kick off a capture on every registered screen. Returns how many
-    // prep handlers actually started.
-    function beginLockshotPrep(): int {
-        let started = 0;
-        lockshots = {};
-        for (const name in lockPrepHandlers) {
-            try {
-                if (lockPrepHandlers[name]())
-                    started++;
-            } catch (e) {
-                console.warn("Lockshot prep failed for screen", name, e);
-            }
-        }
-        lockshotPending = started;
-        return started;
-    }
-
-    function notifyLockshotPrepared(screenName, grabResult) {
-        if (grabResult) {
-            const map = Object.assign({}, lockshots);
-            map[screenName] = grabResult;
-            lockshots = map;
-        }
-        if (lockshotPending > 0)
-            lockshotPending--;
-    }
+    // Mirrors WlSessionLock.secure: niri has confirmed every output is locked.
+    property bool lockscreenSecure: false
+    // Drives LockCurtain: raised before the lock engages, lowered after unlock.
+    property bool lockCurtainShown: false
 
     // OSD state
     property bool osdVisible: false
