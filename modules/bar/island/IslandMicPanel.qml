@@ -17,6 +17,8 @@ Item {
     implicitHeight: Math.min(480, mainColumn.implicitHeight + 28)
 
     property string backTooltip: "Back to dashboard"
+    property bool showBackButton: true
+    property Component titleComponent: defaultTitle
     signal backRequested()
 
     readonly property real micVolume: Audio.source?.audio?.volume ?? 0.0
@@ -37,6 +39,17 @@ Item {
         return nodes.filter(node => node && !node.isSink && node.isStream && node.audio);
     }
 
+    Component {
+        id: defaultTitle
+        StyledText {
+            text: "Microphone"
+            font.family: Config.theme.font
+            font.pixelSize: Styling.fontSize(1)
+            font.bold: true
+            color: Colors.overBackground
+        }
+    }
+
     ColumnLayout {
         id: mainColumn
         anchors.top: parent.top
@@ -45,12 +58,14 @@ Item {
         anchors.margins: 14
         spacing: 10
 
-        // Header: Back button + Title
+        // Header: Navigation
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
 
             StyledRect {
+                objectName: "micBackButton"
+                visible: root.showBackButton
                 implicitWidth: 28
                 implicitHeight: 28
                 radius: 14
@@ -85,15 +100,7 @@ Item {
                 }
             }
 
-            Text {
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                text: "Microphone"
-                font.family: Config.theme.font
-                font.pixelSize: Styling.fontSize(1)
-                font.bold: true
-                color: Colors.overBackground
-            }
+            Loader { sourceComponent: root.titleComponent }
 
             Item { Layout.fillWidth: true }
         }

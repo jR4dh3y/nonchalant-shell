@@ -223,7 +223,18 @@ def check_text_rendering(session, source, scale, passed):
     passed.append(f"nested StyledRect glyph pixels match direct text at {scale}x; texture-mask reference differences: {sum(differences)}/4")
 
 
-def check_tray(session, shell, passed):
+def tray_icon_pixels(path, geometry, scale):
+    from PIL import Image
+
+    x, y, width, height = geometry
+    with Image.open(path) as image:
+        pixels = image.convert("RGB").crop((round(x * scale), round(y * scale),
+                                            round((x + width) * scale), round((y + height) * scale)))
+        return sum(1 for red, green, blue in pixels.get_flattened_data()
+                   if blue > green > red and blue - red > 80)
+
+
+def check_tray(session, shell, passed, scale):
     fixture = Path(__file__).with_name("tray_fixture.py")
     session.start("tray-fixture", [sys.executable, str(fixture)])
     state = session.shell_state
@@ -258,6 +269,26 @@ def check_tray(session, shell, passed):
     icon = item("trayFlyoutItem_test-0")
     assert icon["geometry"][0] > button_geometry[0] + button_geometry[2], icon
     assert state()["trayButton"]["geometry"] == button_geometry, "tray opening moved bar controls"
+
+    for cycle in range(3):
+        for index in range(2):
+            target = item(f"trayFlyoutItem_test-{index}")
+            session.run(["wlrctl", "pointer", "move", "10000", "10000"])
+            time.sleep(0.15)
+            before = session.root / f"tray-icon-{cycle}-{index}-before.png"
+            session.run(["grim", str(before)])
+            expected = tray_icon_pixels(before, target["geometry"], scale)
+            assert expected > 0, "Transparent tray fixture did not render"
+            x, y, width, height = target["geometry"]
+            session.run(["wlrctl", "pointer", "move", "-10000", "-10000"])
+            session.run(["wlrctl", "pointer", "move", str(round(x + width / 2)), str(round(y + height / 2))])
+            for frame, delay in enumerate((0, 0.02, 0.1)):
+                time.sleep(delay)
+                screenshot = session.root / f"tray-icon-{cycle}-{index}-hover-{frame}.png"
+                session.run(["grim", str(screenshot)])
+                assert tray_icon_pixels(screenshot, target["geometry"], scale) == expected, (
+                    f"Hover chrome obscured tray icon {index} in cycle {cycle}, frame {frame}")
+    passed.append("transparent tray icons remain visible in first hover frames and repeated pointer transitions")
     session.run(["grim", str(session.root / "tray-grid.png")])
     click(state()["trayButton"])
     session.wait("tray reverse toggle", lambda: not state()["trayOpen"])
@@ -377,7 +408,7 @@ def exercise(session, source, args, passed):
             return json.loads(session.ipc(shell, "shell-test", "state"))
         session.shell_state = shell_state
         if args.style == "left":
-            check_tray(session, shell, passed)
+            check_tray(session, shell, passed, args.scale)
         for command, field, island_mode in (("launcher", "launcherOpen", "apps"),
                 ("dashboard", "dashboardOpen", "dashboard"), ("power", "powerOpen", "power")):
             session.ipc(shell, "nonchalant", "run", command)
@@ -425,10 +456,27 @@ def exercise(session, source, args, passed):
             session.wait(f"{mode} reverse toggle dismisses", lambda: not shell_state()["popupOpen"])
         session.ipc(shell, "nonchalant", "run", "sound")
         session.wait("sound menu", lambda: shell_state()["controlMenu"] == "sound")
-        session.ipc(shell, "nonchalant", "run", "mic")
-        session.wait("mic replaces sound", lambda: shell_state()["controlMenu"] == "mic")
-        session.ipc(shell, "nonchalant", "run", "mic")
-        session.wait("control menus dismissed", lambda: not shell_state()["popupOpen"])
+        time.sleep(0.7)
+        audio_items = {item["name"]: item for item in shell_state()["dashboardItems"]}
+        selector = audio_items["audioStatusSelector"]
+        assert selector["visible"], "Audio selector track is hidden"
+        x, y, width, height = audio_items["audioStatusTab-mic"]["geometry"]
+        session.run(["wlrctl", "pointer", "move", "-10000", "-10000"])
+        session.run(["wlrctl", "pointer", "move", str(round(x + width / 2)), str(round(y + height / 2))])
+        session.run(["wlrctl", "pointer", "click", "left"])
+        session.wait("mic tab replaces sound", lambda: shell_state()["controlMenu"] == "mic")
+        time.sleep(0.7)
+        current_selector = next(item for item in shell_state()["dashboardItems"]
+                                if item["name"] == "audioStatusSelector")
+        assert current_selector["geometry"] == selector["geometry"], "Tab switching moved the shared selector"
+        session.run(["grim", str(session.root / "audio-mic-tab.png")])
+        session.run(["wtype", "-k", "Left"])
+        session.wait("left arrow selects volume", lambda: shell_state()["controlMenu"] == "sound")
+        session.run(["wtype", "-k", "Right"])
+        session.wait("right arrow selects microphone", lambda: shell_state()["controlMenu"] == "mic")
+        session.run(["wtype", "-k", "Escape"])
+        session.wait("Escape dismisses audio popup", lambda: not shell_state()["popupOpen"])
+        passed.append("shared audio tabs switch by pointer and arrow keys, keep their track, and dismiss with Escape")
         passed.append("vertical control menus replace dashboard, switch, and reverse-toggle closed")
         session.ipc(shell, "nonchalant", "run", "dashboard")
         session.wait("dashboard notifications", lambda:

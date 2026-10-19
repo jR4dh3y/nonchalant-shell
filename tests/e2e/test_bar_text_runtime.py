@@ -67,6 +67,12 @@ ShellRoot {
         Component { id: taskbar; NonchalantTaskbar { bar: screenHost } }
         Component { id: island; IslandBar { screen: Quickshell.screens[0] } }
         Component { id: pills; PillsBar { screen: Quickshell.screens[0] } }
+        FileView {
+            id: profileState
+            path: Quickshell.env("NONCHALANT_TEST_PROFILE_STATE")
+            watchChanges: true
+            onFileChanged: reload()
+        }
         Process {
             id: pinCommand
             command: ["qs", "ipc", "-p", Quickshell.shellDir, "call", "nonchalant", "run", "bar-pin"]
@@ -171,6 +177,7 @@ ShellRoot {
                     "There must be no separate battery control")
                 mouseClick(trigger)
                 tryCompare(clock, "deviceMenuActive", true)
+                compare(clock.clockSelected, false, "Device menus must not select the clock")
                 compare(clock.controlMode, "wifi")
                 wait(Motion.expandDuration + 100)
                 const owner = Visibilities.activeBarPopup
@@ -178,14 +185,26 @@ ShellRoot {
                 function tab(mode) { return findChild(bar.item, "deviceStatusTab-" + mode) }
                 tryVerify(() => tab("wifi") !== undefined)
                 compare(tab("wifi").selected, true)
+                const selector = findChild(bar.item, "deviceStatusSelector")
+                const highlight = findChild(bar.item, "deviceStatusHighlight")
+                tryCompare(highlight, "targetItem", tab("wifi"), 1000,
+                    "The first-open selector must resolve its selected button")
+                const wifiHeight = component(bar.item, "VerticalControlMenu").implicitHeight
+                const initialX = highlight.x
+                compare(findChild(bar.item, "wifiBackButton").visible, false)
                 mouseClick(tab("bluetooth"))
                 tryCompare(clock, "controlMode", "bluetooth")
                 tryVerify(() => tab("bluetooth")?.selected === true)
                 compare(clock.menuOpen, true)
                 compare(Visibilities.activeBarPopup, owner)
+                compare(findChild(bar.item, "deviceStatusSelector"), selector,
+                    "Tab switching must keep the shared sliding selector alive")
+                compare(findChild(bar.item, "bluetoothBackButton").visible, false)
+                tryVerify(() => highlight.x > initialX)
+                tryVerify(() => Math.abs(highlight.x - (highlight.targetItem.x + highlight.originX)) < 0.1)
+                compare(clock.clockSelected, false)
                 wait(80)
-                // The clicked tab is destroyed with its old panel. Keyboard
-                // navigation must keep working without manually restoring focus.
+                // Keyboard navigation must keep working after panel replacement.
                 keyClick(Qt.Key_Left)
                 tryCompare(clock, "controlMode", "wifi")
                 keyClick(Qt.Key_Right)
@@ -198,6 +217,14 @@ ShellRoot {
                 tryVerify(() => tab("battery")?.selected === true)
                 compare(clock.deviceMenuActive, true)
                 compare(Visibilities.activeBarPopup, owner)
+                compare(component(bar.item, "VerticalControlMenu").implicitHeight, wifiHeight,
+                    "Device tabs must keep the flyout at the same height")
+                compare(findChild(bar.item, "batteryBackButton").visible, false)
+                verify(findChild(bar.item, "batteryPowerRate") !== undefined)
+                verify(findChild(bar.item, "batteryHealth") !== undefined)
+                const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
+                if (snapshots) grabImage(component(bar.item, "VerticalControlMenu")).save(snapshots + "/battery-menu.png")
+                compare(clock.clockSelected, false)
                 // The one bar control closes every device tab and remembers it on reopen.
                 mouseClick(trigger)
                 tryCompare(clock, "menuOpen", false)
@@ -212,16 +239,16 @@ ShellRoot {
                 tryCompare(clock, "controlMode", "bluetooth")
                 keyClick(Qt.Key_Right)
                 tryCompare(clock, "controlMode", "battery")
-                // Back still dismisses the flyout; direct commands pick the right tab.
-                const panel = component(bar.item, "IslandBatteryPanel")
-                wait(80)
-                mouseClick(panel, 28, 28)
+                // Escape dismisses without a redundant back button.
+                keyClick(Qt.Key_Escape)
                 tryCompare(clock, "menuOpen", false)
                 for (const mode of ["wifi", "bluetooth", "battery"]) {
                     clock.openControlMenu(mode)
                     tryCompare(clock, "menuOpen", true)
                     compare(clock.controlMode, mode)
+                    compare(clock.clockSelected, false)
                     tryVerify(() => tab(mode)?.selected === true)
+                    tryCompare(findChild(bar.item, "deviceStatusHighlight"), "targetItem", tab(mode))
                     clock.openControlMenu(mode)
                     tryCompare(clock, "menuOpen", false)
                 }
@@ -230,6 +257,17 @@ ShellRoot {
                 keyClick(Qt.Key_Escape)
                 tryCompare(clock, "menuOpen", false)
                 compare(Visibilities.activeBarPopup, null)
+                for (const mode of ["sound", "mic", "media"]) {
+                    clock.openControlMenu(mode)
+                    tryCompare(clock, "menuOpen", true)
+                    compare(clock.clockSelected, false, mode + " must not select the clock")
+                    clock.openControlMenu(mode)
+                    tryCompare(clock, "menuOpen", false)
+                }
+                clock.toggleCenterMenu()
+                tryCompare(clock, "clockSelected", true)
+                clock.toggleCenterMenu()
+                tryCompare(clock, "clockSelected", false)
                 Config.bar.style = originalStyle
                 console.log("BAR_DEVICE_STATUS_PASSED")
             }
@@ -310,6 +348,31 @@ ShellRoot {
                 compare(sound.selected, true)
                 compare(mic.selected, false)
                 snapshotAudio("speaker-selected")
+                function tab(mode) { return findChild(bar.item, "audioStatusTab-" + mode) }
+                const selector = findChild(bar.item, "audioStatusSelector")
+                const highlight = findChild(bar.item, "audioStatusHighlight")
+                tryVerify(() => selector.visible)
+                compare(selector.variant, "focus", "Audio tabs need the persistent shared track")
+                tryCompare(highlight, "targetItem", tab("sound"))
+                compare(findChild(bar.item, "soundBackButton").visible, false)
+                const owner = Visibilities.activeBarPopup
+                mouseClick(tab("mic"))
+                tryCompare(clock, "controlMode", "mic")
+                compare(findChild(bar.item, "audioStatusSelector"), selector)
+                compare(Visibilities.activeBarPopup, owner)
+                compare(findChild(bar.item, "micBackButton").visible, false)
+                tryCompare(highlight, "targetItem", tab("mic"))
+                compare(clock.clockSelected, false)
+                mouseClick(tab("mic"))
+                compare(clock.menuOpen, true)
+                keyClick(Qt.Key_Left)
+                tryCompare(clock, "controlMode", "sound")
+                keyClick(Qt.Key_Right)
+                tryCompare(clock, "controlMode", "mic")
+                keyClick(Qt.Key_Escape)
+                tryCompare(clock, "menuOpen", false)
+                mouseClick(sound, sound.width / 2, sound.height / 2)
+                tryCompare(clock, "controlMode", "sound")
                 mouseClick(mic, mic.width / 2, mic.height / 2)
                 tryCompare(clock, "controlMode", "mic")
                 compare(clock.menuOpen, true)
@@ -323,6 +386,149 @@ ShellRoot {
                 Config.theme.fontSize = originalSize
                 Config.bar.style = originalStyle
                 console.log("BAR_DROPLETS_AUDIO_PASSED")
+            }
+
+            function test_vertical_dashboard_return() {
+                const originalStyle = Config.bar.style
+                const originalDuration = Config.theme.animDuration
+                Config.theme.animDuration = 300
+                Config.bar.style = "left"
+                bar.sourceComponent = left
+                tryVerify(() => bar.item !== null)
+                const clock = findChild(bar.item, "verticalClockDroplet")
+                mouseClick(clock, clock.width / 2, clock.height / 2)
+                tryCompare(clock, "menuOpen", true)
+                tryVerify(() => clock.dashboardHitbox !== null)
+                const body = clock.dashboardHitbox
+                const surface = body.parent
+                wait(Motion.expandDuration + 100)
+                const openHeight = body.height
+                const openWidth = body.width
+                const origin = surface.originItem
+                verify(origin !== null)
+                const source = origin.mapToItem(surface, 0, 0, origin.width, origin.height)
+                verify(openHeight > source.height)
+                clock.toggleCenterMenu()
+                tryCompare(clock, "menuOpen", false)
+                tryVerify(() => body.height < openHeight - 1, 200,
+                    "Closing must shrink height as well as width toward the clock")
+                verify(body.height > source.height)
+                verify(body.width < openWidth)
+                // Reopening during the return must reverse from its current geometry.
+                const closingHeight = body.height
+                clock.toggleCenterMenu()
+                tryCompare(clock, "menuOpen", true)
+                verify(body.height >= closingHeight - 1)
+                wait(Motion.expandDuration + 100)
+                compare(body.height, openHeight)
+                // Escape uses the same return path as the clock trigger.
+                component(bar.item, "VerticalDashboard").focusCurrentTab()
+                keyClick(Qt.Key_Escape)
+                tryCompare(clock, "menuOpen", false)
+                let previousHeight = body.height
+                for (let i = 0; i < 18; i++) {
+                    wait(20)
+                    verify(body.height <= previousHeight + 0.01, "Return height must be monotonic")
+                    previousHeight = body.height
+                }
+                compare(body.height, source.height)
+                compare(body.width, source.width)
+                compare(body.x, source.x)
+                compare(body.y, source.y)
+                compare(surface.fullyHidden, true)
+                compare(clock.dashboardHitbox, null)
+                Config.theme.animDuration = 0
+                for (const section of ["notifications", "wallpapers", "stats", "weather"]) {
+                    clock.showDashboardSection(section)
+                    tryCompare(clock, "menuOpen", true)
+                    compare(surface.progress, 1)
+                    component(bar.item, "VerticalDashboard").focusCurrentTab()
+                    keyClick(Qt.Key_Escape)
+                    tryCompare(clock, "menuOpen", false)
+                    compare(surface.fullyHidden, true)
+                    compare(body.height, origin.height)
+                    compare(body.width, origin.width)
+                }
+                Config.bar.style = originalStyle
+                Config.theme.animDuration = originalDuration
+                console.log("BAR_DASHBOARD_RETURN_PASSED")
+            }
+
+            function test_power_profile_selector() {
+                const originalStyle = Config.bar.style
+                const originalDuration = Config.theme.animDuration
+                Config.theme.animDuration = 100
+                PowerProfile.initialize()
+                tryCompare(PowerProfile, "isAvailable", true)
+                tryCompare(PowerProfile, "currentProfile", "performance")
+                for (const layout of [{style: "left", component: left},
+                        {style: "island", component: island}, {style: "pills", component: pills}]) {
+                    Config.bar.style = layout.style
+                    bar.sourceComponent = layout.component
+                    tryVerify(() => bar.item !== null)
+                    if (layout.style === "left")
+                        findChild(bar.item, "verticalClockDroplet").openControlMenu("battery")
+                    else
+                        bar.item.expand("battery")
+                    wait(Motion.expandDuration + 100)
+                    const panel = component(bar.item, "IslandBatteryPanel")
+                    const selector = findChild(panel, "powerProfileSelector")
+                    const highlight = findChild(panel, "powerProfileHighlight")
+                    const tab = mode => findChild(panel, "powerProfileTab-" + mode)
+                    tryVerify(() => selector.visible)
+                    tryCompare(highlight, "targetItem", tab("performance"))
+                    for (const mode of ["power-saver", "balanced", "performance"]) {
+                        mouseClick(tab(mode))
+                        tryCompare(PowerProfile, "currentProfile", mode)
+                        tryCompare(highlight, "targetItem", tab(mode))
+                        tryVerify(() => JSON.parse(profileState.text()).lastRead === mode, 2000,
+                            "Selection must reach the real service's private CLI backend")
+                        tryVerify(() => Math.abs(highlight.x - (highlight.targetItem.x + highlight.originX)) < 0.1)
+                        for (const other of ["power-saver", "balanced", "performance"]) {
+                            compare(tab(other).selected, other === mode)
+                        }
+                    }
+                    // The existing critical-battery notification action shares the service.
+                    if (layout.style === "left") {
+                        Battery.sendBatteryAlert(10, 10)
+                        const alert = Notifications.list.find(item => item.replaceKey === "battery-low-alert")
+                        verify(alert !== undefined)
+                        Notifications.attemptInvokeAction(alert.id, "enable-power-saver")
+                        tryCompare(PowerProfile, "currentProfile", "power-saver")
+                        tryVerify(() => JSON.parse(profileState.text()).lastRead === "power-saver")
+                        mouseClick(tab("performance"))
+                        tryCompare(PowerProfile, "currentProfile", "performance")
+                        tryVerify(() => JSON.parse(profileState.text()).lastRead === "performance")
+                        findChild(bar.item, "verticalClockDroplet").openControlMenu("battery")
+                    } else {
+                        bar.item.collapse()
+                    }
+                }
+                Config.bar.style = originalStyle
+                Config.theme.animDuration = originalDuration
+                console.log("BAR_POWER_PROFILE_SELECTOR_PASSED")
+            }
+
+            function test_standalone_audio_navigation() {
+                const originalDuration = Config.theme.animDuration
+                Config.theme.animDuration = 0
+                for (const layout of [island, pills]) {
+                    bar.sourceComponent = layout
+                    tryVerify(() => bar.item !== null)
+                    for (const mode of ["sound", "mic"]) {
+                        bar.item.expand(mode)
+                        tryCompare(bar.item, "currentMode", mode)
+                        const panel = component(bar.item, mode === "sound" ? "IslandSoundPanel" : "IslandMicPanel")
+                        compare(panel.showBackButton, true)
+                        const back = findChild(panel, mode + "BackButton")
+                        tryVerify(() => back.visible)
+                        mouseClick(back, back.width / 2, back.height / 2)
+                        tryCompare(bar.item, "currentMode", "dashboard")
+                    }
+                    bar.item.collapse()
+                }
+                Config.theme.animDuration = originalDuration
+                console.log("BAR_STANDALONE_AUDIO_PASSED")
             }
 
             function test_pin_command() {
@@ -781,6 +987,32 @@ class BarTextRuntimeTests(unittest.TestCase):
                 stub = binaries / command
                 stub.write_text("#!/bin/sh\nexit 0\n")
                 stub.chmod(0o755)
+            profile_state = fixture / "power-profile.json"
+            profile_state.write_text(json.dumps({"current": "performance", "lastRead": "", "writes": []}))
+            profiles = binaries / "powerprofilesctl"
+            profiles.write_text("#!/usr/bin/python3\n" + f"""import json, sys
+from pathlib import Path
+path = Path({str(profile_state)!r})
+state = json.loads(path.read_text())
+command = sys.argv[1]
+if command == 'version':
+    print('test 1')
+elif command == 'get':
+    state['lastRead'] = state['current']
+    path.write_text(json.dumps(state))
+    print(state['current'])
+elif command == 'list':
+    print('power-saver:')
+    print('balanced:')
+    print('performance:')
+elif command == 'set':
+    state['current'] = sys.argv[2]
+    state['writes'].append(sys.argv[2])
+    path.write_text(json.dumps(state))
+else:
+    sys.exit(1)
+""")
+            profiles.chmod(0o755)
             gamma = fixture / "gamma.json"
             gamma.write_text(json.dumps({"temperature": 6500, "writes": []}))
             busctl = binaries / "busctl"
@@ -804,6 +1036,7 @@ else:
             env = {
                 **os.environ,
                 "HOME": str(home),
+                "NONCHALANT_TEST_PROFILE_STATE": str(profile_state),
                 "PATH": str(binaries) + os.pathsep + os.environ["PATH"],
                 "DBUS_SYSTEM_BUS_ADDRESS": "unix:path=" + str(fixture / "no-system-bus"),
                 "XDG_CONFIG_HOME": str(home / ".config"),
@@ -834,6 +1067,12 @@ else:
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
             self.assertIn("BAR_DEVICE_STATUS_PASSED", output, output)
             self.assertIn("BAR_DROPLETS_AUDIO_PASSED", output, output)
+            self.assertIn("BAR_DASHBOARD_RETURN_PASSED", output, output)
+            self.assertIn("BAR_STANDALONE_AUDIO_PASSED", output, output)
+            self.assertIn("BAR_POWER_PROFILE_SELECTOR_PASSED", output, output)
+            self.assertEqual(json.loads(profile_state.read_text())["writes"],
+                ["power-saver", "balanced", "performance", "power-saver", "performance"]
+                + ["power-saver", "balanced", "performance"] * 2)
             self.assertIn("BAR_DISPLAY_CONTROL_PASSED", output, output)
             self.assertIn("BAR_WEATHER_SECTION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)

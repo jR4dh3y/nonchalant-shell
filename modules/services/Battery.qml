@@ -3,21 +3,21 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
-import Quickshell.Services.UPower
+import Quickshell.Services.UPower as UPowerService
 import qs.modules.theme
 
 Singleton {
     id: root
 
-    readonly property UPowerDevice primaryDevice: UPower.displayDevice
+    readonly property UPowerService.UPowerDevice primaryDevice: UPowerService.UPower.displayDevice
 
-    readonly property bool available: primaryDevice !== null && primaryDevice.type === UPowerDevice.Battery
+    readonly property bool available: primaryDevice !== null && primaryDevice.type === UPowerService.UPowerDevice.Battery
     readonly property real percentage: available ? (primaryDevice.percentage * 100) : 0
-    readonly property bool isCharging: available && primaryDevice.state === UPowerDevice.Charging
-    readonly property bool isPluggedIn: available && (primaryDevice.state === UPowerDevice.Charging || primaryDevice.state === UPowerDevice.FullyCharged)
+    readonly property bool isCharging: available && primaryDevice.state === UPowerService.UPowerDevice.Charging
+    readonly property bool isPluggedIn: available && (primaryDevice.state === UPowerService.UPowerDevice.Charging || primaryDevice.state === UPowerService.UPowerDevice.FullyCharged)
     readonly property real percent: percentage
     readonly property bool charging: isPluggedIn
-    readonly property int chargeState: available ? primaryDevice.state : UPowerDevice.Unknown
+    readonly property int chargeState: available ? primaryDevice.state : UPowerService.UPowerDevice.Unknown
     property int lastBatteryAlertThreshold: 0
 
     // Add some helpful descriptive properties if needed

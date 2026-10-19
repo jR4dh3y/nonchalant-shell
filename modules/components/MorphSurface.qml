@@ -19,6 +19,9 @@ Item {
     property real contentHeight: 0
     // Width of the pill the surface grows out of.
     property real originWidth: contentWidth / 2
+    // Optional source item for a full geometry morph, sampled on each transition.
+    property Item originItem: null
+    property rect originRect: Qt.rect(0, 0, 0, 0)
     // Grow upward (bar at the bottom of the screen) instead of downward.
     property bool fromBottom: false
     // Pin the body to the left edge instead of centering it (left-edge dock).
@@ -81,7 +84,14 @@ Item {
         easing.type: Easing.InCubic
     }
 
+    function updateOrigin(): void {
+        root.originRect = root.originItem
+            ? root.originItem.mapToItem(root, 0, 0, root.originItem.width, root.originItem.height)
+            : Qt.rect(0, 0, 0, 0);
+    }
+
     onShownChanged: {
+        root.updateOrigin();
         openAnim.stop();
         closeAnim.stop();
         if (!Motion.enabled) {
@@ -91,12 +101,15 @@ Item {
         (root.shown ? openAnim : closeAnim).start();
     }
 
-    Component.onCompleted: root.reveal = root.shown ? 1 : 0
+    Component.onCompleted: {
+        root.updateOrigin();
+        root.reveal = root.shown ? 1 : 0;
+    }
 
     FloatingSurface {
         id: body
 
-        readonly property real startWidth: Math.max(0, Math.min(root.originWidth, root.bodyWidth))
+        readonly property real startWidth: root.originItem ? root.originRect.width : Math.max(0, Math.min(root.originWidth, root.bodyWidth))
 
         variant: root.variant
         contentVariant: root.contentVariant
@@ -104,9 +117,13 @@ Item {
         enableShadow: false
         visible: !root.fullyHidden
         width: body.startWidth + (root.bodyWidth - body.startWidth) * root.revealClamped + (root.fromLeft ? root.stretch : 0)
-        height: root.fromLeft ? root.bodyHeight : root.bodyHeight * root.revealClamped + root.stretch
-        x: root.fromLeft ? 0 : Math.round((root.width - width) / 2)
-        y: root.fromBottom ? root.height - height : 0
+        height: root.originItem
+            ? root.originRect.height + (root.bodyHeight - root.originRect.height) * root.revealClamped + (root.fromLeft ? 0 : root.stretch)
+            : (root.fromLeft ? root.bodyHeight : root.bodyHeight * root.revealClamped + root.stretch)
+        x: root.originItem ? root.originRect.x * (1 - root.revealClamped)
+            : (root.fromLeft ? 0 : Math.round((root.width - width) / 2))
+        y: root.originItem ? root.originRect.y * (1 - root.revealClamped)
+            : (root.fromBottom ? root.height - height : 0)
         radius: Math.min(root.radius, height / 2)
         animateRadius: false
 
@@ -167,8 +184,8 @@ Item {
                     enabled: Motion.enabled
                     NumberAnimation {
                         properties: "opacity,drift"
-                        duration: Motion.fadeOutDuration
-                        easing.type: Easing.OutQuad
+                        duration: root.originItem ? Motion.collapseDuration : Motion.fadeOutDuration
+                        easing.type: root.originItem ? Easing.InCubic : Easing.OutQuad
                     }
                 }
             ]

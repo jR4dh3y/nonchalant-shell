@@ -14,7 +14,7 @@ Item {
             return [];
         let items = [];
         const trayItem = item.objectName.startsWith("trayFlyout") || item.objectName.startsWith("trayMenuAction") || item.objectName === "verticalTrayButton";
-        if (trayItem || item.objectName.startsWith("dashboard") || item.objectName.startsWith("verticalWorkspace") || item.objectName.startsWith("workspaceWindows")) {
+        if (trayItem || item.objectName.startsWith("audioStatus") || item.objectName.startsWith("dashboard") || item.objectName.startsWith("verticalWorkspace") || item.objectName.startsWith("workspaceWindows")) {
             const position = trayItem ? item.mapToGlobal(0, 0) : item.mapToItem(null, 0, 0);
             items.push({
                 name: item.objectName,

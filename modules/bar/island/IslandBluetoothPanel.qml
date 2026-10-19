@@ -17,6 +17,7 @@ Item {
     implicitHeight: 340
 
     property string backTooltip: "Back to dashboard"
+    property bool showBackButton: true
     property Component titleComponent: defaultTitle
     signal backRequested()
 
@@ -60,6 +61,8 @@ Item {
 
             // Back button
             StyledRect {
+                visible: root.showBackButton
+                objectName: "bluetoothBackButton"
                 implicitWidth: 28
                 implicitHeight: 28
                 radius: 14

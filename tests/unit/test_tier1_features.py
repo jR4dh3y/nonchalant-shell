@@ -640,16 +640,11 @@ class TestFeature14_IslandBatteryAndNotificationFocusNonStealing(unittest.TestCa
         with open(battery_panel_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        saver_idx = content.find('PowerProfile.setProfile("power-saver")')
-        balanced_idx = content.find('PowerProfile.setProfile("balanced")')
-        perf_idx = content.find('PowerProfile.setProfile("performance")')
-
-        self.assertNotEqual(saver_idx, -1, "Power saver profile button must exist")
-        self.assertNotEqual(balanced_idx, -1, "Balanced profile button must exist")
-        self.assertNotEqual(perf_idx, -1, "Performance profile button must exist")
-
-        self.assertTrue(saver_idx < balanced_idx, "Power Saver must appear before Balanced")
-        self.assertTrue(balanced_idx < perf_idx, "Balanced must appear before Performance")
+        import json
+        modes = re.search(r'profileModes:\s*(\[[^\]]+\])', content)
+        self.assertIsNotNone(modes, "The selector must declare its ordered profiles")
+        self.assertEqual(json.loads(modes.group(1)), ["power-saver", "balanced", "performance"])
+        self.assertIn("PowerProfile.setProfile(profileButton.modelData)", content)
 
     def test_battery_panel_charging_badge_removed_from_percentage(self):
         # Ensure the charging pill/badge next to percentage is removed

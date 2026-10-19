@@ -2,6 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
+import Quickshell.Services.UPower as UPowerService
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
@@ -11,11 +13,25 @@ Item {
     id: root
 
     implicitWidth: 420
-    implicitHeight: mainColumn.implicitHeight + 28
+    implicitHeight: Math.max(340, mainColumn.implicitHeight + 28)
 
     property string backTooltip: "Back to dashboard"
+    property bool showBackButton: true
     property Component titleComponent: defaultTitle
+    // Health is reported by the physical battery, not the aggregate display device.
+    readonly property UPowerService.UPowerDevice healthDevice: UPowerService.UPower.devices.values.find(device => device.isLaptopBattery && device.healthSupported) ?? null
+    readonly property list<string> profileModes: ["power-saver", "balanced", "performance"]
+    property Item selectedProfileTab: null
     signal backRequested()
+
+    function updateSelectedProfileTab(): void {
+        root.selectedProfileTab = profileRepeater?.itemAt(root.profileModes.indexOf(PowerProfile.currentProfile)) ?? null;
+    }
+
+    Connections {
+        target: PowerProfile
+        function onCurrentProfileChanged(): void { root.updateSelectedProfileTab(); }
+    }
 
     function getBatteryColor(): color {
         if (!Battery.available) return Colors.overBackground;
@@ -39,6 +55,7 @@ Item {
     ColumnLayout {
         id: mainColumn
         anchors.top: parent.top
+        anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.margins: 14
@@ -50,6 +67,8 @@ Item {
             spacing: 8
 
             StyledRect {
+                visible: root.showBackButton
+                objectName: "batteryBackButton"
                 implicitWidth: 28
                 implicitHeight: 28
                 radius: 14
@@ -207,19 +226,68 @@ Item {
             }
         }
 
-        // 2. Power Profile Selector Card
         StyledRect {
             Layout.fillWidth: true
-            Layout.preferredHeight: 80
+            Layout.fillHeight: true
+            Layout.minimumHeight: Styling.fontSize(0) * 4
+            radius: Styling.radius(2)
+            variant: "internalbg"
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 12
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    StyledText {
+                        text: Battery.isCharging ? "Charge rate" : "Power draw"
+                        font.pixelSize: Styling.fontSize(-2)
+                        color: Colors.overSurfaceVariant
+                    }
+                    StyledText {
+                        objectName: "batteryPowerRate"
+                        text: Battery.available ? Math.abs(Battery.primaryDevice.changeRate).toFixed(1) + " W" : "Unavailable"
+                        font.family: Config.theme.monoFont
+                        font.pixelSize: Styling.fontSize(1)
+                        color: Colors.overBackground
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    StyledText {
+                        text: "Battery health"
+                        font.pixelSize: Styling.fontSize(-2)
+                        color: Colors.overSurfaceVariant
+                    }
+                    StyledText {
+                        objectName: "batteryHealth"
+                        text: root.healthDevice ? Math.round(root.healthDevice.healthPercentage) + "%" : "Unavailable"
+                        font.family: Config.theme.monoFont
+                        font.pixelSize: Styling.fontSize(1)
+                        color: Colors.overBackground
+                    }
+                }
+            }
+        }
+
+        // Power Profile Selector Card
+        StyledRect {
+            Layout.fillWidth: true
+            Layout.preferredHeight: profileColumn.implicitHeight + 20
             radius: Styling.radius(2)
             variant: "internalbg"
 
             ColumnLayout {
+                id: profileColumn
                 anchors.fill: parent
                 anchors.margins: 10
                 spacing: 8
 
-                Text {
+                StyledText {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     text: "POWER PROFILE"
@@ -229,145 +297,92 @@ Item {
                     color: Colors.overSurfaceVariant
                 }
 
-                RowLayout {
+                StyledRect {
+                    id: profileSelector
+                    objectName: "powerProfileSelector"
                     Layout.fillWidth: true
-                    spacing: 8
+                    Layout.preferredHeight: Styling.fontSize(0) * 3
+                    variant: "focus"
+                    radius: height / 2
+                    readonly property real inset: Styling.fontSize(-4) * 0.4
 
-                    // 1. Power Saver
-                    StyledRect {
-                        id: saverBtn
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 38
-                        radius: Styling.radius(1)
-                        variant: PowerProfile.currentProfile === "power-saver" ? "primary" : (saverMouse.containsMouse ? "focus" : "common")
-                        scale: saverMouse.pressed ? 0.94 : 1.0
-
-                        PressBehavior on scale {
-                            pressed: saverMouse.pressed
-                        }
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.powerSave
-                                font.family: Icons.font
-                                font.pixelSize: 14
-                                color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
-                            }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Power Saver"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: PowerProfile.currentProfile === "power-saver"
-                                color: PowerProfile.currentProfile === "power-saver" ? Colors.overPrimary : Colors.overBackground
-                            }
-                        }
-
-                        MouseArea {
-                            id: saverMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: PowerProfile.setProfile("power-saver")
-                        }
+                    ElasticHighlight {
+                        id: profileHighlight
+                        objectName: "powerProfileHighlight"
+                        targetItem: root.selectedProfileTab
+                        originX: profileTabs.x
+                        originY: profileTabs.y
+                        radius: height / 2
+                        scale: targetItem?.scale ?? 1
                     }
 
-                    // 2. Balanced
-                    StyledRect {
-                        id: balBtn
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 38
-                        radius: Styling.radius(1)
-                        variant: PowerProfile.currentProfile === "balanced" ? "primary" : (balMouse.containsMouse ? "focus" : "common")
-                        scale: balMouse.pressed ? 0.94 : 1.0
+                    Row {
+                        id: profileTabs
+                        anchors.fill: parent
+                        anchors.margins: profileSelector.inset
 
-                        PressBehavior on scale {
-                            pressed: balMouse.pressed
-                        }
+                        Repeater {
+                            id: profileRepeater
+                            model: root.profileModes
+                            onItemAdded: root.updateSelectedProfileTab()
+                            onItemRemoved: root.updateSelectedProfileTab()
 
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.balanced
-                                font.family: Icons.font
-                                font.pixelSize: 14
-                                color: PowerProfile.currentProfile === "balanced" ? Colors.overPrimary : Colors.overBackground
+                            Button {
+                                id: profileButton
+                                required property string modelData
+                                readonly property bool selected: PowerProfile.currentProfile === modelData
+                                objectName: "powerProfileTab-" + modelData
+                                width: profileTabs.width / root.profileModes.length
+                                height: profileTabs.height
+                                padding: Styling.fontSize(-4) * 0.6
+                                enabled: PowerProfile.isAvailable && PowerProfile.availableProfiles.indexOf(modelData) !== -1
+                                Accessible.name: modelData === "power-saver" ? "Power Saver" : PowerProfile.getProfileDisplayName(modelData)
+                                Accessible.role: Accessible.RadioButton
+                                Accessible.checked: selected
+                                scale: pressed ? 0.94 : 1
+                                PressBehavior on scale { pressed: profileButton.pressed }
+                                background: StyledRect {
+                                    variant: "focus"
+                                    backgroundOpacity: 0
+                                    radius: height / 2
+                                    border.width: profileButton.visualFocus ? Math.max(1, Math.round(Styling.fontSize(-4) / 8)) : 0
+                                    border.color: Colors.primary
+                                    HoverTint {
+                                        hovered: profileButton.hovered && !profileButton.selected
+                                        pressed: profileButton.pressed
+                                        hoverOpacity: 0.08
+                                        pressedOpacity: 0.12
+                                    }
+                                }
+                                contentItem: Item {
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        width: Math.min(implicitWidth, parent.width)
+                                        spacing: Styling.fontSize(-4) * 0.5
+                                        StyledText {
+                                            text: PowerProfile.getProfileIcon(profileButton.modelData)
+                                            font.family: Icons.font
+                                            font.pixelSize: Styling.fontSize(-1)
+                                            color: profileButton.selected ? profileHighlight.item : Colors.overBackground
+                                        }
+                                        StyledText {
+                                            id: profileLabel
+                                            Layout.fillWidth: true
+                                            text: profileButton.Accessible.name
+                                            font.family: Config.theme.font
+                                            font.pixelSize: Styling.fontSize(-2)
+                                            font.weight: Font.Medium
+                                            color: profileButton.selected ? profileHighlight.item : Colors.overBackground
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                }
+                                onClicked: if (!selected) PowerProfile.setProfile(profileButton.modelData)
+                                StyledToolTip {
+                                    show: profileButton.hovered && profileLabel.truncated
+                                    tooltipText: profileButton.Accessible.name
+                                }
                             }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Balanced"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: PowerProfile.currentProfile === "balanced"
-                                color: PowerProfile.currentProfile === "balanced" ? Colors.overPrimary : Colors.overBackground
-                            }
-                        }
-
-                        MouseArea {
-                            id: balMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: PowerProfile.setProfile("balanced")
-                        }
-                    }
-
-                    // 3. Performance
-                    StyledRect {
-                        id: perfBtn
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 38
-                        radius: Styling.radius(1)
-                        variant: PowerProfile.currentProfile === "performance" ? "primary" : (perfMouse.containsMouse ? "focus" : "common")
-                        scale: perfMouse.pressed ? 0.94 : 1.0
-
-                        PressBehavior on scale {
-                            pressed: perfMouse.pressed
-                        }
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: Icons.performance
-                                font.family: Icons.font
-                                font.pixelSize: 14
-                                color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
-                            }
-
-                            Text {
-                                renderType: Text.NativeRendering
-                                font.hintingPreference: Font.PreferFullHinting
-                                text: "Performance"
-                                font.family: Config.theme.font
-                                font.pixelSize: Styling.fontSize(-2)
-                                font.bold: PowerProfile.currentProfile === "performance"
-                                color: PowerProfile.currentProfile === "performance" ? Colors.overPrimary : Colors.overBackground
-                            }
-                        }
-
-                        MouseArea {
-                            id: perfMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: PowerProfile.setProfile("performance")
                         }
                     }
                 }

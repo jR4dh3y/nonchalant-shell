@@ -37,9 +37,10 @@ Item {
     readonly property Item dashboardHitbox: dashboardPopup.hitbox
     readonly property bool timeToolsOpen: timePopup.isOpen
     readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
+    readonly property bool clockSelected: popupOpen || timeToolsOpen || (menuOpen && (!root.vertical || !root.controlMode))
     readonly property color clockItemColor: root.detached
-        ? Styling.srItem(root.anyPopupOpen ? "focus" : "pane")
-        : (root.anyPopupOpen ? buttonBg.item : Colors.overBackground)
+        ? Styling.srItem(root.clockSelected ? "focus" : "pane")
+        : (root.clockSelected ? buttonBg.item : Colors.overBackground)
 
     function formatDuration(seconds) {
         const safeSeconds = Math.max(0, seconds);
@@ -161,11 +162,11 @@ Item {
     // Main button
     FloatingSurface {
         id: buttonBg
-        variant: root.detached ? "popup" : (root.vertical ? (root.anyPopupOpen ? "focus" : "common") : (root.anyPopupOpen ? "primary" : "bg"))
-        contentVariant: root.detached ? (root.anyPopupOpen ? "focus" : "pane") : ""
+        variant: root.detached ? "popup" : (root.vertical ? (root.clockSelected ? "focus" : "common") : (root.clockSelected ? "primary" : "bg"))
+        contentVariant: root.detached ? (root.clockSelected ? "focus" : "pane") : ""
         contentInset: root.detached ? Math.round(root.verticalWidth / 10) : 0
         radius: root.detached ? root.verticalWidth / 2 : root.radius
-        backgroundOpacity: root.vertical && !root.detached && !root.anyPopupOpen ? 0 : -1
+        backgroundOpacity: root.vertical && !root.detached && !root.clockSelected ? 0 : -1
         enableBorder: root.detached || !root.vertical
         scale: verticalClockMouse.pressed ? 0.94 : 1.0
 
@@ -184,7 +185,7 @@ Item {
         implicitHeight: root.vertical ? Math.max(verticalContent.implicitHeight + contentInset * 2 + 8, root.detached ? root.verticalWidth * 1.4 : 0) : 36
 
         HoverTint {
-            hovered: root.isHovered && !root.anyPopupOpen
+            hovered: root.isHovered && !root.clockSelected
         }
 
         RowLayout {
@@ -745,6 +746,7 @@ Item {
             contentHeight: Math.min(dashboardPopup.leftBar ? Math.max(0, dashboardPopup.height - dashboardPopup.edgeGap * 2) : Infinity,
                 dashboardLoader.item ? dashboardLoader.item.implicitHeight + padding * 2 : 360)
             originWidth: buttonBg.width
+            originItem: root.vertical && !root.controlMode ? root : null
             fromBottom: dashboardPopup.bottomBar
             fromLeft: dashboardPopup.leftBar
             x: dashboardPopup.leftBar ? 0 : Math.round((dashboardPopup.width - width) / 2)
@@ -780,7 +782,6 @@ Item {
                         lyricsActive: dashboardPopup.isOpen && root.controlMode === "media"
                         maximumSize: Math.max(0, Math.min(dashboardPopup.width - dashboardPopup.edgeGap,
                             dashboardPopup.height - dashboardPopup.edgeGap * 2) - dashboardSurface.padding * 2)
-                        onBackRequested: dashboardPopup.close()
                         onCloseRequested: dashboardPopup.close()
                     }
                 }
