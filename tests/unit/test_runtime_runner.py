@@ -15,6 +15,21 @@ from tests.runtime import run_compositor as runner
 
 
 class RuntimeRunnerTests(unittest.TestCase):
+    def test_tray_icon_crop_converts_logical_coordinates_to_screenshot_pixels(self):
+        from PIL import Image, ImageDraw
+
+        with tempfile.TemporaryDirectory() as directory:
+            for scale in (1, 1.2, 2):
+                with self.subTest(scale=scale):
+                    image = Image.new("RGB", (100, 100))
+                    box = tuple(round(value * scale) for value in (20, 20, 40, 40))
+                    ImageDraw.Draw(image).rectangle((box[0], box[1], box[2] - 1, box[3] - 1),
+                                                   fill=(20, 100, 220))
+                    path = Path(directory) / "tray.png"
+                    image.save(path)
+                    self.assertEqual(runner.tray_icon_pixels(path, (20, 20, 20, 20), scale),
+                                     (box[2] - box[0]) * (box[3] - box[1]))
+
     def test_missing_executable_reports_cause(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

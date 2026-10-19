@@ -223,7 +223,18 @@ def check_text_rendering(session, source, scale, passed):
     passed.append(f"nested StyledRect glyph pixels match direct text at {scale}x; texture-mask reference differences: {sum(differences)}/4")
 
 
-def check_tray(session, shell, passed):
+def tray_icon_pixels(path, geometry, scale):
+    from PIL import Image
+
+    x, y, width, height = geometry
+    with Image.open(path) as image:
+        pixels = image.convert("RGB").crop((round(x * scale), round(y * scale),
+                                            round((x + width) * scale), round((y + height) * scale)))
+        return sum(1 for red, green, blue in pixels.get_flattened_data()
+                   if blue > green > red and blue - red > 80)
+
+
+def check_tray(session, shell, passed, scale):
     fixture = Path(__file__).with_name("tray_fixture.py")
     session.start("tray-fixture", [sys.executable, str(fixture)])
     state = session.shell_state
@@ -259,15 +270,6 @@ def check_tray(session, shell, passed):
     assert icon["geometry"][0] > button_geometry[0] + button_geometry[2], icon
     assert state()["trayButton"]["geometry"] == button_geometry, "tray opening moved bar controls"
 
-    from PIL import Image
-
-    def icon_pixels(path, target):
-        x, y, width, height = target["geometry"]
-        with Image.open(path) as image:
-            pixels = image.convert("RGB").crop((round(x), round(y), round(x + width), round(y + height)))
-            return sum(1 for red, green, blue in pixels.get_flattened_data()
-                       if blue > green > red and blue - red > 80)
-
     for cycle in range(3):
         for index in range(2):
             target = item(f"trayFlyoutItem_test-{index}")
@@ -275,7 +277,7 @@ def check_tray(session, shell, passed):
             time.sleep(0.15)
             before = session.root / f"tray-icon-{cycle}-{index}-before.png"
             session.run(["grim", str(before)])
-            expected = icon_pixels(before, target)
+            expected = tray_icon_pixels(before, target["geometry"], scale)
             assert expected > 0, "Transparent tray fixture did not render"
             x, y, width, height = target["geometry"]
             session.run(["wlrctl", "pointer", "move", "-10000", "-10000"])
@@ -284,7 +286,7 @@ def check_tray(session, shell, passed):
                 time.sleep(delay)
                 screenshot = session.root / f"tray-icon-{cycle}-{index}-hover-{frame}.png"
                 session.run(["grim", str(screenshot)])
-                assert icon_pixels(screenshot, target) == expected, (
+                assert tray_icon_pixels(screenshot, target["geometry"], scale) == expected, (
                     f"Hover chrome obscured tray icon {index} in cycle {cycle}, frame {frame}")
     passed.append("transparent tray icons remain visible in first hover frames and repeated pointer transitions")
     session.run(["grim", str(session.root / "tray-grid.png")])
@@ -406,7 +408,7 @@ def exercise(session, source, args, passed):
             return json.loads(session.ipc(shell, "shell-test", "state"))
         session.shell_state = shell_state
         if args.style == "left":
-            check_tray(session, shell, passed)
+            check_tray(session, shell, passed, args.scale)
         for command, field, island_mode in (("launcher", "launcherOpen", "apps"),
                 ("dashboard", "dashboardOpen", "dashboard"), ("power", "powerOpen", "power")):
             session.ipc(shell, "nonchalant", "run", command)

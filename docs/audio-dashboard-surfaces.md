@@ -35,4 +35,6 @@ the user's shell or address their compositor sockets for tests.
 The power-profile regression test exercises all three profiles through the real
 service and a private `powerprofilesctl` executable, including readback and the
 critical-battery notification action. Physical power-profile writes are not
-performed.
+performed. The tray screenshot check also converts logical bounds to physical
+pixels; its crop is checked at output scales 1, 1.2, and 2. Native Hyprland
+fractional-scale execution is unavailable on this host.
