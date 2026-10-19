@@ -342,6 +342,31 @@ ShellRoot {
                 compare(sound.selected, true)
                 compare(mic.selected, false)
                 snapshotAudio("speaker-selected")
+                function tab(mode) { return findChild(bar.item, "audioStatusTab-" + mode) }
+                const selector = findChild(bar.item, "audioStatusSelector")
+                const highlight = findChild(bar.item, "audioStatusHighlight")
+                tryVerify(() => selector.visible)
+                compare(selector.variant, "focus", "Audio tabs need the persistent shared track")
+                tryCompare(highlight, "targetItem", tab("sound"))
+                compare(findChild(bar.item, "soundBackButton").visible, false)
+                const owner = Visibilities.activeBarPopup
+                mouseClick(tab("mic"))
+                tryCompare(clock, "controlMode", "mic")
+                compare(findChild(bar.item, "audioStatusSelector"), selector)
+                compare(Visibilities.activeBarPopup, owner)
+                compare(findChild(bar.item, "micBackButton").visible, false)
+                tryCompare(highlight, "targetItem", tab("mic"))
+                compare(clock.clockSelected, false)
+                mouseClick(tab("mic"))
+                compare(clock.menuOpen, true)
+                keyClick(Qt.Key_Left)
+                tryCompare(clock, "controlMode", "sound")
+                keyClick(Qt.Key_Right)
+                tryCompare(clock, "controlMode", "mic")
+                keyClick(Qt.Key_Escape)
+                tryCompare(clock, "menuOpen", false)
+                mouseClick(sound, sound.width / 2, sound.height / 2)
+                tryCompare(clock, "controlMode", "sound")
                 mouseClick(mic, mic.width / 2, mic.height / 2)
                 tryCompare(clock, "controlMode", "mic")
                 compare(clock.menuOpen, true)
@@ -355,6 +380,28 @@ ShellRoot {
                 Config.theme.fontSize = originalSize
                 Config.bar.style = originalStyle
                 console.log("BAR_DROPLETS_AUDIO_PASSED")
+            }
+
+            function test_standalone_audio_navigation() {
+                const originalDuration = Config.theme.animDuration
+                Config.theme.animDuration = 0
+                for (const layout of [island, pills]) {
+                    bar.sourceComponent = layout
+                    tryVerify(() => bar.item !== null)
+                    for (const mode of ["sound", "mic"]) {
+                        bar.item.expand(mode)
+                        tryCompare(bar.item, "currentMode", mode)
+                        const panel = component(bar.item, mode === "sound" ? "IslandSoundPanel" : "IslandMicPanel")
+                        compare(panel.showBackButton, true)
+                        const back = findChild(panel, mode + "BackButton")
+                        tryVerify(() => back.visible)
+                        mouseClick(back, back.width / 2, back.height / 2)
+                        tryCompare(bar.item, "currentMode", "dashboard")
+                    }
+                    bar.item.collapse()
+                }
+                Config.theme.animDuration = originalDuration
+                console.log("BAR_STANDALONE_AUDIO_PASSED")
             }
 
             function test_pin_command() {
@@ -866,6 +913,7 @@ else:
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
             self.assertIn("BAR_DEVICE_STATUS_PASSED", output, output)
             self.assertIn("BAR_DROPLETS_AUDIO_PASSED", output, output)
+            self.assertIn("BAR_STANDALONE_AUDIO_PASSED", output, output)
             self.assertIn("BAR_DISPLAY_CONTROL_PASSED", output, output)
             self.assertIn("BAR_WEATHER_SECTION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)

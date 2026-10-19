@@ -454,10 +454,27 @@ def exercise(session, source, args, passed):
             session.wait(f"{mode} reverse toggle dismisses", lambda: not shell_state()["popupOpen"])
         session.ipc(shell, "nonchalant", "run", "sound")
         session.wait("sound menu", lambda: shell_state()["controlMenu"] == "sound")
-        session.ipc(shell, "nonchalant", "run", "mic")
-        session.wait("mic replaces sound", lambda: shell_state()["controlMenu"] == "mic")
-        session.ipc(shell, "nonchalant", "run", "mic")
-        session.wait("control menus dismissed", lambda: not shell_state()["popupOpen"])
+        time.sleep(0.7)
+        audio_items = {item["name"]: item for item in shell_state()["dashboardItems"]}
+        selector = audio_items["audioStatusSelector"]
+        assert selector["visible"], "Audio selector track is hidden"
+        x, y, width, height = audio_items["audioStatusTab-mic"]["geometry"]
+        session.run(["wlrctl", "pointer", "move", "-10000", "-10000"])
+        session.run(["wlrctl", "pointer", "move", str(round(x + width / 2)), str(round(y + height / 2))])
+        session.run(["wlrctl", "pointer", "click", "left"])
+        session.wait("mic tab replaces sound", lambda: shell_state()["controlMenu"] == "mic")
+        time.sleep(0.7)
+        current_selector = next(item for item in shell_state()["dashboardItems"]
+                                if item["name"] == "audioStatusSelector")
+        assert current_selector["geometry"] == selector["geometry"], "Tab switching moved the shared selector"
+        session.run(["grim", str(session.root / "audio-mic-tab.png")])
+        session.run(["wtype", "-k", "Left"])
+        session.wait("left arrow selects volume", lambda: shell_state()["controlMenu"] == "sound")
+        session.run(["wtype", "-k", "Right"])
+        session.wait("right arrow selects microphone", lambda: shell_state()["controlMenu"] == "mic")
+        session.run(["wtype", "-k", "Escape"])
+        session.wait("Escape dismisses audio popup", lambda: not shell_state()["popupOpen"])
+        passed.append("shared audio tabs switch by pointer and arrow keys, keep their track, and dismiss with Escape")
         passed.append("vertical control menus replace dashboard, switch, and reverse-toggle closed")
         session.ipc(shell, "nonchalant", "run", "dashboard")
         session.wait("dashboard notifications", lambda:

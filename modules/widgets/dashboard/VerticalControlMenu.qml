@@ -14,8 +14,10 @@ Item {
     property real maximumSize: Infinity
     property bool lyricsActive: false
     readonly property list<string> deviceModes: ["wifi", "bluetooth", "battery"]
-    property Item selectedDeviceTab: null
-    signal backRequested()
+    readonly property list<string> audioModes: ["sound", "mic"]
+    readonly property bool audioMenu: root.audioModes.indexOf(root.mode) !== -1
+    readonly property list<string> tabModes: root.audioMenu ? root.audioModes : root.deviceModes
+    property Item selectedTab: null
     signal closeRequested()
     signal modeRequested(string mode)
     implicitWidth: mode === "media" ? Math.min(Styling.fontSize(0) * 28, maximumSize) : 400
@@ -25,78 +27,80 @@ Item {
         root.forceActiveFocus();
     }
 
-    function updateSelectedDeviceTab(): void {
-        root.selectedDeviceTab = deviceTabRepeater?.itemAt(root.deviceModes.indexOf(root.mode)) ?? null;
+    function updateSelectedTab(): void {
+        root.selectedTab = tabRepeater?.itemAt(root.tabModes.indexOf(root.mode)) ?? null;
     }
 
-    onModeChanged: root.updateSelectedDeviceTab()
+    onModeChanged: root.updateSelectedTab()
 
     Keys.onEscapePressed: root.closeRequested()
-    function changeDeviceTab(offset: int): bool {
-        const current = root.deviceModes.indexOf(root.mode);
+    function changeTab(offset: int): bool {
+        const current = root.tabModes.indexOf(root.mode);
         if (current === -1)
             return false;
-        const next = Math.max(0, Math.min(root.deviceModes.length - 1, current + offset));
+        const next = Math.max(0, Math.min(root.tabModes.length - 1, current + offset));
         if (next !== current)
-            root.modeRequested(root.deviceModes[next]);
+            root.modeRequested(root.tabModes[next]);
         return true;
     }
 
-    Keys.onLeftPressed: event => { event.accepted = root.changeDeviceTab(-1); }
-    Keys.onRightPressed: event => { event.accepted = root.changeDeviceTab(1); }
+    Keys.onLeftPressed: event => { event.accepted = root.changeTab(-1); }
+    Keys.onRightPressed: event => { event.accepted = root.changeTab(1); }
 
     Component {
-        id: deviceTitle
+        id: selectorTitle
         Item {
-            implicitWidth: deviceSelector.implicitWidth
-            implicitHeight: deviceSelector.implicitHeight
+            implicitWidth: selector.implicitWidth
+            implicitHeight: selector.implicitHeight
         }
     }
 
     // Keep the selector alive while the panel loader swaps its content.
     StyledRect {
-        id: deviceSelector
-        objectName: "deviceStatusSelector"
-        visible: root.deviceModes.indexOf(root.mode) !== -1
+        id: selector
+        objectName: root.audioMenu ? "audioStatusSelector" : "deviceStatusSelector"
+        visible: root.tabModes.indexOf(root.mode) !== -1
         x: 14
         y: 14
         z: 1
         variant: "focus"
         radius: height / 2
         readonly property real inset: Styling.fontSize(0) * 0.5
-        implicitWidth: deviceTabs.implicitWidth + inset * 2
-        implicitHeight: deviceTabs.implicitHeight + inset * 2
+        implicitWidth: tabs.implicitWidth + inset * 2
+        implicitHeight: tabs.implicitHeight + inset * 2
         width: implicitWidth
         height: implicitHeight
 
         ElasticHighlight {
             id: tabHighlight
-            objectName: "deviceStatusHighlight"
-            targetItem: root.selectedDeviceTab
-            originX: deviceTabs.x
-            originY: deviceTabs.y
+            objectName: root.audioMenu ? "audioStatusHighlight" : "deviceStatusHighlight"
+            targetItem: root.selectedTab
+            originX: tabs.x
+            originY: tabs.y
             radius: height / 2
             scale: targetItem?.scale ?? 1
         }
 
         Row {
-            id: deviceTabs
+            id: tabs
             anchors.centerIn: parent
             Repeater {
-                id: deviceTabRepeater
-                model: root.deviceModes
-                onItemAdded: root.updateSelectedDeviceTab()
-                onItemRemoved: root.updateSelectedDeviceTab()
+                id: tabRepeater
+                model: root.tabModes
+                onItemAdded: root.updateSelectedTab()
+                onItemRemoved: root.updateSelectedTab()
 
                 Button {
                     id: tab
                     required property string modelData
                     readonly property bool selected: root.mode === tab.modelData
-                    objectName: "deviceStatusTab-" + tab.modelData
+                    objectName: (root.audioMenu ? "audioStatusTab-" : "deviceStatusTab-") + tab.modelData
                     implicitWidth: Styling.fontSize(0) * 2.2
                     implicitHeight: implicitWidth
                     padding: 0
-                    Accessible.name: tab.modelData === "wifi" ? "Wi-Fi" : (tab.modelData === "bluetooth" ? "Bluetooth" : "Battery and power")
+                    Accessible.name: root.audioMenu
+                        ? (tab.modelData === "sound" ? "Volume" : "Microphone")
+                        : (tab.modelData === "wifi" ? "Wi-Fi" : (tab.modelData === "bluetooth" ? "Bluetooth" : "Battery and power"))
                     Accessible.role: Accessible.PageTab
                     Accessible.selected: tab.selected
                     scale: tab.pressed ? 0.92 : 1
@@ -108,7 +112,9 @@ Item {
                         HoverTint { hovered: tab.hovered; pressed: tab.pressed }
                     }
                     contentItem: StyledText {
-                        text: tab.modelData === "wifi" ? Icons.wifiHigh : (tab.modelData === "bluetooth" ? Icons.bluetooth : Icons.batteryHigh)
+                        text: root.audioMenu
+                            ? (tab.modelData === "sound" ? Icons.speakerHigh : Icons.mic)
+                            : (tab.modelData === "wifi" ? Icons.wifiHigh : (tab.modelData === "bluetooth" ? Icons.bluetooth : Icons.batteryHigh))
                         font.family: Icons.font
                         font.pixelSize: Styling.fontSize(5)
                         color: tab.selected ? tabHighlight.item : Colors.overBackground
@@ -141,11 +147,11 @@ Item {
         }
     }
 
-    Component { id: soundPanel; IslandSoundPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
-    Component { id: micPanel; IslandMicPanel { backTooltip: "Close menu"; onBackRequested: root.backRequested() } }
-    Component { id: wifiPanel; IslandWifiPanel { showBackButton: false; titleComponent: deviceTitle } }
-    Component { id: bluetoothPanel; IslandBluetoothPanel { showBackButton: false; titleComponent: deviceTitle } }
-    Component { id: batteryPanel; IslandBatteryPanel { showBackButton: false; titleComponent: deviceTitle } }
+    Component { id: soundPanel; IslandSoundPanel { showBackButton: false; titleComponent: selectorTitle } }
+    Component { id: micPanel; IslandMicPanel { showBackButton: false; titleComponent: selectorTitle } }
+    Component { id: wifiPanel; IslandWifiPanel { showBackButton: false; titleComponent: selectorTitle } }
+    Component { id: bluetoothPanel; IslandBluetoothPanel { showBackButton: false; titleComponent: selectorTitle } }
+    Component { id: batteryPanel; IslandBatteryPanel { showBackButton: false; titleComponent: selectorTitle } }
     Component {
         id: mediaPanel
         IslandMediaCenterPanel {
