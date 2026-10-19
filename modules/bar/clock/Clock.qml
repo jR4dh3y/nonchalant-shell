@@ -746,6 +746,7 @@ Item {
             contentHeight: Math.min(dashboardPopup.leftBar ? Math.max(0, dashboardPopup.height - dashboardPopup.edgeGap * 2) : Infinity,
                 dashboardLoader.item ? dashboardLoader.item.implicitHeight + padding * 2 : 360)
             originWidth: buttonBg.width
+            originItem: root.vertical && !root.controlMode ? root : null
             fromBottom: dashboardPopup.bottomBar
             fromLeft: dashboardPopup.leftBar
             x: dashboardPopup.leftBar ? 0 : Math.round((dashboardPopup.width - width) / 2)

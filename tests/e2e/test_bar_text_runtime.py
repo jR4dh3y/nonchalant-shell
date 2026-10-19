@@ -382,6 +382,72 @@ ShellRoot {
                 console.log("BAR_DROPLETS_AUDIO_PASSED")
             }
 
+            function test_vertical_dashboard_return() {
+                const originalStyle = Config.bar.style
+                const originalDuration = Config.theme.animDuration
+                Config.theme.animDuration = 300
+                Config.bar.style = "left"
+                bar.sourceComponent = left
+                tryVerify(() => bar.item !== null)
+                const clock = findChild(bar.item, "verticalClockDroplet")
+                mouseClick(clock, clock.width / 2, clock.height / 2)
+                tryCompare(clock, "menuOpen", true)
+                tryVerify(() => clock.dashboardHitbox !== null)
+                const body = clock.dashboardHitbox
+                const surface = body.parent
+                wait(Motion.expandDuration + 100)
+                const openHeight = body.height
+                const openWidth = body.width
+                const origin = surface.originItem
+                verify(origin !== null)
+                const source = origin.mapToItem(surface, 0, 0, origin.width, origin.height)
+                verify(openHeight > source.height)
+                clock.toggleCenterMenu()
+                tryCompare(clock, "menuOpen", false)
+                tryVerify(() => body.height < openHeight - 1, 200,
+                    "Closing must shrink height as well as width toward the clock")
+                verify(body.height > source.height)
+                verify(body.width < openWidth)
+                // Reopening during the return must reverse from its current geometry.
+                const closingHeight = body.height
+                clock.toggleCenterMenu()
+                tryCompare(clock, "menuOpen", true)
+                verify(body.height >= closingHeight - 1)
+                wait(Motion.expandDuration + 100)
+                compare(body.height, openHeight)
+                // Escape uses the same return path as the clock trigger.
+                component(bar.item, "VerticalDashboard").focusCurrentTab()
+                keyClick(Qt.Key_Escape)
+                tryCompare(clock, "menuOpen", false)
+                let previousHeight = body.height
+                for (let i = 0; i < 18; i++) {
+                    wait(20)
+                    verify(body.height <= previousHeight + 0.01, "Return height must be monotonic")
+                    previousHeight = body.height
+                }
+                compare(body.height, source.height)
+                compare(body.width, source.width)
+                compare(body.x, source.x)
+                compare(body.y, source.y)
+                compare(surface.fullyHidden, true)
+                compare(clock.dashboardHitbox, null)
+                Config.theme.animDuration = 0
+                for (const section of ["notifications", "wallpapers", "stats", "weather"]) {
+                    clock.showDashboardSection(section)
+                    tryCompare(clock, "menuOpen", true)
+                    compare(surface.progress, 1)
+                    component(bar.item, "VerticalDashboard").focusCurrentTab()
+                    keyClick(Qt.Key_Escape)
+                    tryCompare(clock, "menuOpen", false)
+                    compare(surface.fullyHidden, true)
+                    compare(body.height, origin.height)
+                    compare(body.width, origin.width)
+                }
+                Config.bar.style = originalStyle
+                Config.theme.animDuration = originalDuration
+                console.log("BAR_DASHBOARD_RETURN_PASSED")
+            }
+
             function test_standalone_audio_navigation() {
                 const originalDuration = Config.theme.animDuration
                 Config.theme.animDuration = 0
@@ -913,6 +979,7 @@ else:
             self.assertIn("BAR_PIN_IPC_PASSED", output, output)
             self.assertIn("BAR_DEVICE_STATUS_PASSED", output, output)
             self.assertIn("BAR_DROPLETS_AUDIO_PASSED", output, output)
+            self.assertIn("BAR_DASHBOARD_RETURN_PASSED", output, output)
             self.assertIn("BAR_STANDALONE_AUDIO_PASSED", output, output)
             self.assertIn("BAR_DISPLAY_CONTROL_PASSED", output, output)
             self.assertIn("BAR_WEATHER_SECTION_PASSED", output, output)
