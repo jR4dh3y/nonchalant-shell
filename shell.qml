@@ -13,6 +13,7 @@ import qs.modules.shell
 import qs.modules.shell.osd
 import qs.modules.widgets.dashboard.wallpapers
 import qs.modules.widgets.config
+import qs.modules.widgets.polkit
 import qs.config
 
 ShellRoot {
@@ -88,6 +89,9 @@ ShellRoot {
             lockSecure: sessionLock.secure
         }
     }
+
+    // Session polkit agent and its password prompt.
+    PolkitDialog {}
 
     // Toasts are hosted inside UnifiedShellPanel (NotificationToastStack) so
     // they receive clicks. NotificationServer still loads via service init.
