@@ -600,6 +600,11 @@ Item {
                                     label: "Left",
                                     value: "left",
                                     icon: Icons.arrowLeft
+                                },
+                                {
+                                    label: "Deck",
+                                    value: "deck",
+                                    icon: Icons.waveform
                                 }
                             ]
                             value: Config.bar?.style ?? "default"
@@ -611,7 +616,7 @@ Item {
                         }
 
                         SelectorRow {
-                            visible: (Config.bar?.style ?? "default") === "default"
+                            visible: ["default", "deck"].indexOf(Config.bar?.style ?? "default") !== -1
                             label: "Position"
                             options: [
                                 {

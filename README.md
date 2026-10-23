@@ -27,6 +27,7 @@ Multi-monitor support uses Quickshell `Variants` on `Quickshell.screens`.
 - Runs on [Niri](https://github.com/niri-wm/niri) or [Hyprland](https://hypr.land) through a shared typed compositor service
 - Normalized monitor, workspace, and window state for multi-monitor setups
 - Unified bar with workspaces/taskbar, clock, system status, and systray
+- Five bar layouts: Default, Island, Pills, Left, and [Deck](docs/deck-layout.md), a compact strip with window tabs and task-specific flyouts
 - Floating run menu and power menu
 - Wallpaper picker and secure `WlSessionLock` session lock
 - Searchable settings with section history, previews, and the existing configuration domains

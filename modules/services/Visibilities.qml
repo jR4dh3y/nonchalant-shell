@@ -217,6 +217,10 @@ Singleton {
     }
 
     function togglePowerMenuForActive() {
+        if (Config.bar?.style === "deck") {
+            getDashboardControllerForActive()?.openControlMenu("power");
+            return;
+        }
         if (toggleIslandMode("power"))
             return;
 
@@ -247,6 +251,10 @@ Singleton {
     function toggleSystemMonitorForActive() {
         if (toggleIslandMode("stats"))
             return;
+        if (Config.bar?.style === "deck") {
+            getDashboardControllerForActive()?.openControlMenu("stats");
+            return;
+        }
 
         const focusedMonitor = CompositorService.focusedMonitor;
         if (!focusedMonitor)

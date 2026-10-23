@@ -146,6 +146,14 @@ Singleton {
         return submit("focusAdjacentWorkspace", output, [output, direction]);
     }
 
+    function toggleOverview(): bool {
+        if (!supportsOverview) {
+            root.actionFailed("toggleOverview", "", "Overview is not supported by this compositor");
+            return false;
+        }
+        return submit("toggleOverview", "", []);
+    }
+
     function logout(): bool {
         return submit("logout", "", []);
     }

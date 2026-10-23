@@ -2,7 +2,7 @@
 
 var data = {
     "position": "top",
-    "style": "default",
+    "style": "default", // default | island | pills | left | deck
     "screenList": [],
     "enableFirefoxPlayer": false,
     "lyricsEnabled": true,

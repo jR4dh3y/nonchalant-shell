@@ -56,7 +56,7 @@ ShellRoot {
                 tryCompare(settings, "loadedPageId", pageId, 5000)
             }
 
-            function test_bar_position_only_for_default_style() {
+            function test_bar_position_for_horizontal_styles() {
                 settings.go("shell", "bar")
                 expectPage("shell")
                 const panel = findChild(settings, "settingsPanelLoader").item
@@ -74,7 +74,7 @@ ShellRoot {
                 const styles = findSelector(panel, "Style")
                 verify(selector !== null)
                 verify(styles !== null)
-                compare(styles.options.map(option => option.value).join(","), "default,island,pills,left")
+                compare(styles.options.map(option => option.value).join(","), "default,island,pills,left,deck")
                 function findOption(item, value) {
                     if (item.modelData?.value === value)
                         return item
@@ -89,16 +89,16 @@ ShellRoot {
                 const previousPosition = Config.bar.position
                 try {
                     Config.bar.position = "bottom"
-                    for (const style of ["default", "island", "pills", "left", "default"]) {
+                    for (const style of ["default", "island", "pills", "left", "deck", "default"]) {
                         const target = findOption(styles, style)
                         verify(target !== null)
                         tryVerify(() => target.width > 0 && target.height > 0)
                         mouseClick(target, target.width / 2, target.height / 2, Qt.LeftButton)
                         tryCompare(Config.bar, "style", style)
-                        tryCompare(selector, "visible", style === "default")
+                        tryCompare(selector, "visible", style === "default" || style === "deck")
                         compare(Config.bar.position, "bottom")
                         compare(selector.value, "bottom")
-                        for (const value of ["default", "island", "pills", "left"]) {
+                        for (const value of ["default", "island", "pills", "left", "deck"]) {
                             const option = findOption(styles, value)
                             verify(option !== null, value + " option exists")
                             tryCompare(option, "visible", true)

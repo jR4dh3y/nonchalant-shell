@@ -72,13 +72,14 @@ Item {
                 trayButton: root.dashboardItems(controller?.bar ?? null)
                     .find(item => item.name === "verticalTrayButton") ?? null,
                 systemMonitorOpen: GlobalStates.systemMonitorOpen,
-                controlMenu: Visibilities.activeBarPopup?.menuMode ?? "",
+                controlMenu: Visibilities.activeBarPopup?.mode ?? Visibilities.activeBarPopup?.menuMode ?? "",
                 dashboardSection: controller?.dashboardSection ?? "",
                 dashboardTab: GlobalStates.dashboardCurrentTab,
                 dashboardItems: root.dashboardItems(controller?.dashboardHitbox ?? null),
                 workspaceItems: root.dashboardItems(island ?? controller?.bar ?? null)
                     .filter(item => item.name.startsWith("verticalWorkspace") || item.name.startsWith("workspaceWindows")),
-                powerOpen: Visibilities.powerMenuButtons[outputName]?.popupOpen ?? false,
+                powerOpen: (Visibilities.activeBarPopup?.objectName === "deckDrawer" && Visibilities.activeBarPopup?.mode === "power")
+                    || (Visibilities.powerMenuButtons[outputName]?.popupOpen ?? false),
                 hasActiveGrab: FocusGrabManager.hasActiveGrab,
                 settingsVisible: GlobalStates.settingsWindowVisible,
                 panelSize: [panel?.width ?? 0, panel?.height ?? 0],

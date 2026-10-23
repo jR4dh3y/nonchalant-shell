@@ -8,7 +8,7 @@ Dynamic theming layer providing colors, icons, and style utilities as singletons
 |------|------|------|
 | `Colors.qml` | Singleton | Watches `~/.cache/nonchalant/colors.json`. Provides reactive palette (`primary`, `secondary`, `surface`, `onSurface`, etc.) |
 | `Styling.qml` | Singleton | `radius(offset)`, `fontSize(offset)`, `getStyledRectConfig(variant)`. Animation durations, spacing constants |
-| `Icons.qml` | Singleton | Character map for Phosphor-Bold icon font (`lock`, `power`, `layout`, etc.) |
+| `Icons.qml` | Singleton | Character map and loader for bundled Phosphor-Bold v2.1.2 (`lock`, `power`, `layout`, etc.). Font provenance/license lives in `assets/fonts/` |
 | `*Generator.qml` | Components | Translate `Colors` palette into config files for other apps |
 
 ### Generators
