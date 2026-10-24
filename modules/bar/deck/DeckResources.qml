@@ -8,10 +8,8 @@ import qs.modules.theme
 // Same channel grammar as Controls, read-only: meters on the left, detail rack on the right.
 RowLayout {
     id: root
-    required property real availableHeight
     readonly property bool sampled: SystemResources.cpuModel !== "" || SystemResources.ramTotal > 0
-    spacing: Styling.fontSize(0)
-    height: Math.max(availableHeight, rack.implicitHeight)
+    spacing: Styling.fontSize(0) * 0.5
 
     function gigabytes(kilobytes: real): string {
         return (kilobytes / 1048576).toFixed(1);
@@ -21,61 +19,70 @@ RowLayout {
             : bytes >= 1024 ? Math.round(bytes / 1024) + " KB/s" : Math.round(bytes) + " B/s";
     }
 
-    RowLayout {
-        objectName: "deckMeters"
+    DeckCard {
+        objectName: "deckMeterCard"
         Layout.fillHeight: true
-        spacing: Styling.fontSize(0) * 0.25
-        DeckChannel {
-            objectName: "deckMeterCpu"
+        title: "Load"
+        glyph: Icons.cpu
+        order: 0
+        RowLayout {
+            objectName: "deckMeters"
             Layout.fillHeight: true
-            Layout.preferredWidth: Styling.fontSize(0) * 4.4
-            interactive: false
-            label: "CPU"
-            glyph: Icons.cpu
-            available: root.sampled
-            value: SystemResources.cpuUsage / 100
-        }
-        DeckChannel {
-            objectName: "deckMeterMemory"
-            Layout.fillHeight: true
-            Layout.preferredWidth: Styling.fontSize(0) * 4.4
-            interactive: false
-            label: "Memory"
-            glyph: Icons.ram
-            available: root.sampled
-            value: SystemResources.ramUsage / 100
-        }
-        DeckChannel {
-            objectName: "deckMeterGpu"
-            visible: SystemResources.gpuDetected
-            Layout.fillHeight: true
-            Layout.preferredWidth: Styling.fontSize(0) * 4.4
-            interactive: false
-            label: "GPU"
-            glyph: Icons.gpu
-            value: SystemResources.gpuUsage / 100
-        }
-        DeckChannel {
-            objectName: "deckMeterHeat"
-            visible: !SystemResources.gpuDetected
-            Layout.fillHeight: true
-            Layout.preferredWidth: Styling.fontSize(0) * 4.4
-            interactive: false
-            label: "Heat"
-            glyph: Icons.thermometer
-            available: SystemResources.cpuTemp >= 0
-            value: Math.max(0, SystemResources.cpuTemp) / 100
-            readout: available ? String(SystemResources.cpuTemp) : "—"
-            unit: available ? "°C" : ""
+            spacing: Styling.fontSize(0) * 0.25
+            DeckChannel {
+                objectName: "deckMeterCpu"
+                Layout.fillHeight: true
+                Layout.preferredWidth: Styling.fontSize(0) * 4.4
+                interactive: false
+                label: "CPU"
+                glyph: Icons.cpu
+                available: root.sampled
+                value: SystemResources.cpuUsage / 100
+            }
+            DeckChannel {
+                objectName: "deckMeterMemory"
+                Layout.fillHeight: true
+                Layout.preferredWidth: Styling.fontSize(0) * 4.4
+                interactive: false
+                label: "Memory"
+                glyph: Icons.ram
+                available: root.sampled
+                value: SystemResources.ramUsage / 100
+            }
+            DeckChannel {
+                objectName: "deckMeterGpu"
+                visible: SystemResources.gpuDetected
+                Layout.fillHeight: true
+                Layout.preferredWidth: Styling.fontSize(0) * 4.4
+                interactive: false
+                label: "GPU"
+                glyph: Icons.gpu
+                value: SystemResources.gpuUsage / 100
+            }
+            DeckChannel {
+                objectName: "deckMeterHeat"
+                visible: !SystemResources.gpuDetected
+                Layout.fillHeight: true
+                Layout.preferredWidth: Styling.fontSize(0) * 4.4
+                interactive: false
+                label: "Heat"
+                glyph: Icons.thermometer
+                available: SystemResources.cpuTemp >= 0
+                value: Math.max(0, SystemResources.cpuTemp) / 100
+                readout: available ? String(SystemResources.cpuTemp) : "—"
+                unit: available ? "°C" : ""
+            }
         }
     }
 
-    DeckSection {
+    DeckCard {
         id: rack
         title: "System"
+        glyph: Icons.gpu
         objectName: "deckResourceRack"
         Layout.fillWidth: true
         Layout.fillHeight: true
+        order: 1
         StyledText {
             Layout.fillWidth: true
             text: SystemResources.cpuModel || "Reading system information…"

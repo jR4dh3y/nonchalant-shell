@@ -20,6 +20,9 @@ import qs.modules.bar
 import qs.modules.services
 import qs.modules.services.compositor
 import qs.modules.theme
+import qs.modules.widgets.launcher
+import qs.modules.bar.deck
+import qs.modules.globals
 
 ShellRoot {
     id: shellRoot
@@ -47,6 +50,7 @@ ShellRoot {
             width: 1280
             height: 720
             BarContent { id: content; anchors.fill: parent; screen: Quickshell.screens[0] }
+            RunMenuHost { id: runMenu; anchors.fill: parent; screen: Quickshell.screens[0]; z: 200 }
         }
         TestCase {
             id: test
@@ -154,8 +158,7 @@ ShellRoot {
                             tryVerify(() => Math.abs(drawer.height - Math.min(host.height - content.barTargetHeight - content.baseOuterMargin - Styling.fontSize(0) * 2, drawer.preferredHeight)) < 6)
                             check(drawer.x >= 0 && drawer.x + drawer.width <= host.width + 1, route + " stays within output")
                             check(drawer.y >= 0 && drawer.y + drawer.height <= host.height + 1, route + " fits above or below bar")
-                            compare(item("deckPageNavigation"), null)
-                            compare(item("deckDrawerHeader"), null)
+                            check(item("deckPageRail").visible === drawer.dash, route + " shows the page rail only on dash pages")
                             compare(item("deckWindowSearch"), null)
                             GlobalShortcuts.run(route)
                             tryCompare(drawer, "isOpen", false)
@@ -165,13 +168,29 @@ ShellRoot {
                 host.width = 1280
                 GlobalShortcuts.run("connections")
                 tryCompare(drawer, "progress", 1)
-                const networkWidth = drawer.width
-                GlobalShortcuts.run("today")
-                tryVerify(() => drawer.width < networkWidth)
-                tryVerify(() => drawer.height < Styling.fontSize(0) * 23, 2000, "calendar fits its month instead of a full dashboard")
-                compare(item("deckTodayReadout"), null)
+                const dashWidth = drawer.width
+                const dashX = drawer.x
+                click("deckPage-today")
+                check(drawer.isOpen && drawer.mode === "today", "rail switches pages without closing")
+                wait(Math.max(50, DeckMotion.resizeDuration))
+                compare(drawer.width, dashWidth)
+                compare(drawer.x, dashX)
+                const indicator = item("deckRailIndicator")
+                tryVerify(() => Math.abs(indicator.y - item("deckPage-today").y) < 1, 2000, "rail indicator settles on the selected page")
                 const lastDay = item("deckCalendarDay-" + item("deckCalendar").daysInMonth)
                 check(lastDay.mapToItem(drawer, 0, lastDay.height).y <= drawer.height, "last calendar week is visible")
+                for (const card of ["deckTodayDate", "deckTodayWeather", "deckMonth"])
+                    check(item(card) !== null && item(card).visible, card + " is its own card")
+                drawer.forceActiveFocus()
+                keyClick(Qt.Key_Tab, Qt.ControlModifier)
+                compare(drawer.mode, "alerts")
+                keyClick(Qt.Key_Backtab, Qt.ControlModifier | Qt.ShiftModifier)
+                compare(drawer.mode, "today")
+                GlobalShortcuts.run("power")
+                tryVerify(() => drawer.width < dashWidth, 2000, "power is a compact flyout rather than the dash")
+                check(!item("deckPageRail").visible, "flyouts hide the page rail")
+                GlobalShortcuts.run("power")
+                tryCompare(drawer, "isOpen", false)
                 const busyPips = item("deckWorkspace-ws1-pips")
                 check(busyPips.visible && busyPips.children.length >= 4, "workspace occupancy pips stay in the bar")
                 console.log("DECK_REFINEMENT_PASSED")
@@ -222,6 +241,25 @@ ShellRoot {
                 drawer.close()
                 NetworkService.wifiNetworks.splice(0, NetworkService.wifiNetworks.length)
                 for (const node of nodes) node.destroy()
+            }
+            function test_deck_launcher() {
+                const screenState = Visibilities.getForScreen(output.name)
+                screenState.launcher = true
+                const launcher = findChild(runMenu, "deckLauncher")
+                check(launcher !== null, "Deck replaces the generic run menu")
+                tryCompare(launcher, "progress", 1)
+                const frame = findChild(runMenu, "deckLauncherFrame")
+                check(frame.x < Styling.fontSize(0) && frame.y >= runMenu.barClearance - 1, "launcher unrolls under the launcher button")
+                check(runMenu.hitbox === frame, "launcher frame receives input")
+                tryVerify(() => findChild(runMenu, "deckLauncherInput").activeFocus)
+                keyClick(Qt.Key_Tab)
+                compare(GlobalStates.launcherMode, "projects")
+                keyClick(Qt.Key_Tab)
+                compare(GlobalStates.launcherMode, "apps")
+                screenState.launcher = false
+                tryCompare(launcher, "progress", 0)
+                compare(runMenu.hitbox, null)
+                console.log("DECK_LAUNCHER_PASSED")
             }
             function test_window_and_workspace_actions() {
                 click("deckTask-w1")
@@ -470,7 +508,7 @@ class DeckRuntimeTests(unittest.TestCase):
                 env=env, capture_output=True, text=True, timeout=75)
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT"):
+            for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER"):
                 self.assertIn("DECK_" + marker + "_PASSED", output, output)
             if env.get("DECK_TEST_PYTHON"):
                 self.assertIn("DECK_TRAY_PASSED", output, output)

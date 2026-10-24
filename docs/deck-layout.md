@@ -2,63 +2,101 @@
 
 Select **Settings → Shell → Bar → Style → Deck**. Position chooses the top or bottom edge.
 
-![Deck rendered on a disposable Niri session](../assets/demos/deck-bar.png)
+Deck keeps the compact workspace, window, and status strips. At the default 14px font, the bar is 32px high and reserves at most 40px including gaps.
 
-Deck keeps the desktop footprint small: at the default 14px font it draws a 32px bar and reserves 40px including both gaps. The workspace strip, window tabs, and status strip occupy three adjacent zones. The control drawer reserves no extra space while closed. Its outer width and height stay fixed across pages, bounded by the output dimensions. All eight pages remain visible in a sidebar: Controls, Connections, Windows, Today, Inbox, Tray, Wallpapers, and Resources.
+![Deck bar](../assets/demos/deck-bar.png)
 
-## Design idea: a console for the session
+## The dash
 
-Deck treats the session like a mixing console. Every level is a channel strip, every tab tells you its state before you open it, and every page opens with one line of current state. The goal is to read the session at a glance, then adjust it with one direct gesture, rather than browse a settings panel.
+Status buttons open one fixed-size dash at the page they belong to. A page rail on the left switches between Controls, Network, Today, Inbox, Tray, Wallpapers, and Resources. The rail has no counters. Settings and Power sit in their own card at its foot.
 
-![Controls as channel strips beside the session rack](../assets/demos/deck-controls.png)
+Every page is built from separate cards on the dash surface, so each component reads on its own:
 
-- **Channel strips.** Output, Mic, and Display are vertical faders. Each strip has a large live readout at the top, a full-height track you can click, drag, or scroll, and its own switch underneath. Output and Mic have working mute switches. Display shows a passive icon because brightness cannot be muted. The rack beside the strips holds the slower settings: output device choice (when there is more than one device), media transport with an inline scrubber, battery state, power profiles as a checked list, and, at the bottom, Do not disturb (with its On/Off state), Sound mixer, and the power menu.
-- **Meters share the grammar.** Resources uses the same strips, read-only: CPU, Memory, and GPU (or CPU heat when there is no GPU). The rack next to them lists clock, heat, memory in GB, GPU name, and network rates. Levels look the same everywhere, so a high reading looks high on either page.
-- **Live index.** Each sidebar tab shows a trailing value: output volume or Muted, Offline, window count, today's temperature, waiting notifications or Quiet, background app count, and live CPU while sampling. A glance at the closed list tells you which page needs attention.
-- **Internal groups.** Controls separates output devices, playback, power, and session actions. Connections uses an enclosed Wi-Fi/Bluetooth selector, with connected and available networks separated; Bluetooth separates connected, paired, and available devices. Workspace groups and individual notifications have inset surfaces. The sidebar names the current page, so there is no repeated header. Settings and Close sit at the foot of the sidebar.
-- **Today reads as a date first.** A large day numeral, weekday, month, ISO week, and weather sit beside the month grid. Weekends are muted, the trailing sixth week is hidden when empty, and Today is only enabled when you are viewing another month.
-- **Windows grouped by workspace.** Rows sit under their workspace with a count, and the shown workspace is marked. Moving a window offers compact workspace numbers inline.
-- **Wallpapers as thumbnails.** A responsive thumbnail grid replaces the file list.
-- **Workspace pips.** In the bar, each workspace number shows up to four occupancy pips, replacing the old "1 · 2" text. Occupied workspaces are visible without reading.
+| Page | Cards |
+| --- | --- |
+| Controls | Levels (Output, Mic, and Display faders) · Quick toggles (Wi-Fi, Bluetooth, Do not disturb, Night light) · Now playing, when a player exists · Output devices with a per-app volume shortcut |
+| Network | Wi-Fi/Bluetooth toolbar with radio, scan, and settings · Current connection · Available networks or devices |
+| Today | Date · Weather · Month |
+| Inbox | Header with Do not disturb and Clear all · one card per notification |
+| Tray | Header with Back · background apps and menus |
+| Wallpapers | Search · thumbnail grid |
+| Resources | Load meters · System details |
 
-![Resources as read-only channel meters](../assets/demos/deck-resources.png)
+The dash never scrolls as a whole. Toolbars, current connections, and headers stay fixed. Only lists such as available networks, output devices, notifications, tray menus, and wallpapers scroll inside their own cards.
 
-![Today with the date readout beside the month](../assets/demos/deck-today.png)
+Quick toggles fill with the primary color when on. Right-click Wi-Fi or Bluetooth to open its Network tab. The month card divides its full height between the displayed weeks. Days from adjacent months are muted, and the current week has a band.
 
-![Windows grouped by workspace](../assets/demos/deck-windows.png)
+![Controls](../assets/demos/deck-controls.png)
 
-These screenshots come from a disposable Niri session without audio or brightness hardware, so the Output, Mic, and Display strips show "—". Resources readings are the host's read-only CPU, memory, and GPU values sampled during the capture.
+![Today](../assets/demos/deck-today.png)
 
-## Daily actions
+![Resources](../assets/demos/deck-resources.png)
 
-- The left strip shows workspace numbers with occupancy pips. Click to switch, or scroll a workspace button to move between workspaces.
-- The middle strip exposes each window on the current workspace with its own app icon and title. Click to focus, middle-click to close, and scroll to cycle windows. Right-click opens the window list.
-- The status strip shows connection, volume, battery when available, notifications, and time. Scroll volume to adjust; right-click to mute. Click the time to open Today.
-- The volume button opens Controls. Drag, click, or scroll a channel strip; its switch mutes the channel. Media appears in the rack only while a player is available; non-seekable playback hides the scrubber.
-- Connections exposes Wi-Fi networks and Bluetooth devices. Windows provides search, focus, targeted close, and move-to-workspace actions. Inbox supports notification actions, Do not disturb, Clear all, and dismissal. Tray supports activation and nested application menus.
-- `qs ipc call nonchalant run <page>` opens a drawer page directly: `controls`, `connections`, `windows`, `today`, `alerts`, `tray`, `wallpapers`, or `stats`. Running it again closes the drawer.
-- Escape or an outside click closes the drawer. Focusing a window or changing workspace dismisses it and returns keyboard ownership to the desktop. Left/Right (and Up/Down outside a focused fader) move between pages.
+## Bespoke flyouts
 
-On narrower screens, window tabs first reduce to icons; on the smallest screens, the window list remains accessible in the drawer. Additional connection, power, notification, and tray controls remain accessible there. The clock stays inline at the same font size. Empty workspaces leave the middle zone transparent, and populated window titles use middle elision to preserve distinguishing endings.
+Battery and Power are compact flyouts under their triggers, without the rail. Battery shows charge, time remaining, and power profiles. Power lists Lock, Sleep, Hibernate, Log out, Restart, and Shut down. Log out, Restart, and Shut down need a second click within three seconds. Cancel, Escape, closing, or switching pages clears the confirmation.
 
-## Implementation and interaction surfaces
+![Battery](../assets/demos/deck-battery.png) ![Power](../assets/demos/deck-power.png)
 
-`layouts/DeckBar.qml` owns the compact geometry. `deck/` contains dedicated workspace and window strips, buttons, channel strips (`DeckChannel`), the playback scrubber (`DeckFader`), controls, connection lists, window search/move rows, calendar, notification list, wallpaper list, tray/menu navigation, and drawer transition controller. Styling primitives and system services are shared with the shell. Existing Clock, NonchalantTaskbar, dashboard, and island panel compositions are not embedded.
+## Launcher
 
-`DeckActions` releases popup ownership before window/workspace focus changes. `DeckDrawer` owns open, close, route replacement, keyboard focus, and per-output state. Fullscreen, overview, hiding the bar, style replacement, and destruction release popup ownership. Resource sampling runs only on the Resources page. Bluetooth discovery started by the drawer stops when leaving its connection page.
+Deck replaces the centered run menu with its own launcher. It unrolls under the bar's launcher button, or above it on bottom bars. Search stays pinned in its own card. With an empty search, a Frequent card shows the eight most-used apps above the All apps list. While you type, the list shows results. Tab switches between Apps and Projects. Up/Down, Page Up/Page Down, and Enter work from the search field, and Escape closes.
 
-Every button—including window move/close rows, workspace destinations, notification actions, menu items, and media controls—uses the complete `DeckAction` surface for coherent press, hover, focus, and disabled feedback. Explicit Tab, Icon, Action, and Tile kinds distinguish navigation, utilities, text actions, and thumbnails without duplicating input behavior. The optional `detail` slot carries a row's live value. Slider handles and text inputs retain native keyboard behavior. Window and workspace strips follow the active item when overflowing.
+![Launcher](../assets/demos/deck-launcher.png)
 
-## Verification
+## Motion
 
-`python3 -m unittest tests.e2e.test_deck_runtime` exercises populated geometry at both edges, the compact footprint, action dispatch, window search and movement, vertical channel faders that fit the fixed drawer, mute controls, the live tab index and header-free sidebar, workspace occupancy pips, do-not-disturb, IPC routes, Escape/outside dismissal, calendar arithmetic, hidden input, and sampling lifetime.
+Deck has its own motion tokens in `modules/bar/deck/DeckMotion.qml`, separate from the island springs in `Motion`:
 
-`python3 tests/runtime/run_compositor.py --compositor niri --shell --style deck` exercises the full shell on a disposable compositor and captures every Deck drawer page (`deck-<page>.png`) with live clients. Hardware audio/brightness, real network authentication/pairing, mixed-scale monitor hotplug, and physical output rendering still require hardware acceptance.
+- **Rail.** The bar, dash, flyouts, and launcher unroll from the bar edge on a fast-decelerating curve (`OutExpo`) and retract quickly with `InQuad`. Content trails the surface edge slightly.
+- **Pages.** Switching pages slides the new page along the rail's direction: up when moving to a tab above, down when moving below.
+- **Cards.** Cards land in sequence with a short lift and a small detent.
+- **Detents.** The rail's selection indicator and the launcher's highlighted row slide into place with a small overshoot.
 
-With `dbus-next` installed in a disposable environment, `DECK_TEST_PYTHON=/path/to/python python3 -m unittest tests.e2e.test_deck_runtime` additionally verifies real tray activation, nested menu dispatch, disabled actions, and removal using the private D-Bus fixture.
+All durations scale with the theme's animation duration. Setting it to 0 disables Deck motion.
 
-The icon font is bundled from Phosphor Web v2.1.2 and registered by `Icons.qml`; it does not rely on the host substituting the requested family. See `assets/fonts/README.md` for provenance and license.
+## Interaction
 
-### Grouping change coverage
+Clicking a trigger for the page already shown closes the dash. Another trigger switches pages in place. Ctrl+Tab and Ctrl+Shift+Tab (or Ctrl+Page Down/Up) walk the rail. Plain arrow keys stay with the focused control. Escape or an outside click closes. Focusing a window, changing workspace, entering fullscreen or overview, hiding the bar, and changing styles release popup ownership.
 
-The shared drawer header is removed on all eight pages. Settings and Close remain in the sidebar; Escape, outside dismissal, direct IPC routes, and page selection retain their existing behavior. The taskbar uses its selected background without an extra underline. Controls, both connection modes, workspace groups, notifications, and resource details use shared inset sections. Today and Wallpapers already have a calendar and thumbnail grid, so they need no additional grouping; Tray retains its app/menu navigation. Config defaults and compositor backends are unaffected.
+Workspace buttons switch workspaces, and scrolling them selects an adjacent workspace. Window tabs focus on click and close on middle-click. Right-click opens the compositor's native overview where supported. The volume button supports wheel adjustment and right-click mute.
+
+## IPC routes
+
+Use `qs ipc call nonchalant run <command>`:
+
+| Commands | Result |
+| --- | --- |
+| `controls`, `sound`, `audio`, `mic`, `microphone`, `media`, `music`, `player`, `dashboard` | Controls page |
+| `connections`, `network`, `wifi`, `bluetooth` | Network page and requested tab |
+| `today`, `calendar`, `datetime`, `weather` | Today page |
+| `alerts`, `notifications` | Inbox page |
+| `tray` | Tray page |
+| `wallpapers`, `wallpaper` | Wallpapers page |
+| `stats`, `resources`, `system-monitor` | Resources page |
+| `battery`, `powerprofile` | Battery flyout, or Power when no battery exists |
+| `power`, `powermenu` | Power flyout |
+| `launcher` | Deck launcher |
+| `windows` | Native overview, with an explicit unsupported result on compositors without one |
+
+## Implementation and coverage
+
+`DeckBar` normalizes routes and selects their trigger. `DeckDrawer` is the per-output popup controller: dash pages share its fixed geometry and rail; flyouts size to their content under the trigger. `DeckCard` is the shared card container and runs the card entrance. `RunMenuHost` loads `DeckLauncher` instead of the generic run menu when the bar style is Deck, so the panel's focus, mask, and backdrop handling stay the same.
+
+Run the focused fixture with:
+
+```sh
+python3 -m unittest tests.e2e.test_deck_runtime
+```
+
+It checks the populated bar at several widths and both edges, dash and flyout geometry for every route, rail switching with stable dash geometry, the rail indicator, Ctrl+Tab navigation, network list scrolling with a pinned toolbar and current connection, password handling, calendar rollover and the final week, faders and notification actions, power confirmation, launcher placement, focus, and mode switching, overview dispatch, and sampling lifetime. Set `DECK_TEST_PYTHON` to a Python environment with `dbus-next` to include real private-bus tray menu dispatch.
+
+Run the complete shell on a disposable compositor with:
+
+```sh
+python3 tests/runtime/run_compositor.py --compositor niri --shell --style deck
+```
+
+This captures every page, flyout, and the launcher with live clients. All displays, runtime/config/cache paths, and D-Bus sessions are private. Hardware audio/brightness, real Wi-Fi authentication and Bluetooth pairing, mixed-scale monitor hotplug, and actual power/logout actions still need separate acceptance testing. The power tests never execute a shutdown, reboot, logout, suspend, or lock.
+
+The bundled Phosphor font's provenance and license are in `assets/fonts/README.md`.

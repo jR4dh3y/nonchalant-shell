@@ -37,7 +37,7 @@ Item {
     function triggerFor(page: string): Item {
         switch (page) {
         case "connections": return networkButton;
-        case "controls": case "media": return volumeButton;
+        case "controls": return volumeButton;
         case "battery": return batteryButton;
         case "alerts": return inboxButton;
         case "tray": return trayButton;
@@ -60,14 +60,14 @@ Item {
             return;
         }
         const page = ["wifi", "bluetooth", "network"].includes(mode) ? "connections"
-            : ["sound", "mic", "audio"].includes(mode) ? "controls"
+            : ["sound", "mic", "audio", "media"].includes(mode) ? "controls"
             : ["battery", "powerprofile"].includes(mode) ? (Battery.available ? "battery" : "power")
             : ["calendar", "datetime", "weather"].includes(mode) ? "today"
             : ["notifications", "alerts"].includes(mode) ? "alerts"
             : ["resources", "system-monitor"].includes(mode) ? "stats"
             : mode === "powermenu" ? "power" : mode;
         const tab = mode === "bluetooth" ? "bluetooth" : "wifi";
-        if (!["controls", "connections", "battery", "today", "alerts", "tray", "power", "wallpapers", "stats", "media"].includes(page)) return;
+        if (!["controls", "connections", "battery", "today", "alerts", "tray", "power", "wallpapers", "stats"].includes(page)) return;
         if (desk.isOpen && desk.mode === page && (page !== "connections" || desk.tab === tab)) desk.close();
         else {
             desk.tab = tab;
@@ -99,14 +99,13 @@ Item {
         property real retraction: root.reveal ? 0 : 1
         transform: Translate { y: (root.bottomPosition ? 1 : -1) * surface.retraction * root.totalBarHeight }
         Behavior on retraction {
-            enabled: Motion.enabled
+            enabled: DeckMotion.enabled
             NumberAnimation {
-                duration: root.reveal ? Motion.expandDuration : Motion.collapseDuration
-                easing.type: root.reveal ? Easing.OutBack : Easing.InCubic
-                easing.overshoot: Motion.overshoot
+                duration: root.reveal ? DeckMotion.openDuration : DeckMotion.closeDuration
+                easing.type: root.reveal ? DeckMotion.openEasing : DeckMotion.closeEasing
             }
         }
-        Behavior on opacity { NumberAnimation { duration: Motion.fadeOutDuration } }
+        Behavior on opacity { enabled: DeckMotion.enabled; NumberAnimation { duration: DeckMotion.closeDuration } }
 
         StyledRect {
             objectName: "deckNavigationZone"

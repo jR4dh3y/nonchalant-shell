@@ -16,6 +16,8 @@ Button {
     property string detail: ""
     property string description: label
     property bool selected: false
+    // Selected accent actions fill with the primary color, like active toggles.
+    property bool accent: false
     property bool quiet: false
     wheelEnabled: false
     property string imageSource: ""
@@ -24,7 +26,9 @@ Button {
     property real controlHeight: Styling.fontSize(0) * 2
     property int labelAlignment: kind === DeckAction.Action || tile ? Text.AlignHCenter : Text.AlignLeft
     readonly property bool tile: kind === DeckAction.Tile
-    readonly property color ink: kind === DeckAction.Tab && selected ? Colors.primary
+    readonly property bool filled: selected && accent
+    // Tabs draw no selected surface: the rail's sliding indicator sits behind them.
+    readonly property color ink: (kind === DeckAction.Tab || filled) && selected ? Styling.srItem("primary")
         : selected || visualFocus ? surface.item : Colors.overBackground
     signal secondaryClicked()
     signal middleClicked()
@@ -41,10 +45,12 @@ Button {
 
     background: StyledRect {
         id: surface
-        variant: root.selected || root.visualFocus ? "focus" : root.kind === DeckAction.Action ? "internalbg" : "common"
-        radius: Styling.radius(-8)
+        variant: root.filled ? "primary" : "focus"
+        radius: root.kind === DeckAction.Icon ? height / 2 : Styling.radius(-6)
         enableBorder: root.visualFocus
-        backgroundOpacity: root.selected || root.visualFocus || root.kind === DeckAction.Action ? 1 : 0
+        backgroundOpacity: root.kind === DeckAction.Tab && root.selected ? 0
+            : root.selected || root.visualFocus || root.kind === DeckAction.Action ? 1 : 0
+        Behavior on backgroundOpacity { enabled: DeckMotion.enabled; NumberAnimation { duration: DeckMotion.closeDuration } }
         HoverTint { hovered: root.hovered; pressed: root.pressed; hoverOpacity: 0.08; pressedOpacity: 0.16 }
     }
     contentItem: GridLayout {
@@ -71,6 +77,9 @@ Button {
             font.family: Icons.font
             font.pixelSize: Styling.fontSize(3)
             color: root.ink
+            // A fixed glyph column keeps labels aligned down a list.
+            Layout.preferredWidth: Styling.fontSize(3) * 1.15
+            horizontalAlignment: Text.AlignHCenter
             Layout.alignment: Qt.AlignCenter
         }
         StyledText {

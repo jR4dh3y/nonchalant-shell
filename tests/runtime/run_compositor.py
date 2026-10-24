@@ -544,14 +544,22 @@ def exercise(session, source, args, passed):
         session.run(["grim", str(session.root / "occupied-shell.png")])
     if shell and args.style == "deck":
         for page in ("controls", "connections", "battery", "today", "alerts", "tray", "wallpapers", "stats", "power", "media"):
+            # Media playback lives on the Controls page of the dash.
+            expected = "controls" if page == "media" else page
             session.ipc(shell, "nonchalant", "run", page)
             session.wait(f"deck {page} page opens", lambda: (
-                shell_state()["popupOpen"] and shell_state()["controlMenu"] == ("power" if page == "battery" and shell_state()["controlMenu"] == "power" else page)))
+                shell_state()["popupOpen"] and shell_state()["controlMenu"] == ("power" if page == "battery" and shell_state()["controlMenu"] == "power" else expected)))
             time.sleep(0.7)
             session.run(["grim", str(session.root / f"deck-{page}.png")])
             session.ipc(shell, "nonchalant", "run", page)
             session.wait(f"deck {page} reverse toggle dismisses", lambda: not shell_state()["popupOpen"])
         passed.append("every Deck task flyout opens by IPC with live clients and reverse-toggles closed")
+        session.ipc(shell, "nonchalant", "run", "launcher")
+        time.sleep(0.8)
+        session.run(["grim", str(session.root / "deck-launcher.png")])
+        session.ipc(shell, "nonchalant", "run", "launcher")
+        time.sleep(0.5)
+        passed.append("Deck launcher opens and closes by IPC")
         if args.compositor == "niri":
             session.ipc(shell, "nonchalant", "run", "windows")
             session.wait("Deck opens native overview", lambda: json.loads(session.run(["niri", "msg", "--json", "overview-state"]))["is_open"])

@@ -89,7 +89,7 @@ ColumnLayout {
                 color: root.muted || !root.available ? Colors.overSurfaceVariant : Colors.primary
                 opacity: root.muted || !root.available ? 0.35 : 1
                 enableBorder: false
-                Behavior on height { enabled: Motion.enabled && !slider.pressed; NumberAnimation { duration: Motion.fadeOutDuration; easing.type: Easing.OutCubic } }
+                Behavior on height { enabled: DeckMotion.enabled && !slider.pressed; NumberAnimation { duration: DeckMotion.cardDuration; easing.type: DeckMotion.travelEasing } }
             }
         }
         handle: StyledRect {
