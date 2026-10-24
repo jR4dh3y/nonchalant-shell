@@ -63,15 +63,16 @@ class TestFeature2_SettingsAppSelectorRow(unittest.TestCase):
 
     def setUp(self):
         self.cfg = BarConfigModel(style="default")
-        self.selector_options = ["default", "island", "pills", "left"]
-        self.selector_labels = ["Default", "Dynamic Island", "Pills", "Left"]
+        self.selector_options = ["default", "island", "pills", "left", "deck"]
+        self.selector_labels = ["Default", "Dynamic Island", "Pills", "Left", "Deck"]
 
     def test_f2_selector_options_exist(self):
         self.assertIn("default", self.selector_options)
         self.assertIn("island", self.selector_options)
         self.assertIn("left", self.selector_options)
         self.assertIn("pills", self.selector_options)
-        self.assertEqual(len(self.selector_options), 4)
+        self.assertIn("deck", self.selector_options)
+        self.assertEqual(len(self.selector_options), 5)
 
     def test_f2_selector_reflects_active_config(self):
         self.cfg.style = "island"

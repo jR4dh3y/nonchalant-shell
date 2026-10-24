@@ -61,6 +61,10 @@ CompositorBackend {
             focusWorkspace(target.id);
     }
 
+    function toggleOverview() {
+        sendAction("ToggleOverview", {}, "");
+    }
+
     function logout() {
         sendAction("Quit", { skip_confirmation: true }, "");
     }

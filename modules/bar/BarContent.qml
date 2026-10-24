@@ -14,6 +14,7 @@ Item {
     readonly property bool isPills: barStyle === "pills"
     readonly property bool isFloating: isIsland || isPills
     readonly property bool isLeft: barStyle === "left"
+    readonly property bool isDeck: barStyle === "deck"
 
     // Stable fallback hitbox so UnifiedShellPanel.mask never references undefined
     Item {
@@ -37,7 +38,7 @@ Item {
     readonly property bool dashboardInputActive: layoutLoader.item ? layoutLoader.item.dashboardInputActive : false
 
     readonly property bool keyboardInputActive: timerInputActive || dashboardInputActive
-        || (isLeft && (layoutLoader.item?.trayInputActive ?? false))
+        || (layoutLoader.item?.trayInputActive ?? false)
 
     readonly property Item barHitbox: (layoutLoader.item && layoutLoader.item.barHitbox) ? layoutLoader.item.barHitbox : fallbackHitbox
     readonly property Item dashboardHitbox: (layoutLoader.item && layoutLoader.item.dashboardHitbox) ? layoutLoader.item.dashboardHitbox : fallbackHitbox
@@ -55,7 +56,15 @@ Item {
     Loader {
         id: layoutLoader
         anchors.fill: parent
-        sourceComponent: root.isPills ? pillsComponent : (root.isIsland ? islandComponent : (root.isLeft ? leftComponent : defaultComponent))
+        sourceComponent: root.isDeck ? deckComponent : (root.isPills ? pillsComponent : (root.isIsland ? islandComponent : (root.isLeft ? leftComponent : defaultComponent)))
+    }
+
+    Component {
+        id: deckComponent
+        DeckBar {
+            anchors.fill: parent
+            screen: root.screen
+        }
     }
 
     Component {

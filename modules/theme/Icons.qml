@@ -6,8 +6,13 @@ import Quickshell
 Singleton {
     id: root
 
-    // Icon font
-    readonly property string font: "Phosphor-Bold"
+    // Match the codepoint map regardless of the host's installed font versions.
+    readonly property string font: phosphorFont.name || "Phosphor-Bold"
+    readonly property bool fontReady: phosphorFont.status === FontLoader.Ready
+    FontLoader {
+        id: phosphorFont
+        source: Qt.resolvedUrl("../../assets/fonts/Phosphor-Bold.ttf")
+    }
 
     // Overview button
     readonly property string overview: ""
@@ -45,7 +50,7 @@ Singleton {
     readonly property string kanban: ""
     readonly property string wallpapers: ""
     readonly property string assistant: ""
-    readonly property string apps: ""
+    readonly property string apps: ""
     readonly property string terminal: ""
     readonly property string terminalWindow: ""
     readonly property string clipboard: ""
@@ -256,7 +261,7 @@ Singleton {
     readonly property string cornersOut: arrowsOut
     readonly property string drop: sparkle
     readonly property string arrowsOutSimple: arrowsOut
-    readonly property string squaresFour: layout
+    readonly property string squaresFour: ""
     readonly property string mapPin: globe
     readonly property string thermometer: temperature
     readonly property string windowsLogo: terminalWindow
