@@ -39,6 +39,10 @@ ShellRoot {
                 return null
             }
 
+            function assertLevel(actual, expected, message) {
+                verify(Math.abs(actual - expected) < 0.001, message + ": expected " + expected + ", got " + actual)
+            }
+
             function initTestCase() {
                 tryVerify(() => CompositorService.backend !== null)
                 CompositorService.backend.state = compositorState
@@ -111,6 +115,7 @@ ShellRoot {
                 const icons = childOfType(bar, "IslandStatusIcons")
                 verify(icons !== null)
                 tryCompare(bar, "containerY", 0)
+                Audio.sink.audio.volume = 0.5
                 const handlers = wheelHandlers(icons.parent, [])
                 let hits = 0
                 for (const handler of handlers) handler.wheel.connect(() => hits++)
@@ -119,9 +124,18 @@ ShellRoot {
                 bar.triggerOsd("volume", 0.5, false)
                 verify(bar.inlineOsdActive)
                 wait(Motion.hoverDuration + 50)
-                for (let i = 0; i < 3; i++)
+                for (let i = 1; i <= 3; i++) {
                     mouseWheel(bar, point.x, point.y, 0, -120)
+                    assertLevel(Audio.sink.audio.volume, 0.5 - 0.05 * i, "each notch lowers the level by one step")
+                }
                 compare(hits, 3, "every notch reaches a handler while the inline OSD covers the icons")
+                // The first timeout would lapse about 1.8 s after triggerOsd, so
+                // a notch sent later must restart it for the OSD to still be up.
+                wait(1200)
+                mouseWheel(bar, point.x, point.y, 0, -120)
+                assertLevel(Audio.sink.audio.volume, 0.3, "a notch after the first timeout still adjusts the level")
+                wait(1200)
+                verify(bar.inlineOsdActive, "the OSD stays up past its original timeout while scrolling")
                 tryCompare(bar, "inlineOsdActive", false, 2500)
                 console.log("PILLS_INLINE_OSD_SCROLL_PASSED")
             }
@@ -225,6 +239,77 @@ ShellRoot {
 '''
 
 
+# Stands in for the PipeWire wrapper so the wheel handlers adjust a level the
+# test can read back. The real service has no sink in this sandbox.
+AUDIO_STUB = r'''
+pragma Singleton
+import QtQuick
+
+QtObject {
+    id: root
+
+    readonly property real hardMaxValue: 2.0
+    readonly property real value: sinkAudio.volume
+    property bool protectionEnabled: false
+    property bool protectionTriggered: false
+    readonly property list<var> outputAppNodes: []
+    readonly property list<var> inputAppNodes: []
+    readonly property list<var> outputDevices: []
+    readonly property list<var> inputDevices: []
+
+    readonly property QtObject sink: QtObject {
+        id: sinkNode
+        readonly property bool ready: true
+        readonly property string id: "test-sink"
+        readonly property QtObject audio: QtObject {
+            id: sinkAudio
+            property real volume: 0.5
+            property bool muted: false
+            onVolumeChanged: root.volumeChanged(volume, muted, sinkNode)
+            onMutedChanged: root.volumeChanged(volume, muted, sinkNode)
+        }
+    }
+
+    readonly property QtObject source: QtObject {
+        id: sourceNode
+        readonly property bool ready: true
+        readonly property string id: "test-source"
+        readonly property QtObject audio: QtObject {
+            id: sourceAudio
+            property real volume: 0.5
+            property bool muted: false
+            onVolumeChanged: root.micVolumeChanged(volume, muted, sourceNode)
+            onMutedChanged: root.micVolumeChanged(volume, muted, sourceNode)
+        }
+    }
+
+    signal volumeChanged(real volume, bool muted, var node)
+    signal micVolumeChanged(real volume, bool muted, var node)
+    signal sinkProtectionTriggered(string reason)
+
+    function setVolume(volume: real) {
+        sinkAudio.volume = Math.max(0, Math.min(hardMaxValue, volume));
+    }
+
+    function setMicVolume(volume: real) {
+        sourceAudio.volume = Math.max(0, Math.min(hardMaxValue, volume));
+    }
+
+    function setNodeVolume(node, volume: real) {}
+    function setProtectionEnabled(enabled: bool) { protectionEnabled = enabled; }
+    function toggleMute() { sinkAudio.muted = !sinkAudio.muted; }
+    function toggleMicMute() { sourceAudio.muted = !sourceAudio.muted; }
+    function incrementVolume() { setVolume(sinkAudio.volume + 0.02); }
+    function decrementVolume() { setVolume(sinkAudio.volume - 0.02); }
+    function setDefaultSink(node) {}
+    function setDefaultSource(node) {}
+    function friendlyDeviceName(node): string { return "Test device"; }
+    function appNodeDisplayName(node): string { return "Test app"; }
+    function volumeIcon(volume: real, muted: bool): string { return ""; }
+}
+'''
+
+
 @unittest.skipUnless(shutil.which("qs"), "Quickshell is required for runtime checks")
 class PillsRuntimeTests(unittest.TestCase):
     def test_transitions_and_feedback(self):
@@ -240,6 +325,7 @@ class PillsRuntimeTests(unittest.TestCase):
             shutil.copytree(ROOT / "modules/services", modules / "services")
             (modules / "services/compositor/NiriBackend.qml").write_text(
                 "import QtQuick\nCompositorBackend {}\n")
+            (modules / "services/Audio.qml").write_text(AUDIO_STUB)
             (fixture / "shell.qml").write_text(QML)
             home = fixture / "home"
             home.mkdir()
