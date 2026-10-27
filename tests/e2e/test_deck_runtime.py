@@ -120,6 +120,14 @@ ShellRoot {
             function waitForCardEntrance() {
                 wait(DeckMotion.delayFor(DeckMotion.maximumStaggerSteps) + DeckMotion.cardDuration)
             }
+            function fitsIn(name, containerName) {
+                const target = item(name)
+                const container = item(containerName)
+                if (!target || !container || !target.visible || target.width <= 0) return false
+                const origin = target.mapToItem(container, 0, 0)
+                return origin.x >= -0.5 && origin.x + target.width <= container.width + 0.5
+                    && origin.y >= -0.5 && origin.y + target.height <= container.height + 0.5
+            }
             function initTestCase() {
                 tryCompare(Icons, "fontReady", true, 3000)
                 compare(Icons.font, "Phosphor-Bold")
@@ -396,6 +404,29 @@ ShellRoot {
                 check(!Notifications.list.some(notice => notice.id === dismissId), "inbox dismissal removes the actual notification")
                 console.log("DECK_CONTROLS_PASSED")
             }
+            function test_narrow_output_keeps_controls_reachable() {
+                const drawer = item("deckDrawer")
+                // 360 and 480 stack the rack under the levels; 560 and 640 keep them side by side.
+                for (const width of [360, 480, 560, 640]) {
+                    host.width = width
+                    GlobalShortcuts.run("controls")
+                    tryCompare(drawer, "progress", 1)
+                    waitForCardEntrance()
+                    check(fitsIn("deckPageNavigation", "deckDrawerFrame"), "page rail stays inside the dash at " + width)
+                    for (const name of ["deckChannels", "deckOutput", "deckInput", "deckDisplay", "deckQuickToggles",
+                            "deckToggleWifi", "deckToggleDnd", "deckDeviceSection", "deckOutputDevices"])
+                        check(fitsIn(name, "deckPageContent"), name + " stays inside the page at " + width)
+                    const channels = item("deckChannels")
+                    const rack = item("deckRack")
+                    const levels = channels.mapToItem(item("deckPageContent"), 0, 0)
+                    const stack = rack.mapToItem(item("deckPageContent"), 0, 0)
+                    check(levels.x + channels.width <= stack.x + 0.5 || stack.y >= levels.y + channels.height - 0.5,
+                        "levels and rack do not overlap at " + width)
+                    GlobalShortcuts.run("controls")
+                    tryCompare(drawer, "isOpen", false)
+                }
+                console.log("DECK_NARROW_PASSED")
+            }
             function test_compositor_focus_releases_drawer() {
                 const drawer = item("deckDrawer")
                 GlobalShortcuts.run("controls")
@@ -562,7 +593,7 @@ class DeckRuntimeTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             # QtTest failures inside a test function print nothing here, so each function must prove it ran.
-            markers = ["DECK_" + marker + "_PASSED" for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER", "NETWORK", "POWER", "FOCUS")]
+            markers = ["DECK_" + marker + "_PASSED" for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER", "NETWORK", "POWER", "NARROW", "FOCUS")]
             markers.append("DECK_TRAY_PASSED" if env.get("DECK_TEST_PYTHON") else "DECK_TRAY_SKIPPED")
             missing = [marker for marker in markers if marker not in output]
             self.assertEqual(missing, [], output)

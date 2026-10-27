@@ -10,16 +10,23 @@ import qs.modules.services
 import qs.modules.theme
 
 // Level channels in one card; quick toggles, playback, and output beside them.
-RowLayout {
+// Pages narrower than the three channels and the rack stack the rack below them.
+GridLayout {
     id: root
     required property ShellScreen screen
+    // The dash's settled page width; the rack needs about thirty font sizes beside the levels.
+    required property real pageWidth
     signal menuRequested(string page)
     signal settingsRequested(string page)
-    spacing: Styling.fontSize(0) * 0.5
+    readonly property bool stacked: pageWidth < Styling.fontSize(0) * 30
+    columns: stacked ? 1 : 2
+    rowSpacing: Styling.fontSize(0) * 0.5
+    columnSpacing: rowSpacing
 
     DeckCard {
         objectName: "deckChannels"
-        Layout.fillHeight: true
+        Layout.fillWidth: root.stacked
+        Layout.fillHeight: !root.stacked
         title: "Levels"
         glyph: Icons.faders
         order: 0

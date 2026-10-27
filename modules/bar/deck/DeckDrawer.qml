@@ -29,6 +29,12 @@ FocusScope {
     readonly property real gap: em * 0.5
     readonly property list<string> pages: ["controls", "connections", "today", "alerts", "tray", "wallpapers", "stats"]
     readonly property bool dash: pages.includes(mode)
+    // Layout follows the dash's target width, not the animated popup width, so pages never reflow mid-transition.
+    readonly property real dashWidth: Math.min(parent.width - em, em * 52)
+    // Narrow outputs keep only the rail's icons so the page keeps enough width for its cards.
+    readonly property bool compactRail: dashWidth < em * 40
+    readonly property real railWidth: compactRail ? em * 3.4 : em * 10.5
+    readonly property real pageWidth: dashWidth - gap * 3 - railWidth
     readonly property real preferredWidth: dash ? em * 52 : em * (mode === "battery" ? 22 : 21)
     readonly property real preferredHeight: dash ? em * 31
         : mode === "battery" ? em * (10.5 + (PowerProfile.availableProfiles.length > 0 ? 3.4 + PowerProfile.availableProfiles.length * 2.5 : 0))
@@ -156,7 +162,7 @@ FocusScope {
                 id: rail
                 objectName: "deckPageRail"
                 visible: root.dash
-                width: visible ? Math.min(root.em * 10.5, contents.width * 0.34) : 0
+                width: visible ? root.railWidth : 0
                 height: parent.height
                 spacing: root.gap
 
@@ -201,7 +207,8 @@ FocusScope {
                                     Layout.fillWidth: true
                                     controlHeight: root.em * 2.3
                                     glyph: root.pageIcon(modelData)
-                                    label: root.pageLabel(modelData)
+                                    label: root.compactRail ? "" : root.pageLabel(modelData)
+                                    description: root.pageLabel(modelData)
                                     selected: root.mode === modelData
                                     onClicked: root.showPage(modelData)
                                 }
@@ -278,7 +285,7 @@ FocusScope {
             }
         }
     }
-    Component { id: controls; DeckControls { screen: root.screen; onSettingsRequested: page => root.openSettings(page); onMenuRequested: page => root.bar.openControlMenu(page) } }
+    Component { id: controls; DeckControls { screen: root.screen; pageWidth: root.pageWidth; onSettingsRequested: page => root.openSettings(page); onMenuRequested: page => root.bar.openControlMenu(page) } }
     Component { id: connections; DeckConnections { bluetooth: root.tab === "bluetooth"; onTabRequested: tab => root.bar.openControlMenu(tab); onSettingsRequested: page => root.openSettings(page) } }
     Component { id: today; DeckCalendar { today: root.currentDate } }
     Component { id: inbox; DeckInbox {} }
