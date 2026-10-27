@@ -143,6 +143,9 @@ ShellRoot {
             }
             function test_compact_footprint_and_populated_geometry() {
                 compare(content.barTargetHeight, 32)
+                const defaultPage = item("deckPage-controls")
+                const indicator = item("deckRailIndicator")
+                check(indicator.y === defaultPage.y && indicator.height === defaultPage.height, "rail indicator starts on the default page")
                 check(content.barTargetHeight + content.baseOuterMargin <= 40, "default reserved edge is at most 40px")
                 for (const position of ["top", "bottom"]) {
                     Config.bar.position = position

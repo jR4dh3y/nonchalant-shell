@@ -170,7 +170,9 @@ FocusScope {
                         id: tabs
                         Layout.fillWidth: true
                         Layout.preferredHeight: tabColumn.implicitHeight
-                        readonly property Item current: tabRepeater.itemAt(Math.max(0, root.pages.indexOf(root.mode)))
+                        // itemAt() is not a tracked read; count re-evaluates this once the tabs exist.
+                        readonly property Item current: tabRepeater.count > 0
+                            ? tabRepeater.itemAt(Math.max(0, root.pages.indexOf(root.mode))) : null
                         StyledRect {
                             id: indicator
                             objectName: "deckRailIndicator"
