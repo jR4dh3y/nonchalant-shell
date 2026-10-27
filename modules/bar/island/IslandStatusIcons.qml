@@ -17,6 +17,43 @@ RowLayout {
     readonly property string iconFont: "Material Symbols Rounded"
     readonly property bool canInteract: root.bar && !root.bar.isExpanded && !root.bar.isMorphing
 
+    // One notch of a mouse wheel moves a level by 5%; touchpads scroll
+    // proportionally instead of jumping 5% per tiny event.
+    function wheelStep(angleY: real, pixelY: real): real {
+        return (angleY !== 0 ? angleY : pixelY) / 120 * 0.05;
+    }
+
+    function adjustBrightness(step: real) {
+        const newVal = Math.max(0.05, Math.min(1.0, brightBtn.brightnessVal + step));
+        if (Brightness.syncBrightness) {
+            for (let i = 0; i < Brightness.monitors.length; i++) {
+                const m = Brightness.monitors[i];
+                if (m?.ready) m.setBrightness(newVal);
+            }
+        } else if (brightBtn.currentMonitor?.ready) {
+            brightBtn.currentMonitor.setBrightness(newVal);
+        } else if (Brightness.monitors.length > 0 && Brightness.monitors[0]?.ready) {
+            Brightness.monitors[0].setBrightness(newVal);
+        }
+    }
+
+    function adjustVolume(step: real) {
+        if (!volBtn.audioDevice)
+            return;
+        if (step > 0 && volBtn.isMuted)
+            volBtn.audioDevice.muted = false;
+        Audio.setVolume(Math.max(0.0, Math.min(1.0, volBtn.volumeVal + step)));
+    }
+
+    function adjustMic(step: real) {
+        const mic = Audio.source?.audio ?? null;
+        if (!mic)
+            return;
+        if (step > 0 && mic.muted)
+            mic.muted = false;
+        Audio.setMicVolume(Math.max(0.0, Math.min(1.0, mic.volume + step)));
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // 1. BRIGHTNESS DYNAMIC ICON (7 Granular States)
     // ═══════════════════════════════════════════════════════════════
@@ -73,20 +110,7 @@ RowLayout {
         WheelHandler {
             target: brightBtn
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            onWheel: event => {
-                const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
-                const newVal = Math.max(0.05, Math.min(1.0, brightBtn.brightnessVal + delta));
-                if (Brightness.syncBrightness) {
-                    for (let i = 0; i < Brightness.monitors.length; i++) {
-                        const m = Brightness.monitors[i];
-                        if (m?.ready) m.setBrightness(newVal);
-                    }
-                } else if (brightBtn.currentMonitor?.ready) {
-                    brightBtn.currentMonitor.setBrightness(newVal);
-                } else if (Brightness.monitors.length > 0 && Brightness.monitors[0]?.ready) {
-                    Brightness.monitors[0].setBrightness(newVal);
-                }
-            }
+            onWheel: event => root.adjustBrightness(root.wheelStep(event.angleDelta.y, event.pixelDelta.y))
         }
 
         MouseArea {
@@ -156,16 +180,7 @@ RowLayout {
         WheelHandler {
             target: volBtn
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            onWheel: event => {
-                if (volBtn.audioDevice) {
-                    const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
-                    const newVal = Math.max(0.0, Math.min(1.0, volBtn.volumeVal + delta));
-                    if (delta > 0 && volBtn.isMuted) {
-                        volBtn.audioDevice.muted = false;
-                    }
-                    Audio.setVolume(newVal);
-                }
-            }
+            onWheel: event => root.adjustVolume(root.wheelStep(event.angleDelta.y, event.pixelDelta.y))
         }
 
         MouseArea {

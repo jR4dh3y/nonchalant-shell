@@ -101,6 +101,31 @@ ShellRoot {
                 console.log("PILLS_HIDDEN_OSD_PASSED")
             }
 
+            function test_inline_osd_keeps_scrolling() {
+                function wheelHandlers(item, out) {
+                    for (const d of item.data ?? [])
+                        if (String(d).startsWith("QQuickWheelHandler")) out.push(d)
+                    for (const child of item.children ?? []) wheelHandlers(child, out)
+                    return out
+                }
+                const icons = childOfType(bar, "IslandStatusIcons")
+                verify(icons !== null)
+                tryCompare(bar, "containerY", 0)
+                const handlers = wheelHandlers(icons.parent, [])
+                let hits = 0
+                for (const handler of handlers) handler.wheel.connect(() => hits++)
+                const volume = icons.children[1]
+                const point = volume.mapToItem(bar, volume.width / 2, volume.height / 2)
+                bar.triggerOsd("volume", 0.5, false)
+                verify(bar.inlineOsdActive)
+                wait(Motion.hoverDuration + 50)
+                for (let i = 0; i < 3; i++)
+                    mouseWheel(bar, point.x, point.y, 0, -120)
+                compare(hits, 3, "every notch reaches a handler while the inline OSD covers the icons")
+                tryCompare(bar, "inlineOsdActive", false, 2500)
+                console.log("PILLS_INLINE_OSD_SCROLL_PASSED")
+            }
+
             function test_background_notification_dismissal() {
                 for (const mode of ["dashboard", "media", "apps", "projects"]) {
                     bar.expand(mode)
@@ -247,7 +272,7 @@ class PillsRuntimeTests(unittest.TestCase):
             )
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            for marker in ("LATE_GEOMETRY", "INTERRUPTED_RETRACTION", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
+            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INTERRUPTED_RETRACTION", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
                 self.assertIn("PILLS_" + marker + "_PASSED", output, output)
             self.assertNotIn("PILLS_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("Binding loop", output, output)

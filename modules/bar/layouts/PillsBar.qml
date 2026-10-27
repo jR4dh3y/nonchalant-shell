@@ -1166,6 +1166,23 @@ Item {
                             NumberAnimation { duration: Motion.hoverDuration; easing.type: Easing.OutCubic }
                         }
 
+                        // The OSD covers the icons after the first scroll step, so
+                        // it keeps adjusting whichever level it is showing.
+                        WheelHandler {
+                            enabled: root.inlineOsdActive
+                            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                            onWheel: event => {
+                                const step = statusIcons.wheelStep(event.angleDelta.y, event.pixelDelta.y);
+                                if (root.osdIndicator === "brightness")
+                                    statusIcons.adjustBrightness(step);
+                                else if (root.osdIndicator === "mic")
+                                    statusIcons.adjustMic(step);
+                                else
+                                    statusIcons.adjustVolume(step);
+                                inlineOsdTimer.restart();
+                            }
+                        }
+
                         StyledText {
                             text: root.inlineOsdIcon
                             font.family: Icons.font
