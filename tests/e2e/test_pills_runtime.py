@@ -39,7 +39,7 @@ ShellRoot {
                 return null
             }
 
-            function assertLevel(actual, expected, message) {
+            function assertNear(actual, expected, message) {
                 verify(Math.abs(actual - expected) < 0.001, message + ": expected " + expected + ", got " + actual)
             }
 
@@ -126,14 +126,14 @@ ShellRoot {
                 wait(Motion.hoverDuration + 50)
                 for (let i = 1; i <= 3; i++) {
                     mouseWheel(bar, point.x, point.y, 0, -120)
-                    assertLevel(Audio.sink.audio.volume, 0.5 - 0.05 * i, "each notch lowers the level by one step")
+                    assertNear(Audio.sink.audio.volume, 0.5 - 0.05 * i, "each notch lowers the level by one step")
                 }
                 compare(hits, 3, "every notch reaches a handler while the inline OSD covers the icons")
                 // The first timeout would lapse about 1.8 s after triggerOsd, so
                 // a notch sent later must restart it for the OSD to still be up.
                 wait(1200)
                 mouseWheel(bar, point.x, point.y, 0, -120)
-                assertLevel(Audio.sink.audio.volume, 0.3, "a notch after the first timeout still adjusts the level")
+                assertNear(Audio.sink.audio.volume, 0.3, "a notch after the first timeout still adjusts the level")
                 wait(1200)
                 verify(bar.inlineOsdActive, "the OSD stays up past its original timeout while scrolling")
                 tryCompare(bar, "inlineOsdActive", false, 2500)
@@ -151,13 +151,24 @@ ShellRoot {
                 wait(Motion.hoverDuration + 50)
                 const point = icons.mapToItem(bar, icons.width / 2, icons.height / 2)
                 mouseWheel(bar, point.x, point.y, 0, -120)
-                assertLevel(Audio.sink.audio.volume, 1.45, "a notch steps a boosted output down from where it is")
+                assertNear(Audio.sink.audio.volume, 1.45, "a notch steps a boosted output down from where it is")
                 mouseWheel(bar, point.x, point.y, 0, 120)
-                assertLevel(Audio.sink.audio.volume, 1.45, "scrolling up never snaps a boosted output down to 100%")
+                assertNear(Audio.sink.audio.volume, 1.45, "scrolling up never snaps a boosted output down to 100%")
                 bar.triggerOsd("mic", 1.5, false)
                 mouseWheel(bar, point.x, point.y, 0, -120)
-                assertLevel(Audio.source.audio.volume, 1.45, "a notch steps a boosted mic down from where it is")
+                assertNear(Audio.source.audio.volume, 1.45, "a notch steps a boosted mic down from where it is")
                 console.log("PILLS_INLINE_OSD_BOOSTED_PASSED")
+            }
+
+            function test_wheel_step_units() {
+                const icons = childOfType(bar, "IslandStatusIcons")
+                verify(icons !== null)
+                assertNear(icons.wheelStep(-120, 0), -0.05, "a mouse notch moves a level by one step")
+                assertNear(icons.wheelStep(0, -60), -0.05, "a touchpad moves by distance: 60 px is one notch")
+                verify(Math.abs(icons.wheelStep(120, 1)) < 0.01,
+                    "a one-pixel touchpad move stays small even when the device also reports an angle")
+                assertNear(icons.wheelStep(0, 0), 0, "no movement is no step")
+                console.log("PILLS_WHEEL_STEP_UNITS_PASSED")
             }
 
             function test_background_notification_dismissal() {
@@ -378,7 +389,7 @@ class PillsRuntimeTests(unittest.TestCase):
             )
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INLINE_OSD_BOOSTED", "INTERRUPTED_RETRACTION", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
+            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INLINE_OSD_BOOSTED", "WHEEL_STEP_UNITS", "INTERRUPTED_RETRACTION", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
                 self.assertIn("PILLS_" + marker + "_PASSED", output, output)
             self.assertNotIn("PILLS_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("Binding loop", output, output)

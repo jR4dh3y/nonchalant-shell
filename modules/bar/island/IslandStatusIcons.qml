@@ -17,10 +17,16 @@ RowLayout {
     readonly property string iconFont: "Material Symbols Rounded"
     readonly property bool canInteract: root.bar && !root.bar.isExpanded && !root.bar.isMorphing
 
-    // One notch of a mouse wheel moves a level by 5%; touchpads scroll
-    // proportionally instead of jumping 5% per tiny event.
+    // A mouse notch moves a level by 5%. Touchpads and high-resolution wheels
+    // report pixels, so they scroll by distance instead: 60 px, about three
+    // lines of text, is one notch, and a small swipe moves a small amount.
+    readonly property real levelPerNotch: 0.05
+    readonly property real pixelsPerNotch: 60
+
     function wheelStep(angleY: real, pixelY: real): real {
-        return (angleY !== 0 ? angleY : pixelY) / 120 * 0.05;
+        if (pixelY !== 0)
+            return pixelY / pixelsPerNotch * levelPerNotch;
+        return angleY / 120 * levelPerNotch;
     }
 
     // Scrolling stops at 100%, but a level already above it only steps down,
