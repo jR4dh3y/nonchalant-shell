@@ -134,9 +134,13 @@ Item {
         slideUpAnim.stop();
         const wasFromHidden = root.openedFromHidden;
         root.openedFromHidden = false;
+        // Raise isMorphing first so the card stays opaque, then leave the
+        // expanded mode before retargeting the card so its Behaviors pick the
+        // monotonic collapse curve instead of the opening spring.
+        root.isMorphing = !wasFromHidden;
+        root.currentMode = "collapsed";
         if (!wasFromHidden) {
             root.snapGeometry = false;
-            root.isMorphing = true;
             root.targetCardX = root.sourcePillLeftInRoot;
             root.targetCardWidth = root.sourcePillWidth;
             root.targetCardHeight = root.pillHeight;
@@ -147,7 +151,6 @@ Item {
             root.isMorphing = false;
             morphExpandTimer.stop();
         }
-        root.currentMode = "collapsed";
         root.animateReveal(root.shouldBeRevealed ? 0 : -(root.pillHeight + root.topMargin + 10));
     }
 
@@ -176,52 +179,44 @@ Item {
 
         root.updateSourcePill(mode || "dashboard");
 
-        const targetW = root.calculateTargetWidth(mode || "dashboard");
-        const targetH = root.calculateTargetHeight(mode || "dashboard");
+        const nextMode = mode || "dashboard";
+        const targetW = root.calculateTargetWidth(nextMode);
+        const targetH = root.calculateTargetHeight(nextMode);
         const centerX = Math.round((root.width - targetW) / 2);
+        // The card is still on screen while a collapse morph shrinks it, so a
+        // reopen continues from where it is instead of jumping to the pill.
+        const cardOnScreen = root.currentMode !== "collapsed" || root.isMorphing;
 
+        // Snapped geometry is applied with the Behaviors off, then the flag is
+        // cleared in the same turn so later changes animate again.
+        root.snapGeometry = wasHidden || !cardOnScreen;
         if (wasHidden) {
-            root.snapGeometry = true;
-            root.isMorphing = false;
             root.targetCardX = centerX;
             root.targetCardWidth = targetW;
             root.targetCardHeight = targetH;
             root.targetCardRadius = root.panelRadius;
-            root.currentMode = mode || "dashboard";
+        } else if (!cardOnScreen) {
+            // Start the card on the pill that opened it, then grow from there.
+            root.targetCardX = root.sourcePillLeftInRoot;
+            root.targetCardWidth = root.sourcePillWidth;
+            root.targetCardHeight = root.pillHeight;
+            root.targetCardRadius = root.pillRadius;
+        }
+        root.isMorphing = !wasHidden;
+        root.currentMode = nextMode;
+        root.snapGeometry = false;
+
+        if (wasHidden) {
             slideDownAnim.from = -(targetH + root.topMargin + 10);
             slideDownAnim.to = 0;
             slideDownAnim.start();
-        } else if (root.currentMode !== "collapsed") {
-            root.snapGeometry = false;
-            root.isMorphing = true;
+        } else {
             morphExpandTimer.restart();
-            root.currentMode = mode || "dashboard";
             root.targetCardX = centerX;
             root.targetCardWidth = targetW;
             root.targetCardHeight = targetH;
             root.targetCardRadius = root.panelRadius;
             root.animateReveal(0);
-        } else {
-            // Step 1: Snap card to exact position of the source pill (with Behaviors disabled)
-            root.snapGeometry = true;
-            root.isMorphing = false;
-            root.targetCardX = root.sourcePillLeftInRoot;
-            root.targetCardWidth = root.sourcePillWidth;
-            root.targetCardHeight = root.pillHeight;
-            root.targetCardRadius = root.pillRadius;
-
-            // Step 2: Set expanded mode and animate smoothly to screen center in next frame
-            root.currentMode = mode || "dashboard";
-            Qt.callLater(() => {
-                root.snapGeometry = false;
-                root.isMorphing = true;
-                morphExpandTimer.restart();
-                root.targetCardX = centerX;
-                root.targetCardWidth = targetW;
-                root.targetCardHeight = targetH;
-                root.targetCardRadius = root.panelRadius;
-                root.animateReveal(0);
-            });
         }
 
         if (root.currentMode === "dashboard") {
@@ -375,49 +370,91 @@ Item {
         barHoverAnim.start();
     }
 
-    // Shared enter/leave choreography for every surface
-    // Shared enter/leave choreography for every surface with Modesty-style aperture blooming
+    // Shared enter/leave choreography for every surface. Each page lays out at
+    // its own final size (the card clips it while morphing), so content never
+    // reflows mid-animation. It fades in a beat after the card starts growing
+    // and leaves on a short monotonic fade.
     component IslandPage: Item {
         id: page
 
         required property bool active
+        required property string mode
 
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: root.calculateTargetWidth(page.mode)
+        height: root.calculateTargetHeight(page.mode)
+        transformOrigin: Item.Top
+        // The entering page stacks above the leaving one, so the leaving page's
+        // input shield never swallows clicks meant for the new page.
         z: page.active ? 1 : 0
+        // Stay visible while the fade-in is paused at opacity 0 so the page can
+        // take keyboard focus as soon as it opens.
         visible: page.active || opacity > 0.001
-        enabled: page.active && root.isExpanded
+        // Disable only once hidden: a MouseArea disabled under the pointer keeps
+        // containsMouse stuck. Leaving pages are shielded from input instead.
+        enabled: page.visible
 
         MouseArea {
-            anchors.fill: parent
-            enabled: !page.active || root.retractingToHidden
             z: 999
+            anchors.fill: parent
+            visible: !page.active || root.retractingToHidden
             hoverEnabled: true
             acceptedButtons: Qt.AllButtons
             onPressed: mouse => mouse.accepted = true
             onWheel: wheel => wheel.accepted = true
         }
 
-        readonly property real presentationScale: Math.max(0, Math.min(1, Math.min(
-            expandedCard.width / Math.max(1, root.targetCardWidth),
-            expandedCard.height / Math.max(1, root.targetCardHeight)
-        )))
-
-        readonly property real revealAmount: {
-            if (!page.active || root.retractingToHidden) return 0.0;
-            if (!root.isMorphing || presentationScale >= 0.98) return 1.0;
-            const t = Math.max(0, Math.min(1, (presentationScale - 0.45) / 0.53));
-            return t * t * (3 - 2 * t);
+        property real drift: -Motion.drift
+        opacity: 0
+        scale: 0.96
+        transform: Translate {
+            y: page.drift
         }
 
-        opacity: page.active ? (root.isMorphing ? page.revealAmount : 1.0) : 0.0
-
-        Behavior on opacity {
-            enabled: Motion.enabled && !root.isMorphing
-            NumberAnimation {
-                duration: Motion.fadeInDuration
-                easing.type: Easing.OutCubic
+        states: State {
+            name: "shown"
+            when: page.active
+            PropertyChanges {
+                page.opacity: 1
+                page.scale: 1
+                page.drift: 0
             }
         }
+
+        transitions: [
+            Transition {
+                to: "shown"
+                enabled: Motion.enabled
+                SequentialAnimation {
+                    PauseAnimation {
+                        duration: root.isMorphing ? Motion.contentEnterDelay : 0
+                    }
+                    ParallelAnimation {
+                        NumberAnimation {
+                            property: "opacity"
+                            duration: Motion.fadeInDuration
+                            easing.type: Easing.OutCubic
+                        }
+                        NumberAnimation {
+                            properties: "scale,drift"
+                            duration: Motion.expandDuration
+                            easing.type: Easing.OutBack
+                            easing.overshoot: Motion.overshoot
+                        }
+                    }
+                }
+            },
+            Transition {
+                from: "shown"
+                enabled: Motion.enabled
+                NumberAnimation {
+                    properties: "opacity,scale,drift"
+                    duration: Motion.fadeOutDuration
+                    easing.type: Easing.OutQuad
+                }
+            }
+        ]
     }
 
     function calculateTargetWidth(mode: string): int {
@@ -483,28 +520,18 @@ Item {
     readonly property int targetWidth: calculateTargetWidth(root.currentMode)
     readonly property int targetHeight: calculateTargetHeight(root.currentMode)
 
+    // Content that resizes while open (or mid-morph) retargets the card; the
+    // geometry Behaviors carry it there. Snapped start geometry is left alone.
     onTargetHeightChanged: {
-        if (root.isExpanded && !root.isMorphing) {
+        if (root.isExpanded && !root.snapGeometry) {
             root.targetCardHeight = root.targetHeight;
         }
     }
 
     onTargetWidthChanged: {
-        if (root.isExpanded && !root.isMorphing) {
+        if (root.isExpanded && !root.snapGeometry) {
             root.targetCardWidth = root.targetWidth;
             root.targetCardX = Math.round((root.width - root.targetWidth) / 2);
-        }
-    }
-
-    Connections {
-        target: notificationView
-        function onImplicitHeightChanged() {
-            if (root.currentMode === "notification" && root.isExpanded) {
-                const h = root.calculateTargetHeight("notification");
-                if (h > 0 && root.targetCardHeight !== h) {
-                    root.targetCardHeight = h;
-                }
-            }
         }
     }
 
@@ -555,12 +582,6 @@ Item {
         if (!pill)
             return root.pillHeight;
         return (pill.implicitWidth > 0) ? pill.implicitWidth : (pill.width > 0 ? pill.width : root.pillHeight);
-    }
-
-    readonly property real flankPartDistance: 0
-
-    function flankTranslation(pill: Item): real {
-        return 0;
     }
 
     property real targetCardWidth: Math.round(sourcePillWidth)
@@ -829,31 +850,22 @@ Item {
                     readonly property bool isPressed: contextMouse.pressed && isHovered
 
                     scale: isPressed ? 0.94 : 1.0
-                    opacity: (root.isExpanded || root.isMorphing) ? 0.0 : 1.0
+                    opacity: root.isExpanded ? 0.0 : 1.0
 
                     Behavior on opacity {
-                        enabled: Motion.enabled && !root.snapGeometry
+                        enabled: Motion.enabled
                         NumberAnimation {
-                            duration: (root.isExpanded || root.isMorphing) ? Motion.fadeOutDuration : 140
+                            duration: root.isExpanded ? Motion.fadeOutDuration : Motion.collapseDuration
                             easing.type: Easing.OutCubic
                         }
                     }
 
                     transform: Translate {
-                        x: root.flankTranslation(contextPill)
                         y: (contextPill.isHovered && !contextPill.isPressed) ? -1.5 : 0
-                        Behavior on x {
-                            enabled: Motion.enabled && !root.snapGeometry
-                            NumberAnimation {
-                                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
-                                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                                easing.overshoot: 1.15
-                            }
-                        }
                         Behavior on y {
                             enabled: Motion.enabled
                             NumberAnimation {
-                                duration: 180
+                                duration: Motion.hoverDuration
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -972,31 +984,22 @@ Item {
                     readonly property bool isPressed: timeMouse.pressed && isHovered
 
                     scale: isPressed ? 0.94 : 1.0
-                    opacity: (root.isExpanded || root.isMorphing) ? 0.0 : 1.0
+                    opacity: root.isExpanded ? 0.0 : 1.0
 
                     Behavior on opacity {
-                        enabled: Motion.enabled && !root.snapGeometry
+                        enabled: Motion.enabled
                         NumberAnimation {
-                            duration: (root.isExpanded || root.isMorphing) ? Motion.fadeOutDuration : 140
+                            duration: root.isExpanded ? Motion.fadeOutDuration : Motion.collapseDuration
                             easing.type: Easing.OutCubic
                         }
                     }
 
                     transform: Translate {
-                        x: root.flankTranslation(timePill)
                         y: (timePill.isHovered && !timePill.isPressed) ? -1.5 : 0
-                        Behavior on x {
-                            enabled: Motion.enabled && !root.snapGeometry
-                            NumberAnimation {
-                                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
-                                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                                easing.overshoot: 1.15
-                            }
-                        }
                         Behavior on y {
                             enabled: Motion.enabled
                             NumberAnimation {
-                                duration: 180
+                                duration: Motion.hoverDuration
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -1057,25 +1060,13 @@ Item {
                     enableBorder: true
                     enableShadow: true
                     backgroundOpacity: 1.0
-                    opacity: (root.isExpanded || root.isMorphing) ? 0.0 : 1.0
+                    opacity: root.isExpanded ? 0.0 : 1.0
 
                     Behavior on opacity {
-                        enabled: Motion.enabled && !root.snapGeometry
+                        enabled: Motion.enabled
                         NumberAnimation {
-                            duration: (root.isExpanded || root.isMorphing) ? Motion.fadeOutDuration : 140
+                            duration: root.isExpanded ? Motion.fadeOutDuration : Motion.collapseDuration
                             easing.type: Easing.OutCubic
-                        }
-                    }
-
-                    transform: Translate {
-                        x: root.flankTranslation(workspacesPill)
-                        Behavior on x {
-                            enabled: Motion.enabled && !root.snapGeometry
-                            NumberAnimation {
-                                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
-                                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                                easing.overshoot: 1.15
-                            }
                         }
                     }
 
@@ -1104,14 +1095,14 @@ Item {
                     enableBorder: true
                     enableShadow: true
                     backgroundOpacity: 1.0
-                    opacity: (root.isExpanded || root.isMorphing) ? 0.0 : 1.0
+                    opacity: root.isExpanded ? 0.0 : 1.0
 
                     readonly property bool isHovered: statusHover.hovered && !root.isExpanded && !root.isMorphing
 
                     Behavior on opacity {
-                        enabled: Motion.enabled && !root.snapGeometry
+                        enabled: Motion.enabled
                         NumberAnimation {
-                            duration: (root.isExpanded || root.isMorphing) ? Motion.fadeOutDuration : 140
+                            duration: root.isExpanded ? Motion.fadeOutDuration : Motion.collapseDuration
                             easing.type: Easing.OutCubic
                         }
                     }
@@ -1119,26 +1110,17 @@ Item {
                     Behavior on implicitWidth {
                         enabled: Motion.enabled
                         NumberAnimation {
-                            duration: 180
+                            duration: Motion.fadeInDuration
                             easing.type: Easing.OutCubic
                         }
                     }
 
                     transform: Translate {
-                        x: root.flankTranslation(statusPill)
                         y: statusPill.isHovered ? -1.5 : 0
-                        Behavior on x {
-                            enabled: Motion.enabled && !root.snapGeometry
-                            NumberAnimation {
-                                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
-                                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                                easing.overshoot: 1.15
-                            }
-                        }
                         Behavior on y {
                             enabled: Motion.enabled
                             NumberAnimation {
-                                duration: 180
+                                duration: Motion.hoverDuration
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -1161,10 +1143,11 @@ Item {
                         id: statusIcons
                         anchors.centerIn: parent
                         bar: root
-                        visible: !root.inlineOsdActive
+                        visible: opacity > 0.001
                         opacity: root.inlineOsdActive ? 0.0 : 1.0
                         Behavior on opacity {
-                            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                            enabled: Motion.enabled
+                            NumberAnimation { duration: Motion.hoverDuration; easing.type: Easing.OutCubic }
                         }
                     }
 
@@ -1174,10 +1157,11 @@ Item {
                         anchors.leftMargin: 12
                         anchors.rightMargin: 12
                         spacing: 8
-                        visible: root.inlineOsdActive
+                        visible: opacity > 0.001
                         opacity: root.inlineOsdActive ? 1.0 : 0.0
                         Behavior on opacity {
-                            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+                            enabled: Motion.enabled
+                            NumberAnimation { duration: Motion.hoverDuration; easing.type: Easing.OutCubic }
                         }
 
                         StyledText {
@@ -1238,31 +1222,22 @@ Item {
                     readonly property bool isPressed: alertsMouse.pressed && isHovered
 
                     scale: isPressed ? 0.90 : 1.0
-                    opacity: (root.isExpanded || root.isMorphing) ? 0.0 : 1.0
+                    opacity: root.isExpanded ? 0.0 : 1.0
 
                     Behavior on opacity {
-                        enabled: Motion.enabled && !root.snapGeometry
+                        enabled: Motion.enabled
                         NumberAnimation {
-                            duration: (root.isExpanded || root.isMorphing) ? Motion.fadeOutDuration : 140
+                            duration: root.isExpanded ? Motion.fadeOutDuration : Motion.collapseDuration
                             easing.type: Easing.OutCubic
                         }
                     }
 
                     transform: Translate {
-                        x: root.flankTranslation(alertsPill)
                         y: (alertsPill.isHovered && !alertsPill.isPressed) ? -1.5 : 0
-                        Behavior on x {
-                            enabled: Motion.enabled && !root.snapGeometry
-                            NumberAnimation {
-                                duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
-                                easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
-                                easing.overshoot: 1.15
-                            }
-                        }
                         Behavior on y {
                             enabled: Motion.enabled
                             NumberAnimation {
-                                duration: 180
+                                duration: Motion.hoverDuration
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -1346,13 +1321,13 @@ Item {
         Behavior on opacity {
             enabled: Motion.enabled && !root.snapGeometry
             NumberAnimation {
-                duration: root.isExpanded ? 0 : 140
+                duration: root.isExpanded ? 0 : Motion.fadeOutDuration
                 easing.type: Easing.OutCubic
             }
         }
 
         Behavior on x {
-            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && root.isMorphing && !root.snapGeometry
+            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
                 duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
@@ -1361,7 +1336,7 @@ Item {
         }
 
         Behavior on width {
-            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && root.isMorphing && !root.snapGeometry
+            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
                 duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
@@ -1370,7 +1345,7 @@ Item {
         }
 
         Behavior on height {
-            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && root.isMorphing && !root.snapGeometry
+            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
                 duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
@@ -1379,7 +1354,7 @@ Item {
         }
 
         Behavior on radius {
-            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && root.isMorphing && !root.snapGeometry
+            enabled: Motion.enabled && (root.shouldBeRevealed || root.isExpanded) && !root.retractingToHidden && !root.snapGeometry
             NumberAnimation {
                 duration: root.isExpanded ? Motion.expandDuration : Motion.collapseDuration
                 easing.type: root.isExpanded ? Easing.OutBack : Easing.OutCubic
@@ -1409,6 +1384,7 @@ Item {
                 // ── OSD BANNER (Volume / Brightness / Mic) ──
                 IslandPage {
                     active: root.currentMode === "osd"
+                    mode: "osd"
 
                     IslandOsdBanner {
                         id: osdView
@@ -1423,6 +1399,7 @@ Item {
                 // ── NOTIFICATION BANNER ──
                 IslandPage {
                     active: !Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null
+                    mode: "notification"
 
                     IslandNotificationBanner {
                         id: notificationView
@@ -1438,6 +1415,7 @@ Item {
                 // ── MAIN DASHBOARD HUB ──
                 IslandPage {
                     active: root.currentMode === "dashboard"
+                    mode: "dashboard"
 
                     IslandDashboard {
                         id: dashboardView
@@ -1464,6 +1442,7 @@ Item {
                 // ── POWER MENU ──
                 IslandPage {
                     active: root.currentMode === "power"
+                    mode: "power"
 
                     IslandPowerPanel {
                         id: powerView
@@ -1478,6 +1457,7 @@ Item {
                 // ── SOUND PANEL ──
                 IslandPage {
                     active: root.currentMode === "sound"
+                    mode: "sound"
 
                     IslandSoundPanel {
                         id: soundView
@@ -1491,6 +1471,7 @@ Item {
                 // ── MICROPHONE PANEL ──
                 IslandPage {
                     active: root.currentMode === "mic"
+                    mode: "mic"
 
                     IslandMicPanel {
                         id: micView
@@ -1504,6 +1485,7 @@ Item {
                 // ── WI-FI NETWORKS PANEL ──
                 IslandPage {
                     active: root.currentMode === "wifi"
+                    mode: "wifi"
 
                     IslandWifiPanel {
                         id: wifiView
@@ -1517,6 +1499,7 @@ Item {
                 // ── BLUETOOTH PANEL ──
                 IslandPage {
                     active: root.currentMode === "bluetooth"
+                    mode: "bluetooth"
 
                     IslandBluetoothPanel {
                         id: bluetoothView
@@ -1530,6 +1513,7 @@ Item {
                 // ── SYSTEM STATS PANEL ──
                 IslandPage {
                     active: root.currentMode === "stats"
+                    mode: "stats"
 
                     IslandStatsPanel {
                         id: statsView
@@ -1541,6 +1525,7 @@ Item {
                 // ── ALERTS PANEL ──
                 IslandPage {
                     active: root.currentMode === "alerts"
+                    mode: "alerts"
 
                     IslandAlertsPanel {
                         id: alertsView
@@ -1554,6 +1539,7 @@ Item {
                 // ── WALLPAPERS PANEL ──
                 IslandPage {
                     active: root.currentMode === "wallpapers"
+                    mode: "wallpapers"
 
                     IslandWallpaperPanel {
                         id: wallpapersView
@@ -1566,6 +1552,7 @@ Item {
                 // ── BATTERY PANEL ──
                 IslandPage {
                     active: root.currentMode === "battery"
+                    mode: "battery"
 
                     IslandBatteryPanel {
                         id: batteryView
@@ -1579,6 +1566,7 @@ Item {
                 // ── WEATHER PANEL ──
                 IslandPage {
                     active: root.currentMode === "weather"
+                    mode: "weather"
 
                     IslandWeatherPanel {
                         id: weatherView
@@ -1592,6 +1580,7 @@ Item {
                 // ── MEDIA CENTER PANEL ──
                 IslandPage {
                     active: root.currentMode === "media"
+                    mode: "media"
 
                     IslandMediaCenterPanel {
                         id: mediaCenterView
@@ -1605,6 +1594,7 @@ Item {
                 // ── CALENDAR PANEL ──
                 IslandPage {
                     active: root.currentMode === "calendar"
+                    mode: "calendar"
 
                     IslandCalendarPanel {
                         id: calendarView
@@ -1618,6 +1608,7 @@ Item {
                 // ── APPS & PROJECTS LAUNCHER ──
                 IslandPage {
                     active: root.currentMode === "apps" || root.currentMode === "projects"
+                    mode: "apps"
 
                     Item {
                         id: launcherViewWrapper
