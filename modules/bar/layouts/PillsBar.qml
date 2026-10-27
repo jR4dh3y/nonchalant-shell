@@ -384,7 +384,6 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.calculateTargetWidth(page.mode)
         height: root.calculateTargetHeight(page.mode)
-        transformOrigin: Item.Top
         // The entering page stacks above the leaving one, so the leaving page's
         // input shield never swallows clicks meant for the new page.
         z: page.active ? 1 : 0
@@ -405,9 +404,10 @@ Item {
             onWheel: wheel => wheel.accepted = true
         }
 
+        // No scale: nearly all text uses NativeRendering, which snaps glyphs
+        // to the pixel grid and shimmers under a scaling transform.
         property real drift: -Motion.drift
         opacity: 0
-        scale: 0.96
         transform: Translate {
             y: page.drift
         }
@@ -417,7 +417,6 @@ Item {
             when: page.active
             PropertyChanges {
                 page.opacity: 1
-                page.scale: 1
                 page.drift: 0
             }
         }
@@ -437,7 +436,7 @@ Item {
                             easing.type: Easing.OutCubic
                         }
                         NumberAnimation {
-                            properties: "scale,drift"
+                            property: "drift"
                             duration: Motion.expandDuration
                             easing.type: Easing.OutBack
                             easing.overshoot: Motion.overshoot
@@ -449,7 +448,7 @@ Item {
                 from: "shown"
                 enabled: Motion.enabled
                 NumberAnimation {
-                    properties: "opacity,scale,drift"
+                    properties: "opacity,drift"
                     duration: Motion.fadeOutDuration
                     easing.type: Easing.OutQuad
                 }
@@ -520,16 +519,17 @@ Item {
     readonly property int targetWidth: calculateTargetWidth(root.currentMode)
     readonly property int targetHeight: calculateTargetHeight(root.currentMode)
 
-    // Content that resizes while open (or mid-morph) retargets the card; the
-    // geometry Behaviors carry it there. Snapped start geometry is left alone.
+    // Content that resizes while open retargets the card and the geometry
+    // Behaviors carry it there. Mid-morph changes wait for onIsMorphingChanged
+    // so live content loading during an open doesn't restart the spring.
     onTargetHeightChanged: {
-        if (root.isExpanded && !root.snapGeometry) {
+        if (root.isExpanded && !root.isMorphing && !root.snapGeometry) {
             root.targetCardHeight = root.targetHeight;
         }
     }
 
     onTargetWidthChanged: {
-        if (root.isExpanded && !root.snapGeometry) {
+        if (root.isExpanded && !root.isMorphing && !root.snapGeometry) {
             root.targetCardWidth = root.targetWidth;
             root.targetCardX = Math.round((root.width - root.targetWidth) / 2);
         }
@@ -725,7 +725,9 @@ Item {
 
     // Contract properties for BarContent & UnifiedShellPanel
     readonly property int barTargetHeight: pillHeight
-    readonly property int baseOuterMargin: topMargin
+    // Keep one floating gap at the screen edge and another below the pills so
+    // tiled windows do not touch them.
+    readonly property int baseOuterMargin: topMargin * 2
     readonly property int totalBarHeight: pillHeight + topMargin
     readonly property bool timerInputActive: false
     readonly property bool dashboardInputActive: islandActive && currentMode === "dashboard"
