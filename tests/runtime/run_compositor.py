@@ -555,10 +555,11 @@ def exercise(session, source, args, passed):
             session.wait(f"deck {page} reverse toggle dismisses", lambda: not shell_state()["popupOpen"])
         passed.append("every Deck task flyout opens by IPC with live clients and reverse-toggles closed")
         session.ipc(shell, "nonchalant", "run", "launcher")
+        session.wait("deck launcher opens", lambda: shell_state()["launcherOpen"])
         time.sleep(0.8)
         session.run(["grim", str(session.root / "deck-launcher.png")])
         session.ipc(shell, "nonchalant", "run", "launcher")
-        time.sleep(0.5)
+        session.wait("deck launcher dismisses", lambda: not shell_state()["launcherOpen"])
         passed.append("Deck launcher opens and closes by IPC")
         if args.compositor == "niri":
             session.ipc(shell, "nonchalant", "run", "windows")

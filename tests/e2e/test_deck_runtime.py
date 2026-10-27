@@ -29,13 +29,16 @@ ShellRoot {
     property string fixtureResponse: ""
     property list<string> fixtureArguments: ["State"]
     property bool fixtureBusy: false
+    // Quickshell.env returns null for unset variables; the tray checks need both.
+    readonly property string trayPython: Quickshell.env("DECK_TEST_PYTHON") ?? ""
+    readonly property string trayFixture: Quickshell.env("DECK_TRAY_FIXTURE") ?? ""
     Process {
-        command: [Quickshell.env("DECK_TEST_PYTHON"), Quickshell.env("DECK_TRAY_FIXTURE")]
-        running: Quickshell.env("DECK_TEST_PYTHON") !== ""
+        command: [shellRoot.trayPython, shellRoot.trayFixture]
+        running: shellRoot.trayPython !== ""
     }
     Process {
         id: trayQuery
-        command: [Quickshell.env("DECK_TEST_PYTHON"), Quickshell.env("DECK_TRAY_FIXTURE")].concat(fixtureArguments)
+        command: [shellRoot.trayPython, shellRoot.trayFixture].concat(fixtureArguments)
         stdout: StdioCollector { id: trayOutput }
         onExited: { fixtureResponse = trayOutput.text; fixtureBusy = false; }
     }
@@ -67,6 +70,8 @@ ShellRoot {
             function click(name, button = Qt.LeftButton) {
                 const drawer = item("deckDrawer")
                 if (drawer?.isOpen) tryCompare(drawer, "progress", 1)
+                // A page change lays out its controls on a later frame, so actionability is polled first.
+                tryVerify(() => item(name)?.visible === true && item(name).width > 0, 2000)
                 const target = item(name)
                 check(target !== null && target.visible && target.width > 0, name + " is actionable")
                 mouseClick(target, target.width / 2, target.height / 2, button)
@@ -78,6 +83,10 @@ ShellRoot {
                 trayQuery.running = true
                 tryCompare(shellRoot, "fixtureBusy", false, 5000)
                 return shellRoot.fixtureResponse ? JSON.parse(shellRoot.fixtureResponse) : null
+            }
+            // Cards land in sequence after their page opens; wait out the longest entrance before measuring.
+            function waitForCardEntrance() {
+                wait(DeckMotion.delayFor(DeckMotion.maximumStaggerSteps) + DeckMotion.cardDuration)
             }
             function initTestCase() {
                 tryCompare(Icons, "fontReady", true, 3000)
@@ -127,7 +136,8 @@ ShellRoot {
                         host.width = width
                         for (const format of [false, true]) {
                             Config.bar.use12hFormat = format
-                            wait(20)
+                            // Geometry settles when the layout polishes, which happens before a frame is drawn.
+                            waitForRendering(content)
                             const hitbox = content.barHitbox
                             check(hitbox.x >= 0 && hitbox.x + hitbox.width <= width, "bar fits horizontally at " + width)
                             check(hitbox.y >= 0 && hitbox.y + hitbox.height <= host.height, "bar fits vertically")
@@ -204,6 +214,7 @@ ShellRoot {
                 GlobalShortcuts.run("connections")
                 const drawer = item("deckDrawer")
                 tryCompare(drawer, "progress", 1)
+                waitForCardEntrance()
                 const currentGroup = item("deckConnectedNetworks")
                 const availableGroup = item("deckAvailableNetworks")
                 compare(currentGroup.networks.length, 1)
@@ -241,6 +252,7 @@ ShellRoot {
                 drawer.close()
                 NetworkService.wifiNetworks.splice(0, NetworkService.wifiNetworks.length)
                 for (const node of nodes) node.destroy()
+                console.log("DECK_NETWORK_PASSED")
             }
             function test_deck_launcher() {
                 const screenState = Visibilities.getForScreen(output.name)
@@ -386,9 +398,10 @@ ShellRoot {
                 compare(item("deckPower-poweroff").label, "Shut down")
                 click("deckPower-logout")
                 tryCompare(item("deckPower-logout"), "label", "Log out", 4000)
+                console.log("DECK_POWER_PASSED")
             }
             function test_real_tray_menu_dispatch_and_removal() {
-                if (Quickshell.env("DECK_TEST_PYTHON") === "") { console.log("DECK_TRAY_SKIPPED"); return; }
+                if (shellRoot.trayPython === "") { console.log("DECK_TRAY_SKIPPED"); return; }
                 tryVerify(() => SystemTray.items.values.length === 2, 5000)
                 GlobalShortcuts.run("dashboard")
                 GlobalShortcuts.run("tray")
@@ -508,10 +521,11 @@ class DeckRuntimeTests(unittest.TestCase):
                 env=env, capture_output=True, text=True, timeout=75)
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER"):
-                self.assertIn("DECK_" + marker + "_PASSED", output, output)
-            if env.get("DECK_TEST_PYTHON"):
-                self.assertIn("DECK_TRAY_PASSED", output, output)
+            # QtTest failures inside a test function print nothing here, so each function must prove it ran.
+            markers = ["DECK_" + marker + "_PASSED" for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER", "NETWORK", "POWER")]
+            markers.append("DECK_TRAY_PASSED" if env.get("DECK_TEST_PYTHON") else "DECK_TRAY_SKIPPED")
+            missing = [marker for marker in markers if marker not in output]
+            self.assertEqual(missing, [], output)
             for failure in ("DECK_TIMEOUT", "DECK_ASSERTION", "Binding loop", "TypeError", "ReferenceError", "Unable to assign [undefined]", "FAIL!"):
                 self.assertNotIn(failure, output, output)
 
