@@ -23,6 +23,12 @@ RowLayout {
         return (angleY !== 0 ? angleY : pixelY) / 120 * 0.05;
     }
 
+    // Scrolling stops at 100%, but a level already above it only steps down,
+    // so one notch never snaps an amplified output or mic back to 100%.
+    function steppedLevel(current: real, step: real): real {
+        return Math.max(0.0, Math.min(Math.max(1.0, current), current + step));
+    }
+
     function adjustBrightness(step: real) {
         const newVal = Math.max(0.05, Math.min(1.0, brightBtn.brightnessVal + step));
         if (Brightness.syncBrightness) {
@@ -42,7 +48,7 @@ RowLayout {
             return;
         if (step > 0 && volBtn.isMuted)
             volBtn.audioDevice.muted = false;
-        Audio.setVolume(Math.max(0.0, Math.min(1.0, volBtn.volumeVal + step)));
+        Audio.setVolume(steppedLevel(volBtn.volumeVal, step));
     }
 
     function adjustMic(step: real) {
@@ -51,7 +57,7 @@ RowLayout {
             return;
         if (step > 0 && mic.muted)
             mic.muted = false;
-        Audio.setMicVolume(Math.max(0.0, Math.min(1.0, mic.volume + step)));
+        Audio.setMicVolume(steppedLevel(mic.volume, step));
     }
 
     // ═══════════════════════════════════════════════════════════════

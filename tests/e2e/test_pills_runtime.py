@@ -140,6 +140,26 @@ ShellRoot {
                 console.log("PILLS_INLINE_OSD_SCROLL_PASSED")
             }
 
+            function test_inline_osd_keeps_boosted_levels() {
+                const icons = childOfType(bar, "IslandStatusIcons")
+                verify(icons !== null)
+                tryCompare(bar, "containerY", 0)
+                Audio.sink.audio.volume = 1.5
+                Audio.source.audio.volume = 1.5
+                bar.triggerOsd("volume", 1.5, false)
+                verify(bar.inlineOsdActive)
+                wait(Motion.hoverDuration + 50)
+                const point = icons.mapToItem(bar, icons.width / 2, icons.height / 2)
+                mouseWheel(bar, point.x, point.y, 0, -120)
+                assertLevel(Audio.sink.audio.volume, 1.45, "a notch steps a boosted output down from where it is")
+                mouseWheel(bar, point.x, point.y, 0, 120)
+                assertLevel(Audio.sink.audio.volume, 1.45, "scrolling up never snaps a boosted output down to 100%")
+                bar.triggerOsd("mic", 1.5, false)
+                mouseWheel(bar, point.x, point.y, 0, -120)
+                assertLevel(Audio.source.audio.volume, 1.45, "a notch steps a boosted mic down from where it is")
+                console.log("PILLS_INLINE_OSD_BOOSTED_PASSED")
+            }
+
             function test_background_notification_dismissal() {
                 for (const mode of ["dashboard", "media", "apps", "projects"]) {
                     bar.expand(mode)
@@ -358,7 +378,7 @@ class PillsRuntimeTests(unittest.TestCase):
             )
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INTERRUPTED_RETRACTION", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
+            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INLINE_OSD_BOOSTED", "INTERRUPTED_RETRACTION", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
                 self.assertIn("PILLS_" + marker + "_PASSED", output, output)
             self.assertNotIn("PILLS_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("Binding loop", output, output)
