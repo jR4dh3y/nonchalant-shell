@@ -41,7 +41,13 @@ Singleton {
         console.log("IPC run command received:", command);
         if (Config.bar?.style === "deck") {
             const mode = ({ audio: "sound", microphone: "mic", network: "wifi", powerprofile: "battery", music: "media", player: "media", calendar: "today", datetime: "today", notifications: "alerts" })[command] ?? command;
-            if (["wifi", "bluetooth", "sound", "mic", "battery", "media", "weather", "today", "alerts", "controls", "connections", "windows", "tray", "power", "powermenu", "wallpapers", "stats", "resources", "system-monitor"].includes(mode)) {
+            // The overview is compositor-owned, so it must not depend on a bar controller being registered.
+            if (mode === "windows") {
+                Visibilities.closeActiveBarPopup();
+                CompositorService.toggleOverview();
+                return;
+            }
+            if (["wifi", "bluetooth", "sound", "mic", "battery", "media", "weather", "today", "alerts", "controls", "connections", "tray", "power", "powermenu", "wallpapers", "stats", "resources", "system-monitor"].includes(mode)) {
                 const controller = Visibilities.getDashboardControllerForActive();
                 if (controller) controller.openControlMenu(mode);
                 return;

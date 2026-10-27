@@ -314,6 +314,13 @@ ShellRoot {
                 GlobalShortcuts.run("windows")
                 check(!drawer.isOpen, "overview releases the flyout grab")
                 compare(CompositorService.backend.lastAction, "overview")
+                // The overview is compositor-owned, so it works without a registered bar controller.
+                const controller = item("deckSurface").parent
+                Visibilities.unregisterDashboardController(output.name, controller)
+                CompositorService.backend.lastAction = ""
+                GlobalShortcuts.run("windows")
+                compare(CompositorService.backend.lastAction, "overview")
+                Visibilities.registerDashboardController(output.name, controller)
                 CompositorService.backend.supportsOverview = false
                 check(!CompositorService.toggleOverview(), "unsupported compositor rejects overview explicitly")
                 CompositorService.backend.supportsOverview = true
@@ -621,7 +628,9 @@ class DeckRuntimeTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             # QtTest failures inside a test function print nothing here, so each function must prove it ran.
-            markers = ["DECK_" + marker + "_PASSED" for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER", "NETWORK", "POWER", "NARROW", "FOCUS", "FREQUENT")]
+            markers = ["DECK_" + marker + "_PASSED" for marker in (
+                "FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER",
+                "NETWORK", "POWER", "NARROW", "FOCUS", "FREQUENT")]
             markers.append("DECK_TRAY_PASSED" if env.get("DECK_TEST_PYTHON") else "DECK_TRAY_SKIPPED")
             missing = [marker for marker in markers if marker not in output]
             self.assertEqual(missing, [], output)
