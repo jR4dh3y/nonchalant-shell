@@ -39,6 +39,20 @@ Singleton {
 
     function run(command) {
         console.log("IPC run command received:", command);
+        if (Config.bar?.style === "deck") {
+            const mode = ({ audio: "sound", microphone: "mic", network: "wifi", powerprofile: "battery", music: "media", player: "media", calendar: "today", datetime: "today", notifications: "alerts" })[command] ?? command;
+            // The overview is compositor-owned, so it must not depend on a bar controller being registered.
+            if (mode === "windows") {
+                Visibilities.closeActiveBarPopup();
+                CompositorService.toggleOverview();
+                return;
+            }
+            if (["wifi", "bluetooth", "sound", "mic", "battery", "media", "weather", "today", "alerts", "controls", "connections", "tray", "power", "powermenu", "wallpapers", "stats", "resources", "system-monitor"].includes(mode)) {
+                const controller = Visibilities.getDashboardControllerForActive();
+                if (controller) controller.openControlMenu(mode);
+                return;
+            }
+        }
         if (Config.bar?.style === "left") {
             const mode = ({ "system-monitor": "stats", resources: "stats", audio: "sound", microphone: "mic", network: "wifi", powerprofile: "battery", music: "media", player: "media" })[command] ?? command;
             if (["wifi", "bluetooth", "sound", "mic", "battery", "media", "stats", "weather"].indexOf(mode) !== -1) {
@@ -199,6 +213,10 @@ Singleton {
     function toggleAlerts() {
         if (Visibilities.toggleIslandMode("alerts"))
             return;
+        if (Config.bar?.style === "deck") {
+            Visibilities.getDashboardControllerForActive()?.openControlMenu("alerts");
+            return;
+        }
         Visibilities.setActiveModule("alerts");
     }
 

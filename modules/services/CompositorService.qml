@@ -23,6 +23,9 @@ Singleton {
     readonly property CompositorWorkspace focusedWorkspace: workspaces.find(workspace => workspace.focused) ?? null
     readonly property CompositorOutput focusedMonitor: monitors.find(monitor => monitor.focused) ?? null
     readonly property CompositorWindow focusedClient: windows.find(window => window.is_focused) ?? null
+    // Snapshots rebuild the focused objects on every change, so compare focus by id instead.
+    readonly property string focusedWindowId: focusedClient?.id ?? ""
+    readonly property string focusedWorkspaceId: focusedWorkspace?.id ?? ""
     readonly property bool overviewOpen: state?.overviewOpen ?? false
     readonly property list<string> fullscreenOutputs: state?.fullscreenOutputs ?? []
 
@@ -144,6 +147,14 @@ Singleton {
             return false;
         }
         return submit("focusAdjacentWorkspace", output, [output, direction]);
+    }
+
+    function toggleOverview(): bool {
+        if (!supportsOverview) {
+            root.actionFailed("toggleOverview", "", "Overview is not supported by this compositor");
+            return false;
+        }
+        return submit("toggleOverview", "", []);
     }
 
     function logout(): bool {

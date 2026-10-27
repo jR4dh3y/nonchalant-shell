@@ -17,6 +17,8 @@ Singleton {
 
     // Signal when data is ready
     signal usageDataReady
+    // Scores changed, so anything that caches a ranking built from them must rebuild it.
+    signal usageChanged
 
     // Time-based scoring decay (favor recent apps)
     readonly property int maxBoostScore: 200
@@ -101,6 +103,7 @@ Singleton {
         usageData = usageData;
 
         saveUsageData();
+        root.usageChanged();
     }
 
     // Get usage score for an app (used for sorting)
@@ -162,6 +165,7 @@ Singleton {
         if (changed) {
             usageData = usageData;
             saveUsageData();
+            root.usageChanged();
         }
     }
 }

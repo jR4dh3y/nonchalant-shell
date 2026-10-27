@@ -485,7 +485,7 @@ Singleton {
 
         adapter: JsonAdapter {
             property string position: "top"
-            property string style: "default"
+            property string style: "default" // default | island | pills | left | deck
             property list<string> screenList: []
             property bool enableFirefoxPlayer: false
             property bool lyricsEnabled: true

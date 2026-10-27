@@ -19,7 +19,7 @@ def arguments():
     parser.add_argument("--compositor", choices=("niri", "hyprland"), required=True)
     parser.add_argument("--artifacts", type=Path)
     parser.add_argument("--shell", action="store_true", help="also render the complete shell")
-    parser.add_argument("--style", choices=("default", "island", "left"), default="default")
+    parser.add_argument("--style", choices=("default", "island", "left", "deck"), default="default")
     parser.add_argument("--scale", type=float, default=1, help="scale of the disposable output")
     parser.add_argument("--text-rendering", action="store_true", help="compare nested container text with direct rasterization")
     parser.add_argument("--quickshell", default="qs", help="Quickshell binary, including an older baseline package")
@@ -542,6 +542,45 @@ def exercise(session, source, args, passed):
     if shell:
         time.sleep(0.7)
         session.run(["grim", str(session.root / "occupied-shell.png")])
+    if shell and args.style == "deck":
+        for page in ("controls", "connections", "battery", "today", "alerts", "tray", "wallpapers", "stats", "power", "media"):
+            # Media playback lives on the Controls page of the dash.
+            expected = "controls" if page == "media" else page
+            session.ipc(shell, "nonchalant", "run", page)
+            session.wait(f"deck {page} page opens", lambda: (
+                shell_state()["popupOpen"] and shell_state()["controlMenu"] == ("power" if page == "battery" and shell_state()["controlMenu"] == "power" else expected)))
+            time.sleep(0.7)
+            session.run(["grim", str(session.root / f"deck-{page}.png")])
+            session.ipc(shell, "nonchalant", "run", page)
+            session.wait(f"deck {page} reverse toggle dismisses", lambda: not shell_state()["popupOpen"])
+        passed.append("every Deck task flyout opens by IPC with live clients and reverse-toggles closed")
+        session.ipc(shell, "nonchalant", "run", "launcher")
+        session.wait("deck launcher opens", lambda: shell_state()["launcherOpen"])
+        time.sleep(0.8)
+        session.run(["grim", str(session.root / "deck-launcher.png")])
+        session.ipc(shell, "nonchalant", "run", "launcher")
+        session.wait("deck launcher dismisses", lambda: not shell_state()["launcherOpen"])
+        passed.append("Deck launcher opens and closes by IPC")
+        # The drawer owns keyboard input while open, so real compositor focus moves must release it.
+        other_workspace = next(w["id"] for w in state()["workspaces"] if w["id"] != first["workspaceId"])
+        session.ipc(shell, "nonchalant", "run", "controls")
+        session.wait("deck drawer opens for focus check", lambda: shell_state()["popupOpen"])
+        time.sleep(0.8)
+        assert shell_state()["popupOpen"], "an open Deck drawer closed without a compositor focus change"
+        session.ipc(probe, "compositor-test", "focusWorkspace", other_workspace)
+        session.wait("workspace focus releases the Deck drawer", lambda: not shell_state()["popupOpen"])
+        session.ipc(shell, "nonchalant", "run", "controls")
+        session.wait("deck drawer reopens for window focus check", lambda: shell_state()["popupOpen"])
+        session.ipc(probe, "compositor-test", "focusWindow", first["id"])
+        session.wait("window focus releases the Deck drawer", lambda: not shell_state()["popupOpen"])
+        passed.append("Deck drawer stays open until compositor focus moves to another workspace or window")
+        if args.compositor == "niri":
+            session.ipc(shell, "nonchalant", "run", "windows")
+            session.wait("Deck opens native overview", lambda: json.loads(session.run(["niri", "msg", "--json", "overview-state"]))["is_open"])
+            session.ipc(shell, "nonchalant", "run", "windows")
+            session.wait("Deck closes native overview", lambda: not json.loads(session.run(["niri", "msg", "--json", "overview-state"]))["is_open"])
+            passed.append("Deck window shortcut toggles native Niri overview in both directions")
+
     if shell and args.style == "left" and args.compositor == "niri":
         original_position = session.shell_state()["barPosition"]
         session.ipc(probe, "compositor-test", "focusWindow", first["id"])

@@ -217,6 +217,10 @@ Singleton {
     }
 
     function togglePowerMenuForActive() {
+        if (Config.bar?.style === "deck") {
+            getDashboardControllerForActive()?.openControlMenu("power");
+            return;
+        }
         if (toggleIslandMode("power"))
             return;
 
@@ -247,6 +251,10 @@ Singleton {
     function toggleSystemMonitorForActive() {
         if (toggleIslandMode("stats"))
             return;
+        if (Config.bar?.style === "deck") {
+            getDashboardControllerForActive()?.openControlMenu("stats");
+            return;
+        }
 
         const focusedMonitor = CompositorService.focusedMonitor;
         if (!focusedMonitor)
@@ -369,6 +377,17 @@ Singleton {
 
         function onFocusedMonitorChanged() {
             moveActiveModuleToFocusedScreen();
+        }
+
+        // Niri reports no focused window while a layer surface such as a bar popup holds the
+        // keyboard, so only a window taking focus, or a workspace change, moves input away.
+        function onFocusedWindowIdChanged() {
+            if (CompositorService.focusedWindowId !== "")
+                closeActiveBarPopup();
+        }
+
+        function onFocusedWorkspaceIdChanged() {
+            closeActiveBarPopup();
         }
 
         function onOverviewOpenChanged() {

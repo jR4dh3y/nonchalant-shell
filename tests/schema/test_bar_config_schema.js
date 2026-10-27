@@ -82,6 +82,15 @@ test("F1-VALIDATOR-2B: Validator accepts 'pills' as a valid style", () => {
     assert.strictEqual(validated, "pills");
 });
 
+test("Deck style survives validation and a full config round trip at either edge", () => {
+    for (const position of ["top", "bottom"]) {
+        const config = { ...barDefaults.data, style: "deck", position };
+        const validated = validator.validate(JSON.parse(JSON.stringify(config)), barDefaults.data);
+        assert.strictEqual(validated.style, "deck");
+        assert.strictEqual(validated.position, position);
+    }
+});
+
 test("F1-VALIDATOR-3: Validator rejects invalid style strings and falls back to default", () => {
     const invalidValues = ["dock", "floating", "dynamic-island", "topbar", "", "ISLAND", "Default"];
     for (const val of invalidValues) {
