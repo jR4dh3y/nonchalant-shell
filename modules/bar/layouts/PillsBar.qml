@@ -167,9 +167,11 @@ Item {
         if (slideDownAnim.running)
             slideDownAnim.stop();
 
-        const wasHidden = !root.barNormallyVisible && root.currentMode === "collapsed";
+        // Only a card that is fully off screen slides in from a hidden bar. One
+        // still shrinking into its pill keeps morphing from where it is.
+        const wasHidden = !root.barNormallyVisible && root.currentMode === "collapsed" && !root.isMorphing;
         if (root.currentMode === "collapsed") {
-            root.openedFromHidden = !root.barNormallyVisible;
+            root.openedFromHidden = wasHidden;
         }
         if (root.currentMode !== mode) {
             root.previousMode = root.currentMode;

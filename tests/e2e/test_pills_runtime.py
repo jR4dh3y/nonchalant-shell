@@ -89,6 +89,25 @@ ShellRoot {
                 console.log("PILLS_INTERRUPTED_RETRACTION_PASSED")
             }
 
+            function test_reopen_while_collapse_morphs() {
+                bar.expand("media")
+                tryCompare(bar, "isMorphing", false)
+                bar.collapse()
+                verify(bar.isMorphing, "the card is still shrinking into its pill")
+                Config.bar.pinned = false
+                compositorState.overviewOpen = true
+                verify(!bar.barNormallyVisible, "the bar hides itself while the card shrinks")
+                bar.expand("media")
+                verify(bar.isMorphing, "reopening continues the morph instead of sliding in from above")
+                compare(bar.containerY, 0)
+                tryCompare(bar, "isMorphing", false)
+                compare(bar.currentMode, "media")
+                bar.collapse()
+                tryCompare(bar, "currentMode", "collapsed")
+                tryCompare(bar, "isMorphing", false)
+                console.log("PILLS_REOPEN_WHILE_COLLAPSING_PASSED")
+            }
+
             function test_hidden_inline_osd() {
                 Config.bar.pinned = false
                 compositorState.overviewOpen = true
@@ -389,7 +408,7 @@ class PillsRuntimeTests(unittest.TestCase):
             )
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INLINE_OSD_BOOSTED", "WHEEL_STEP_UNITS", "INTERRUPTED_RETRACTION", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
+            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INLINE_OSD_BOOSTED", "WHEEL_STEP_UNITS", "INTERRUPTED_RETRACTION", "REOPEN_WHILE_COLLAPSING", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
                 self.assertIn("PILLS_" + marker + "_PASSED", output, output)
             self.assertNotIn("PILLS_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("Binding loop", output, output)
