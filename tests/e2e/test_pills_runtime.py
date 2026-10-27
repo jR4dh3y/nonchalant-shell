@@ -39,6 +39,10 @@ ShellRoot {
                 return null
             }
 
+            function assertNear(actual, expected, message) {
+                verify(Math.abs(actual - expected) < 0.001, message + ": expected " + expected + ", got " + actual)
+            }
+
             function initTestCase() {
                 tryVerify(() => CompositorService.backend !== null)
                 CompositorService.backend.state = compositorState
@@ -85,6 +89,25 @@ ShellRoot {
                 console.log("PILLS_INTERRUPTED_RETRACTION_PASSED")
             }
 
+            function test_reopen_while_collapse_morphs() {
+                bar.expand("media")
+                tryCompare(bar, "isMorphing", false)
+                bar.collapse()
+                verify(bar.isMorphing, "the card is still shrinking into its pill")
+                Config.bar.pinned = false
+                compositorState.overviewOpen = true
+                verify(!bar.barNormallyVisible, "the bar hides itself while the card shrinks")
+                bar.expand("media")
+                verify(bar.isMorphing, "reopening continues the morph instead of sliding in from above")
+                compare(bar.containerY, 0)
+                tryCompare(bar, "isMorphing", false)
+                compare(bar.currentMode, "media")
+                bar.collapse()
+                tryCompare(bar, "currentMode", "collapsed")
+                tryCompare(bar, "isMorphing", false)
+                console.log("PILLS_REOPEN_WHILE_COLLAPSING_PASSED")
+            }
+
             function test_hidden_inline_osd() {
                 Config.bar.pinned = false
                 compositorState.overviewOpen = true
@@ -99,6 +122,87 @@ ShellRoot {
                     tryVerify(() => bar.containerY < -bar.pillHeight)
                 }
                 console.log("PILLS_HIDDEN_OSD_PASSED")
+            }
+
+            function test_inline_osd_keeps_scrolling() {
+                function wheelHandlers(item, out) {
+                    for (const d of item.data ?? [])
+                        if (String(d).startsWith("QQuickWheelHandler")) out.push(d)
+                    for (const child of item.children ?? []) wheelHandlers(child, out)
+                    return out
+                }
+                const icons = childOfType(bar, "IslandStatusIcons")
+                verify(icons !== null)
+                tryCompare(bar, "containerY", 0)
+                Audio.sink.audio.volume = 0.5
+                const handlers = wheelHandlers(icons.parent, [])
+                let hits = 0
+                for (const handler of handlers) handler.wheel.connect(() => hits++)
+                const volume = icons.children[1]
+                const point = volume.mapToItem(bar, volume.width / 2, volume.height / 2)
+                bar.triggerOsd("volume", 0.5, false)
+                verify(bar.inlineOsdActive)
+                wait(Motion.hoverDuration + 50)
+                for (let i = 1; i <= 3; i++) {
+                    mouseWheel(bar, point.x, point.y, 0, -120)
+                    assertNear(Audio.sink.audio.volume, 0.5 - 0.05 * i, "each notch lowers the level by one step")
+                }
+                compare(hits, 3, "every notch reaches a handler while the inline OSD covers the icons")
+                // The first timeout would lapse about 1.8 s after triggerOsd, so
+                // a notch sent later must restart it for the OSD to still be up.
+                wait(1200)
+                mouseWheel(bar, point.x, point.y, 0, -120)
+                assertNear(Audio.sink.audio.volume, 0.3, "a notch after the first timeout still adjusts the level")
+                wait(1200)
+                verify(bar.inlineOsdActive, "the OSD stays up past its original timeout while scrolling")
+                tryCompare(bar, "inlineOsdActive", false, 2500)
+                console.log("PILLS_INLINE_OSD_SCROLL_PASSED")
+            }
+
+            function test_inline_osd_keeps_boosted_levels() {
+                const icons = childOfType(bar, "IslandStatusIcons")
+                verify(icons !== null)
+                tryCompare(bar, "containerY", 0)
+                Audio.sink.audio.volume = 1.5
+                Audio.source.audio.volume = 1.5
+                bar.triggerOsd("volume", 1.5, false)
+                verify(bar.inlineOsdActive)
+                wait(Motion.hoverDuration + 50)
+                const point = icons.mapToItem(bar, icons.width / 2, icons.height / 2)
+                mouseWheel(bar, point.x, point.y, 0, -120)
+                assertNear(Audio.sink.audio.volume, 1.45, "a notch steps a boosted output down from where it is")
+                mouseWheel(bar, point.x, point.y, 0, 120)
+                assertNear(Audio.sink.audio.volume, 1.45, "scrolling up never snaps a boosted output down to 100%")
+                bar.triggerOsd("mic", 1.5, false)
+                mouseWheel(bar, point.x, point.y, 0, -120)
+                assertNear(Audio.source.audio.volume, 1.45, "a notch steps a boosted mic down from where it is")
+                console.log("PILLS_INLINE_OSD_BOOSTED_PASSED")
+            }
+
+            function test_one_notch_steps_once_mid_fade() {
+                const icons = childOfType(bar, "IslandStatusIcons")
+                verify(icons !== null)
+                tryCompare(bar, "containerY", 0)
+                Audio.sink.audio.volume = 0.5
+                bar.triggerOsd("volume", 0.5, false)
+                verify(bar.inlineOsdActive)
+                wait(Math.round(Motion.hoverDuration / 2))
+                const volume = icons.children[1]
+                const point = volume.mapToItem(bar, volume.width / 2, volume.height / 2)
+                mouseWheel(bar, point.x, point.y, 0, -120)
+                assertNear(Audio.sink.audio.volume, 0.45, "one notch steps once while the icons and OSD cross-fade")
+                console.log("PILLS_OSD_MID_FADE_PASSED")
+            }
+
+            function test_wheel_step_units() {
+                const icons = childOfType(bar, "IslandStatusIcons")
+                verify(icons !== null)
+                assertNear(icons.wheelStep(-120, 0), -0.05, "a mouse notch moves a level by one step")
+                assertNear(icons.wheelStep(0, -60), -0.05, "a touchpad moves by distance: 60 px is one notch")
+                verify(Math.abs(icons.wheelStep(120, 1)) < 0.01,
+                    "a one-pixel touchpad move stays small even when the device also reports an angle")
+                assertNear(icons.wheelStep(0, 0), 0, "no movement is no step")
+                console.log("PILLS_WHEEL_STEP_UNITS_PASSED")
             }
 
             function test_background_notification_dismissal() {
@@ -200,6 +304,77 @@ ShellRoot {
 '''
 
 
+# Stands in for the PipeWire wrapper so the wheel handlers adjust a level the
+# test can read back. The real service has no sink in this sandbox.
+AUDIO_STUB = r'''
+pragma Singleton
+import QtQuick
+
+QtObject {
+    id: root
+
+    readonly property real hardMaxValue: 2.0
+    readonly property real value: sinkAudio.volume
+    property bool protectionEnabled: false
+    property bool protectionTriggered: false
+    readonly property list<var> outputAppNodes: []
+    readonly property list<var> inputAppNodes: []
+    readonly property list<var> outputDevices: []
+    readonly property list<var> inputDevices: []
+
+    readonly property QtObject sink: QtObject {
+        id: sinkNode
+        readonly property bool ready: true
+        readonly property string id: "test-sink"
+        readonly property QtObject audio: QtObject {
+            id: sinkAudio
+            property real volume: 0.5
+            property bool muted: false
+            onVolumeChanged: root.volumeChanged(volume, muted, sinkNode)
+            onMutedChanged: root.volumeChanged(volume, muted, sinkNode)
+        }
+    }
+
+    readonly property QtObject source: QtObject {
+        id: sourceNode
+        readonly property bool ready: true
+        readonly property string id: "test-source"
+        readonly property QtObject audio: QtObject {
+            id: sourceAudio
+            property real volume: 0.5
+            property bool muted: false
+            onVolumeChanged: root.micVolumeChanged(volume, muted, sourceNode)
+            onMutedChanged: root.micVolumeChanged(volume, muted, sourceNode)
+        }
+    }
+
+    signal volumeChanged(real volume, bool muted, var node)
+    signal micVolumeChanged(real volume, bool muted, var node)
+    signal sinkProtectionTriggered(string reason)
+
+    function setVolume(volume: real) {
+        sinkAudio.volume = Math.max(0, Math.min(hardMaxValue, volume));
+    }
+
+    function setMicVolume(volume: real) {
+        sourceAudio.volume = Math.max(0, Math.min(hardMaxValue, volume));
+    }
+
+    function setNodeVolume(node, volume: real) {}
+    function setProtectionEnabled(enabled: bool) { protectionEnabled = enabled; }
+    function toggleMute() { sinkAudio.muted = !sinkAudio.muted; }
+    function toggleMicMute() { sourceAudio.muted = !sourceAudio.muted; }
+    function incrementVolume() { setVolume(sinkAudio.volume + 0.02); }
+    function decrementVolume() { setVolume(sinkAudio.volume - 0.02); }
+    function setDefaultSink(node) {}
+    function setDefaultSource(node) {}
+    function friendlyDeviceName(node): string { return "Test device"; }
+    function appNodeDisplayName(node): string { return "Test app"; }
+    function volumeIcon(volume: real, muted: bool): string { return ""; }
+}
+'''
+
+
 @unittest.skipUnless(shutil.which("qs"), "Quickshell is required for runtime checks")
 class PillsRuntimeTests(unittest.TestCase):
     def test_transitions_and_feedback(self):
@@ -215,6 +390,7 @@ class PillsRuntimeTests(unittest.TestCase):
             shutil.copytree(ROOT / "modules/services", modules / "services")
             (modules / "services/compositor/NiriBackend.qml").write_text(
                 "import QtQuick\nCompositorBackend {}\n")
+            (modules / "services/Audio.qml").write_text(AUDIO_STUB)
             (fixture / "shell.qml").write_text(QML)
             home = fixture / "home"
             home.mkdir()
@@ -247,7 +423,7 @@ class PillsRuntimeTests(unittest.TestCase):
             )
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            for marker in ("LATE_GEOMETRY", "INTERRUPTED_RETRACTION", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
+            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INLINE_OSD_BOOSTED", "WHEEL_STEP_UNITS", "OSD_MID_FADE", "INTERRUPTED_RETRACTION", "REOPEN_WHILE_COLLAPSING", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
                 self.assertIn("PILLS_" + marker + "_PASSED", output, output)
             self.assertNotIn("PILLS_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("Binding loop", output, output)

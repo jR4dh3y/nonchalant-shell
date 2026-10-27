@@ -17,6 +17,55 @@ RowLayout {
     readonly property string iconFont: "Material Symbols Rounded"
     readonly property bool canInteract: root.bar && !root.bar.isExpanded && !root.bar.isMorphing
 
+    // A mouse notch moves a level by 5%. Touchpads and high-resolution wheels
+    // report pixels, so they scroll by distance instead: 60 px, about three
+    // lines of text, is one notch, and a small swipe moves a small amount.
+    readonly property real levelPerNotch: 0.05
+    readonly property real pixelsPerNotch: 60
+
+    function wheelStep(angleY: real, pixelY: real): real {
+        if (pixelY !== 0)
+            return pixelY / pixelsPerNotch * levelPerNotch;
+        return angleY / 120 * levelPerNotch;
+    }
+
+    // Scrolling stops at 100%, but a level already above it only steps down,
+    // so one notch never snaps an amplified output or mic back to 100%.
+    function steppedLevel(current: real, step: real): real {
+        return Math.max(0.0, Math.min(Math.max(1.0, current), current + step));
+    }
+
+    function adjustBrightness(step: real) {
+        const newVal = Math.max(0.05, Math.min(1.0, brightBtn.brightnessVal + step));
+        if (Brightness.syncBrightness) {
+            for (let i = 0; i < Brightness.monitors.length; i++) {
+                const m = Brightness.monitors[i];
+                if (m?.ready) m.setBrightness(newVal);
+            }
+        } else if (brightBtn.currentMonitor?.ready) {
+            brightBtn.currentMonitor.setBrightness(newVal);
+        } else if (Brightness.monitors.length > 0 && Brightness.monitors[0]?.ready) {
+            Brightness.monitors[0].setBrightness(newVal);
+        }
+    }
+
+    function adjustVolume(step: real) {
+        if (!volBtn.audioDevice)
+            return;
+        if (step > 0 && volBtn.isMuted)
+            volBtn.audioDevice.muted = false;
+        Audio.setVolume(steppedLevel(volBtn.volumeVal, step));
+    }
+
+    function adjustMic(step: real) {
+        const mic = Audio.source?.audio ?? null;
+        if (!mic)
+            return;
+        if (step > 0 && mic.muted)
+            mic.muted = false;
+        Audio.setMicVolume(steppedLevel(mic.volume, step));
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // 1. BRIGHTNESS DYNAMIC ICON (7 Granular States)
     // ═══════════════════════════════════════════════════════════════
@@ -73,20 +122,7 @@ RowLayout {
         WheelHandler {
             target: brightBtn
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            onWheel: event => {
-                const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
-                const newVal = Math.max(0.05, Math.min(1.0, brightBtn.brightnessVal + delta));
-                if (Brightness.syncBrightness) {
-                    for (let i = 0; i < Brightness.monitors.length; i++) {
-                        const m = Brightness.monitors[i];
-                        if (m?.ready) m.setBrightness(newVal);
-                    }
-                } else if (brightBtn.currentMonitor?.ready) {
-                    brightBtn.currentMonitor.setBrightness(newVal);
-                } else if (Brightness.monitors.length > 0 && Brightness.monitors[0]?.ready) {
-                    Brightness.monitors[0].setBrightness(newVal);
-                }
-            }
+            onWheel: event => root.adjustBrightness(root.wheelStep(event.angleDelta.y, event.pixelDelta.y))
         }
 
         MouseArea {
@@ -156,16 +192,7 @@ RowLayout {
         WheelHandler {
             target: volBtn
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            onWheel: event => {
-                if (volBtn.audioDevice) {
-                    const delta = event.angleDelta.y > 0 ? 0.05 : -0.05;
-                    const newVal = Math.max(0.0, Math.min(1.0, volBtn.volumeVal + delta));
-                    if (delta > 0 && volBtn.isMuted) {
-                        volBtn.audioDevice.muted = false;
-                    }
-                    Audio.setVolume(newVal);
-                }
-            }
+            onWheel: event => root.adjustVolume(root.wheelStep(event.angleDelta.y, event.pixelDelta.y))
         }
 
         MouseArea {
