@@ -561,6 +561,19 @@ def exercise(session, source, args, passed):
         session.ipc(shell, "nonchalant", "run", "launcher")
         session.wait("deck launcher dismisses", lambda: not shell_state()["launcherOpen"])
         passed.append("Deck launcher opens and closes by IPC")
+        # The drawer owns keyboard input while open, so real compositor focus moves must release it.
+        other_workspace = next(w["id"] for w in state()["workspaces"] if w["id"] != first["workspaceId"])
+        session.ipc(shell, "nonchalant", "run", "controls")
+        session.wait("deck drawer opens for focus check", lambda: shell_state()["popupOpen"])
+        time.sleep(0.8)
+        assert shell_state()["popupOpen"], "an open Deck drawer closed without a compositor focus change"
+        session.ipc(probe, "compositor-test", "focusWorkspace", other_workspace)
+        session.wait("workspace focus releases the Deck drawer", lambda: not shell_state()["popupOpen"])
+        session.ipc(shell, "nonchalant", "run", "controls")
+        session.wait("deck drawer reopens for window focus check", lambda: shell_state()["popupOpen"])
+        session.ipc(probe, "compositor-test", "focusWindow", first["id"])
+        session.wait("window focus releases the Deck drawer", lambda: not shell_state()["popupOpen"])
+        passed.append("Deck drawer stays open until compositor focus moves to another workspace or window")
         if args.compositor == "niri":
             session.ipc(shell, "nonchalant", "run", "windows")
             session.wait("Deck opens native overview", lambda: json.loads(session.run(["niri", "msg", "--json", "overview-state"]))["is_open"])

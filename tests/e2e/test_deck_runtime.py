@@ -84,6 +84,38 @@ ShellRoot {
                 tryCompare(shellRoot, "fixtureBusy", false, 5000)
                 return shellRoot.fixtureResponse ? JSON.parse(shellRoot.fixtureResponse) : null
             }
+            function workspaceFixtures(focusedId) {
+                const component = Qt.createComponent("modules/services/compositor/CompositorWorkspace.qml")
+                const items = []
+                for (let index = 1; index <= 12; index++) {
+                    const id = "ws" + index
+                    items.push(component.createObject(test, {
+                        id: id, idx: index, name: "Workspace " + index, isNamed: true,
+                        output: output.name, active: index === 1, focused: id === focusedId,
+                        activeWindowId: index === 1 ? "w1" : "", windows: index === 1 ? 8 : 0
+                    }))
+                }
+                return items
+            }
+            function windowFixtures(focusedId, suffix) {
+                const component = Qt.createComponent("modules/services/compositor/CompositorWindow.qml")
+                const items = []
+                for (let index = 1; index <= 8; index++) {
+                    const id = "w" + index
+                    items.push(component.createObject(test, {
+                        id: id, appId: "org.kde.kate", title: "Document " + index + " — a long descriptive window title" + suffix,
+                        output: output.name, workspaceId: "ws1", is_focused: id === focusedId
+                    }))
+                }
+                return items
+            }
+            // Each publish creates new objects, as the backend does on every snapshot.
+            function publishFixtures(focusedWindowId, focusedWorkspaceId, suffix) {
+                workspaces = workspaceFixtures(focusedWorkspaceId)
+                windows = windowFixtures(focusedWindowId, suffix)
+                compositorState.workspaces = workspaces
+                compositorState.windows = windows
+            }
             // Cards land in sequence after their page opens; wait out the longest entrance before measuring.
             function waitForCardEntrance() {
                 wait(DeckMotion.delayFor(DeckMotion.maximumStaggerSteps) + DeckMotion.cardDuration)
@@ -94,27 +126,7 @@ ShellRoot {
                 tryVerify(() => CompositorService.backend !== null)
                 compositorState.outputs = [output]
                 CompositorService.backend.state = compositorState
-                const workspaceComponent = Qt.createComponent("modules/services/compositor/CompositorWorkspace.qml")
-                const windowComponent = Qt.createComponent("modules/services/compositor/CompositorWindow.qml")
-                const workspaceItems = []
-                const windowItems = []
-                for (let index = 1; index <= 12; index++) {
-                    workspaceItems.push(workspaceComponent.createObject(test, {
-                        id: "ws" + index, idx: index, name: "Workspace " + index, isNamed: true,
-                        output: output.name, active: index === 1, focused: index === 1,
-                        activeWindowId: index === 1 ? "w1" : "", windows: index === 1 ? 8 : 0
-                    }))
-                }
-                for (let index = 1; index <= 8; index++) {
-                    windowItems.push(windowComponent.createObject(test, {
-                        id: "w" + index, appId: "org.kde.kate", title: "Document " + index + " — a long descriptive window title",
-                        output: output.name, workspaceId: "ws1", is_focused: index === 1
-                    }))
-                }
-                workspaces = workspaceItems
-                windows = windowItems
-                compositorState.workspaces = workspaces
-                compositorState.windows = windows
+                publishFixtures("w1", "ws1", "")
                 Config.bar.style = "deck"
                 tryVerify(() => item("deckClock") !== null)
                 Visibilities.registerDashboardController(output.name, item("deckSurface").parent)
@@ -122,6 +134,8 @@ ShellRoot {
             function init() {
                 Visibilities.closeActiveBarPopup()
                 host.width = 1280
+                // A test that failed mid-focus-change must not leave the next one on another window.
+                publishFixtures("w1", "ws1", "")
                 compositorState.fullscreenOutputs = []
                 compositorState.overviewOpen = false
                 Config.bar.position = "top"
@@ -379,6 +393,29 @@ ShellRoot {
                 check(!Notifications.list.some(notice => notice.id === dismissId), "inbox dismissal removes the actual notification")
                 console.log("DECK_CONTROLS_PASSED")
             }
+            function test_compositor_focus_releases_drawer() {
+                const drawer = item("deckDrawer")
+                GlobalShortcuts.run("controls")
+                tryCompare(drawer, "isOpen", true)
+                // Same focused ids on rebuilt objects must not dismiss the drawer.
+                publishFixtures("w1", "ws1", " (retitled)")
+                wait(50)
+                check(drawer.isOpen, "a rebuilt snapshot with the same focus keeps the drawer open")
+                // Niri reports no focused window while the drawer itself holds the keyboard.
+                publishFixtures("", "ws1", " (retitled)")
+                wait(50)
+                check(drawer.isOpen, "no focused window, as when the drawer holds the keyboard, keeps it open")
+                publishFixtures("w2", "ws1", " (retitled)")
+                tryCompare(drawer, "isOpen", false)
+                check(Visibilities.activeBarPopup === null, "a focused window change releases popup ownership")
+                GlobalShortcuts.run("controls")
+                tryCompare(drawer, "isOpen", true)
+                publishFixtures("w2", "ws2", " (retitled)")
+                tryCompare(drawer, "isOpen", false)
+                check(Visibilities.activeBarPopup === null, "a workspace change releases popup ownership")
+                publishFixtures("w1", "ws1", "")
+                console.log("DECK_FOCUS_PASSED")
+            }
             function test_power_confirmation() {
                 GlobalShortcuts.run("power")
                 const drawer = item("deckDrawer")
@@ -522,7 +559,7 @@ class DeckRuntimeTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             # QtTest failures inside a test function print nothing here, so each function must prove it ran.
-            markers = ["DECK_" + marker + "_PASSED" for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER", "NETWORK", "POWER")]
+            markers = ["DECK_" + marker + "_PASSED" for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER", "NETWORK", "POWER", "FOCUS")]
             markers.append("DECK_TRAY_PASSED" if env.get("DECK_TEST_PYTHON") else "DECK_TRAY_SKIPPED")
             missing = [marker for marker in markers if marker not in output]
             self.assertEqual(missing, [], output)

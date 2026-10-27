@@ -379,6 +379,17 @@ Singleton {
             moveActiveModuleToFocusedScreen();
         }
 
+        // Niri reports no focused window while a layer surface such as a bar popup holds the
+        // keyboard, so only a window taking focus, or a workspace change, moves input away.
+        function onFocusedWindowIdChanged() {
+            if (CompositorService.focusedWindowId !== "")
+                closeActiveBarPopup();
+        }
+
+        function onFocusedWorkspaceIdChanged() {
+            closeActiveBarPopup();
+        }
+
         function onOverviewOpenChanged() {
             // Overview is a full compositor surface — dismiss shell chrome.
             if (CompositorService.overviewOpen) {
