@@ -179,6 +179,21 @@ ShellRoot {
                 console.log("PILLS_INLINE_OSD_BOOSTED_PASSED")
             }
 
+            function test_one_notch_steps_once_mid_fade() {
+                const icons = childOfType(bar, "IslandStatusIcons")
+                verify(icons !== null)
+                tryCompare(bar, "containerY", 0)
+                Audio.sink.audio.volume = 0.5
+                bar.triggerOsd("volume", 0.5, false)
+                verify(bar.inlineOsdActive)
+                wait(Math.round(Motion.hoverDuration / 2))
+                const volume = icons.children[1]
+                const point = volume.mapToItem(bar, volume.width / 2, volume.height / 2)
+                mouseWheel(bar, point.x, point.y, 0, -120)
+                assertNear(Audio.sink.audio.volume, 0.45, "one notch steps once while the icons and OSD cross-fade")
+                console.log("PILLS_OSD_MID_FADE_PASSED")
+            }
+
             function test_wheel_step_units() {
                 const icons = childOfType(bar, "IslandStatusIcons")
                 verify(icons !== null)
@@ -408,7 +423,7 @@ class PillsRuntimeTests(unittest.TestCase):
             )
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
-            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INLINE_OSD_BOOSTED", "WHEEL_STEP_UNITS", "INTERRUPTED_RETRACTION", "REOPEN_WHILE_COLLAPSING", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
+            for marker in ("LATE_GEOMETRY", "INLINE_OSD_SCROLL", "INLINE_OSD_BOOSTED", "WHEEL_STEP_UNITS", "OSD_MID_FADE", "INTERRUPTED_RETRACTION", "REOPEN_WHILE_COLLAPSING", "HIDDEN_OSD", "BACKGROUND_NOTIFICATION", "STATS_ACCENT"):
                 self.assertIn("PILLS_" + marker + "_PASSED", output, output)
             self.assertNotIn("PILLS_RUNTIME_TIMEOUT", output, output)
             self.assertNotIn("Binding loop", output, output)
