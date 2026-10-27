@@ -8,7 +8,7 @@ Deck keeps the compact workspace, window, and status strips. At the default 14px
 
 ## The dash
 
-Status buttons open one fixed-size dash at the page they belong to. A page rail on the left switches between Controls, Network, Today, Inbox, Tray, Wallpapers, and Resources. The rail has no counters. Settings and Power sit in their own card at its foot.
+Status buttons open one fixed-size dash at the page they belong to. A page rail on the left switches between Controls, Network, Today, Inbox, Tray, Wallpapers, and Resources. The rail has no counters. Settings and Power sit in their own card at its foot. On outputs narrower than about 40 font sizes the rail keeps only its icons, and Controls stacks its rack below the levels when the page is too narrow for both.
 
 Every page is built from separate cards on the dash surface, so each component reads on its own:
 
@@ -57,7 +57,7 @@ All durations scale with the theme's animation duration. Setting it to 0 disable
 
 ## Interaction
 
-Clicking a trigger for the page already shown closes the dash. Another trigger switches pages in place. Ctrl+Tab and Ctrl+Shift+Tab (or Ctrl+Page Down/Up) walk the rail. Plain arrow keys stay with the focused control. Escape or an outside click closes. Focusing a window, changing workspace, entering fullscreen or overview, hiding the bar, and changing styles release popup ownership.
+Clicking a trigger for the page already shown closes the dash. Another trigger switches pages in place. Ctrl+Tab and Ctrl+Shift+Tab (or Ctrl+Page Down/Up) walk the rail. Plain arrow keys stay with the focused control. Escape or an outside click closes. A window taking focus, a workspace change, entering fullscreen or overview, hiding the bar, and changing styles release popup ownership. Niri reports no focused window while the drawer holds the keyboard, so that alone does not close it.
 
 Workspace buttons switch workspaces, and scrolling them selects an adjacent workspace. Window tabs focus on click and close on middle-click. Right-click opens the compositor's native overview where supported. The volume button supports wheel adjustment and right-click mute.
 
@@ -89,7 +89,7 @@ Run the focused fixture with:
 python3 -m unittest tests.e2e.test_deck_runtime
 ```
 
-It checks the populated bar at several widths and both edges, dash and flyout geometry for every route, rail switching with stable dash geometry, the rail indicator, Ctrl+Tab navigation, network list scrolling with a pinned toolbar and current connection, password handling, calendar rollover and the final week, faders and notification actions, power confirmation, launcher placement, focus, and mode switching, overview dispatch, and sampling lifetime. Set `DECK_TEST_PYTHON` to a Python environment with `dbus-next` to include real private-bus tray menu dispatch.
+It checks the populated bar at several widths and both edges, dash and flyout geometry for every route, rail switching with stable dash geometry, the rail indicator, narrow outputs with stacked and side-by-side Controls, compositor focus release, Ctrl+Tab navigation, network list scrolling with a pinned toolbar and current connection, password handling, calendar rollover and the final week, faders and notification actions, power confirmation, launcher placement, Frequent ordering after usage changes, focus, and mode switching, overview dispatch without a bar controller, and sampling lifetime. Set `DECK_TEST_PYTHON` to a Python environment with `dbus-next` to include real private-bus tray menu dispatch.
 
 Run the complete shell on a disposable compositor with:
 
