@@ -79,6 +79,14 @@ FocusScope {
         target: ProjectPickerService
         function onProjectsUpdated(): void { if (root.projects) root.refresh(); }
     }
+    Connections {
+        target: UsageTracker
+        // Signal order between listeners is not guaranteed, so clear cached scores before rebuilding.
+        function onUsageDataReady(): void {
+            AppSearch.invalidateCache();
+            if (root.open) root.refresh();
+        }
+    }
     Behavior on progress {
         enabled: DeckMotion.enabled
         NumberAnimation {

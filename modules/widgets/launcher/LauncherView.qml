@@ -204,14 +204,18 @@ Item {
         Component.onCompleted: {
             // Defer initial load to allow animation to start smoothly
             initialLoadTimer.start();
-            
-            // Re-update when UsageTracker finishes loading
-            UsageTracker.usageDataReady.connect(function() {
+        }
+
+        // Re-update when UsageTracker finishes loading. Connections drops this with the view;
+        // a plain connect() would keep calling into a destroyed launcher.
+        Connections {
+            target: UsageTracker
+            function onUsageDataReady(): void {
                 AppSearch.invalidateCache();
                 if (appLauncher.visible) {
-                     appLauncher.updateFilteredApps();
+                    appLauncher.updateFilteredApps();
                 }
-            });
+            }
         }
 
         Timer {

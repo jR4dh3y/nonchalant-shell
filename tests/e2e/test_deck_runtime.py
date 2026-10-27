@@ -450,6 +450,34 @@ ShellRoot {
                 publishFixtures("w1", "ws1", "")
                 console.log("DECK_FOCUS_PASSED")
             }
+            function test_frequent_apps_follow_usage() {
+                const screenState = Visibilities.getForScreen(output.name)
+                const apps = AppSearch.getAllApps()
+                check(apps.length > 1, "launcher has at least two applications to rank")
+                const launcher = findChild(runMenu, "deckLauncher")
+                const used = apps[apps.length - 1]
+                screenState.launcher = true
+                tryCompare(launcher, "progress", 1)
+                // The same record launchApp writes before it runs the application.
+                UsageTracker.recordUsage(used.id)
+                screenState.launcher = false
+                tryCompare(launcher, "progress", 0)
+                screenState.launcher = true
+                tryCompare(launcher, "progress", 1)
+                compare(AppSearch.getAllApps()[0].id, used.id)
+                compare(launcher.frequent[0].id, used.id)
+                // Usage that loads while the launcher is open reorders Frequent without a reopen.
+                const saved = apps[apps.length - 2]
+                const loaded = {}
+                loaded[saved.id] = { count: 9, lastUsed: Date.now() }
+                UsageTracker.usageData = loaded
+                UsageTracker.usageDataReady()
+                compare(launcher.frequent[0].id, saved.id)
+                UsageTracker.usageData = {}
+                screenState.launcher = false
+                tryCompare(launcher, "progress", 0)
+                console.log("DECK_FREQUENT_PASSED")
+            }
             function test_power_confirmation() {
                 GlobalShortcuts.run("power")
                 const drawer = item("deckDrawer")
@@ -593,7 +621,7 @@ class DeckRuntimeTests(unittest.TestCase):
             output = result.stdout + result.stderr
             self.assertEqual(result.returncode, 0, output)
             # QtTest failures inside a test function print nothing here, so each function must prove it ran.
-            markers = ["DECK_" + marker + "_PASSED" for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER", "NETWORK", "POWER", "NARROW", "FOCUS")]
+            markers = ["DECK_" + marker + "_PASSED" for marker in ("FOOTPRINT", "ACTIONS", "ROUTES", "CONTROLS", "HIDDEN", "REFINEMENT", "LAUNCHER", "NETWORK", "POWER", "NARROW", "FOCUS", "FREQUENT")]
             markers.append("DECK_TRAY_PASSED" if env.get("DECK_TEST_PYTHON") else "DECK_TRAY_SKIPPED")
             missing = [marker for marker in markers if marker not in output]
             self.assertEqual(missing, [], output)
