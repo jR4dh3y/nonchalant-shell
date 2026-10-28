@@ -300,7 +300,11 @@ Item {
         return (root.screenFocusedClient && root.screenFocusedClient.title) ? root.screenFocusedClient.title : "Desktop";
     }
 
-    readonly property bool isHovered: revealHoverHandler.hovered && root.currentMode === "collapsed" && !root.retractingToHidden
+    readonly property point revealPointer: revealHoverHandler.point.position
+    readonly property bool revealZoneHovered: revealHoverHandler.hovered
+        && root.revealPointer.x >= hoverZone.x && root.revealPointer.x < hoverZone.x + hoverZone.width
+        && root.revealPointer.y >= hoverZone.y && root.revealPointer.y < hoverZone.y + hoverZone.height
+    readonly property bool isHovered: root.revealZoneHovered && root.currentMode === "collapsed" && !root.retractingToHidden
     property bool debounceActive: false
     readonly property bool isPinned: (Config.bar && Config.bar.pinned) ? true : false
 
@@ -1647,20 +1651,22 @@ Item {
             }
         }
 
-    // Single hover zone for the autohide reveal
+    // Geometry of the autohide reveal zone; revealHoverHandler tests against it.
     Item {
         id: hoverZone
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        z: 1000
         width: Math.max(200, pillsRow.implicitWidth + 16)
         height: root.hitboxExpanded
             ? (root.topMargin + root.pillHeight + 12)
             : Math.max(16, root.triggerHeight + root.topMargin)
+    }
 
-        HoverHandler {
-            id: revealHoverHandler
-            blocking: false
-        }
+    // Watches the reveal zone from the bar root, an ancestor of every
+    // control, so controls still receive hover. A HoverHandler on an overlay
+    // above them takes their hover even with blocking: false; their
+    // highlights then never cleared after a click.
+    HoverHandler {
+        id: revealHoverHandler
     }
 }

@@ -219,7 +219,11 @@ Item {
         return root.screenFocusedClient?.title || "Desktop";
     }
 
-    readonly property bool isHovered: revealHoverHandler.hovered && root.currentMode === "collapsed" && !root.retractingToHidden
+    readonly property point revealPointer: revealHoverHandler.point.position
+    readonly property bool revealZoneHovered: revealHoverHandler.hovered
+        && root.revealPointer.x >= hoverZone.x && root.revealPointer.x < hoverZone.x + hoverZone.width
+        && root.revealPointer.y >= hoverZone.y && root.revealPointer.y < hoverZone.y + hoverZone.height
+    readonly property bool isHovered: root.revealZoneHovered && root.currentMode === "collapsed" && !root.retractingToHidden
     property bool debounceActive: false
     readonly property bool isPinned: Config.bar?.pinned ?? false
 
@@ -1383,24 +1387,24 @@ Item {
         }
     }
 
-    // Single hover zone for the autohide reveal: the top-edge trigger strip
-    // while hidden, growing with the visible body as it pinches out. It sits
-    // above everything and is non-blocking, so controls underneath still get
-    // hover. Separate handlers on the strip and the body lost hover to the
-    // collapsed row's MouseAreas as they slid under a stationary cursor
-    // mid-reveal (hover is delivered top-down and hover-enabled MouseAreas
-    // stop it), so the island flickered open, closed, open.
+    // Geometry of the autohide reveal zone: the top-edge trigger strip while
+    // hidden, growing with the visible body as it pinches out. Separate
+    // handlers on the strip and the body lost hover to the collapsed row's
+    // MouseAreas as they slid under a stationary cursor mid-reveal, so the
+    // island flickered open, closed, open. One root handler tests this zone.
     Item {
         id: hoverZone
         anchors.horizontalCenter: parent.horizontalCenter
         y: 0
-        z: 1000
         width: Math.max(200, collapsedRow.implicitWidth + 28, islandBody.width)
         height: Math.max(root.triggerHeight, islandBody.height)
+    }
 
-        HoverHandler {
-            id: revealHoverHandler
-            blocking: false
-        }
+    // Watches the reveal zone from the bar root, an ancestor of every
+    // control, so controls still receive hover. A HoverHandler on an overlay
+    // above them takes their hover even with blocking: false; their
+    // highlights then never cleared after a click.
+    HoverHandler {
+        id: revealHoverHandler
     }
 }
