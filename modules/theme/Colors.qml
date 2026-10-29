@@ -36,6 +36,9 @@ FileView {
         reload();
         generationTimer.restart();
     }
+    // Niri's include is a cache file, so write it on startup as well as on
+    // palette changes. Other generators keep their change-only behavior.
+    onLoaded: niriGenerator.generate(colors)
 
     property Connections oledWatcher: Connections {
         id: oledWatcher
@@ -77,6 +80,10 @@ FileView {
         id: discordGenerator
     }
 
+    property NiriGenerator niriGenerator: NiriGenerator {
+        id: niriGenerator
+    }
+
     property Timer generationTimer: Timer {
         id: generationTimer
         interval: 100
@@ -88,6 +95,7 @@ FileView {
             kittyGenerator.generate(colors);
             nvChadGenerator.generate(colors);
             discordGenerator.generate(colors);
+            niriGenerator.generate(colors);
         }
     }
 
