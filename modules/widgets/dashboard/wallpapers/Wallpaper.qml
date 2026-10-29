@@ -43,8 +43,8 @@ PanelWindow {
 
     readonly property var supportedWallpaperModes: ["crop", "fit", "stretch", "center"]
 
-    // Keep the lockscreen frame warm in QML's pixmap cache. The lock surface's
-    // TintedWallpaper loads the same URL with the same sourceSize, so on lock
+    // Keep the lockscreen frame warm in QML's pixmap cache. LockBackdrop (lock
+    // curtain and lock surface) loads the same URL with the same sourceSize, so on lock
     // its first frame is a cache hit instead of a fresh async decode (which
     // shows as a flash of solid color). Covers video/GIF lockscreen frames,
     // which are not displayed anywhere else.
