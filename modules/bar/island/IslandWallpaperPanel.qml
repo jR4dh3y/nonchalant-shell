@@ -14,6 +14,9 @@ import qs.config
 Item {
     id: root
 
+    property bool showHeader: false
+    signal backRequested()
+
     implicitWidth: 540
     implicitHeight: 520
 
@@ -55,6 +58,14 @@ Item {
         anchors.fill: parent
         anchors.margins: root.compact ? 8 : 14
         spacing: root.compact ? 6 : 10
+
+        IslandPanelHeader {
+            id: panelHeader
+            Layout.fillWidth: true
+            visible: root.showHeader
+            title: "Wallpapers"
+            onBackRequested: root.backRequested()
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // OPTIONS TOOLBAR: Per-Screen Toggle + Mode Selector + Scheme Selector

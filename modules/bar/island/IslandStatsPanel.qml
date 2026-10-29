@@ -11,6 +11,9 @@ import qs.config
 Item {
     id: root
 
+    property bool showHeader: false
+    signal backRequested()
+
     implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
 
@@ -40,6 +43,14 @@ Item {
         anchors.right: parent.right
         anchors.margins: 14
         spacing: 10
+
+        IslandPanelHeader {
+            id: panelHeader
+            Layout.fillWidth: true
+            visible: root.showHeader
+            title: "System Monitor"
+            onBackRequested: root.backRequested()
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // NATIVE METRICS BODY (Single unified darker surface)

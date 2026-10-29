@@ -14,6 +14,9 @@ import qs.config
 StyledRect {
     id: root
 
+    property bool showHeader: false
+    signal backRequested()
+
     variant: "pane"
     backgroundOpacity: 0
     enableBorder: false
@@ -29,6 +32,7 @@ StyledRect {
     readonly property real fixedContentHeight: heroRow.implicitHeight
         + waveformRow.Layout.preferredHeight + playbackRow.implicitHeight
         + mainCol.spacing * (squareArtwork ? 3 : 2) + 28
+        + (showHeader ? panelHeader.implicitHeight + mainCol.spacing : 0)
 
     readonly property bool hasPlayer: MprisController.activePlayer !== null
     readonly property bool isPlaying: MprisController.isPlaying
@@ -85,6 +89,14 @@ StyledRect {
         anchors.right: parent.right
         anchors.margins: 14
         spacing: 12
+
+        IslandPanelHeader {
+            id: panelHeader
+            Layout.fillWidth: true
+            visible: root.showHeader
+            title: "Media"
+            onBackRequested: root.backRequested()
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // HERO: Artwork + Track Typography

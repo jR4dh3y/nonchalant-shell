@@ -1270,6 +1270,8 @@ Item {
 
                     IslandStatsPanel {
                         id: statsView
+                        showHeader: true
+                        onBackRequested: root.expand("dashboard")
                         width: parent.width
                         height: implicitHeight
                     }
@@ -1298,6 +1300,8 @@ Item {
 
                     IslandWallpaperPanel {
                         id: wallpapersView
+                        showHeader: true
+                        onBackRequested: root.expand("dashboard")
                         screen: root.screen
                         width: parent.width
                         height: implicitHeight
@@ -1342,6 +1346,8 @@ Item {
 
                     IslandMediaCenterPanel {
                         id: mediaCenterView
+                        showHeader: true
+                        onBackRequested: root.expand("dashboard")
                         width: parent.width
                         maximumHeight: Math.max(0, root.screen.height - 32)
                         lyricsActive: root.currentMode === "media" && !root.retractingToHidden
