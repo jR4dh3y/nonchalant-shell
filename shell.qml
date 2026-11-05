@@ -114,6 +114,7 @@ ShellRoot {
                 _ = Brightness.monitors;
                 // Own org.freedesktop.Notifications and load history early.
                 _ = Notifications.appNameList;
+                _ = Battery.available;
                 _ = StateService.initialized;
                 // ACP agents remain entirely idle when the AI feature is off.
                 if (Config.ai?.enabled ?? true)

@@ -409,7 +409,7 @@ Singleton {
             "historyPriority": options.historyPriority || 0,
             "replaceKey": options.replaceKey || "",
             "localActionHandlers": options.actionHandlers || {},
-            "popup": !root.popupInhibited && options.popup !== false,
+            "popup": (!root.popupInhibited || options.bypassDoNotDisturb === true) && options.popup !== false,
             "isCached": false
         });
 
