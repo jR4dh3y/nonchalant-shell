@@ -152,7 +152,9 @@ Item {
     readonly property int activeWorkspaceWindows: activeWorkspace?.windows ?? 0
     readonly property bool hasActiveWindows: activeWorkspaceWindows > 0
     readonly property bool hasWindowTouchingTop: CompositorService.hasWindowAtTop(root.screen.name, root.islandHeight + 8)
-    readonly property bool hasNotifications: !Notifications.silent && Notifications.popupList && Notifications.popupList.length > 0
+    // Notifications owns Do Not Disturb: popupList only holds popups it allowed
+    // (ordinary ones are muted, approved alerts like low battery bypass it).
+    readonly property bool hasNotifications: Notifications.popupList && Notifications.popupList.length > 0
 
     onHasNotificationsChanged: {
         if (hasNotifications) {
@@ -1070,7 +1072,7 @@ Item {
 
                             // Separator before alerts
                             Text {
-                                visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
+                                visible: root.alertsCount > 0 || root.hasNotifications
                                 text: "|"
                                 color: Colors.overSurfaceVariant
                                 opacity: 0.5
@@ -1080,7 +1082,7 @@ Item {
 
                             // Alerts indicator
                             Item {
-                                visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
+                                visible: root.alertsCount > 0 || root.hasNotifications
                                 Layout.alignment: Qt.AlignVCenter
                                 implicitWidth: alertsRow.implicitWidth
                                 implicitHeight: alertsRow.implicitHeight
@@ -1145,10 +1147,11 @@ Item {
                 // EXPANDED STATE 0: LIVE NOTIFICATION BANNER (Dynamic Island Morph)
                 // ═══════════════════════════════════════════════════════════════
                 IslandPage {
-                    active: !Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null
+                    active: root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null
 
                     IslandNotificationBanner {
                         id: notificationView
+                        objectName: "islandNotificationBanner"
                         width: parent.width
 
                         onDismissRequested: {

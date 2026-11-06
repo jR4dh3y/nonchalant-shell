@@ -985,9 +985,17 @@ class TestFeature20_DropdownStylingPaletteColorsAndDND(unittest.TestCase):
         with open("modules/bar/layouts/IslandBar.qml", "r", encoding="utf-8") as f:
             bar_content = f.read()
 
-        self.assertIn("!Notifications.silent && Notifications.popupList", bar_content)
-        self.assertIn("if (Notifications.silent) return 0;", bar_content)
-        self.assertIn("visible: !Notifications.silent", bar_content)
+        # Notifications owns DND through each popup's `popup` flag; the bars
+        # trust popupList so approved alerts can bypass DND
+        # (behavior: tests/e2e/test_bar_text_runtime.py).
+        for path in ("modules/bar/layouts/IslandBar.qml", "modules/bar/layouts/PillsBar.qml"):
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertIn("hasNotifications: Notifications.popupList && Notifications.popupList.length > 0", content, path)
+            self.assertNotIn("!Notifications.silent && Notifications.popupList", content, path)
+            self.assertIn("if (Notifications.silent) return 0;", content, path)
+        self.assertIn("if (!root.popupInhibited) {", notif_content)
+        self.assertIn("options.bypassDoNotDisturb === true", notif_content)
 
 
 class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
