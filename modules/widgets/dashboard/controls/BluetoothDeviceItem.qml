@@ -113,13 +113,18 @@ Item {
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     Layout.fillWidth: true
-                    visible: root.device?.connected || root.device?.paired || root.expanded
                     text: {
                         let status = "";
-                        if (root.device?.connected) {
+                        if (root.device?.pairing) {
+                            status = "Pairing…";
+                        } else if (root.device?.connecting) {
+                            status = "Connecting…";
+                        } else if (root.device?.connected) {
                             status = "Connected";
                         } else if (root.device?.paired) {
                             status = "Paired";
+                        } else if (root.device?.pairError) {
+                            status = "Couldn't pair · " + root.device.pairError;
                         } else {
                             status = "Not paired";
                         }
@@ -132,7 +137,7 @@ Item {
                     }
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
-                    color: Colors.overSurfaceVariant
+                    color: !root.device?.paired && root.device?.pairError ? Colors.error : Colors.overSurfaceVariant
                     elide: Text.ElideRight
 
                     Behavior on opacity {
@@ -228,10 +233,13 @@ Item {
                 Layout.fillWidth: true
             }
 
-            // Connect/Disconnect button
+            // Pair (discovered devices) / Connect / Disconnect button
             Button {
                 id: actionButton
+                readonly property bool busy: (root.device?.pairing ?? false) || (root.device?.connecting ?? false)
                 flat: true
+                enabled: !busy
+                opacity: enabled ? 1 : 0.6
                 implicitWidth: 100
                 implicitHeight: 32
                 scale: actionButton.down ? 0.94 : 1.0
@@ -246,7 +254,15 @@ Item {
                 }
 
                 contentItem: Text {
-                    text: root.device?.connected ? "Disconnect" : "Connect"
+                    text: {
+                        if (root.device?.pairing)
+                            return "Pairing…";
+                        if (root.device?.connecting)
+                            return "Connecting…";
+                        if (root.device?.connected)
+                            return "Disconnect";
+                        return root.device?.paired ? "Connect" : "Pair";
+                    }
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-1)
                     color: root.device?.connected ? Colors.overSurfaceVariant : Styling.srItem("primary")
@@ -257,8 +273,10 @@ Item {
                 onClicked: {
                     if (root.device?.connected) {
                         root.device.disconnect();
-                    } else {
+                    } else if (root.device?.paired) {
                         root.device.connect();
+                    } else {
+                        root.device?.pair();
                     }
                 }
             }

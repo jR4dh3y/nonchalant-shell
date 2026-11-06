@@ -11,11 +11,17 @@ DeckAction {
     required property BluetoothDevice modelData
     Layout.fillWidth: true
     glyph: Icons.bluetooth
-    label: modelData.name + (modelData.connecting ? " · Connecting…" : "")
+    label: modelData.name + (modelData.pairing ? " · Pairing…"
+        : modelData.connecting ? " · Connecting…"
+        : !modelData.paired && modelData.pairError !== "" ? " · Couldn't pair" : "")
+    description: modelData.connected ? "Disconnect " + modelData.name
+        : modelData.paired ? "Connect " + modelData.name
+        : modelData.pairError !== "" ? modelData.pairError + " · Click to try again"
+        : "Pair " + modelData.name
     maximumLabelWidth: width
     selected: modelData.connected
     accent: true
-    enabled: BluetoothService.enabled && !modelData.connecting
+    enabled: BluetoothService.enabled && !modelData.connecting && !modelData.pairing
     onClicked: {
         if (modelData.connected) modelData.disconnect();
         else if (!modelData.paired) modelData.pair();

@@ -260,73 +260,14 @@ Item {
             }
         }
 
-        // Bluetooth device list
-        Item {
+        // Paired devices plus an "Available devices" section to pair new
+        // ones; the list scans while this panel is open.
+        BluetoothDeviceList {
+            id: deviceList
             Layout.fillWidth: true
             Layout.fillHeight: true
-
-            ListView {
-                id: deviceList
-                anchors.fill: parent
-                clip: true
-                spacing: 6
-                model: BluetoothService.friendlyDeviceList
-
-                delegate: Item {
-                    id: delegateRoot
-                    required property var modelData
-                    width: deviceList.width
-                    height: deviceItem.implicitHeight
-
-                    BluetoothDeviceItem {
-                        id: deviceItem
-                        width: parent.width
-                        baseVariant: "internalbg"
-                        device: delegateRoot.modelData
-                    }
-                }
-            }
-
-            // Empty state: no devices found or disabled
-            Text {
-                anchors.centerIn: parent
-                renderType: Text.NativeRendering
-                font.hintingPreference: Font.PreferFullHinting
-                visible: deviceList.count === 0 && !BluetoothService.discovering
-                text: BluetoothService.enabled ? "No devices found" : "Bluetooth is disabled"
-                font.family: Config.theme.font
-                font.pixelSize: Config.theme.fontSize
-                color: Colors.overSurfaceVariant
-            }
-
-            // Scanning indicator when list is empty
-            RowLayout {
-                anchors.centerIn: parent
-                visible: deviceList.count === 0 && BluetoothService.discovering
-                spacing: 8
-
-                Text {
-                    text: Icons.arrowsClockwise
-                    font.family: Icons.font
-                    font.pixelSize: 16
-                    color: Styling.srItem("overprimary")
-
-                    RotationAnimation on rotation {
-                        running: BluetoothService.discovering
-                        from: 0
-                        to: 360
-                        duration: 1000
-                        loops: Animation.Infinite
-                    }
-                }
-
-                Text {
-                    text: "Scanning for devices..."
-                    font.family: Config.theme.font
-                    font.pixelSize: Config.theme.fontSize
-                    color: Colors.overSurfaceVariant
-                }
-            }
+            spacing: 6
+            itemVariant: "internalbg"
         }
     }
 }

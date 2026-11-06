@@ -1081,6 +1081,38 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
         # Ensure stale resurrection with Math.max was removed
         self.assertNotIn("Math.max(root.connectedDevices, connectedCount)", bt_content)
 
+    def test_bluetooth_discovery_and_pairing(self):
+        with open("modules/services/BluetoothService.qml", "r", encoding="utf-8") as f:
+            bt_content = f.read()
+        # BlueZ drops discovery when its client exits, so the scan must keep a
+        # bluetoothctl client alive instead of a one-shot `scan on`.
+        self.assertIn('command: ["bluetoothctl", "--timeout", "20", "scan", "on"]', bt_content)
+        self.assertNotIn('runAsync(["bluetoothctl", "scan", "on"])', bt_content)
+        # The status command feeds the paired section that
+        # bluetooth_utils.parseStatus reads (behavior: test_bluetooth_utils).
+        self.assertIn("bluetoothctl devices Paired", bt_content)
+        self.assertIn("BluetoothUtils.parseStatus(text)", bt_content)
+        self.assertIn("existing.paired = data.paired;", bt_content)
+        self.assertIn("BluetoothUtils.pairSequence(", bt_content)
+        self.assertIn("BluetoothUtils.sortDevices(devices)", bt_content)
+
+    def test_bluetooth_pair_section_on_every_surface(self):
+        with open("modules/widgets/dashboard/controls/BluetoothDeviceList.qml", "r", encoding="utf-8") as f:
+            list_content = f.read()
+        self.assertIn('"Available devices"', list_content)
+        self.assertIn("BluetoothService.startDiscovery()", list_content)
+        for path in ("modules/widgets/dashboard/controls/BluetoothPanel.qml",
+                     "modules/bar/island/IslandBluetoothPanel.qml"):
+            with open(path, "r", encoding="utf-8") as f:
+                self.assertIn("BluetoothDeviceList {", f.read(), path)
+        with open("modules/widgets/dashboard/controls/BluetoothDeviceItem.qml", "r", encoding="utf-8") as f:
+            item_content = f.read()
+        self.assertIn('root.device?.paired ? "Connect" : "Pair"', item_content)
+        with open("modules/bar/deck/DeckConnections.qml", "r", encoding="utf-8") as f:
+            deck_content = f.read()
+        self.assertIn('model: ["Paired", "Available"]', deck_content)
+        self.assertIn("function startDiscovery(): void", deck_content)
+
     def test_island_dashboard_connectivity_binding(self):
         with open("modules/bar/island/IslandDashboard.qml", "r", encoding="utf-8") as f:
             dash_content = f.read()

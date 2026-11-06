@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.globals
+import "./bluetooth_utils.js" as BluetoothUtils
 
 Singleton {
     id: root
@@ -17,8 +18,11 @@ Singleton {
     
     readonly property list<BluetoothDevice> devices: []
     
-    // Cached sorted device list - only updates when devices change
+    // Cached sorted device list - only updates when devices change.
+    // Paired devices come first, then devices found by discovery.
     property list<var> friendlyDeviceList: []
+    readonly property list<var> pairedDeviceList: friendlyDeviceList.filter(device => device.paired)
+    readonly property list<var> availableDeviceList: friendlyDeviceList.filter(device => !device.paired)
     
     // Queue for batching updateInfo calls
     property var pendingInfoUpdates: []
@@ -34,7 +38,6 @@ Singleton {
             if (discovering) {
                 root.stopDiscovery();
             }
-            scanTimer.stop();
             infoQueueTimer.stop();
         }
         function onWakingUp() {
@@ -61,16 +64,7 @@ Singleton {
     }
 
     function updateFriendlyList() {
-        friendlyDeviceList = [...devices].sort((a, b) => {
-            // Connected devices first
-            if (a.connected && !b.connected) return -1;
-            if (!a.connected && b.connected) return 1;
-            // Then paired devices
-            if (a.paired && !b.paired) return -1;
-            if (!a.paired && b.paired) return 1;
-            // Then by name
-            return (a.name || "").localeCompare(b.name || "");
-        });
+        friendlyDeviceList = BluetoothUtils.sortDevices(devices);
     }
 
     function onDeviceInfoUpdated(): void {
@@ -169,30 +163,35 @@ Singleton {
         setEnabled(!enabled);
     }
 
+    // BlueZ keeps discovery running only while the client that started it
+    // stays on the bus, so a one-shot `bluetoothctl scan on` stops at once.
+    // discoveryProcess stays alive for the scan window instead; stopping the
+    // process ends discovery.
     function startDiscovery(): void {
-        if (enabled && !SuspendManager.isSuspending) {
-            discovering = true;
-            runAsync(["bluetoothctl", "scan", "on"]).then(() => {
-                scanTimer.restart();
-            }).catch(e => {
-                discovering = false;
-            });
-        }
+        if (!enabled || SuspendManager.isSuspending)
+            return;
+        discoveryProcess.running = false;
+        discoveryProcess.running = true;
     }
 
     function stopDiscovery(): void {
-        discovering = false;
-        runAsync(["bluetoothctl", "scan", "off"]).then(() => {
-            scanTimer.stop();
-        }).catch(e => {});
+        discoveryProcess.running = false;
     }
 
-    function connectDevice(address: string): void {
+    Process {
+        id: discoveryProcess
+        command: ["bluetoothctl", "--timeout", "20", "scan", "on"]
+        running: false
+        onRunningChanged: {
+            root.discovering = running;
+            root.updateDevices();
+        }
+    }
+
+    function connectDevice(address: string) {
         isUpdating = true;
-        runAsync(["bluetoothctl", "connect", address]).then(() => {
+        return runAsync(["bluetoothctl", "connect", address]).finally(() => {
             updateDevices();
-            isUpdating = false;
-        }).catch(e => {
             isUpdating = false;
         });
     }
@@ -207,18 +206,20 @@ Singleton {
         });
     }
 
-    function pairDevice(address: string): void {
+    // Pair, trust, then connect a discovered device. PIN or passkey prompts
+    // go to the session's default BlueZ agent. The promise rejects with
+    // bluetoothctl's error when any step fails.
+    function pairDevice(address: string) {
         isUpdating = true;
-        runAsync(["bluetoothctl", "pair", address]).then(() => {
-            updateDevices();
-            isUpdating = false;
-        }).catch(e => {
-            isUpdating = false;
-        });
+        return BluetoothUtils.pairSequence(command => root.runAsync(command), address)
+            .finally(() => {
+                updateDevices();
+                isUpdating = false;
+            });
     }
 
-    function trustDevice(address: string): void {
-        runAsync(["bluetoothctl", "trust", address]).catch(e => {});
+    function trustDevice(address: string) {
+        return runAsync(["bluetoothctl", "trust", address]);
     }
 
     function removeDevice(address: string): void {
@@ -285,18 +286,10 @@ Singleton {
         }
     }
 
-    Timer {
-        id: scanTimer
-        interval: 15000
-        running: false
-        repeat: false
-        onTriggered: root.stopDiscovery()
-    }
-
     // Unified single-process status and device extraction (atomic read in ~25ms)
     Process {
         id: checkStatusProcess
-        command: ["bash", "-c", "bluetoothctl show | grep -q 'Powered: yes' && echo 'powered' || echo 'off'; echo '---'; bluetoothctl devices Connected; echo '---'; bluetoothctl devices"]
+        command: ["bash", "-c", "bluetoothctl show | grep -q 'Powered: yes' && echo 'powered' || echo 'off'; echo '---'; bluetoothctl devices Connected; echo '---'; bluetoothctl devices Paired; echo '---'; bluetoothctl devices"]
         running: false
         property string buffer: ""
         environment: ({
@@ -316,15 +309,14 @@ Singleton {
                 if (code !== 0 || !text)
                     return;
 
-                const parts = text.split("---");
-                const powerPart = (parts[0] || "").trim();
-                root.enabled = (powerPart === "powered");
+                const status = BluetoothUtils.parseStatus(text);
+                root.enabled = status.enabled;
 
                 if (!root.enabled) {
                     root.connected = false;
                     root.connectedDevices = 0;
                     root.firstConnectedDeviceName = "";
-                    root.discovering = false;
+                    root.stopDiscovery();
                     for (let i = 0; i < root.devices.length; i++) {
                         const dev = root.devices[i];
                         if (dev) dev.connected = false;
@@ -333,44 +325,10 @@ Singleton {
                     return;
                 }
 
-                // Part 1: Connected devices
-                const connectedLines = parts.length > 1
-                    ? parts[1].trim().split("\n").filter(l => l.startsWith("Device "))
-                    : [];
-                const connectedMacs = new Set();
-                let firstConnectedName = "";
-
-                for (let i = 0; i < connectedLines.length; i++) {
-                    const devParts = connectedLines[i].split(" ");
-                    if (devParts.length > 1) {
-                        connectedMacs.add(devParts[1]);
-                        if (!firstConnectedName) {
-                            firstConnectedName = devParts.slice(2).join(" ") || "Connected";
-                        }
-                    }
-                }
-
-                root.connectedDevices = connectedMacs.size;
-                root.connected = connectedMacs.size > 0;
-                root.firstConnectedDeviceName = firstConnectedName;
-
-                // Part 2: All paired/known devices
-                const deviceLines = parts.length > 2
-                    ? parts[2].trim().split("\n").filter(l => l.startsWith("Device "))
-                    : [];
-                const deviceDataList = [];
-
-                for (let i = 0; i < deviceLines.length; i++) {
-                    const line = deviceLines[i];
-                    const partsDev = line.split(" ");
-                    if (partsDev.length < 2) continue;
-                    const addr = partsDev[1];
-                    deviceDataList.push({
-                        address: addr,
-                        name: partsDev.slice(2).join(" ") || "Unknown",
-                        connected: connectedMacs.has(addr)
-                    });
-                }
+                root.connectedDevices = status.connectedCount;
+                root.connected = status.connectedCount > 0;
+                root.firstConnectedDeviceName = status.firstConnectedName;
+                const deviceDataList = status.devices;
 
                 const rDevices = root.devices;
 
@@ -392,7 +350,7 @@ Singleton {
                             existing.name = data.name;
                         }
                         existing.connected = data.connected;
-                        existing.paired = true;
+                        existing.paired = data.paired;
                         if (data.connected && existing.battery < 0) {
                             root.queueInfoUpdate(existing);
                         }
@@ -401,7 +359,7 @@ Singleton {
                             address: data.address,
                             name: data.name,
                             connected: data.connected,
-                            paired: true
+                            paired: data.paired
                         });
                         newDevice.infoUpdated.connect(root.onDeviceInfoUpdated);
                         rDevices.push(newDevice);
