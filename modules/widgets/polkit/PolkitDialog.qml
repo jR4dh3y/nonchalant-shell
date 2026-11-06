@@ -17,8 +17,9 @@ import qs.config
 Scope {
     id: root
 
-    readonly property AuthFlow flow: agent.flow
-    readonly property bool requestActive: agent.isActive && root.flow !== null
+    readonly property PolkitAgent agent: agentLoader.item
+    readonly property AuthFlow flow: root.agent?.flow ?? null
+    readonly property bool requestActive: (root.agent?.isActive ?? false) && root.flow !== null
     // True between submit and the next PAM prompt or completion.
     property bool submitting: false
     property bool showFailure: false
@@ -65,10 +66,29 @@ Scope {
         root.showFailure = false;
     }
 
-    PolkitAgent {
-        id: agent
+    // polkitd accepts one agent per session and rejects the rest. A rejected
+    // PolkitAgent never retries, and hot reloads keep the rejected object, so
+    // the shell would stay agentless until the next login. While unregistered,
+    // recreate the agent periodically; it takes over once the other agent
+    // (e.g. a polkit-gnome fallback) exits. Never retry mid-request.
+    LazyLoader {
+        id: agentLoader
 
-        onIsRegisteredChanged: console.info("PolkitDialog: registered with polkitd:", isRegistered)
+        active: true
+
+        PolkitAgent {
+            onIsRegisteredChanged: console.info("PolkitDialog: registered with polkitd:", isRegistered)
+        }
+    }
+
+    Timer {
+        interval: 30000
+        repeat: true
+        running: !(root.agent?.isRegistered ?? false)
+        onTriggered: {
+            agentLoader.active = false;
+            agentLoader.active = true;
+        }
     }
 
     Connections {
