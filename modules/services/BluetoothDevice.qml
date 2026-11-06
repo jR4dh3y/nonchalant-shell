@@ -14,21 +14,18 @@ QtObject {
     property int battery: -1
     property bool batteryAvailable: battery >= 0
     property bool connecting: false
+    property bool pairing: false
+    // bluetoothctl's error from the last failed pair; cleared on the next try.
+    property string pairError: ""
 
     signal infoUpdated()
 
-    // Connect (auto-trust new devices)
+    // Connect a paired device, trusting it first so it can reconnect alone.
     function connect() {
         connecting = true;
-        let p;
-        if (!trusted) {
-            // Trust first, then connect
-            p = BluetoothService.runAsync(["bluetoothctl", "trust", address]).then(() => {
-                return BluetoothService.runAsync(["bluetoothctl", "connect", address]);
-            });
-        } else {
-            p = BluetoothService.connectDevice(address);
-        }
+        const p = trusted
+            ? BluetoothService.connectDevice(address)
+            : BluetoothService.trustDevice(address).then(() => BluetoothService.connectDevice(address));
 
         return p.catch(e => {
             console.error(`Failed to connect to ${address}: ${e}`);
@@ -71,12 +68,24 @@ QtObject {
         BluetoothService.disconnectDevice(address);
     }
 
+    // Pair, trust and connect a device found by discovery.
     function pair() {
-        BluetoothService.pairDevice(address);
+        if (pairing)
+            return;
+        pairing = true;
+        pairError = "";
+        BluetoothService.pairDevice(address).catch(e => {
+            const lines = String(e).split("\n").filter(line => line.trim() !== "");
+            root.pairError = lines.length > 0 ? lines[lines.length - 1].trim() : "Pairing failed";
+            console.warn(`Failed to pair ${address}: ${e}`);
+        }).finally(() => {
+            root.pairing = false;
+            root.updateInfo();
+        });
     }
 
     function trust() {
-        BluetoothService.trustDevice(address);
+        BluetoothService.trustDevice(address).catch(e => console.warn(`Failed to trust ${address}: ${e}`));
     }
 
     function forget() {

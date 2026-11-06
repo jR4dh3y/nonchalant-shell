@@ -18,14 +18,12 @@ Item {
     readonly property real sideMargin: (width - contentWidth) / 2
 
     // Hosts may keep this panel loaded while hidden; refresh the device list
-    // (no discovery) each time it is shown, after the host's reveal settles.
+    // each time it is shown. BluetoothDeviceList owns discovery.
     onVisibleChanged: {
-        if (visible) {
+        if (visible)
             updateTimer.restart();
-        } else {
+        else
             updateTimer.stop();
-            BluetoothService.stopDiscovery();
-        }
     }
     Component.onCompleted: {
         if (visible)
@@ -41,20 +39,11 @@ Item {
         }
     }
 
-    Component.onDestruction: {
-        BluetoothService.stopDiscovery();
-    }
-
     // Device list - fills entire width for scroll/drag
-    ListView {
+    BluetoothDeviceList {
         id: deviceList
         anchors.fill: parent
-        clip: true
-        spacing: 4
-        cacheBuffer: 1000
-        reuseItems: true
-
-        model: BluetoothService.friendlyDeviceList
+        itemWidth: root.contentWidth
 
         header: Item {
             width: deviceList.width
@@ -94,31 +83,6 @@ Item {
                     }
                 }
             }
-        }
-
-        delegate: Item {
-            required property var modelData
-            width: deviceList.width
-            height: deviceItem.height
-
-            BluetoothDeviceItem {
-                id: deviceItem
-                width: root.contentWidth
-                anchors.horizontalCenter: parent.horizontalCenter
-                device: parent.modelData
-            }
-        }
-
-        // Empty state
-        Text {
-            renderType: Text.NativeRendering
-            font.hintingPreference: Font.PreferFullHinting
-            anchors.centerIn: parent
-            visible: deviceList.count === 0 && !BluetoothService.discovering
-            text: BluetoothService.enabled ? "No devices found" : "Bluetooth is disabled"
-            font.family: Config.theme.font
-            font.pixelSize: Config.theme.fontSize
-            color: Colors.overSurfaceVariant
         }
     }
 }

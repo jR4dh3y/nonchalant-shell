@@ -21,9 +21,22 @@ ColumnLayout {
             root.ownsDiscovery = false;
         }
     }
-    onVisibleChanged: if (!visible) stopDiscovery()
-    onBluetoothChanged: if (!bluetooth) stopDiscovery()
+    // The Bluetooth tab scans while shown so new devices appear under
+    // "Available" ready to pair, matching the dashboard and island panels.
+    function startDiscovery(): void {
+        if (!root.bluetooth || !root.visible || !BluetoothService.enabled || BluetoothService.discovering)
+            return;
+        root.ownsDiscovery = true;
+        BluetoothService.startDiscovery();
+    }
+    onVisibleChanged: visible ? Qt.callLater(startDiscovery) : stopDiscovery()
+    onBluetoothChanged: bluetooth ? Qt.callLater(startDiscovery) : stopDiscovery()
+    Component.onCompleted: Qt.callLater(startDiscovery)
     Component.onDestruction: stopDiscovery()
+    Connections {
+        target: BluetoothService
+        function onEnabledChanged() { Qt.callLater(root.startDiscovery); }
+    }
     DeckCard {
         objectName: "deckConnectionToolbar"
         Layout.fillWidth: true
@@ -67,7 +80,7 @@ ColumnLayout {
                     : NetworkService.wifiEnabled && !NetworkService.wifiScanning
                 onClicked: {
                     if (root.bluetooth) {
-                        root.ownsDiscovery = !BluetoothService.discovering;
+                        root.ownsDiscovery = true;
                         BluetoothService.startDiscovery();
                     } else NetworkService.rescanWifi();
                 }
@@ -144,7 +157,7 @@ ColumnLayout {
                     Repeater { model: availableNetworks.networks; delegate: DeckNetworkRow { viewport: networkList } }
                 }
                 Repeater {
-                    model: ["Paired", "Nearby"]
+                    model: ["Paired", "Available"]
                     DeckSection {
                         id: deviceGroup
                         required property string modelData
@@ -165,7 +178,7 @@ ColumnLayout {
                 }
                 StyledText {
                     visible: root.bluetooth && BluetoothService.devices.filter(device => !device.connected).length === 0
-                    text: BluetoothService.enabled ? "No other devices. Scan to discover nearby devices." : "Turn Bluetooth on to see devices."
+                    text: BluetoothService.enabled ? BluetoothService.discovering ? "Searching for nearby devices… Put your device in pairing mode." : "No new devices found. Scan to search again." : "Turn Bluetooth on to see devices."
                     color: Colors.overSurfaceVariant
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
