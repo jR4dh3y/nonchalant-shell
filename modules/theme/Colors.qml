@@ -36,9 +36,19 @@ FileView {
         reload();
         generationTimer.restart();
     }
-    // Niri's include is a cache file, so write it on startup as well as on
-    // palette changes. Other generators keep their change-only behavior.
-    onLoaded: niriGenerator.generate(colors)
+    // Niri's include is a cache file, so write it once at startup as well as
+    // on palette changes. onLoaded also fires after every reload(), which
+    // generationTimer already covers, so only the first load writes here.
+    // A missing or unreadable colors.json still writes from the fallback colors.
+    property bool niriStartupWritten: false
+    function writeNiriAtStartup(): void {
+        if (colors.niriStartupWritten)
+            return;
+        colors.niriStartupWritten = true;
+        niriGenerator.generate(colors);
+    }
+    onLoaded: writeNiriAtStartup()
+    onLoadFailed: writeNiriAtStartup()
 
     property Connections oledWatcher: Connections {
         id: oledWatcher

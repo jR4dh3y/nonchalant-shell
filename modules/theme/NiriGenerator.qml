@@ -34,13 +34,30 @@ QtObject {
         conf += `recent-windows {\n    highlight {\n        active-color ${active}\n        urgent-color ${urgent}\n    }\n}\n`;
 
         // Write atomically so Niri never reloads a half-written file.
-        writerProcess.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")" && printf "%s" "$1" > "$2.tmp" && mv "$2.tmp" "$2"', "sh", conf, root.outputPath];
+        const command = ["sh", "-c", 'mkdir -p "$(dirname "$2")" && printf "%s" "$1" > "$2.tmp" && mv "$2.tmp" "$2"', "sh", conf, root.outputPath];
+        // A running Process keeps its original command, so writes are queued:
+        // the newest palette replaces any pending one and starts once the
+        // current write exits. A command stays pending until it starts, so
+        // "not running and nothing pending" always means idle.
+        root.pendingCommand = command;
+        root.startPending();
+    }
+
+    property list<string> pendingCommand: []
+
+    function startPending(): void {
+        if (writerProcess.running || root.pendingCommand.length === 0)
+            return;
+        writerProcess.command = root.pendingCommand;
+        root.pendingCommand = [];
         writerProcess.running = true;
     }
 
     property Process writerProcess: Process {
         id: writerProcess
         running: false
+        // Restart outside the exit handler, after the Process has settled.
+        onExited: Qt.callLater(root.startPending)
         stderr: StdioCollector {
             onStreamFinished: {
                 if (text)
