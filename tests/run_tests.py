@@ -198,6 +198,7 @@ def main():
     if run_all or args.tier1:
         run_unittest_suite("Tier 1: Feature Coverage", "tests.unit.test_tier1_features", collector, args.verbose)
         run_unittest_suite("Tier 1: Pills Bar Layout", "tests.unit.test_pills_bar", collector, args.verbose)
+        run_unittest_suite("Tier 1: Bluetooth Pairing", "tests.unit.test_bluetooth_utils", collector, args.verbose)
         run_unittest_suite("Tier 1: Lyrics Lookup", "tests.unit.test_lyrics", collector, args.verbose)
         run_unittest_suite("Tier 1: Cider Lyrics", "tests.unit.test_cider_lyrics", collector, args.verbose)
         run_unittest_suite("Tier 1: Media Duration", "tests.unit.test_media_duration", collector, args.verbose)

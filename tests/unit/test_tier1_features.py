@@ -1088,13 +1088,13 @@ class TestFeature22_BarConnectivityFreshness(unittest.TestCase):
         # bluetoothctl client alive instead of a one-shot `scan on`.
         self.assertIn('command: ["bluetoothctl", "--timeout", "20", "scan", "on"]', bt_content)
         self.assertNotIn('runAsync(["bluetoothctl", "scan", "on"])', bt_content)
-        # Paired state comes from BlueZ, not from "known to BlueZ".
+        # The status command feeds the paired section that
+        # bluetooth_utils.parseStatus reads (behavior: test_bluetooth_utils).
         self.assertIn("bluetoothctl devices Paired", bt_content)
+        self.assertIn("BluetoothUtils.parseStatus(text)", bt_content)
         self.assertIn("existing.paired = data.paired;", bt_content)
-        self.assertNotIn("existing.paired = true;", bt_content)
-        # Pairing finishes by trusting and connecting the new device.
-        self.assertIn('runAsync(["bluetoothctl", "pair", address])', bt_content)
-        self.assertIn('.then(() => runAsync(["bluetoothctl", "connect", address]))', bt_content)
+        self.assertIn("BluetoothUtils.pairSequence(", bt_content)
+        self.assertIn("BluetoothUtils.sortDevices(devices)", bt_content)
 
     def test_bluetooth_pair_section_on_every_surface(self):
         with open("modules/widgets/dashboard/controls/BluetoothDeviceList.qml", "r", encoding="utf-8") as f:

@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.globals
+import "./bluetooth_utils.js" as BluetoothUtils
 
 Singleton {
     id: root
@@ -63,16 +64,7 @@ Singleton {
     }
 
     function updateFriendlyList() {
-        friendlyDeviceList = [...devices].sort((a, b) => {
-            // Connected devices first
-            if (a.connected && !b.connected) return -1;
-            if (!a.connected && b.connected) return 1;
-            // Then paired devices
-            if (a.paired && !b.paired) return -1;
-            if (!a.paired && b.paired) return 1;
-            // Then by name
-            return (a.name || "").localeCompare(b.name || "");
-        });
+        friendlyDeviceList = BluetoothUtils.sortDevices(devices);
     }
 
     function onDeviceInfoUpdated(): void {
@@ -219,9 +211,7 @@ Singleton {
     // bluetoothctl's error when any step fails.
     function pairDevice(address: string) {
         isUpdating = true;
-        return runAsync(["bluetoothctl", "pair", address])
-            .then(() => runAsync(["bluetoothctl", "trust", address]))
-            .then(() => runAsync(["bluetoothctl", "connect", address]))
+        return BluetoothUtils.pairSequence(command => root.runAsync(command), address)
             .finally(() => {
                 updateDevices();
                 isUpdating = false;
@@ -319,9 +309,8 @@ Singleton {
                 if (code !== 0 || !text)
                     return;
 
-                const parts = text.split("---");
-                const powerPart = (parts[0] || "").trim();
-                root.enabled = (powerPart === "powered");
+                const status = BluetoothUtils.parseStatus(text);
+                root.enabled = status.enabled;
 
                 if (!root.enabled) {
                     root.connected = false;
@@ -336,57 +325,10 @@ Singleton {
                     return;
                 }
 
-                // Part 1: Connected devices
-                const connectedLines = parts.length > 1
-                    ? parts[1].trim().split("\n").filter(l => l.startsWith("Device "))
-                    : [];
-                const connectedMacs = new Set();
-                let firstConnectedName = "";
-
-                for (let i = 0; i < connectedLines.length; i++) {
-                    const devParts = connectedLines[i].split(" ");
-                    if (devParts.length > 1) {
-                        connectedMacs.add(devParts[1]);
-                        if (!firstConnectedName) {
-                            firstConnectedName = devParts.slice(2).join(" ") || "Connected";
-                        }
-                    }
-                }
-
-                root.connectedDevices = connectedMacs.size;
-                root.connected = connectedMacs.size > 0;
-                root.firstConnectedDeviceName = firstConnectedName;
-
-                // Part 2: Paired devices
-                const pairedMacs = new Set((parts.length > 2 ? parts[2] : "").trim().split("\n")
-                    .filter(l => l.startsWith("Device "))
-                    .map(l => l.split(" ")[1]));
-
-                // Part 3: Every device BlueZ knows, including ones discovery found
-                const deviceLines = parts.length > 3
-                    ? parts[3].trim().split("\n").filter(l => l.startsWith("Device "))
-                    : [];
-                const deviceDataList = [];
-
-                for (let i = 0; i < deviceLines.length; i++) {
-                    const line = deviceLines[i];
-                    const partsDev = line.split(" ");
-                    if (partsDev.length < 2) continue;
-                    const addr = partsDev[1];
-                    const name = partsDev.slice(2).join(" ");
-                    const paired = pairedMacs.has(addr);
-                    // BlueZ names devices that never advertised a name after
-                    // their address (AA-BB-...). Those are beacons and other
-                    // noise nobody can pick out, so only list them once paired.
-                    const unnamed = name === "" || name === addr.replace(/:/g, "-");
-                    if (unnamed && !paired) continue;
-                    deviceDataList.push({
-                        address: addr,
-                        name: unnamed ? "Unknown device" : name,
-                        connected: connectedMacs.has(addr),
-                        paired: paired
-                    });
-                }
+                root.connectedDevices = status.connectedCount;
+                root.connected = status.connectedCount > 0;
+                root.firstConnectedDeviceName = status.firstConnectedName;
+                const deviceDataList = status.devices;
 
                 const rDevices = root.devices;
 
