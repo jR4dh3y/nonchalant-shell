@@ -1151,6 +1151,7 @@ Item {
 
                     IslandNotificationBanner {
                         id: notificationView
+                        objectName: "islandNotificationBanner"
                         width: parent.width
 
                         onDismissRequested: {

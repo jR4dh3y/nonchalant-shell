@@ -805,6 +805,13 @@ ShellRoot {
                     bypassDoNotDisturb: true})
                 tryCompare(panel, "hasNotifications", true)
                 tryCompare(panel, "currentMode", "notification")
+                // The banner itself must open and show the alert, not just
+                // the bar's mode flag.
+                const banner = findChild(panel, "islandNotificationBanner")
+                verify(banner !== null, "notification banner exists")
+                tryVerify(() => banner.parent.active && banner.parent.visible && banner.visible)
+                tryCompare(banner, "summary", "Battery low")
+                tryCompare(panel, "containerY", 0, 1500)
                 Notifications.clearPopupById(urgent.id)
                 tryCompare(panel, "currentMode", "collapsed")
                 console.log("BAR_NOTIFICATION_PASSED_" + data.tag)
