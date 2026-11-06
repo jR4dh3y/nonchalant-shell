@@ -358,7 +358,10 @@ FocusScope {
             // Per-Screen Monitor toggle
             Item {
                 id: perScreenCheckboxContainer
-                Layout.preferredWidth: 120 // un poco mas ancho para que quepa el nombre monitor si es largo
+                // Size from the monitor label so names like "HDMI-A-1" or "DP-10"
+                // never overflow under the checkbox: 4px margins, label padding,
+                // 4px spacing and the 40px checkbox.
+                Layout.preferredWidth: Math.max(120, Math.ceil(monitorNameLabel.implicitWidth) + 4 + 4 + 40 + 4)
                 Layout.preferredHeight: 48
 
                 property bool keyboardNavigationActive: false
@@ -389,10 +392,13 @@ FocusScope {
                             radius: Styling.radius(0)
 
                             Text {
+                                id: monitorNameLabel
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
                                 anchors.fill: parent
-                                text: currentScreenName // Get the monitor name!
+                                leftPadding: 10
+                                rightPadding: 10
+                                text: currentScreenName
                                 color: Colors.overSurface
                                 font.family: Config.theme.font
                                 font.pixelSize: Config.theme.fontSize
