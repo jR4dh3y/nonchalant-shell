@@ -221,6 +221,7 @@ def main():
         run_unittest_suite("Tier 4: Pills Runtime", "tests.e2e.test_pills_runtime", collector, args.verbose)
         run_unittest_suite("Tier 4: Deck Runtime", "tests.e2e.test_deck_runtime", collector, args.verbose)
         run_unittest_suite("Tier 4: Tooltip Lifecycle Runtime", "tests.e2e.test_tooltip_runtime", collector, args.verbose)
+        run_unittest_suite("Tier 4: Niri Colors Runtime", "tests.e2e.test_niri_colors_runtime", collector, args.verbose)
 
     if args.json:
         report = {
