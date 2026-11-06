@@ -11,13 +11,13 @@ Singleton {
 
     readonly property UPowerService.UPowerDevice primaryDevice: UPowerService.UPower.displayDevice
 
-    readonly property bool available: primaryDevice !== null && primaryDevice.type === UPowerService.UPowerDevice.Battery
+    readonly property bool available: primaryDevice !== null && primaryDevice.ready && primaryDevice.isPresent && primaryDevice.type === UPowerService.UPowerDeviceType.Battery
     readonly property real percentage: available ? (primaryDevice.percentage * 100) : 0
-    readonly property bool isCharging: available && primaryDevice.state === UPowerService.UPowerDevice.Charging
-    readonly property bool isPluggedIn: available && (primaryDevice.state === UPowerService.UPowerDevice.Charging || primaryDevice.state === UPowerService.UPowerDevice.FullyCharged)
+    readonly property bool isCharging: available && primaryDevice.state === UPowerService.UPowerDeviceState.Charging
+    readonly property bool isPluggedIn: available && (primaryDevice.state === UPowerService.UPowerDeviceState.Charging || primaryDevice.state === UPowerService.UPowerDeviceState.FullyCharged)
     readonly property real percent: percentage
     readonly property bool charging: isPluggedIn
-    readonly property int chargeState: available ? primaryDevice.state : UPowerService.UPowerDevice.Unknown
+    readonly property int chargeState: available ? primaryDevice.state : UPowerService.UPowerDeviceState.Unknown
     property int lastBatteryAlertThreshold: 0
 
     // Add some helpful descriptive properties if needed
@@ -86,6 +86,7 @@ Singleton {
             "body": "Battery is at " + roundedPercentage + "%." + (isCritical ? " Connect your charger or enable power saver." : " Enable power saver to reduce consumption."),
             "urgency": NotificationUrgency.Critical,
             "historyPriority": 100,
+            "bypassDoNotDisturb": true,
             "replaceKey": "battery-low-alert",
             "expireTimeout": 10000,
             "actions": [{
@@ -108,6 +109,10 @@ Singleton {
 
     Connections {
         target: root
+
+        function onAvailableChanged() {
+            root.evaluateBatteryAlert();
+        }
 
         function onPercentageChanged() {
             root.evaluateBatteryAlert();
