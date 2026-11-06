@@ -98,7 +98,10 @@ Scope {
         function onAuthenticationFailed() {
             root.submitting = false;
             root.showFailure = true;
-            shakeAnimation.restart();
+            // The error text and color carry the failure; the shake is motion
+            // only, so it follows the shell's animation setting.
+            if (Motion.enabled)
+                shakeAnimation.restart();
         }
 
         function onIsResponseRequiredChanged() {
@@ -363,10 +366,19 @@ Scope {
         required property string variant
         signal activated
 
+        // Reachable with Tab after the password field; Space/Enter activate.
+        activeFocusOnTab: true
         implicitWidth: buttonLabel.implicitWidth + 32
         implicitHeight: 36
         opacity: enabled ? 1 : 0.5
         scale: buttonMouse.pressed ? 0.94 : 1
+
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                button.activated();
+                event.accepted = true;
+            }
+        }
 
         PressBehavior on scale {
             pressed: buttonMouse.pressed
@@ -376,7 +388,7 @@ Scope {
             id: buttonSurface
 
             anchors.fill: parent
-            variant: button.variant
+            variant: button.activeFocus ? "focus" : button.variant
             enableBorder: false
             radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
 
