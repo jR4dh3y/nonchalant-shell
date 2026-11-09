@@ -5,10 +5,14 @@ import Quickshell.Io
 // Writes window chrome colors for Niri. The Niri profile includes this file
 // after its own layout block; Niri merges the sections and hot-reloads on
 // change. Only colors are set, so on/off and widths stay owned by the profile.
+// The file also carries the layer rule that puts the shell's blurred
+// wallpaper surface into Niri's overview backdrop.
 QtObject {
     id: root
 
     readonly property string outputPath: Quickshell.env("HOME") + "/.cache/nonchalant/niri-colors.kdl"
+    // Must match OverviewBackdrop's WlrLayershell.namespace.
+    readonly property string overviewBackdropNamespace: "^nonchalant:overview-backdrop$"
 
     // Niri reads CSS-style #rrggbbaa; QML's color.toString() emits #aarrggbb.
     function hex(c: color, alpha: real): string {
@@ -32,6 +36,9 @@ QtObject {
         conf += `    insert-hint {\n        color ${hex(Colors.primary, 0.5)}\n    }\n`;
         conf += "}\n";
         conf += `recent-windows {\n    highlight {\n        active-color ${active}\n        urgent-color ${urgent}\n    }\n}\n`;
+        // The shell creates this surface only while the overview wallpaper
+        // blur setting is on; the rule is inert otherwise.
+        conf += `layer-rule {\n    match namespace="${root.overviewBackdropNamespace}"\n    place-within-backdrop true\n}\n`;
 
         // Write atomically so Niri never reloads a half-written file.
         const command = ["sh", "-c", 'mkdir -p "$(dirname "$2")" && printf "%s" "$1" > "$2.tmp" && mv "$2.tmp" "$2"', "sh", conf, root.outputPath];

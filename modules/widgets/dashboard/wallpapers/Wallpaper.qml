@@ -58,10 +58,7 @@ PanelWindow {
         fillMode: Image.PreserveAspectCrop
         sourceSize.width: wallpaper.width
         sourceSize.height: wallpaper.height
-        source: {
-            const frame = wallpaper.getLockscreenFramePath(wallpaper.effectiveWallpaper);
-            return frame ? "file://" + frame : "";
-        }
+        source: wallpaper.getLockscreenFrameUrl(wallpaper.effectiveWallpaper)
     }
 
 
@@ -247,6 +244,18 @@ PanelWindow {
         }
 
         return filePath;
+    }
+
+    // file:// URL for getLockscreenFramePath. Generated video/GIF frames carry
+    // the frame revision so consumers that loaded before the frame existed
+    // retry once it is written. Still images keep a plain URL for caching.
+    function getLockscreenFrameUrl(filePath) {
+        var frame = getLockscreenFramePath(filePath);
+        if (!frame)
+            return "";
+        if (frame === filePath)
+            return "file://" + frame;
+        return "file://" + frame + "?r=" + GlobalStates.wallpaperFrameRevision;
     }
 
     function generateLockscreenFrame(filePath) {
@@ -993,6 +1002,7 @@ PanelWindow {
         onExited: function (exitCode) {
             if (exitCode === 0) {
                 console.log("✅ Lockscreen wallpaper ready");
+                GlobalStates.wallpaperFrameRevision++;
             } else {
                 console.warn("⚠️ Lockscreen wallpaper generation failed with code:", exitCode);
             }

@@ -10,6 +10,9 @@ Singleton {
     id: root
 
     property var wallpaperManager: null
+    // Bumped when a video/GIF still frame finishes generating. Frame URLs
+    // carry it so images reload once the async frame exists on disk.
+    property int wallpaperFrameRevision: 0
     property string avatarCacheBuster: ""
 
     function pickUserAvatar() {

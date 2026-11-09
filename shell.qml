@@ -24,12 +24,25 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
 
-        Loader {
-            id: wallpaperLoader
-            active: true
+        Item {
+            id: wallpaperContainer
             required property ShellScreen modelData
-            sourceComponent: Wallpaper {
-                screen: wallpaperLoader.modelData
+
+            Wallpaper {
+                id: screenWallpaper
+                screen: wallpaperContainer.modelData
+            }
+
+            // Blurred wallpaper behind Niri's overview. Only Niri can place a
+            // layer surface inside its overview backdrop; elsewhere this
+            // surface would cover the wallpaper.
+            Loader {
+                active: CompositorService.compositor === "niri"
+                    && (Config.theme?.overviewWallpaperBlur ?? false)
+                sourceComponent: OverviewBackdrop {
+                    screen: wallpaperContainer.modelData
+                    wallpaperOwner: screenWallpaper
+                }
             }
         }
     }

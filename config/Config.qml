@@ -103,6 +103,7 @@ Singleton {
             property string monoFont: "JetBrains Mono"
             property int monoFontSize: 14
             property bool tintIcons: false
+            property bool overviewWallpaperBlur: false
             property int animDuration: 300
             property real shadowOpacity: 0.5
             property string shadowColor: "shadow"

@@ -114,16 +114,14 @@ WlSessionLockSurface {
         radius: 0
         tintEnabled: GlobalStates.wallpaperManager ? GlobalStates.wallpaperManager.tintEnabled : false
 
-        property string lockscreenFramePath: {
+        source: {
             const manager = GlobalStates.wallpaperManager;
             if (!manager)
                 return "";
             const perScreen = manager.perScreenWallpapers || {};
             const wallpaper = perScreen[root.screen ? root.screen.name : ""] || manager.currentWallpaper;
-            return manager.getLockscreenFramePath(wallpaper);
+            return manager.getLockscreenFrameUrl(wallpaper);
         }
-
-        source: lockscreenFramePath ? "file://" + lockscreenFramePath : ""
         visible: source !== ""
         // Pre-startAnim the lockshot (if present) is the base; the wallpaper
         // crossfades in with the entry animation so the steady-state backdrop

@@ -111,6 +111,20 @@ class NiriColorsRuntimeTests(unittest.TestCase):
             self.assertIn('active-color "#abcdefff"', written)
             self.assertIn("focus-ring {", written)
             self.assertIn("recent-windows {", written)
+            # The overview blur surface is placed in Niri's backdrop by this
+            # rule; its namespace must match OverviewBackdrop.qml.
+            backdrop = (ROOT / "modules/widgets/dashboard/wallpapers/OverviewBackdrop.qml").read_text()
+            self.assertIn('WlrLayershell.namespace: "nonchalant:overview-backdrop"', backdrop)
+            self.assertIn('match namespace="^nonchalant:overview-backdrop$"', written)
+            self.assertIn("place-within-backdrop true", written)
+
+            # Niri itself must accept the generated file as an include.
+            if shutil.which("niri"):
+                config = fixture / "niri.kdl"
+                config.write_text(f'include "{home / ".cache/nonchalant/niri-colors.kdl"}"\n')
+                check = subprocess.run(["niri", "validate", "--config", str(config)],
+                                       capture_output=True, text=True, timeout=20)
+                self.assertEqual(check.returncode, 0, check.stdout + check.stderr)
 
 
 if __name__ == "__main__":
