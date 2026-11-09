@@ -794,6 +794,26 @@ ShellRoot {
                 tryCompare(panel, "currentMode", "collapsed")
                 tryCompare(panel, "retractingToHidden", false)
                 tryCompare(panel, "revealProgress", data.pinned ? 1 : 0)
+
+                // Do Not Disturb mutes ordinary notifications on the bar...
+                Notifications.notifyInternal({summary: "Muted by DND", expireTimeout: 60000})
+                wait(Motion.collapseDuration + 100)
+                compare(panel.hasNotifications, false, "DND keeps ordinary notifications off the bar")
+                compare(panel.currentMode, "collapsed")
+                // ...but alerts that bypass it (low battery) still show.
+                const urgent = Notifications.notifyInternal({summary: "Battery low", expireTimeout: 60000,
+                    bypassDoNotDisturb: true})
+                tryCompare(panel, "hasNotifications", true)
+                tryCompare(panel, "currentMode", "notification")
+                // The banner itself must open and show the alert, not just
+                // the bar's mode flag.
+                const banner = findChild(panel, "islandNotificationBanner")
+                verify(banner !== null, "notification banner exists")
+                tryVerify(() => banner.parent.active && banner.parent.visible && banner.visible)
+                tryCompare(banner, "summary", "Battery low")
+                tryCompare(panel, "containerY", 0, 1500)
+                Notifications.clearPopupById(urgent.id)
+                tryCompare(panel, "currentMode", "collapsed")
                 console.log("BAR_NOTIFICATION_PASSED_" + data.tag)
             }
 

@@ -231,7 +231,9 @@ Item {
     readonly property int activeWorkspaceWindows: activeWorkspace?.windows ?? 0
     readonly property bool hasActiveWindows: activeWorkspaceWindows > 0
     readonly property bool hasWindowTouchingTop: CompositorService.hasWindowAtTop(root.screen.name, root.pillHeight + root.topMargin + 8)
-    readonly property bool hasNotifications: !Notifications.silent && Notifications.popupList && Notifications.popupList.length > 0
+    // Notifications owns Do Not Disturb: popupList only holds popups it allowed
+    // (ordinary ones are muted, approved alerts like low battery bypass it).
+    readonly property bool hasNotifications: Notifications.popupList && Notifications.popupList.length > 0
 
     onHasNotificationsChanged: {
         if (hasNotifications) {
@@ -1234,7 +1236,7 @@ Item {
                 // ── PILL 5: ALERTS PILL (NOTIFICATION COUNTER) ──
                 StyledRect {
                     id: alertsPill
-                    visible: !Notifications.silent && (root.alertsCount > 0 || root.hasNotifications)
+                    visible: root.alertsCount > 0 || root.hasNotifications
                     implicitHeight: root.pillHeight
                     implicitWidth: alertsRow.implicitWidth + 16
                     variant: "pane"
@@ -1423,11 +1425,12 @@ Item {
 
                 // ── NOTIFICATION BANNER ──
                 IslandPage {
-                    active: !Notifications.silent && root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null
+                    active: root.currentMode === "notification" && root.hasNotifications && notificationView.activeNotif !== null
                     mode: "notification"
 
                     IslandNotificationBanner {
                         id: notificationView
+                        objectName: "islandNotificationBanner"
                         width: parent.width
 
                         onDismissRequested: {
