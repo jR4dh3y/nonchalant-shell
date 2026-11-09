@@ -2,17 +2,16 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
-import qs.config
-import qs.modules.services
 import qs.modules.components
 
 // Blurred copy of a screen's wallpaper for Niri's overview backdrop.
 //
 // Niri places this surface inside the backdrop through the layer rule that
-// NiriGenerator writes, so it shows between and around the zoomed-out
-// workspaces. Opacity also follows overview state so a missing rule cannot
-// blur the normal desktop. Keep the layer allocated while transparent so
-// opening overview reuses the cached blur texture.
+// NiriGenerator writes, so it shows only between and around the zoomed-out
+// workspaces. Keep it always opaque: gating it on overview IPC state lags
+// Niri's open animation and leaves the bare backdrop showing until the event
+// arrives and a new frame commits. The blur renders once into a cached layer;
+// the surface stays idle until the wallpaper or tint changes.
 PanelWindow {
     id: root
 
@@ -54,15 +53,6 @@ PanelWindow {
         source: root.frameUrl
         tintEnabled: root.wallpaperOwner?.tintEnabled ?? false
         visible: source !== ""
-        opacity: CompositorService.overviewOpen ? 1 : 0
-
-        Behavior on opacity {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: Config.animDuration / 2
-                easing.type: CompositorService.overviewOpen ? Easing.OutCubic : Easing.InCubic
-            }
-        }
 
         layer.enabled: true
         layer.effect: MultiEffect {

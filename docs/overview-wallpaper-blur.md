@@ -13,12 +13,11 @@ blurred copy of each screen's wallpaper.
 - `NiriGenerator` writes a layer rule into `~/.cache/nonchalant/niri-colors.kdl`
   that matches that namespace and sets `place-within-backdrop true`. Niri then
   draws the surface only in the overview backdrop.
-- The wallpaper item fades to zero opacity outside overview, keeping its blur
-  layer allocated. If the Niri config omits the generated include, the desktop
-  remains unaffected; the blur then appears only behind the zoomed-out
-  workspaces rather than around them. Opacity uses half `Config.animDuration`,
-  with OutCubic on entry and monotonic InCubic on exit. Zero duration disables
-  the animation.
+- The surface stays fully opaque. It is not gated on overview IPC state:
+  Niri starts zooming before the shell hears `OverviewOpenedOrClosed`, so a
+  state-driven fade left Niri's bare backdrop visible between workspaces and
+  flickered on open. The generated include is required; without it the blur
+  covers the desktop wallpaper.
 - The blur is a `MultiEffect` rendered once into a cached layer. The surface
   stays idle until the wallpaper or tint changes.
 - Hyprland has no overview backdrop, so the toggle is disabled there and no
@@ -43,7 +42,7 @@ loaded before the frame was written stayed empty.
 | Config | `defaults/theme.js`, `Config.qml` | `overviewWallpaperBlur: false` | Live JSON edit hot-reloads the surface | Passed |
 | Overview backdrop surface | `OverviewBackdrop.qml`, `shell.qml` | Per-screen surface only while enabled on Niri | `niri msg layers` with the setting off, on, and off again | Passed |
 | Niri rule | `NiriGenerator.qml` | `place-within-backdrop` layer rule | Runtime test plus `niri validate` on the generated include | Passed |
-| Desktop outside overview | Overview state opacity and Niri backdrop placement | Transparent outside overview, even without the include | Private screenshots with and without the include | Unchanged |
+| Desktop outside overview | Niri backdrop placement | Hidden by `place-within-backdrop`; requires the generated include | Private screenshots with and without the include | Unchanged |
 | Static image | `Wallpaper.getLockscreenFrameUrl` | Plain `file://` URL shares the pixmap cache | Overview screenshot | Passed |
 | Video/GIF wallpaper | Same | Revisioned frame URL | Switch to video through `setWallpaper`, then overview screenshot | Passed. It failed before the revision fix |
 | Wallpaper tint | `TintedWallpaper` | Follows `tintEnabled` | Overview screenshot with tint on | Passed |
