@@ -12,7 +12,13 @@ blurred copy of each screen's wallpaper.
   `nonchalant:overview-backdrop`. It ignores exclusive zones and pointer input.
 - `NiriGenerator` writes a layer rule into `~/.cache/nonchalant/niri-colors.kdl`
   that matches that namespace and sets `place-within-backdrop true`. Niri then
-  draws the surface only in the overview backdrop. The desktop looks unchanged.
+  draws the surface only in the overview backdrop.
+- The wallpaper item fades to zero opacity outside overview, keeping its blur
+  layer allocated. If the Niri config omits the generated include, the desktop
+  remains unaffected; the blur then appears only behind the zoomed-out
+  workspaces rather than around them. Opacity uses half `Config.animDuration`,
+  with OutCubic on entry and monotonic InCubic on exit. Zero duration disables
+  the animation.
 - The blur is a `MultiEffect` rendered once into a cached layer. The surface
   stays idle until the wallpaper or tint changes.
 - Hyprland has no overview backdrop, so the toggle is disabled there and no
@@ -37,7 +43,7 @@ loaded before the frame was written stayed empty.
 | Config | `defaults/theme.js`, `Config.qml` | `overviewWallpaperBlur: false` | Live JSON edit hot-reloads the surface | Passed |
 | Overview backdrop surface | `OverviewBackdrop.qml`, `shell.qml` | Per-screen surface only while enabled on Niri | `niri msg layers` with the setting off, on, and off again | Passed |
 | Niri rule | `NiriGenerator.qml` | `place-within-backdrop` layer rule | Runtime test plus `niri validate` on the generated include | Passed |
-| Desktop outside overview | Niri backdrop placement | None | Screenshot with the setting on | Unchanged |
+| Desktop outside overview | Overview state opacity and Niri backdrop placement | Transparent outside overview, even without the include | Private screenshots with and without the include | Unchanged |
 | Static image | `Wallpaper.getLockscreenFrameUrl` | Plain `file://` URL shares the pixmap cache | Overview screenshot | Passed |
 | Video/GIF wallpaper | Same | Revisioned frame URL | Switch to video through `setWallpaper`, then overview screenshot | Passed. It failed before the revision fix |
 | Wallpaper tint | `TintedWallpaper` | Follows `tintEnabled` | Overview screenshot with tint on | Passed |
@@ -49,6 +55,14 @@ loaded before the frame was written stayed empty.
 ## Screenshots
 
 Captured with a private headless Niri 26.04 at 1280×720 using llvmpipe.
+
+The review verification repeated the off/on/off layer check, tint, and video
+still-frame flow in a disposable Niri session. Removing the generated include
+left the desktop wallpaper sharp both before overview and after closing it.
+In overview, the blur appeared behind workspace previews with a plain outer
+backdrop. Screenshots were visually inspected; the existing included-rule
+images below remain representative. Fade timing and real GPU cost were not
+measured.
 
 | Setting off | Setting on |
 | --- | --- |
