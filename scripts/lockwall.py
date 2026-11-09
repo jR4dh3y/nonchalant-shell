@@ -52,19 +52,6 @@ class LockscreenWallpaperGenerator:
         output_name = self.current_wallpaper.name + ".jpg"
         return self.lockscreen_dir / output_name
 
-    def clean_lockscreen_dir(self) -> None:
-        """Remove all existing files in lockscreen directory."""
-        if self.lockscreen_dir is None:
-            return
-
-        try:
-            for file in self.lockscreen_dir.glob("*"):
-                if file.is_file():
-                    file.unlink()
-                    print(f"✓ Removed old file: {file.name}")
-        except Exception as e:
-            print(f"WARNING: Failed to clean directory: {e}")
-
     def extract_first_frame(self) -> Tuple[bool, str]:
         """Extract first frame from video/GIF using FFmpeg."""
         output_path = self.get_output_path()
@@ -118,9 +105,7 @@ class LockscreenWallpaperGenerator:
             print("ℹ️  No processing needed - use wallpaper directly")
             return 0
 
-        # Clean existing files
-        self.clean_lockscreen_dir()
-
+        # Other screens may still use any previously generated frame.
         # Extract first frame
         success, message = self.extract_first_frame()
 

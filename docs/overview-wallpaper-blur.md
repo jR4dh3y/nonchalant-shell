@@ -20,8 +20,12 @@ blurred copy of each screen's wallpaper.
 
 Video and GIF wallpapers use the cached still frame that the lockscreen also
 uses. The frame is generated asynchronously, so `Wallpaper.getLockscreenFrameUrl()`
-appends `GlobalStates.wallpaperFrameRevision` to generated frame URLs. Every
-consumer reloads once the frame exists. Before this change, a consumer that
+appends the revision for that cached frame path from
+`GlobalStates.wallpaperFrameRevisions` to generated frame URLs. Only consumers
+of that frame change URL when generation succeeds. Still images keep plain
+`file://` URLs. The generator replaces only its target frame and retains other
+frames so per-screen wallpapers stay available. Pruning is omitted to avoid
+racing wallpaper selection or removing another screen's frame. Before this change, a consumer that
 loaded before the frame was written stayed empty.
 
 ## Surface ledger
@@ -57,3 +61,17 @@ Captured with a private headless Niri 26.04 at 1280×720 using llvmpipe.
 | Desktop with setting on | Settings |
 | --- | --- |
 | ![desktop](images/overview-blur-desktop.png) | ![settings](images/overview-blur-settings.png) |
+
+## Per-screen frame regression checks
+
+`tests.unit.test_lockwall` runs FFmpeg against disposable A/B videos and checks
+that generation and regeneration preserve the other frame. No pruning is used;
+old cached stills remain until the cache is cleared externally.
+`tests.e2e.test_wallpaper_frames_runtime` runs the production URL helpers and
+GlobalStates revision updates offscreen with private HOME, runtime paths, and
+D-Bus. It checks that updating B leaves A's URL unchanged and still images have
+no revision suffix. It does not instantiate desktop wallpaper or lock surfaces.
+The picker uses `thumbnails/` through `getDisplaySource`; `thumbgen.py` owns that
+separate cache. The only lockwall caller is Wallpaper's frame-generation process.
+All frame consumers listed above continue through `getLockscreenFrameUrl`.
+Remote/network modes do not apply to this local cache contract.

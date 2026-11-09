@@ -249,13 +249,13 @@ PanelWindow {
     // file:// URL for getLockscreenFramePath. Generated video/GIF frames carry
     // the frame revision so consumers that loaded before the frame existed
     // retry once it is written. Still images keep a plain URL for caching.
-    function getLockscreenFrameUrl(filePath) {
+    function getLockscreenFrameUrl(filePath: string): string {
         var frame = getLockscreenFramePath(filePath);
         if (!frame)
             return "";
         if (frame === filePath)
             return "file://" + frame;
-        return "file://" + frame + "?r=" + GlobalStates.wallpaperFrameRevision;
+        return "file://" + frame + "?r=" + (GlobalStates.wallpaperFrameRevisions[frame] ?? 0);
     }
 
     function generateLockscreenFrame(filePath) {
@@ -980,6 +980,8 @@ PanelWindow {
     // Proceso para generar frame de lockscreen con el script de Python
     Process {
         id: lockscreenWallpaperScript
+        property string generatedFramePath: ""
+        onStarted: generatedFramePath = wallpaper.getLockscreenFramePath(command[2])
         running: false
         command: []
 
@@ -1002,7 +1004,7 @@ PanelWindow {
         onExited: function (exitCode) {
             if (exitCode === 0) {
                 console.log("✅ Lockscreen wallpaper ready");
-                GlobalStates.wallpaperFrameRevision++;
+                GlobalStates.bumpWallpaperFrameRevision(generatedFramePath);
             } else {
                 console.warn("⚠️ Lockscreen wallpaper generation failed with code:", exitCode);
             }
