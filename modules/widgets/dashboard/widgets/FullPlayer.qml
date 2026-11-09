@@ -31,9 +31,7 @@ StyledRect {
     property bool hasArtwork: (MprisController.activePlayer?.trackArtUrl ?? "") !== ""
     property string wallpaperPath: {
         if (!GlobalStates.wallpaperManager) return "";
-        let path = GlobalStates.wallpaperManager.currentWallpaper;
-        let frame = GlobalStates.wallpaperManager.getLockscreenFramePath(path);
-        return frame ? "file://" + frame : "";
+        return GlobalStates.wallpaperManager.getLockscreenFrameUrl(GlobalStates.wallpaperManager.currentWallpaper);
     }
     property bool hasActivePlayer: MprisController.activePlayer !== null
     function formatTime(seconds) {

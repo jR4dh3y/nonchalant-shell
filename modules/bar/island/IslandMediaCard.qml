@@ -33,9 +33,7 @@ StyledRect {
     readonly property string wallpaperUrl: {
         const mgr = GlobalStates.wallpaperManager;
         if (!mgr) return "";
-        let path = mgr.currentWallpaper;
-        let frame = (mgr.getLockscreenFramePath && path) ? mgr.getLockscreenFramePath(path) : path;
-        return frame ? "file://" + frame : (path ? "file://" + path : "");
+        return mgr.getLockscreenFrameUrl(mgr.currentWallpaper);
     }
 
     signal expandRequested()

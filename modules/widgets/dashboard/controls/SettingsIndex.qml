@@ -79,7 +79,7 @@ QtObject {
             keywords: "appearance look style customize palette scheme",
             component: "ThemePanel.qml",
             tabs: [
-                { id: "general", panelSection: "general", label: "General", keywords: "wallpaper icons animation font roundness" },
+                { id: "general", panelSection: "general", label: "General", keywords: "wallpaper icons animation font roundness overview blur backdrop niri" },
                 { id: "shadow", panelSection: "shadow", label: "Shadows", keywords: "opacity blur offset color" },
                 { id: "colors", panelSection: "colors", label: "Colors", keywords: "scheme palette variant gradient border" }
             ]

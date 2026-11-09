@@ -5,6 +5,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import qs.modules.theme
 import qs.modules.components
+import qs.modules.services
 import Quickshell
 import Quickshell.Io
 import qs.config
@@ -226,74 +227,20 @@ Item {
                                 }
                             }
 
-                            // Tint Icons toggle
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
+                            ToggleRow {
+                                label: "Tint Icons"
+                                checked: Config.theme.tintIcons
+                                onToggled: value => Config.theme.tintIcons = value
+                            }
 
-                                Text {
-                                    renderType: Text.NativeRendering
-                                    font.hintingPreference: Font.PreferFullHinting
-                                    text: "Tint Icons"
-                                    font.family: Config.theme.font
-                                    font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
-                                    Layout.fillWidth: true
-                                }
-
-                                Switch {
-                                    id: tintIconsSwitch
-                                    checked: Config.theme.tintIcons
-
-                                    readonly property bool configValue: Config.theme.tintIcons
-
-                                    onConfigValueChanged: {
-                                        if (checked !== configValue) {
-                                            checked = configValue;
-                                        }
-                                    }
-
-                                    onCheckedChanged: {
-                                        if (checked !== Config.theme.tintIcons) {
-                                            Config.theme.tintIcons = checked;
-                                        }
-                                    }
-
-                                    indicator: Rectangle {
-                                        implicitWidth: 40
-                                        implicitHeight: 20
-                                        x: tintIconsSwitch.leftPadding
-                                        y: parent.height / 2 - height / 2
-                                        radius: height / 2
-                                        color: tintIconsSwitch.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
-                                        border.color: tintIconsSwitch.checked ? Styling.srItem("overprimary") : Colors.outline
-
-                                        Behavior on color {
-                                            enabled: Config.animDuration > 0
-                                            ColorAnimation {
-                                                duration: Config.animDuration / 2
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            x: tintIconsSwitch.checked ? parent.width - width - 2 : 2
-                                            y: 2
-                                            width: parent.height - 4
-                                            height: width
-                                            radius: width / 2
-                                            color: tintIconsSwitch.checked ? Colors.background : Colors.overSurfaceVariant
-
-                                            Behavior on x {
-                                                enabled: Config.animDuration > 0
-                                                NumberAnimation {
-                                                    duration: Config.animDuration / 2
-                                                    easing.type: Easing.OutCubic
-                                                }
-                                            }
-                                        }
-                                    }
-                                    background: null
-                                }
+                            ToggleRow {
+                                label: "Blur Wallpaper in Overview"
+                                description: CompositorService.compositor === "niri"
+                                    ? "Fills the space around workspaces in Niri's overview with a blurred copy of the wallpaper."
+                                    : "Available on Niri only."
+                                enabled: CompositorService.compositor === "niri"
+                                checked: Config.theme.overviewWallpaperBlur
+                                onToggled: value => Config.theme.overviewWallpaperBlur = value
                             }
 
                             // Animation Duration slider
@@ -1435,6 +1382,92 @@ Item {
 
             onColorSelected: color => root.handleColorSelected(color)
             onClosed: root.closeColorPicker()
+        }
+    }
+
+    component ToggleRow: RowLayout {
+        id: toggleRow
+        property string label: ""
+        property string description: ""
+        property bool checked: false
+        signal toggled(bool value)
+
+        Layout.fillWidth: true
+        spacing: 8
+        opacity: enabled ? 1 : 0.5
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 2
+
+            Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
+                text: toggleRow.label
+                font.family: Config.theme.font
+                font.pixelSize: Styling.fontSize(0)
+                color: Colors.overBackground
+                Layout.fillWidth: true
+            }
+
+            Text {
+                renderType: Text.NativeRendering
+                font.hintingPreference: Font.PreferFullHinting
+                visible: toggleRow.description !== ""
+                text: toggleRow.description
+                font.family: Config.theme.font
+                font.pixelSize: Styling.fontSize(-2)
+                color: Colors.overSurfaceVariant
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
+            }
+        }
+
+        Switch {
+            id: toggleSwitch
+            // Follows config; a click reports the new value and the config
+            // write flows back through this binding.
+            checked: toggleRow.checked
+            onToggled: {
+                const value = checked;
+                checked = Qt.binding(() => toggleRow.checked);
+                toggleRow.toggled(value);
+            }
+
+            indicator: Rectangle {
+                implicitWidth: 40
+                implicitHeight: 20
+                x: toggleSwitch.leftPadding
+                y: parent.height / 2 - height / 2
+                radius: height / 2
+                color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
+                border.color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.outline
+
+                Behavior on color {
+                    enabled: Config.animDuration > 0
+                    ColorAnimation {
+                        duration: Config.animDuration / 2
+                    }
+                }
+
+                Rectangle {
+                    x: toggleSwitch.checked ? parent.width - width - 2 : 2
+                    y: 2
+                    width: parent.height - 4
+                    height: width
+                    radius: width / 2
+                    color: toggleSwitch.checked ? Colors.background : Colors.overSurfaceVariant
+
+                    Behavior on x {
+                        enabled: Config.animDuration > 0
+                        NumberAnimation {
+                            duration: Config.animDuration / 2
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+            }
+            background: null
         }
     }
 }

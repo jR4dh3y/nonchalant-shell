@@ -10,6 +10,15 @@ Singleton {
     id: root
 
     property var wallpaperManager: null
+    // Dynamic frame-path -> revision dictionary; QML has no typed map property.
+    property var wallpaperFrameRevisions: ({})
+
+    function bumpWallpaperFrameRevision(framePath: string): void {
+        const revisions = Object.assign({}, wallpaperFrameRevisions);
+        revisions[framePath] = (revisions[framePath] ?? 0) + 1;
+        wallpaperFrameRevisions = revisions;
+    }
+
     property string avatarCacheBuster: ""
 
     function pickUserAvatar() {

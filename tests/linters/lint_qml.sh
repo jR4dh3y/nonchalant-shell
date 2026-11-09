@@ -43,6 +43,8 @@ CORE_FILES=(
     "modules/widgets/dashboard/controls/SettingsTab.qml"
     "modules/widgets/dashboard/controls/SettingsIndex.qml"
     "modules/widgets/dashboard/controls/CustomColorPicker.qml"
+    "modules/widgets/dashboard/controls/ThemePanel.qml"
+    "modules/widgets/dashboard/wallpapers/OverviewBackdrop.qml"
 )
 
 # Also include modular bar files if they exist

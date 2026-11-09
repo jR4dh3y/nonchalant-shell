@@ -70,6 +70,7 @@ Nonchalant Shell is a Niri-first Wayland shell with Hyprland support and hard fo
 | `FocusGrabManager` | Singleton | `modules/services/FocusGrabManager.qml` | Input focus coordination |
 | `AudioFormat` | Singleton | `modules/services/AudioFormat.qml` | Headphone classification (bt/usb/wired) + negotiated sample rate/bit depth via pactl |
 | `AudioFormatBadge` | Component | `modules/bar/audioformat/AudioFormatBadge.qml` | Bar pill: headphone sample rate + bit depth; collapses when nothing attached |
+| `OverviewBackdrop` | Component | `modules/widgets/dashboard/wallpapers/OverviewBackdrop.qml` | Blurred wallpaper placed in Niri's overview backdrop (`theme.overviewWallpaperBlur`; layer rule from `NiriGenerator`) |
 
 ## CONVENTIONS
 - **Singletons**: `pragma Singleton` + `Singleton { id: root }` for all services and global state.
