@@ -6,19 +6,33 @@ import qs.modules.components
 import qs.modules.theme
 import qs.modules.services
 import qs.config
-import qs.modules.globals
 
-// Keyboard-only power menu (Super+X). Same bottom-center band as volume OSD.
+// Super+X / IPC host. A revealed left dock turns its own controls into power
+// actions; every other layout gets the popup.
 Item {
     id: root
 
-    required property var panel
+    required property ShellScreen targetScreen
 
     property bool menuOpen: false
+    property bool revealed: false
     readonly property int bottomOffset: 48
+    // Set by a revealed LeftBar on this screen while it exists.
+    property bool dockShown: false
+    readonly property bool inDock: Config.bar.style === "left" && dockShown
+    readonly property bool dockModeOpen: menuOpen && inDock
+    readonly property alias dockMode: dockMode
+    readonly property bool fullyHidden: powerSurface.fullyHidden
+    onFullyHiddenChanged: {
+        if (fullyHidden && !menuOpen)
+            powerWindow.visible = false;
+    }
+    // The dock or popup this menu opened in went away.
+    onInDockChanged: closeMenu()
 
     readonly property bool popupOpen: menuOpen
-    // Keep a tiny host for Visibilities registration; real UI is powerWindow.
+    // Keep a tiny host for Visibilities registration; real UI is powerWindow
+    // or the dock.
     width: 1
     height: 1
     anchors.bottom: parent.bottom
@@ -36,14 +50,17 @@ Item {
         Visibilities.closeActiveBarPopup();
 
         menuOpen = true;
+        if (inDock) {
+            dockMode.show();
+            return;
+        }
         powerWindow.visible = true;
 
         Qt.callLater(() => {
             if (!root.menuOpen)
                 return;
-            powerSurface.shown = true;
-            powerMenuView.forceActiveFocus();
-            powerMenuView.focusMenu();
+            root.revealed = true;
+            menuLoader.item?.focusMenu();
         });
     }
 
@@ -52,15 +69,52 @@ Item {
             return;
 
         menuOpen = false;
-        powerSurface.shown = false;
-        if (powerSurface.fullyHidden)
+        dockMode.hide();
+        root.revealed = false;
+        if (root.fullyHidden)
             powerWindow.visible = false;
     }
 
-    // Dedicated overlay so position matches OSD (bottom center, 48px up).
+    function run(action: string): void {
+        closeMenu();
+        if (action === "lock") LockscreenService.lock();
+        else if (action === "logout") CompositorService.logout();
+        else if (["suspend", "hibernate", "reboot", "poweroff"].includes(action))
+            Quickshell.execDetached(["systemctl", action]);
+    }
+
+    LeftPowerMode {
+        id: dockMode
+        onActionRequested: action => root.run(action)
+        onCloseRequested: root.closeMenu()
+    }
+
+    // Another shell surface, or focus on another monitor, takes over.
+    Connections {
+        target: Visibilities
+        function onCurrentActiveModuleChanged() {
+            if (Visibilities.currentActiveModule)
+                root.closeMenu();
+        }
+        function onActiveBarPopupChanged() {
+            if (Visibilities.activeBarPopup)
+                root.closeMenu();
+        }
+    }
+
+    Connections {
+        target: CompositorService
+        function onFocusedMonitorChanged() {
+            const name = CompositorService.focusedMonitor?.name ?? "";
+            if (name && name !== root.screenName)
+                root.closeMenu();
+        }
+    }
+
+    // A separate layer owns keyboard focus without changing bar input regions.
     PanelWindow {
         id: powerWindow
-        screen: root.panel?.targetScreen ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
+        screen: root.targetScreen ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
         visible: false
 
         WlrLayershell.namespace: "nonchalant:powermenu"
@@ -75,7 +129,7 @@ Item {
         WlrLayershell.margins.bottom: 0
 
         color: "transparent"
-        implicitHeight: 80 + root.bottomOffset
+        implicitHeight: powerSurface.contentHeight + root.bottomOffset + powerSurface.maxStretch
 
         // Click outside the pill dismisses.
         MouseArea {
@@ -94,20 +148,15 @@ Item {
             id: powerSurface
             objectName: "powerMenuMorph"
 
-            contentWidth: powerMenuView.implicitWidth + padding * 2
-            contentHeight: powerMenuView.implicitHeight + padding * 2
+            contentWidth: (menuLoader.item?.implicitWidth ?? 0) + padding * 2
+            contentHeight: (menuLoader.item?.implicitHeight ?? 0) + padding * 2
             originWidth: contentHeight
             fromBottom: true
+            shown: root.revealed
             radius: Styling.radius(16)
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
             anchors.bottomMargin: root.bottomOffset * powerSurface.revealClamped
-
-            // Unmap only once the surface has fully retracted.
-            onFullyHiddenChanged: {
-                if (fullyHidden && !root.menuOpen)
-                    powerWindow.visible = false;
-            }
 
             // Block backdrop click-through on the pill itself.
             MouseArea {
@@ -116,33 +165,40 @@ Item {
                 onClicked: {}
             }
 
-            PowerMenuView {
-                id: powerMenuView
+            Loader {
+                id: menuLoader
+                focus: true
                 anchors.centerIn: parent
-                popupMode: true
-                expanded: root.menuOpen
-                onCloseRequested: root.closeMenu()
-            }
-        }
-
-        // Escape via Keys on the window content
-        Keys.onPressed: event => {
-            if (event.key === Qt.Key_Escape) {
-                root.closeMenu();
-                event.accepted = true;
+                onLoaded: { if (root.menuOpen) item.focusMenu(); }
+                sourceComponent: PowerMenuView {
+                    popupMode: true
+                    expanded: root.menuOpen
+                    onCloseRequested: root.closeMenu()
+                }
             }
         }
     }
 
-    Component.onCompleted: {
-        const screenName = root.panel?.targetScreen?.name ?? "";
-        if (screenName)
-            Visibilities.registerPowerMenuButton(screenName, root);
+    readonly property string screenName: root.targetScreen?.name ?? ""
+    property string registeredScreenName: ""
+
+    function syncRegistration(): void {
+        if (registeredScreenName === screenName)
+            return;
+        if (registeredScreenName)
+            Visibilities.unregisterPowerMenuButton(registeredScreenName, root);
+        registeredScreenName = screenName;
+        if (registeredScreenName)
+            Visibilities.registerPowerMenuButton(registeredScreenName, root);
     }
 
+    onScreenNameChanged: {
+        closeMenu();
+        syncRegistration();
+    }
+    Component.onCompleted: syncRegistration()
     Component.onDestruction: {
-        const screenName = root.panel?.targetScreen?.name ?? "";
-        if (screenName)
-            Visibilities.unregisterPowerMenuButton(screenName, root);
+        if (registeredScreenName)
+            Visibilities.unregisterPowerMenuButton(registeredScreenName, root);
     }
 }

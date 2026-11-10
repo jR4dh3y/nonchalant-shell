@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import qs.modules.theme
 import qs.modules.components
 import qs.config
+import ".."
 
 StyledRect {
     id: root
@@ -39,79 +40,20 @@ StyledRect {
     signal clicked(var mouse)
     signal wheelScrolled(int delta)
 
-    // Radial Progress Arc
-    Item {
+    // Radial progress, concentric with the button so both follow roundness.
+    BarRadialMeter {
         id: progressMeter
         anchors.fill: parent
         visible: root.showArc
-
-        readonly property real gapAngle: 45
-        readonly property real totalAngleDeg: 360 - 2 * gapAngle
-        readonly property real normalizedValue: Math.max(0, Math.min(1, root.value))
-        property real currentAngleDeg: normalizedValue * totalAngleDeg
-        readonly property real lineWidth: 3.5
-        readonly property real meterRadius: (root.width - lineWidth) / 2 - 1.5
-
-        Behavior on currentAngleDeg {
-            enabled: Config.animDuration > 0
-            NumberAnimation {
-                duration: 240
-                easing.type: Easing.OutCubic
-            }
-        }
-
-        Canvas {
-            id: canvas
-            anchors.fill: parent
-            antialiasing: true
-            visible: root.showArc
-
-            onPaint: {
-                const ctx = getContext("2d");
-                ctx.reset();
-
-                const centerX = width / 2;
-                const centerY = height / 2;
-                const radStart = (Math.PI / 2) + (progressMeter.gapAngle * Math.PI / 180);
-                const radTotal = (progressMeter.totalAngleDeg * Math.PI / 180);
-                const radProgress = (progressMeter.currentAngleDeg * Math.PI / 180);
-
-                ctx.lineCap = "round";
-                ctx.lineWidth = progressMeter.lineWidth;
-
-                // 1. Full track (background)
-                ctx.strokeStyle = root.trackColor;
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, progressMeter.meterRadius, radStart, radStart + radTotal, false);
-                ctx.stroke();
-
-                // 2. Active progress arc
-                if (progressMeter.currentAngleDeg > 0) {
-                    ctx.strokeStyle = root.arcColor;
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, progressMeter.meterRadius, radStart, radStart + radProgress, false);
-                    ctx.stroke();
-                }
-            }
-
-            Connections {
-                target: progressMeter
-                function onCurrentAngleDegChanged() { canvas.requestPaint(); }
-                function onMeterRadiusChanged() { canvas.requestPaint(); }
-            }
-
-            Connections {
-                target: root
-                function onArcColorChanged() { canvas.requestPaint(); }
-                function onTrackColorChanged() { canvas.requestPaint(); }
-                function onShowArcChanged() { canvas.requestPaint(); }
-                function onValueChanged() { canvas.requestPaint(); }
-                function onWidthChanged() { canvas.requestPaint(); }
-                function onHeightChanged() { canvas.requestPaint(); }
-            }
-
-            Component.onCompleted: canvas.requestPaint()
-        }
+        controlSize: Math.min(root.width, root.height)
+        lineWidth: 3.5
+        meterRadius: (controlSize - lineWidth) / 2 - 1.5
+        cornerRadius: Math.max(0, root.radius - (controlSize / 2 - meterRadius))
+        startAngle: 135
+        spanAngle: 270
+        value: root.value
+        trackColor: root.trackColor
+        progressColor: root.arcColor
     }
 
     // Centered icon

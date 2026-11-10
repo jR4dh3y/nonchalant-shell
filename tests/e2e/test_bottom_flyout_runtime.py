@@ -19,18 +19,19 @@ import QtTest
 import Quickshell
 import qs.config
 import qs.modules.globals
+import qs.modules.services
 import qs.modules.theme
 import qs.modules.widgets.powermenu
 import qs.modules.shell.osd
 
 ShellRoot {
-    QtObject { id: panel; property ShellScreen targetScreen: Quickshell.screens[0] }
+    PanelWindow { id: panel; property ShellScreen targetScreen: null; visible: false }
     OSD { id: osd; targetScreen: panel.targetScreen }
     FloatingWindow {
         visible: true
         implicitWidth: 100
         implicitHeight: 100
-        PowerMenuHost { id: power; panel: panel }
+        PowerMenuHost { id: power; targetScreen: panel.targetScreen }
         TestCase {
             name: "BottomFlyoutOrigin"
             when: Config.initialLoadComplete
@@ -56,7 +57,12 @@ ShellRoot {
 
             function test_bottom_origins() {
                 try {
-                    Config.bar.style = "left"
+                    // Screen assignment happens after child completion in the real panel.
+                    compare(power.registeredScreenName, "")
+                    panel.targetScreen = Quickshell.screens[0]
+                    tryCompare(power, "registeredScreenName", panel.targetScreen.name)
+                    compare(Visibilities.powerMenuButtons[panel.targetScreen.name], power)
+                    Config.bar.style = "default"
                     Config.animDuration = 400
                     const powerSurface = findChild(power, "powerMenuMorph")
                     const osdSurface = findChild(osd, "osdMorph")
@@ -86,6 +92,39 @@ ShellRoot {
                     compare(bottomGap(powerSurface), 48)
                     power.closeMenu()
                     tryCompare(powerSurface, "progress", 0)
+                    // The left style draws power mode in a revealed dock; without one it keeps the popup.
+                    Config.bar.style = "left"
+                    tryVerify(() => CompositorService.focusedMonitor !== null)
+                    verify(!power.inDock)
+                    GlobalShortcuts.run("powermenu")
+                    tryCompare(power, "menuOpen", true)
+                    tryCompare(powerSurface, "progress", 1)
+                    verify(!power.dockMode.open)
+                    GlobalShortcuts.run("powermenu")
+                    tryCompare(power, "menuOpen", false)
+                    tryCompare(powerSurface, "progress", 0)
+                    power.dockShown = true
+                    GlobalShortcuts.run("powermenu")
+                    tryCompare(power, "dockModeOpen", true)
+                    verify(power.dockMode.open)
+                    verify(!powerSurface.shown, "The dock must not reuse the popup surface")
+                    power.dockMode.choose(4)
+                    compare(power.dockMode.armedAction, "reboot")
+                    // The dock hiding (overview, fullscreen, layout change) closes and disarms.
+                    power.dockShown = false
+                    compare(power.menuOpen, false)
+                    compare(power.dockMode.open, false)
+                    compare(power.dockMode.armedAction, "")
+                    panel.targetScreen = null
+                    tryCompare(power, "registeredScreenName", "")
+                    verify(Visibilities.powerMenuButtons[Quickshell.screens[0].name] !== power)
+                    panel.targetScreen = Quickshell.screens[0]
+                    tryCompare(power, "registeredScreenName", panel.targetScreen.name)
+                    Config.bar.style = "default"
+                    power.openMenu()
+                    tryCompare(powerSurface, "progress", 1)
+                    compare(bottomGap(powerSurface), 48)
+                    power.closeMenu()
                     console.log("BOTTOM_FLYOUT_ORIGINS_PASSED")
                 } catch (error) {
                     console.error("BOTTOM_FLYOUT_ASSERTION", error.stack)
@@ -95,7 +134,7 @@ ShellRoot {
         }
     }
     Timer {
-        interval: 15000
+        interval: 25000
         running: true
         onTriggered: { console.error("BOTTOM_FLYOUT_TIMEOUT"); Qt.quit() }
     }
@@ -110,7 +149,7 @@ def exercise(fixture):
         session.env["NONCHALANT_COMPOSITOR"] = "niri"
         process = session.start("flyouts", [session.quickshell, "-p", str(fixture / "shell"),
                                             "--no-duplicate", "--no-color"])
-        process.wait(timeout=20)
+        process.wait(timeout=30)
         output = (fixture / "flyouts.log").read_text()
         print(output)
         return 0 if process.returncode == 0 and "BOTTOM_FLYOUT_ORIGINS_PASSED" in output else 1

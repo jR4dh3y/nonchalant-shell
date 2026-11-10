@@ -68,6 +68,9 @@ Item {
             height: controlSize
             controlSize: root.flat ? root.meterSize : 32
             meterRadius: root.flat ? standardRadius : 12
+            cornerRadius: root.flat
+                ? Math.max(0, Styling.pillRadius(root.meterSize) - (root.meterSize / 2 - meterRadius))
+                : Math.max(0, Math.min(root.startRadius, root.endRadius) - (root.meterSize / 2 - meterRadius))
             lineWidth: root.flat ? standardLineWidth : 3
             startAngle: root.flat ? 140 : 135
             spanAngle: root.flat ? 260 : 270

@@ -12,6 +12,7 @@ import qs.modules.components
 import qs.modules.services
 import qs.modules.services.compositor
 import qs.modules.theme
+import qs.modules.widgets.powermenu
 import ".."
 
 Item {
@@ -61,6 +62,39 @@ Item {
         if (!NetworkService.wifiConnected)
             return "Wi-Fi disconnected";
         return NetworkService.activeSsid || "Wi-Fi";
+    }
+
+    // Mod+X turns the dock's own controls into power actions: the capsule
+    // holds the session actions and three droplets become the destructive
+    // ones. The screen's power host owns the state.
+    readonly property PowerMenuHost powerHost: Visibilities.powerMenuButtons[root.screen.name] ?? null
+    readonly property LeftPowerMode powerMode: powerHost?.dockMode ?? null
+    readonly property bool powerActive: powerMode?.active ?? false
+    readonly property bool powerOpen: powerMode?.open ?? false
+    // Normal controls fold away on the same reveal the actions grow on.
+    readonly property real powerFold: Math.max(0, Math.min(1, powerMode?.reveal ?? 0))
+
+    Binding {
+        target: root.powerHost
+        property: "dockShown"
+        value: root.reveal
+        when: root.powerHost !== null
+    }
+
+    Item {
+        id: powerKeys
+        objectName: "leftPowerKeys"
+        Keys.onPressed: event => event.accepted = root.powerMode?.handleKey(event) ?? false
+    }
+
+    Connections {
+        target: root.powerMode
+        function onOpenChanged() {
+            if (root.powerOpen)
+                powerKeys.forceActiveFocus();
+            else
+                powerKeys.focus = false;
+        }
     }
 
     property alias barHitbox: hitbox
@@ -247,10 +281,14 @@ Item {
             StyledRect {
                 id: mainPill
                 objectName: "verticalMainPill"
-                anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: Math.max(0, dockContent.y + bottomControls.y - root.contentPadding)
+                // The power mode shrinks the capsule down onto its session
+                // actions instead of leaving the emptied dock standing.
+                readonly property real fullHeight: Math.max(0, dockContent.y + bottomControls.y - root.contentPadding)
+                readonly property real powerHeight: Math.min(fullHeight, sessionColumn.implicitHeight + root.contentPadding * 2)
+                y: (fullHeight - powerHeight) * root.powerFold
+                height: fullHeight - y
                 variant: "pane"
                 radius: Styling.pillRadius(width)
                 backgroundOpacity: 1
@@ -260,7 +298,7 @@ Item {
                 id: dockContent
                 anchors.fill: parent
                 anchors.margins: root.contentPadding
-                readonly property real mainBottom: Math.max(0, mainPill.height - y - root.contentPadding)
+                readonly property real mainBottom: Math.max(0, mainPill.y + mainPill.height - y - root.contentPadding)
 
                 ColumnLayout {
                     id: topControls
@@ -269,6 +307,9 @@ Item {
                     anchors.right: parent.right
                     height: Math.max(0, (mediaPill.visible ? mediaPill.y : dockContent.mainBottom) - spacing)
                     spacing: 4
+                    // Gone before the shrinking capsule's edge passes them.
+                    opacity: Math.max(0, 1 - root.powerFold * 3)
+                    enabled: !root.powerActive
 
                     DockIconButton {
                         iconSource: Qt.resolvedUrl("../../../assets/nonchalant/nonchalant-icon.svg")
@@ -370,7 +411,64 @@ Item {
                     buttonSize: root.controlSize
                     maximumHeight: Math.min(root.controlSize * 5, root.height / 4,
                         Math.max(root.controlSize, (dockContent.mainBottom - dockContent.height / 2 - topControls.spacing) * 2))
+                    // Gone before the shrinking capsule's edge passes them.
+                    opacity: Math.max(0, 1 - root.powerFold * 3)
+                    enabled: !root.powerActive
                     onActivated: clock.openControlMenu("media")
+                }
+
+                // Lock, Sleep and Hibernate take the capsule's bottom slots
+                // and share the workspace highlight.
+                Item {
+                    id: sessionActions
+                    objectName: "leftPowerSession"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: dockContent.mainBottom - height
+                    width: root.controlSize
+                    height: sessionColumn.implicitHeight
+                    visible: root.powerActive
+                    enabled: root.powerOpen
+                    opacity: Math.min(1, root.powerFold * 2)
+                    transform: Translate {
+                        y: (1 - (root.powerMode?.reveal ?? 0)) * root.controlSize / 2
+                    }
+
+                    ElasticHighlight {
+                        objectName: "leftPowerHighlight"
+                        targetItem: {
+                            const count = sessionRepeater.count;
+                            const index = root.powerMode?.currentIndex ?? -1;
+                            return index >= 0 && index < count ? sessionRepeater.itemAt(index) : null;
+                        }
+                        variant: "focus"
+                        radius: root.outerRadius
+                        scale: targetItem?.scale ?? 1
+                    }
+
+                    Column {
+                        id: sessionColumn
+                        spacing: topControls.spacing
+
+                        Repeater {
+                            id: sessionRepeater
+                            model: root.powerMode?.sessionCount ?? 0
+
+                            LeftPowerAction {
+                                required property int index
+                                key: root.powerMode?.actions[index] ?? ""
+                                label: root.powerMode?.labels[index] ?? ""
+                                glyph: root.powerMode?.glyphs[index] ?? ""
+                                restSize: root.controlSize
+                                outerRadius: root.outerRadius
+                                selected: root.powerMode?.currentIndex === index
+                                onEntered: {
+                                    if (root.powerMode)
+                                        root.powerMode.currentIndex = index;
+                                }
+                                onActivated: root.powerMode?.choose(index)
+                            }
+                        }
+                    }
                 }
 
                 ColumnLayout {
@@ -389,6 +487,11 @@ Item {
                         detached: true
                         objectName: "verticalTrayButton"
                         visible: trayPopup.hasItems
+                        // Folds into the capsule while the power mode is up.
+                        enabled: !root.powerActive
+                        opacity: 1 - root.powerFold
+                        Layout.preferredHeight: implicitHeight * (1 - root.powerFold)
+                        Layout.bottomMargin: -bottomControls.spacing * root.powerFold
                         iconText: trayPopup.isOpen ? Icons.caretLeft : Icons.caretRight
                         tooltipText: "System tray"
                         selected: trayPopup.isOpen
@@ -403,41 +506,66 @@ Item {
                         }
                     }
 
-                    VerticalAudioControl {
-                        objectName: "verticalAudioControl"
+                    LeftPowerSlot {
                         Layout.alignment: Qt.AlignHCenter
-                        controlSize: root.barWidth
-                        selectedMode: clock.menuOpen ? clock.controlMode : ""
-                        onMenuRequested: mode => clock.openControlMenu(mode)
+                        mode: root.powerMode
+                        actionIndex: 3
+                        delay: 0.1
+                        restSize: root.barWidth
+                        outerRadius: root.outerRadius
+
+                        VerticalAudioControl {
+                            objectName: "verticalAudioControl"
+                            controlSize: root.barWidth
+                            selectedMode: clock.menuOpen ? clock.controlMode : ""
+                            onMenuRequested: mode => clock.openControlMenu(mode)
+                        }
                     }
 
-                    VerticalDisplayControl {
-                        objectName: "verticalBrightnessDroplet"
+                    LeftPowerSlot {
                         Layout.alignment: Qt.AlignHCenter
-                        controlSize: root.barWidth
-                        bar: root
+                        mode: root.powerMode
+                        actionIndex: 4
+                        delay: 0.2
+                        restSize: root.barWidth
+                        outerRadius: root.outerRadius
+
+                        VerticalDisplayControl {
+                            objectName: "verticalBrightnessDroplet"
+                            controlSize: root.barWidth
+                            bar: root
+                        }
                     }
 
-                    DockIconButton {
-                        id: deviceStatusButton
-                        detached: true
-                        objectName: "verticalDeviceStatusButton"
-                        showLabel: false
-                        selected: clock.deviceMenuActive
-                        tooltipText: (Battery.available ? Math.round(Battery.percentage) + "% battery"
-                            + (Battery.isCharging ? " · Charging" : (Battery.isPluggedIn ? " · Plugged in" : "")) : "AC power")
-                            + "\n" + root.networkTooltip + " · " + (!BluetoothService.enabled
-                            ? "Bluetooth off" : (BluetoothService.firstConnectedDeviceName || "Bluetooth on"))
-                        description: "Open Wi-Fi, Bluetooth and battery"
-                        onClicked: clock.toggleDeviceMenu()
+                    LeftPowerSlot {
+                        Layout.alignment: Qt.AlignHCenter
+                        mode: root.powerMode
+                        actionIndex: 5
+                        delay: 0.3
+                        restSize: root.barWidth
+                        outerRadius: root.outerRadius
 
-                        DeviceStatusIcon {
-                            objectName: "verticalDeviceStatusIcon"
-                            anchors.centerIn: parent
-                            width: root.barWidth
-                            height: width
-                            foregroundColor: deviceStatusButton.foregroundColor
-                            selected: deviceStatusButton.selected
+                        DockIconButton {
+                            id: deviceStatusButton
+                            detached: true
+                            objectName: "verticalDeviceStatusButton"
+                            showLabel: false
+                            selected: clock.deviceMenuActive
+                            tooltipText: (Battery.available ? Math.round(Battery.percentage) + "% battery"
+                                + (Battery.isCharging ? " · Charging" : (Battery.isPluggedIn ? " · Plugged in" : "")) : "AC power")
+                                + "\n" + root.networkTooltip + " · " + (!BluetoothService.enabled
+                                ? "Bluetooth off" : (BluetoothService.firstConnectedDeviceName || "Bluetooth on"))
+                            description: "Open Wi-Fi, Bluetooth and battery"
+                            onClicked: clock.toggleDeviceMenu()
+
+                            DeviceStatusIcon {
+                                objectName: "verticalDeviceStatusIcon"
+                                anchors.centerIn: parent
+                                width: root.barWidth
+                                height: width
+                                foregroundColor: deviceStatusButton.foregroundColor
+                                selected: deviceStatusButton.selected
+                            }
                         }
                     }
 
@@ -445,6 +573,8 @@ Item {
                         id: clock
                         objectName: "verticalClockDroplet"
                         detached: true
+                        // Keeps the time; clicks fall through and dismiss.
+                        enabled: !root.powerActive
                         Layout.alignment: Qt.AlignHCenter
                         vertical: true
                         verticalWidth: root.barWidth

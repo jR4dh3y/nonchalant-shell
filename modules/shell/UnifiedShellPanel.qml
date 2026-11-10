@@ -28,7 +28,7 @@ PanelWindow {
     color: "transparent"
 
     WlrLayershell.keyboardFocus: {
-        if (runMenu.open || barContent.islandActive)
+        if (runMenu.open || barContent.islandActive || powerMenuHost.dockModeOpen)
             return WlrKeyboardFocus.Exclusive;
         // Bar popups are child surfaces of this panel. The parent layer must
         // request keyboard focus or input continues to the client underneath.
@@ -48,7 +48,8 @@ PanelWindow {
 
     // Assistant stays open without eating the whole screen — only its hitbox
     // receives clicks (see mask regions). Run menu / grabs still go full-screen.
-    readonly property bool needsFullScreenInput: runMenu.open || barContent.dashboardInputActive || barContent.islandActive || FocusGrabManager.hasActiveGrab
+    readonly property bool needsFullScreenInput: runMenu.open || barContent.dashboardInputActive || barContent.islandActive
+        || powerMenuHost.dockModeOpen || FocusGrabManager.hasActiveGrab
 
     readonly property bool barEnabled: {
         if (!Config.barReady) return false;
@@ -133,6 +134,8 @@ PanelWindow {
                 Visibilities.closeActiveBarPopup();
             if (barContent.islandActive)
                 barContent.collapseIsland();
+            if (powerMenuHost.dockModeOpen)
+                powerMenuHost.closeMenu();
             if (assistantSidebar && assistantSidebar.active && assistantSidebar.wantsFocus) {
                 assistantSidebar.wantsFocus = false;
                 // Defocus the text field so keyboard returns to the session.
@@ -162,10 +165,11 @@ PanelWindow {
             screenName: unifiedPanel.targetScreen.name
         }
 
-        // Power menu host (no bar icon — Super+X / IPC only).
+        // Power menu host (no bar icon — Super+X / IPC only). The left dock
+        // draws its power mode itself, inside this panel.
         PowerMenuHost {
             id: powerMenuHost
-            panel: unifiedPanel
+            targetScreen: unifiedPanel.targetScreen
             z: 300
         }
 

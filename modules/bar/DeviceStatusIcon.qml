@@ -35,9 +35,7 @@ Item {
     }
 
     function dotPosition(index: int): point {
-        const angle = (120 - index * 20) * Math.PI / 180;
-        return Qt.point(root.width / 2 + gauge.meterRadius * Math.cos(angle),
-            root.height / 2 + gauge.meterRadius * Math.sin(angle));
+        return gauge.pointAt(120 - index * 20);
     }
 
     Shape {
