@@ -68,7 +68,7 @@ Item {
                 visible: root.showBackButton
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 

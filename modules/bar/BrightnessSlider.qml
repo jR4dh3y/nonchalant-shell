@@ -8,6 +8,7 @@ CircularBarMeter {
 
     readonly property var currentMonitor: Brightness.getMonitorForScreen(bar.screen)
 
+    visible: currentMonitor?.ready ?? false
     value: currentMonitor?.brightness ?? 0.5
     icon: Icons.sun
     progressColor: Styling.srItem("overprimary")

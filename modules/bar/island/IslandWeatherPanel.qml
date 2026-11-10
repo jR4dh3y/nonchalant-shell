@@ -46,7 +46,7 @@ Item {
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
                 PressBehavior on scale {
@@ -113,7 +113,7 @@ Item {
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: refreshMouse.containsMouse ? "focus" : "common"
                 scale: refreshMouse.pressed ? 0.92 : 1.0
                 PressBehavior on scale {

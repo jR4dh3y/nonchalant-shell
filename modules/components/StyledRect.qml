@@ -17,7 +17,6 @@ Rectangle {
     property string gradientOrientation: "vertical"
     property bool enableShadow: false
     property bool enableBorder: true
-    property bool animateRadius: true
     property real backgroundOpacity: -1  // -1 means use config value
 
     readonly property var variantConfig: Styling.getStyledRectConfig(variant) || {}
@@ -104,13 +103,6 @@ Rectangle {
             return applyOpacity(solidColor, rectOpacity);
         }
         return "transparent";
-    }
-
-    Behavior on radius {
-        enabled: root.animateRadius && Config.animDuration > 0
-        NumberAnimation {
-            duration: Config.animDuration / 4
-        }
     }
 
     // Only procedural backgrounds need a texture mask. Keep foreground text

@@ -64,7 +64,7 @@ Item {
         y: 14
         z: 1
         variant: "focus"
-        radius: height / 2
+        radius: Styling.pillRadius(height)
         readonly property real inset: Styling.fontSize(0) * 0.5
         implicitWidth: tabs.implicitWidth + inset * 2
         implicitHeight: tabs.implicitHeight + inset * 2
@@ -77,7 +77,7 @@ Item {
             targetItem: root.selectedTab
             originX: tabs.x
             originY: tabs.y
-            radius: height / 2
+            radius: Styling.pillRadius(height)
             scale: targetItem?.scale ?? 1
         }
 
@@ -108,7 +108,7 @@ Item {
                     background: StyledRect {
                         variant: "focus"
                         backgroundOpacity: tab.visualFocus ? 1 : 0
-                        radius: width / 2
+                        radius: Styling.pillRadius(width)
                         HoverTint { hovered: tab.hovered; pressed: tab.pressed }
                     }
                     contentItem: StyledText {

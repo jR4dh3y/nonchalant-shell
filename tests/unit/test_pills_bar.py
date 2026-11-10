@@ -70,7 +70,7 @@ class TestPillsBarLayout(unittest.TestCase):
         """PillsBar defines floating geometry (top margin and fully rounded pills)."""
         self.assertIn("readonly property int pillHeight: 36", self.pills_content)
         self.assertIn("readonly property int topMargin: 8", self.pills_content)
-        self.assertIn("readonly property real pillRadius: pillHeight / 2", self.pills_content)
+        self.assertIn("readonly property real pillRadius: Styling.pillRadius(pillHeight)", self.pills_content)
         self.assertIn("readonly property real panelRadius: Styling.radius(4)", self.pills_content)
 
     def test_state_machine_methods(self):

@@ -156,7 +156,7 @@ Item {
                 implicitHeight: 20
                 x: toggleSwitch.leftPadding
                 y: parent.height / 2 - height / 2
-                radius: height / 2
+                radius: Styling.pillRadius(height)
                 color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
                 border.color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.outline
 
@@ -172,7 +172,7 @@ Item {
                     y: 2
                     width: parent.height - 4
                     height: width
-                    radius: width / 2
+                    radius: Styling.pillRadius(width)
                     color: toggleSwitch.checked ? Colors.background : Colors.overSurfaceVariant
 
                     Behavior on x {

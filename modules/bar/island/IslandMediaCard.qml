@@ -120,14 +120,14 @@ StyledRect {
                         StyledRect {
                             id: photoFrame
                             anchors.fill: parent
-                            radius: width / 2
+                            radius: Styling.pillRadius(width)
                             variant: "focus"
                             clip: true
 
                             ClippingRectangle {
                                 anchors.fill: parent
                                 anchors.margins: 1
-                                radius: width / 2
+                                radius: Styling.pillRadius(width)
                                 color: "transparent"
 
                                 Image {
@@ -209,7 +209,7 @@ StyledRect {
                 StyledRect {
                     implicitWidth: 32
                     implicitHeight: 32
-                    radius: width / 2
+                    radius: Styling.pillRadius(width)
                     variant: prevMouse.containsMouse ? "focus" : "common"
                     scale: prevMouse.pressed ? 0.93 : 1.0
 
@@ -240,7 +240,7 @@ StyledRect {
                 StyledRect {
                     implicitWidth: 38
                     implicitHeight: 38
-                    radius: width / 2
+                    radius: Styling.pillRadius(width)
                     variant: "primary"
                     opacity: playMouse.containsMouse ? 0.9 : 1.0
                     scale: playMouse.pressed ? 0.93 : 1.0
@@ -272,7 +272,7 @@ StyledRect {
                 StyledRect {
                     implicitWidth: 32
                     implicitHeight: 32
-                    radius: width / 2
+                    radius: Styling.pillRadius(width)
                     variant: nextMouse.containsMouse ? "focus" : "common"
                     scale: nextMouse.pressed ? 0.93 : 1.0
 

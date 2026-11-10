@@ -67,6 +67,7 @@ ShellRoot {
                     power.closeMenu()
                     checkClosing(powerSurface)
                     GlobalStates.osdIndicator = "volume"
+                    GlobalStates.osdScreenName = osd.targetScreen.name
                     GlobalStates.osdVisible = true
                     checkOpening(osdSurface)
                     GlobalStates.osdVisible = false

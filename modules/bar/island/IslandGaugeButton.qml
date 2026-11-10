@@ -15,7 +15,7 @@ StyledRect {
     implicitHeight: buttonSize
     Layout.preferredWidth: buttonSize
     Layout.preferredHeight: buttonSize
-    radius: width / 2
+    radius: Styling.pillRadius(width)
 
     property string icon: ""
     property int iconSize: 22

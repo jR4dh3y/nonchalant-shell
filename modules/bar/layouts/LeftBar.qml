@@ -113,7 +113,7 @@ Item {
             variant: button.selected ? "focus" : (button.detached ? "pane" : "common")
             backgroundOpacity: button.detached || (button.selected && !button.externalHighlight) ? 1 : 0
             enableBorder: !button.externalHighlight && !button.detached
-            radius: button.detached ? width / 2 : root.outerRadius
+            radius: button.detached ? Styling.pillRadius(width) : root.outerRadius
             enableShadow: false
 
             HoverTint {
@@ -252,7 +252,7 @@ Item {
                 anchors.right: parent.right
                 height: Math.max(0, dockContent.y + bottomControls.y - root.contentPadding)
                 variant: "pane"
-                radius: width / 2
+                radius: Styling.pillRadius(width)
                 backgroundOpacity: 1
             }
 
@@ -451,8 +451,8 @@ Item {
                         mediaAnchor: mediaPill
                         bar: root
                         layerEnabled: root.shadowsEnabled
-                        startRadius: root.barWidth / 2
-                        endRadius: root.barWidth / 2
+                        startRadius: Styling.pillRadius(root.barWidth)
+                        endRadius: Styling.pillRadius(root.barWidth)
                     }
                 }
             }

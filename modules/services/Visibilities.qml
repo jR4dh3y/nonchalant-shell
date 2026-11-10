@@ -49,6 +49,18 @@ Singleton {
             activeBarPopup = null;
     }
 
+    // Transient popups (OSDs, notification toasts) appear on exactly one
+    // screen: the focused output.
+    readonly property string popupScreenName: CompositorService.focusedMonitor?.name ?? Quickshell.screens[0]?.name ?? ""
+
+    // Media-key OSDs: the screen whose own brightness changed, otherwise the
+    // popup screen.
+    function osdScreenName(changedScreen: ShellScreen): string {
+        if (changedScreen && !Brightness.syncBrightness)
+            return changedScreen.name;
+        return root.popupScreenName;
+    }
+
     function closeActiveBarPopup() {
         if (activeBarPopup) {
             try {

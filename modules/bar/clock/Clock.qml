@@ -165,7 +165,7 @@ Item {
         variant: root.detached ? "popup" : (root.vertical ? (root.clockSelected ? "focus" : "common") : (root.clockSelected ? "primary" : "bg"))
         contentVariant: root.detached ? (root.clockSelected ? "focus" : "pane") : ""
         contentInset: root.detached ? Math.round(root.verticalWidth / 10) : 0
-        radius: root.detached ? root.verticalWidth / 2 : root.radius
+        radius: root.detached ? Styling.pillRadius(root.verticalWidth) : root.radius
         backgroundOpacity: root.vertical && !root.detached && !root.clockSelected ? 0 : -1
         enableBorder: root.detached || !root.vertical
         scale: verticalClockMouse.pressed ? 0.94 : 1.0

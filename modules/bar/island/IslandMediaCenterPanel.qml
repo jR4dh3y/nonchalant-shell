@@ -119,12 +119,12 @@ StyledRect {
                 StyledRect {
                     anchors.fill: parent
                     variant: "internalbg"
-                    radius: width / 2
+                    radius: Styling.pillRadius(width)
                 }
 
                 ClippingRectangle {
                     anchors.fill: parent
-                    radius: width / 2
+                    radius: Styling.pillRadius(width)
                     color: "transparent"
 
                     RotationAnimation on rotation {
@@ -248,7 +248,7 @@ StyledRect {
             StyledRect {
                 implicitWidth: 34
                 implicitHeight: 34
-                radius: 17
+                radius: Styling.scaledRadius(17)
                 variant: MprisController.hasShuffle ? "primary" : (shuffleMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.shuffleSupported ? 1.0 : 0.4
                 scale: shuffleMouse.pressed ? 0.92 : 1.0
@@ -282,7 +282,7 @@ StyledRect {
             StyledRect {
                 implicitWidth: 38
                 implicitHeight: 38
-                radius: 19
+                radius: Styling.scaledRadius(19)
                 variant: prevMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoPrevious ? 1.0 : 0.4
                 scale: prevMouse.pressed ? 0.92 : 1.0
@@ -314,7 +314,7 @@ StyledRect {
             StyledRect {
                 implicitWidth: 46
                 implicitHeight: 46
-                radius: 23
+                radius: Styling.scaledRadius(23)
                 variant: "primary"
                 opacity: playMouse.containsMouse ? 0.9 : 1.0
                 scale: playMouse.pressed ? 0.92 : 1.0
@@ -345,7 +345,7 @@ StyledRect {
             StyledRect {
                 implicitWidth: 38
                 implicitHeight: 38
-                radius: 19
+                radius: Styling.scaledRadius(19)
                 variant: nextMouse.containsMouse ? "focus" : "common"
                 opacity: MprisController.canGoNext ? 1.0 : 0.4
                 scale: nextMouse.pressed ? 0.92 : 1.0
@@ -379,7 +379,7 @@ StyledRect {
             StyledRect {
                 implicitWidth: 34
                 implicitHeight: 34
-                radius: 17
+                radius: Styling.scaledRadius(17)
                 variant: MprisController.loopState !== 0 ? "primary" : (loopMouse.containsMouse ? "focus" : "common")
                 opacity: MprisController.loopSupported ? 1.0 : 0.4
                 scale: loopMouse.pressed ? 0.92 : 1.0

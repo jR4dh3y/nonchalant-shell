@@ -38,6 +38,7 @@ PanelWindow {
     readonly property bool isIsland: (Config.bar?.style ?? "default") === "island" || (Config.bar?.style ?? "default") === "pills"
     // The island/pills embeds its own OSD banner.
     readonly property bool showing: GlobalStates.osdVisible && !isIsland
+        && GlobalStates.osdScreenName === (root.targetScreen?.name ?? "")
 
     visible: showing || !osdSurface.fullyHidden
 
@@ -174,42 +175,31 @@ PanelWindow {
         }
     }
 
-    // Services connections - Direct and responsive
+    function trigger(indicator: string, value: real, muted: bool, changedScreen: ShellScreen): void {
+        if (root.isIsland || Visibilities.osdScreenName(changedScreen) !== (root.targetScreen?.name ?? ""))
+            return;
+        root.osdValue = value;
+        root.osdMuted = muted;
+        GlobalStates.osdIndicator = indicator;
+        GlobalStates.osdScreenName = root.targetScreen.name;
+        GlobalStates.osdVisible = true;
+        hideTimer.restart();
+    }
+
     Connections {
         target: Audio
         function onVolumeChanged(volume, muted, node) {
-            if (root.isIsland)
-                return;
-            root.osdValue = volume;
-            root.osdMuted = muted;
-            GlobalStates.osdIndicator = "volume";
-            GlobalStates.osdVisible = true;
-            hideTimer.restart();
+            root.trigger("volume", volume, muted, null);
         }
         function onMicVolumeChanged(volume, muted, node) {
-            if (root.isIsland)
-                return;
-            root.osdValue = volume;
-            root.osdMuted = muted;
-            GlobalStates.osdIndicator = "mic";
-            GlobalStates.osdVisible = true;
-            hideTimer.restart();
+            root.trigger("mic", volume, muted, null);
         }
     }
 
     Connections {
         target: Brightness
         function onBrightnessChanged(value, screen) {
-            if (root.isIsland)
-                return;
-            // Check if the change happened on THIS screen or if it's a sync change
-            if (!screen || !root.targetScreen || screen.name === root.targetScreen.name || Brightness.syncBrightness) {
-                root.osdValue = value;
-                root.osdMuted = false;
-                GlobalStates.osdIndicator = "brightness";
-                GlobalStates.osdVisible = true;
-                hideTimer.restart();
-            }
+            root.trigger("brightness", value, false, screen);
         }
     }
 }

@@ -13,8 +13,26 @@ Singleton {
     readonly property int textRenderType: Text.NativeRendering
     readonly property int textHinting: Font.PreferFullHinting
 
+
+    // Roundness the hand-tuned radii below were designed at (theme default).
+    readonly property int baseRoundness: 16
+
+    // Every radius is tuned at the default roundness and scales in proportion
+    // with the user's setting, so lowering it flattens every surface alike
+    // and 0 squares them all.
+    function scaledRadius(base: real): real {
+        return Config.roundness > 0 ? Math.max(base * Config.roundness / root.baseRoundness, 0) : 0;
+    }
+
+    // The theme radius, offset by a design-time amount at default roundness.
     function radius(offset: real): real {
-        return Config.roundness > 0 ? Math.max(Config.roundness + offset, 0) : 0;
+        return root.scaledRadius(root.baseRoundness + offset);
+    }
+
+    // A pill (fully round ends) at the default roundness; flattens toward a
+    // square as roundness drops and never exceeds a full pill.
+    function pillRadius(size: real): real {
+        return Math.min(root.scaledRadius(size / 2), Math.max(size, 0) / 2);
     }
 
     function fontSize(offset: real): real {

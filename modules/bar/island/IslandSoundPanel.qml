@@ -68,7 +68,7 @@ Item {
                 visible: root.showBackButton
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
@@ -109,7 +109,7 @@ Item {
                 visible: AudioFormat.connected
                 implicitHeight: 26
                 implicitWidth: fmtRow.implicitWidth + 16
-                radius: 13
+                radius: Styling.scaledRadius(13)
                 variant: "internalbg"
 
                 RowLayout {

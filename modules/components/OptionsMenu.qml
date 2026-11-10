@@ -46,7 +46,7 @@ Menu {
     property color backgroundColor: Colors.background
     property color borderColor: Colors.surfaceBright
     property int borderWidth: 2
-    property int menuRadius: Config.roundness
+    property real menuRadius: Styling.radius(0)
 
     // Propiedades de highlight por defecto
     property color defaultHighlightColor: Styling.srItem("overprimary")

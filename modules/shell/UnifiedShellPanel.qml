@@ -159,6 +159,7 @@ PanelWindow {
         // input surface (separate layer windows were unclickable under niri).
         NotificationToastStack {
             id: toastStack
+            screenName: unifiedPanel.targetScreen.name
         }
 
         // Power menu host (no bar icon — Super+X / IPC only).

@@ -387,7 +387,7 @@ WlSessionLockSurface {
             anchors.centerIn: parent
             width: parent.width
             height: parent.height
-            radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
+            radius: Styling.pillRadius(height)
 
             property real shakeOffset: 0
             property bool showError: false

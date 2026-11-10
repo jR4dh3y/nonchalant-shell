@@ -74,6 +74,7 @@ RowLayout {
         implicitWidth: 26
         implicitHeight: 26
         Layout.alignment: Qt.AlignVCenter
+        visible: currentMonitor?.ready ?? false
 
         readonly property var currentMonitor: {
             if (root.bar?.screen)
@@ -103,7 +104,7 @@ RowLayout {
 
         StyledRect {
             anchors.fill: parent
-            radius: 13
+            radius: Styling.scaledRadius(13)
             variant: brightBtn.isHovered ? "focus" : "transparent"
             scale: brightBtn.isPressed ? 0.92 : 1.0
             PressBehavior on scale {
@@ -172,7 +173,7 @@ RowLayout {
 
         StyledRect {
             anchors.fill: parent
-            radius: 13
+            radius: Styling.scaledRadius(13)
             variant: volBtn.isHovered ? "focus" : "transparent"
             scale: volBtn.isPressed ? 0.92 : 1.0
             PressBehavior on scale {
@@ -243,7 +244,7 @@ RowLayout {
 
         StyledRect {
             anchors.fill: parent
-            radius: 13
+            radius: Styling.scaledRadius(13)
             variant: batBtn.isHovered ? "focus" : "transparent"
             scale: batBtn.isPressed ? 0.92 : 1.0
             PressBehavior on scale {

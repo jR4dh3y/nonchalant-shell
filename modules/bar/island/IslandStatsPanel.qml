@@ -81,7 +81,7 @@ Item {
                             StyledRect {
                                 implicitWidth: 26
                                 implicitHeight: 26
-                                radius: 13
+                                radius: Styling.scaledRadius(13)
                                 variant: "primary"
 
                                 Text {
@@ -141,14 +141,14 @@ Item {
                             id: cpuTrack
                             Layout.fillWidth: true
                             Layout.preferredHeight: 4
-                            radius: 2
+                            radius: Styling.scaledRadius(2)
                             variant: "common"
                             clip: true
 
                             StyledRect {
                                 height: parent.height
                                 width: (SystemResources.cpuUsage > 0) ? Math.max(2, cpuTrack.width * Math.min(1.0, SystemResources.cpuUsage / 100)) : 0
-                                radius: 2
+                                radius: Styling.scaledRadius(2)
                                 variant: "primary"
 
                                 Behavior on width {
@@ -178,7 +178,7 @@ Item {
                             StyledRect {
                                 implicitWidth: 26
                                 implicitHeight: 26
-                                radius: 13
+                                radius: Styling.scaledRadius(13)
                                 variant: "primary"
 
                                 Text {
@@ -233,14 +233,14 @@ Item {
                             id: ramTrack
                             Layout.fillWidth: true
                             Layout.preferredHeight: 4
-                            radius: 2
+                            radius: Styling.scaledRadius(2)
                             variant: "common"
                             clip: true
 
                             StyledRect {
                                 height: parent.height
                                 width: (SystemResources.ramUsage > 0) ? Math.max(2, ramTrack.width * Math.min(1.0, SystemResources.ramUsage / 100)) : 0
-                                radius: 2
+                                radius: Styling.scaledRadius(2)
                                 variant: "primary"
 
                                 Behavior on width {
@@ -277,7 +277,7 @@ Item {
                                 StyledRect {
                                     implicitWidth: 26
                                     implicitHeight: 26
-                                    radius: 13
+                                    radius: Styling.scaledRadius(13)
                                     variant: "primary"
 
                                     Text {
@@ -338,14 +338,14 @@ Item {
                                 id: gpuTrack
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 4
-                                radius: 2
+                                radius: Styling.scaledRadius(2)
                                 variant: "common"
                                 clip: true
 
                                 StyledRect {
                                     height: parent.height
                                     width: (gpuDelegate.gpuUsageVal > 0) ? Math.max(2, gpuTrack.width * Math.min(1.0, gpuDelegate.gpuUsageVal / 100)) : 0
-                                    radius: 2
+                                    radius: Styling.scaledRadius(2)
                                     variant: "primary"
 
                                     Behavior on width {
@@ -382,7 +382,7 @@ Item {
                                 StyledRect {
                                     implicitWidth: 26
                                     implicitHeight: 26
-                                    radius: 13
+                                    radius: Styling.scaledRadius(13)
                                     variant: "primary"
 
                                     Text {
@@ -437,14 +437,14 @@ Item {
                                 id: diskTrack
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 4
-                                radius: 2
+                                radius: Styling.scaledRadius(2)
                                 variant: "common"
                                 clip: true
 
                                 StyledRect {
                                     height: parent.height
                                     width: (diskDelegate.diskUsageVal > 0) ? Math.max(2, diskTrack.width * Math.min(1.0, diskDelegate.diskUsageVal / 100)) : 0
-                                    radius: 2
+                                    radius: Styling.scaledRadius(2)
                                     variant: "primary"
 
                                     Behavior on width {
@@ -470,7 +470,7 @@ Item {
                         StyledRect {
                             implicitWidth: 26
                             implicitHeight: 26
-                            radius: 13
+                            radius: Styling.scaledRadius(13)
                             variant: "primary"
 
                             Text {

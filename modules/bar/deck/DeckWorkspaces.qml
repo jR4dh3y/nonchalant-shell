@@ -83,7 +83,7 @@ Item {
                             StyledRect {
                                 width: Math.max(2, Styling.fontSize(0) * 0.22)
                                 height: width
-                                radius: width / 2
+                                radius: Styling.pillRadius(width)
                                 variant: "focus"
                                 color: tab.ink
                                 opacity: tab.selected ? 0.9 : 0.6
@@ -98,7 +98,7 @@ Item {
                         enableBorder: false
                         width: Styling.fontSize(0) * 0.3
                         height: width
-                        radius: width / 2
+                        radius: Styling.pillRadius(width)
                         anchors.right: parent.right
                         anchors.top: parent.top
                     }

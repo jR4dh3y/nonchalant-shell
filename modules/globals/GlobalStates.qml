@@ -169,6 +169,7 @@ Singleton {
     // OSD state
     property bool osdVisible: false
     property string osdIndicator: "volume" // volume, mic, brightness
+    property string osdScreenName: ""
 
     // Settings Window state
     property bool settingsWindowVisible: false

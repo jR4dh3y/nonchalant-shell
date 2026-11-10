@@ -67,6 +67,7 @@ GridLayout {
                 glyph: Icons.sun
                 value: Brightness.getMonitorForScreen(root.screen)?.brightness ?? 0
                 available: Brightness.getMonitorForScreen(root.screen)?.ready ?? false
+                visible: available
                 onEdited: value => Brightness.setBrightnessForScreen(root.screen, value)
             }
         }

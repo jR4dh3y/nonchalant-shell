@@ -229,13 +229,13 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: 4
                 width: 180
-                radius: 2
+                radius: Styling.scaledRadius(2)
                 opacity: root.isRunning || root.alarmActive || root.visualProgress < 1.0 ? 1.0 : 0.3
                 
                 Rectangle {
                     height: parent.height
                     width: root.visualProgress * parent.width
-                    radius: 2
+                    radius: Styling.scaledRadius(2)
                     color: Styling.srItem("overprimary")
                 }
             }

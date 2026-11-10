@@ -10,7 +10,9 @@ Item {
 
     required property Item bar
     required property int controlSize
-    readonly property bool split: NightLightService.active
+    // Monitors without software brightness (no backlight, no DDC/CI) keep only night light.
+    readonly property bool brightnessAvailable: Brightness.isAvailable(root.bar.screen)
+    readonly property bool split: NightLightService.active && brightnessAvailable
     property real splitProgress: split ? 1 : 0
     readonly property real splitAmount: Math.max(0, splitProgress)
     readonly property real brightness: Brightness.getMonitorForScreen(root.bar.screen)?.brightness ?? 0.5
@@ -31,8 +33,9 @@ Item {
 
     BarRadialMeter {
         anchors.fill: parent
+        visible: root.brightnessAvailable || NightLightService.active
         controlSize: root.controlSize
-        value: root.brightness
+        value: root.brightnessAvailable ? root.brightness : NightLightService.normalizedTemperature
         startAngle: 140 + 48 * root.splitAmount
         spanAngle: 260 - 96 * root.splitAmount
     }
@@ -86,7 +89,7 @@ Item {
                 width: root.width
                 height: root.height
                 y: -half.y
-                radius: width / 2
+                radius: Styling.pillRadius(width)
                 variant: "pane"
                 enableBorder: false
                 enableShadow: false
@@ -125,14 +128,14 @@ Item {
             x: root.width + root.controlSize / 5
             show: mouse.containsMouse
             tooltipText: half.title
-            description: "Click to turn night light " + (root.split ? "off" : "on") + " · Scroll to adjust"
+            description: "Click to turn night light " + (NightLightService.active ? "off" : "on") + " · Scroll to adjust"
         }
     }
 
     DisplayHalf {
         id: brightnessHalf
         objectName: "verticalBrightnessControl"
-        temperature: false
+        temperature: !root.brightnessAvailable
     }
 
     DisplayHalf {

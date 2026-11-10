@@ -47,10 +47,10 @@ Item {
         variant: root.flat ? "transparent" : "bg"
         enableShadow: !root.flat && root.layerEnabled
         enableBorder: !root.flat
-        topLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
-        topRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
-        bottomLeftRadius: root.flat ? (root.meterSize / 2) : root.startRadius
-        bottomRightRadius: root.flat ? (root.meterSize / 2) : root.endRadius
+        topLeftRadius: root.flat ? Styling.pillRadius(root.meterSize) : root.startRadius
+        topRightRadius: root.flat ? Styling.pillRadius(root.meterSize) : root.endRadius
+        bottomLeftRadius: root.flat ? Styling.pillRadius(root.meterSize) : root.startRadius
+        bottomRightRadius: root.flat ? Styling.pillRadius(root.meterSize) : root.endRadius
         scale: (root.clickEnabled && meterMouseArea.pressed) ? 0.92 : 1.0
 
         PressBehavior on scale {

@@ -35,7 +35,7 @@ Item {
     readonly property int pillHeight: 36
     readonly property int topMargin: 8
     readonly property int triggerHeight: 8
-    readonly property real pillRadius: pillHeight / 2
+    readonly property real pillRadius: Styling.pillRadius(pillHeight)
     readonly property real panelRadius: Styling.radius(4)
 
     // Current morphing state: "collapsed" | "notification" | "osd" | "dashboard" | "power" | "sound" | "mic" | "wifi" | "stats" | "apps" | "projects"
@@ -234,6 +234,7 @@ Item {
     // Notifications owns Do Not Disturb: popupList only holds popups it allowed
     // (ordinary ones are muted, approved alerts like low battery bypass it).
     readonly property bool hasNotifications: Notifications.popupList && Notifications.popupList.length > 0
+        && Visibilities.popupScreenName === root.screen.name
 
     onHasNotificationsChanged: {
         if (hasNotifications) {
@@ -715,19 +716,20 @@ Item {
     Connections {
         target: Audio
         function onVolumeChanged(volume, muted, node) {
-            root.triggerOsd("volume", volume, muted);
+            if (Visibilities.osdScreenName(null) === (root.screen?.name ?? ""))
+                root.triggerOsd("volume", volume, muted);
         }
         function onMicVolumeChanged(volume, muted, node) {
-            root.triggerOsd("mic", volume, muted);
+            if (Visibilities.osdScreenName(null) === (root.screen?.name ?? ""))
+                root.triggerOsd("mic", volume, muted);
         }
     }
 
     Connections {
         target: Brightness
         function onBrightnessChanged(value, screen) {
-            if (!screen || !root.screen || screen.name === root.screen.name || Brightness.syncBrightness) {
+            if (Visibilities.osdScreenName(screen) === (root.screen?.name ?? ""))
                 root.triggerOsd("brightness", value, false);
-            }
         }
     }
 
@@ -1202,14 +1204,14 @@ Item {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 4
-                            radius: 2
+                            radius: Styling.scaledRadius(2)
                             color: Colors.withAlpha(Colors.overBackground, 0.15)
                             clip: true
 
                             Rectangle {
                                 width: parent.width * Math.max(0, Math.min(1, root.inlineOsdValue))
                                 height: 4
-                                radius: 2
+                                radius: Styling.scaledRadius(2)
                                 color: Colors[Colors.accentRole(root.osdIndicator)]
                                 Behavior on width {
                                     enabled: Motion.enabled

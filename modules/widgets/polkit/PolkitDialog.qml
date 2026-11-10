@@ -263,7 +263,7 @@ Scope {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
                         variant: root.showFailure ? "error" : (passwordInput.activeFocus ? "focus" : "common")
-                        radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
+                        radius: Styling.pillRadius(height)
 
                         RowLayout {
                             anchors.fill: parent
@@ -390,7 +390,7 @@ Scope {
             anchors.fill: parent
             variant: button.activeFocus ? "focus" : button.variant
             enableBorder: false
-            radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
+            radius: Styling.pillRadius(height)
 
             HoverTint {
                 hovered: buttonMouse.containsMouse

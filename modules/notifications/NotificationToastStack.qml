@@ -14,7 +14,10 @@ import qs.config
 Item {
     id: root
 
-    readonly property int popupCount: Notifications.popupList ? Notifications.popupList.length : 0
+    // Name of the screen hosting this stack; toasts only show on the popup screen.
+    required property string screenName
+    readonly property bool onPopupScreen: Visibilities.popupScreenName === root.screenName
+    readonly property int popupCount: (root.onPopupScreen && Notifications.popupList) ? Notifications.popupList.length : 0
     readonly property bool hasPopups: popupCount > 0
     readonly property Item hitbox: (!isIsland && hasPopups) ? toastColumn : null
     readonly property int animMs: Config.animDuration > 0 ? Config.animDuration : 0
@@ -74,6 +77,12 @@ Item {
                 }
 
                 Component.onCompleted: playEnter()
+                // The stack empties when focus moves to another screen; never
+                // leave this app's timers paused behind a destroyed toast.
+                Component.onDestruction: {
+                    if (toastHover.hovered && toastRoot.appName)
+                        Notifications.resumeGroupTimers(toastRoot.appName);
+                }
 
                 function playEnter() {
                     if (closing || entered)
@@ -244,7 +253,7 @@ Item {
                                     anchors.centerIn: parent
                                     width: toastRoot.chromeSize + 8
                                     height: toastRoot.chromeSize + 8
-                                    radius: width / 2
+                                    radius: Styling.pillRadius(width)
                                     variant: "focus"
                                     opacity: cardMa.containsMouse && !toastRoot.closing ? 1 : 0
                                 }
@@ -309,6 +318,7 @@ Item {
 
 
                 HoverHandler {
+                    id: toastHover
                     enabled: !toastRoot.closing
                     onHoveredChanged: {
                         if (!toastRoot.appName)

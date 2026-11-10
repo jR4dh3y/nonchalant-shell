@@ -98,7 +98,7 @@ ColumnLayout {
             y: slider.visualPosition * (slider.availableHeight - height)
             width: Styling.fontSize(0) * 2.4
             height: Styling.fontSize(0) * (slider.pressed ? 0.75 : 0.55)
-            radius: height / 2
+            radius: Styling.pillRadius(height)
             variant: "focus"
             color: Colors.overBackground
             enableBorder: slider.visualFocus

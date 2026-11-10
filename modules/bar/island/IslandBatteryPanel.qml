@@ -71,7 +71,7 @@ Item {
                 objectName: "batteryBackButton"
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
@@ -113,7 +113,7 @@ Item {
             StyledRect {
                 implicitWidth: statusRow.implicitWidth + 14
                 implicitHeight: 22
-                radius: 11
+                radius: Styling.scaledRadius(11)
                 variant: Battery.isCharging ? "primary" : "common"
 
                 RowLayout {
@@ -156,7 +156,7 @@ Item {
                     StyledRect {
                         implicitWidth: 44
                         implicitHeight: 44
-                        radius: 22
+                        radius: Styling.scaledRadius(22)
                         variant: "common"
 
                         Text {
@@ -208,13 +208,13 @@ Item {
                     visible: Battery.available
                     Layout.fillWidth: true
                     Layout.preferredHeight: 6
-                    radius: 3
+                    radius: Styling.scaledRadius(3)
                     variant: "common"
 
                     StyledRect {
                         width: Math.max(6, Math.min(parent.width, parent.width * (Battery.percentage / 100)))
                         height: parent.height
-                        radius: 3
+                        radius: Styling.scaledRadius(3)
                         variant: Battery.percentage <= 20 ? "error" : "primary"
 
                         Behavior on width {
@@ -303,7 +303,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: Styling.fontSize(0) * 3
                     variant: "focus"
-                    radius: height / 2
+                    radius: Styling.pillRadius(height)
                     readonly property real inset: Styling.fontSize(-4) * 0.4
 
                     ElasticHighlight {
@@ -312,7 +312,7 @@ Item {
                         targetItem: root.selectedProfileTab
                         originX: profileTabs.x
                         originY: profileTabs.y
-                        radius: height / 2
+                        radius: Styling.pillRadius(height)
                         scale: targetItem?.scale ?? 1
                     }
 
@@ -344,7 +344,7 @@ Item {
                                 background: StyledRect {
                                     variant: "focus"
                                     backgroundOpacity: 0
-                                    radius: height / 2
+                                    radius: Styling.pillRadius(height)
                                     border.width: profileButton.visualFocus ? Math.max(1, Math.round(Styling.fontSize(-4) / 8)) : 0
                                     border.color: Colors.primary
                                     HoverTint {

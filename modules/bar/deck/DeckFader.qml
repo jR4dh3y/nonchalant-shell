@@ -22,13 +22,13 @@ Slider {
         y: (root.height - height) / 2
         width: root.availableWidth
         height: Math.max(2, Styling.fontSize(0) / 4)
-        radius: height / 2
+        radius: Styling.pillRadius(height)
         variant: "internalbg"
         enableBorder: false
         StyledRect {
             width: parent.width * root.visualPosition
             height: parent.height
-            radius: height / 2
+            radius: Styling.pillRadius(height)
             variant: "focus"
             color: Colors.primary
             enableBorder: false
@@ -39,7 +39,7 @@ Slider {
         y: (root.height - height) / 2
         width: Styling.fontSize(0) * (root.pressed || root.hovered ? 0.8 : 0.5)
         height: width
-        radius: width / 2
+        radius: Styling.pillRadius(width)
         variant: "focus"
         color: Colors.overBackground
         enableBorder: root.visualFocus

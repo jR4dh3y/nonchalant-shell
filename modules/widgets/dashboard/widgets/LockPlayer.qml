@@ -130,7 +130,7 @@ StyledRect {
             ClippingRectangle {
                 id: artworkContainer
                 anchors.fill: parent
-                radius: Config.roundness > 0 ? (height / 2) * (Config.roundness / 16) : 0
+                radius: Styling.pillRadius(height)
                 color: Colors.surface
 
                 Image {

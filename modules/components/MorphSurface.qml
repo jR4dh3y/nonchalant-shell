@@ -125,7 +125,6 @@ Item {
         y: root.originItem ? root.originRect.y * (1 - root.revealClamped)
             : (root.fromBottom ? root.height - height : 0)
         radius: Math.min(root.radius, height / 2)
-        animateRadius: false
 
         Item {
             id: page

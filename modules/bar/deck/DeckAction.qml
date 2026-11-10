@@ -46,7 +46,7 @@ Button {
     background: StyledRect {
         id: surface
         variant: root.filled ? "primary" : "focus"
-        radius: root.kind === DeckAction.Icon ? height / 2 : Styling.radius(-6)
+        radius: root.kind === DeckAction.Icon ? Styling.pillRadius(height) : Styling.radius(-6)
         enableBorder: root.visualFocus
         backgroundOpacity: root.kind === DeckAction.Tab && root.selected ? 0
             : root.selected || root.visualFocus || root.kind === DeckAction.Action ? 1 : 0

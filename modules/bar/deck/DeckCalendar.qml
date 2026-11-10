@@ -177,7 +177,7 @@ RowLayout {
                     anchors.fill: parent
                     visible: week.current
                     variant: "internalbg"
-                    radius: height / 2
+                    radius: Styling.pillRadius(height)
                     enableBorder: false
                 }
                 RowLayout {
@@ -202,7 +202,7 @@ RowLayout {
                                 width: Math.min(parent.width, parent.height) * 0.92
                                 height: width
                                 variant: "primary"
-                                radius: width / 2
+                                radius: Styling.pillRadius(width)
                                 enableBorder: false
                                 visible: day.current
                             }

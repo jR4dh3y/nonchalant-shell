@@ -57,6 +57,12 @@ Singleton {
         return monitors.find(m => m.screen === screen);
     }
 
+    // True only once the screen has answered a brightness read (backlight or DDC/CI).
+    // Monitors without software brightness control never become ready.
+    function isAvailable(screen: ShellScreen): bool {
+        return getMonitorForScreen(screen)?.ready ?? false;
+    }
+
     function setBrightnessForScreen(screen: ShellScreen, value: real): void {
         for (const monitor of root.monitors) {
             if (monitor?.ready && (root.syncBrightness || monitor.screen === screen))
@@ -69,7 +75,7 @@ Singleton {
         if (!focusedName)
             return;
         const monitor = monitors.find(m => focusedName === m.screen.name);
-        if (monitor)
+        if (monitor?.ready)
             monitor.setBrightness(monitor.brightness + 0.05);
     }
 
@@ -78,7 +84,7 @@ Singleton {
         if (!focusedName)
             return;
         const monitor = monitors.find(m => focusedName === m.screen.name);
-        if (monitor)
+        if (monitor?.ready)
             monitor.setBrightness(monitor.brightness - 0.05);
     }
 
@@ -279,6 +285,12 @@ Singleton {
 
     IpcHandler {
         target: "brightness"
+
+        // Re-detect DDC/CI monitors (e.g. after installing ddcutil or toggling DDC/CI in the OSD).
+        function rescan() {
+            root.ddcMonitors = [];
+            ddcDetectTimer.restart();
+        }
 
         function increment() {
             root.increaseBrightness();

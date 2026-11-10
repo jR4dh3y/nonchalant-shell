@@ -65,7 +65,7 @@ Item {
                 objectName: "bluetoothBackButton"
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
@@ -121,7 +121,7 @@ Item {
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: settingsMouse.containsMouse ? "focus" : "common"
                 scale: settingsMouse.pressed ? 0.92 : 1.0
 
@@ -157,7 +157,7 @@ Item {
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: rescanMouse.containsMouse ? "focus" : "common"
                 enabled: BluetoothService.enabled
                 scale: rescanMouse.pressed ? 0.92 : 1.0
@@ -216,7 +216,7 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: height / 2
+                    radius: Styling.pillRadius(height)
                     color: BluetoothService.enabled ? Styling.srItem("overprimary") : Colors.surfaceBright
                     border.color: BluetoothService.enabled ? Styling.srItem("overprimary") : Colors.outline
                     border.width: 1
@@ -231,7 +231,7 @@ Item {
                         y: 2
                         width: parent.height - 4
                         height: width
-                        radius: width / 2
+                        radius: Styling.pillRadius(width)
                         color: BluetoothService.enabled ? Colors.background : Colors.overSurfaceVariant
 
                         Behavior on x {

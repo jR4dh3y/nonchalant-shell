@@ -620,6 +620,19 @@ ShellRoot {
                     keyClick(Qt.Key_Space)
                     tryCompare(display, "split", false)
                     tryCompare(NightLightService, "currentTemperature", 6500)
+                    const brightnessBefore = monitor.brightness
+                    monitor.ready = false
+                    tryCompare(display, "brightnessAvailable", false)
+                    compare(brightness.temperature, true, "Unsupported displays keep only night light")
+                    mouseClick(brightness)
+                    tryVerify(() => NightLightService.active)
+                    compare(display.split, false, "Night light must not split without a brightness half")
+                    mouseWheel(brightness, brightness.width / 2, brightness.height / 2, 0, -120)
+                    compare(monitor.brightness, brightnessBefore, "Unsupported displays must not receive brightness writes")
+                    keyClick(Qt.Key_Space)
+                    tryCompare(NightLightService, "currentTemperature", 6500)
+                    monitor.ready = true
+                    tryCompare(display, "brightnessAvailable", true)
                     other.ready = true
                     Brightness.syncBrightness = false
                     Config.bar.style = originalStyle

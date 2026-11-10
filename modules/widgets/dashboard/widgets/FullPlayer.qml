@@ -14,7 +14,7 @@ StyledRect {
     id: player
     variant: "transparent"
 
-    property real playerRadius: Config.roundness > 0 ? Config.roundness + 4 : 0
+    property real playerRadius: Styling.radius(4)
     property bool playersListExpanded: false
     property bool lyricsActive: false
 
@@ -415,7 +415,6 @@ StyledRect {
                 pressed: playPauseMouse.pressed
             }
 
-            animateRadius: false
             radius: Styling.radius(16)
 
             states: [
@@ -558,7 +557,7 @@ StyledRect {
                     width: playersListView.width
                     height: 40
                     variant: delegateMouseArea.containsMouse ? "focus" : "transparent"
-                    radius: 4
+                    radius: Styling.scaledRadius(4)
                     scale: delegateMouseArea.pressed ? 0.96 : 1.0
 
                     PressBehavior on scale {

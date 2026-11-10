@@ -155,6 +155,7 @@ Item {
     // Notifications owns Do Not Disturb: popupList only holds popups it allowed
     // (ordinary ones are muted, approved alerts like low battery bypass it).
     readonly property bool hasNotifications: Notifications.popupList && Notifications.popupList.length > 0
+        && Visibilities.popupScreenName === root.screen.name
 
     onHasNotificationsChanged: {
         if (hasNotifications) {
@@ -311,7 +312,7 @@ Item {
     readonly property real bodyBottomRadiusTarget: {
         if (root.currentMode === "osd")
             return root.targetHeight / 2;
-        return (root.isExpanded || root.retractingToHidden) ? root.cornerRadius : root.islandHeight / 2;
+        return (root.isExpanded || root.retractingToHidden) ? root.cornerRadius : Styling.pillRadius(root.islandHeight);
     }
     property real bodyBottomRadius: bodyBottomRadiusTarget
     Behavior on bodyBottomRadius {
@@ -653,19 +654,20 @@ Item {
     Connections {
         target: Audio
         function onVolumeChanged(volume, muted, node) {
-            root.triggerOsd("volume", volume, muted);
+            if (Visibilities.osdScreenName(null) === (root.screen?.name ?? ""))
+                root.triggerOsd("volume", volume, muted);
         }
         function onMicVolumeChanged(volume, muted, node) {
-            root.triggerOsd("mic", volume, muted);
+            if (Visibilities.osdScreenName(null) === (root.screen?.name ?? ""))
+                root.triggerOsd("mic", volume, muted);
         }
     }
 
     Connections {
         target: Brightness
         function onBrightnessChanged(value, screen) {
-            if (!screen || !root.screen || screen.name === root.screen.name || Brightness.syncBrightness) {
+            if (Visibilities.osdScreenName(screen) === (root.screen?.name ?? ""))
                 root.triggerOsd("brightness", value, false);
-            }
         }
     }
 
@@ -801,9 +803,8 @@ Item {
             backgroundOpacity: 1.0
             topLeftRadius: 0
             topRightRadius: 0
-            bottomLeftRadius: dropBody.height / 2
-            bottomRightRadius: dropBody.height / 2
-            animateRadius: false
+            bottomLeftRadius: Styling.pillRadius(dropBody.height)
+            bottomRightRadius: Styling.pillRadius(dropBody.height)
             // A border would draw a seam across the join with the bar.
             enableBorder: false
             clip: true
@@ -823,7 +824,7 @@ Item {
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
                     height: 4
-                    radius: height / 2
+                    radius: Styling.pillRadius(height)
                     color: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
 
                     Rectangle {

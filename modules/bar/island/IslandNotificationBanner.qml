@@ -162,7 +162,7 @@ Item {
 
                 StyledRect {
                     anchors.fill: parent
-                    radius: 11
+                    radius: Styling.scaledRadius(11)
                     variant: "focus"
                     visible: closeMouse.containsMouse
                 }

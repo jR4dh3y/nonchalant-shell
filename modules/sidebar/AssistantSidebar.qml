@@ -1283,7 +1283,7 @@ Item {
                                                 Rectangle {
                                                     width: 7
                                                     height: 7
-                                                    radius: 4
+                                                    radius: Styling.scaledRadius(4)
                                                     color: Styling.srItem("overprimary")
                                                     opacity: 0.5
 
@@ -1493,7 +1493,7 @@ Item {
 
                                                         background: Rectangle {
                                                             color: Colors.surfaceBright
-                                                            radius: 8
+                                                            radius: Styling.scaledRadius(8)
                                                         }
 
                                                         onClicked: mainChatArea.removeAttachment(index)
@@ -1608,7 +1608,7 @@ Item {
 
                                         background: Rectangle {
                                             color: parent.hovered ? Colors.surfaceBright : "transparent"
-                                            radius: 16
+                                            radius: Styling.scaledRadius(16)
                                         }
 
                                         onClicked: zenityProcess.running = true
@@ -1630,7 +1630,7 @@ Item {
 
                                         background: Rectangle {
                                             color: parent.hovered ? Colors.surfaceBright : "transparent"
-                                            radius: 16
+                                            radius: Styling.scaledRadius(16)
                                         }
 
                                         onClicked: {

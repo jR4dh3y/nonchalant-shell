@@ -84,7 +84,7 @@ ColumnLayout {
                             Layout.preferredWidth: Styling.fontSize(0) * 2.8
                             Layout.preferredHeight: Layout.preferredWidth
                             variant: "internalbg"
-                            radius: width / 2
+                            radius: Styling.pillRadius(width)
                             enableBorder: false
                             Image {
                                 id: noticeIcon

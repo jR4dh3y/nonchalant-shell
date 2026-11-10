@@ -65,7 +65,7 @@ Item {
                 width: root.width
                 height: root.height
                 y: half.microphone ? -root.height / 2 : 0
-                radius: width / 2
+                radius: Styling.pillRadius(width)
                 variant: half.selected ? "focus" : "pane"
                 enableBorder: false
                 enableShadow: false

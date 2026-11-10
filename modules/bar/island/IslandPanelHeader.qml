@@ -16,7 +16,7 @@ RowLayout {
     StyledRect {
         implicitWidth: 28
         implicitHeight: 28
-        radius: width / 2
+        radius: Styling.pillRadius(width)
         variant: backMouse.containsMouse ? "focus" : "common"
         scale: backMouse.pressed ? 0.92 : 1.0
 

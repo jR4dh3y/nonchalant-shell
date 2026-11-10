@@ -42,6 +42,7 @@ Item {
         return Brightness.monitors.length > 0 ? Brightness.monitors[0] : null;
     }
     readonly property real brightnessVal: currentMonitor?.brightness ?? 0.5
+    readonly property bool brightnessAvailable: currentMonitor?.ready ?? false
 
     function setBrightness(val: real) {
         if (Brightness.syncBrightness) {
@@ -197,7 +198,7 @@ Item {
             StyledRect {
                 implicitHeight: 32
                 implicitWidth: weatherRow.implicitWidth + 14
-                radius: height / 2
+                radius: Styling.pillRadius(height)
                 variant: weatherMouse.containsMouse ? "focus" : "internalbg"
                 scale: weatherMouse.pressed ? 0.92 : 1.0
 
@@ -243,7 +244,7 @@ Item {
             StyledRect {
                 implicitHeight: 32
                 implicitWidth: root.alertsCount > 0 ? alertsRow.implicitWidth + 14 : 32
-                radius: root.alertsCount > 0 ? height / 2 : width / 2
+                radius: root.alertsCount > 0 ? Styling.pillRadius(height) : Styling.pillRadius(width)
                 variant: alertsMouse.containsMouse ? "focus" : "internalbg"
                 scale: alertsMouse.pressed ? 0.92 : 1.0
 
@@ -269,7 +270,7 @@ Item {
                         visible: root.alertsCount > 0
                         implicitWidth: alertBadgeText.implicitWidth + 8
                         implicitHeight: 16
-                        radius: 8
+                        radius: Styling.scaledRadius(8)
                         variant: "primary"
 
                         Text {
@@ -299,7 +300,7 @@ Item {
             StyledRect {
                 implicitHeight: 32
                 implicitWidth: 32
-                radius: width / 2
+                radius: Styling.pillRadius(width)
                 variant: settingsMouse.containsMouse ? "focus" : "internalbg"
                 scale: settingsMouse.pressed ? 0.92 : 1.0
 
@@ -332,7 +333,7 @@ Item {
             StyledRect {
                 implicitHeight: 32
                 implicitWidth: 32
-                radius: width / 2
+                radius: Styling.pillRadius(width)
                 variant: powerMouse.containsMouse ? "error" : "internalbg"
                 scale: powerMouse.pressed ? 0.92 : 1.0
 
@@ -373,7 +374,7 @@ Item {
                 id: wifiCapsule
                 Layout.fillWidth: true
                 Layout.preferredHeight: 52
-                radius: 26
+                radius: Styling.scaledRadius(26)
                 readonly property bool isHovered: wifiMouse.containsMouse || wifiIconMouse.containsMouse
                 variant: NetworkService.wifiEnabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
                 scale: (wifiMouse.pressed || wifiIconMouse.pressed) ? 0.94 : 1.0
@@ -473,7 +474,7 @@ Item {
                 id: btCapsule
                 Layout.fillWidth: true
                 Layout.preferredHeight: 52
-                radius: 26
+                radius: Styling.scaledRadius(26)
                 readonly property bool isHovered: btMouse.containsMouse || btIconMouse.containsMouse
                 variant: BluetoothService.enabled ? (isHovered ? "primaryfocus" : "primary") : (isHovered ? "focus" : "internalbg")
                 scale: (btMouse.pressed || btIconMouse.pressed) ? 0.94 : 1.0
@@ -669,6 +670,7 @@ Item {
 
                 // Sun icon
                 DynamicSunIcon {
+                    visible: root.brightnessAvailable
                     size: 20
                     value: brightSlider.value
                     color: Colors.overBackground
@@ -678,6 +680,7 @@ Item {
                 // Brightness slider
                 StyledSlider {
                     id: brightSlider
+                    visible: root.brightnessAvailable
                     Layout.fillWidth: true
                     Layout.preferredHeight: 18
                     value: root.brightnessVal
@@ -690,6 +693,7 @@ Item {
 
                 // Brightness percentage
                 Text {
+                    visible: root.brightnessAvailable
                     renderType: Text.NativeRendering
                     font.hintingPreference: Font.PreferFullHinting
                     Layout.preferredWidth: 38
@@ -703,8 +707,15 @@ Item {
 
                 // Divider
                 Separator {
+                    visible: root.brightnessAvailable
                     vert: true
                     Layout.preferredHeight: 20
+                }
+
+                // Keeps the night light pill right-aligned when brightness is hidden
+                Item {
+                    visible: !root.brightnessAvailable
+                    Layout.fillWidth: true
                 }
 
                 // Night Light scrollable strength toggle
@@ -813,8 +824,8 @@ Item {
 
                 SysTray {
                     enableShadow: false
-                    startRadius: 4
-                    endRadius: 4
+                    startRadius: Styling.scaledRadius(4)
+                    endRadius: Styling.scaledRadius(4)
                 }
             }
         }

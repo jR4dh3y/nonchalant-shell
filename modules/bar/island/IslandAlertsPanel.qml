@@ -131,7 +131,7 @@ Item {
             StyledRect {
                 implicitWidth: 28
                 implicitHeight: 28
-                radius: 14
+                radius: Styling.scaledRadius(14)
                 variant: backMouse.containsMouse ? "focus" : "common"
                 scale: backMouse.pressed ? 0.92 : 1.0
 
@@ -174,7 +174,7 @@ Item {
                 visible: root.totalCount > 0
                 implicitWidth: countText.implicitWidth + 12
                 implicitHeight: 20
-                radius: 10
+                radius: Styling.scaledRadius(10)
                 variant: "primary"
 
                 Text {
