@@ -47,7 +47,8 @@ StyledRect {
         visible: root.showArc
         controlSize: Math.min(root.width, root.height)
         lineWidth: 3.5
-        meterRadius: (controlSize - lineWidth) / 2 - 1.5
+        // Inset from the edge, so a squared button's ring doesn't hug its border.
+        meterRadius: (controlSize - lineWidth) / 2 - controlSize * 0.13
         cornerRadius: Math.max(0, root.radius - (controlSize / 2 - meterRadius))
         startAngle: 135
         spanAngle: 270
