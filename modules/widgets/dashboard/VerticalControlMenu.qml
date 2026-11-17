@@ -11,6 +11,7 @@ Item {
     id: root
 
     property string mode: "wifi"
+    readonly property string shownMode: mode
     property real maximumSize: Infinity
     property bool lyricsActive: false
     readonly property list<string> deviceModes: ["wifi", "bluetooth", "battery"]
@@ -20,7 +21,7 @@ Item {
     property Item selectedTab: null
     signal closeRequested()
     signal modeRequested(string mode)
-    implicitWidth: mode === "media" ? Math.min(Styling.fontSize(0) * 28, maximumSize) : 400
+    implicitWidth: shownMode === "media" ? Math.min(Styling.fontSize(0) * 28, maximumSize) : 400
     implicitHeight: panelLoader.item?.implicitHeight ?? 340
 
     function focusCurrentTab(): void {
@@ -133,10 +134,11 @@ Item {
 
     Loader {
         id: panelLoader
+        objectName: "controlMenuPanel"
         anchors.fill: parent
         onLoaded: root.focusCurrentTab()
         sourceComponent: {
-            switch (root.mode) {
+            switch (root.shownMode) {
             case "sound": return soundPanel;
             case "mic": return micPanel;
             case "bluetooth": return bluetoothPanel;

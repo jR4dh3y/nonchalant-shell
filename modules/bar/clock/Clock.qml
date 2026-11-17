@@ -51,6 +51,13 @@ Item {
     }
 
     property string controlMode: ""
+    // Keeps a closing or outgoing control menu on its last panel while
+    // `controlMode` already names the next surface.
+    property string lastControlMode: "wifi"
+    onControlModeChanged: {
+        if (root.controlMode)
+            root.lastControlMode = root.controlMode;
+    }
     readonly property list<string> deviceModes: ["wifi", "bluetooth", "battery"]
     property string lastDeviceMode: "wifi"
     readonly property bool deviceMenuActive: root.vertical && dashboardPopup.isOpen
@@ -102,7 +109,7 @@ Item {
         root.dashboardSection = section;
         GlobalStates.dashboardCurrentTab = 0;
         dashboardPopup.open();
-        Qt.callLater(() => dashboardLoader.item?.focusCurrentTab());
+        Qt.callLater(() => dashboardSurface.currentPage?.focusCurrentTab());
     }
 
     function toggleDashboardSection(section: string): void {
@@ -360,6 +367,7 @@ Item {
     // Compact countdown timer.
     BarPopup {
         id: timePopup
+        objectName: "clockTimePopup"
         anchorItem: root.vertical ? buttonBg : timeAnchor
         edgeItem: root.bar?.barHitbox ?? anchorItem
         contentVariant: "pane"
@@ -707,8 +715,8 @@ Item {
             Visibilities.claimBarPopup(dashboardPopup);
             isOpen = true;
             Qt.callLater(() => {
-                if (dashboardPopup.isOpen && dashboardLoader.item)
-                    dashboardLoader.item.focusCurrentTab();
+                if (dashboardPopup.isOpen)
+                    dashboardSurface.currentPage?.focusCurrentTab();
             });
         }
 
@@ -736,55 +744,70 @@ Item {
 
         MorphSurface {
             id: dashboardSurface
+            objectName: "dashboardSurface"
 
-            variant: root.vertical && !root.controlMode ? "transparent" : "popup"
-            contentVariant: root.vertical && root.controlMode ? "pane" : ""
-            padding: root.vertical && !root.controlMode ? 0 : 8
+            // Start the frame morph when the requested content changes.
+            contentKey: root.vertical && root.controlMode ? "control" : "dashboard"
+            immediateContentSwitch: root.vertical
+            readonly property bool controlShown: presentedKey === "control"
+            // The control menu's panel on screen.
+            readonly property string shownMode: controlShown ? (controlLoader.item?.shownMode ?? root.controlMode) : ""
+            // Both pages exist across a switch, so the frame morphs between
+            // two settled sizes and no page is built while it moves.
+            readonly property Item currentPage: controlShown ? controlLoader.item : dashboardLoader.item
+            readonly property int controlPadding: 8
+
+            // The vertical dashboard brings its own cards; its frame fades in
+            // when it turns into a control menu instead of snapping.
+            variant: "popup"
+            contentVariant: root.vertical ? "pane" : ""
+            showChrome: !root.vertical || controlShown
+            radius: root.vertical && !controlShown ? Styling.radius(4) : Styling.radius(8)
+            padding: root.vertical && !controlShown ? 0 : controlPadding
             shown: dashboardPopup.isOpen
-            contentWidth: Math.min(dashboardPopup.leftBar ? Math.max(0, dashboardPopup.width - dashboardPopup.edgeGap) : Infinity,
-                dashboardLoader.item ? dashboardLoader.item.implicitWidth + padding * 2 : 916)
-            contentHeight: Math.min(dashboardPopup.leftBar ? Math.max(0, dashboardPopup.height - dashboardPopup.edgeGap * 2) : Infinity,
-                dashboardLoader.item ? dashboardLoader.item.implicitHeight + padding * 2 : 360)
+            readonly property real maxWidth: dashboardPopup.leftBar ? Math.max(0, dashboardPopup.width - dashboardPopup.edgeGap) : Infinity
+            readonly property real maxHeight: dashboardPopup.leftBar ? Math.max(0, dashboardPopup.height - dashboardPopup.edgeGap * 2) : Infinity
+            contentWidth: Math.min(maxWidth, currentPage ? currentPage.implicitWidth + padding * 2 : 916)
+            contentHeight: Math.min(maxHeight, currentPage ? currentPage.implicitHeight + padding * 2 : 360)
             originWidth: buttonBg.width
-            originItem: root.vertical && !root.controlMode ? root : null
+            originItem: root.vertical && !controlShown ? root : null
             fromBottom: dashboardPopup.bottomBar
             fromLeft: dashboardPopup.leftBar
             x: dashboardPopup.leftBar ? 0 : Math.round((dashboardPopup.width - width) / 2)
-            y: {
-                if (!dashboardPopup.leftBar)
-                    return dashboardPopup.bottomBar ? dashboardPopup.height - height : 0;
-                const desiredY = root.controlMode === "media" && (root.mediaAnchor?.visible ?? false)
-                    ? dashboardPopup.mediaAnchorY - height / 2
-                    : dashboardPopup.height - height - dashboardPopup.edgeGap;
+            // A left dock spans the full height; the body sits on the bottom
+            // gap (media: centred on the media pill) and glides between modes.
+            y: dashboardPopup.leftBar || !dashboardPopup.bottomBar ? 0 : dashboardPopup.height - height
+            height: dashboardPopup.leftBar ? dashboardPopup.height : contentHeight
+            restY: {
+                const desiredY = shownMode === "media" && (root.mediaAnchor?.visible ?? false)
+                    ? dashboardPopup.mediaAnchorY - contentHeight / 2
+                    : dashboardPopup.height - contentHeight - dashboardPopup.edgeGap;
                 return Math.max(dashboardPopup.edgeGap,
-                    Math.min(dashboardPopup.height - height - dashboardPopup.edgeGap, desiredY));
+                    Math.min(dashboardPopup.height - contentHeight - dashboardPopup.edgeGap, desiredY));
             }
 
             Loader {
                 id: dashboardLoader
-                // Always warm: weather→dashboard must not hitch on first create.
+                // Always warm: opening or switching to the dashboard must
+                // not hitch on building it. Behind a control menu it keeps
+                // its own size, not the menu's: its height follows its
+                // width, so it would otherwise return at the wrong height
+                // and retarget the frame mid-morph.
                 active: true
-                anchors.fill: parent
+                readonly property bool current: !dashboardSurface.controlShown
+                width: current ? parent.width : Math.min(item?.implicitWidth ?? 0, dashboardSurface.maxWidth)
+                height: current ? parent.height : Math.min(item?.implicitHeight ?? 0, dashboardSurface.maxHeight)
+                visible: current
                 onLoaded: {
-                    if (dashboardPopup.isOpen)
+                    if (dashboardPopup.isOpen && current)
+                        Qt.callLater(() => dashboardLoader.item?.focusCurrentTab());
+                }
+                onCurrentChanged: {
+                    if (current && dashboardPopup.isOpen)
                         Qt.callLater(() => dashboardLoader.item?.focusCurrentTab());
                 }
 
-                sourceComponent: root.vertical
-                    ? (root.controlMode ? verticalControlMenu : verticalDashboard)
-                    : horizontalDashboard
-
-                Component {
-                    id: verticalControlMenu
-                    VerticalControlMenu {
-                        mode: root.controlMode
-                        onModeRequested: mode => root.showControlMenu(mode)
-                        lyricsActive: dashboardPopup.isOpen && root.controlMode === "media"
-                        maximumSize: Math.max(0, Math.min(dashboardPopup.width - dashboardPopup.edgeGap,
-                            dashboardPopup.height - dashboardPopup.edgeGap * 2) - dashboardSurface.padding * 2)
-                        onCloseRequested: dashboardPopup.close()
-                    }
-                }
+                sourceComponent: root.vertical ? verticalDashboard : horizontalDashboard
 
                 Component {
                     id: verticalDashboard
@@ -801,6 +824,29 @@ Item {
                         popupMode: true
                         onCloseRequested: dashboardPopup.close()
                     }
+                }
+            }
+
+            // Built when requested, a frame before it is presented, so its
+            // construction never lands inside the morph. Its panels refresh
+            // on creation, so it does not outlive its use.
+            Loader {
+                id: controlLoader
+                active: root.vertical && (dashboardSurface.contentKey === "control" || dashboardSurface.controlShown)
+                anchors.fill: parent
+                visible: dashboardSurface.controlShown
+                onVisibleChanged: {
+                    if (visible && dashboardPopup.isOpen)
+                        Qt.callLater(() => controlLoader.item?.focusCurrentTab());
+                }
+
+                sourceComponent: VerticalControlMenu {
+                    mode: root.lastControlMode
+                    onModeRequested: mode => root.showControlMenu(mode)
+                    lyricsActive: dashboardPopup.isOpen && root.controlMode === "media"
+                    maximumSize: Math.max(0, Math.min(dashboardPopup.width - dashboardPopup.edgeGap,
+                        dashboardPopup.height - dashboardPopup.edgeGap * 2) - dashboardSurface.controlPadding * 2)
+                    onCloseRequested: dashboardPopup.close()
                 }
             }
         }
