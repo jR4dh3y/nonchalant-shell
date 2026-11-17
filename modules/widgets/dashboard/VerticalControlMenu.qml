@@ -85,6 +85,8 @@ Item {
         Row {
             id: tabs
             anchors.centerIn: parent
+            // Gap between tabs matches the selector's edge padding.
+            spacing: selector.inset
             Repeater {
                 id: tabRepeater
                 model: root.tabModes
