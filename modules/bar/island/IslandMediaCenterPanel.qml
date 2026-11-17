@@ -207,14 +207,15 @@ StyledRect {
         }
 
         Item {
-            visible: root.squareArtwork
+            visible: root.squareArtwork && !lyrics.visible
             Layout.fillHeight: true
         }
 
         LyricsView {
+            id: lyrics
             collapseWhenEmpty: true
             Layout.fillWidth: true
-            Layout.fillHeight: false
+            Layout.fillHeight: root.squareArtwork
             Layout.preferredHeight: root.contentHeightLimit > 0
                 ? Math.max(0, Math.min(implicitHeight, root.contentHeightLimit - root.fixedContentHeight - mainCol.spacing))
                 : implicitHeight

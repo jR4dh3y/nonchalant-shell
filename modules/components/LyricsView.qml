@@ -39,7 +39,8 @@ Item {
         ? Math.max(0, Math.min(LyricsService.current >= 0 ? LyricsService.current : LyricsService.timelineIndex, LyricsService.lines.length - 1)) : -1
 
     implicitWidth: 200
-    implicitHeight: root.mode === "compact" ? 22 : 140
+    implicitHeight: root.mode === "compact" ? 22
+        : Math.max(140, detailListLoader.item?.currentItem?.implicitHeight ?? 0)
     visible: !root.collapseWhenEmpty || (root.hasTrack && root.lyricsEnabled && LyricsService.available)
     clip: true
 
@@ -208,25 +209,24 @@ Item {
     Loader {
         id: detailListLoader
         anchors.fill: parent
-        active: root.shouldRender && root.mode === "detail" && root.lyricsEnabled
+        // Cue measurement must not depend on the height it supplies to the layout.
+        active: root.active && root.visible && root.mode === "detail" && root.lyricsEnabled
             && LyricsService.available && !LyricsService.instrumental
         sourceComponent: ListView {
             id: lyricLines
             objectName: "lyricLines"
             anchors.fill: parent
-            visible: root.shouldRender && root.mode === "detail" && root.lyricsEnabled
-                && LyricsService.available && !LyricsService.instrumental
             clip: true
-            model: visible ? LyricsService.lines : []
+            model: LyricsService.lines
             spacing: Styling.fontSize(-1) * 0.12
-            interactive: !LyricsService.synced
-            currentIndex: visible ? root.displayIndex : -1
+            interactive: !LyricsService.synced || (currentItem?.height ?? 0) > height
+            currentIndex: root.displayIndex
             highlightRangeMode: ListView.NoHighlightRange
-            // Center the complete delegate, including wrapped lyrics. Range enforcement
-            // can change currentIndex; a one-way scroll target keeps timing authoritative.
+            // Center fitting cues; start oversized cues at the top so they can be scrolled.
+            // Range enforcement can change currentIndex, so keep timing authoritative.
             function centerCurrent(): void {
                 if (LyricsService.synced && currentItem)
-                    contentY = currentItem.y + currentItem.height / 2 - height / 2;
+                    contentY = currentItem.y + Math.min(currentItem.height, height) / 2 - height / 2;
             }
             onCurrentItemChanged: Qt.callLater(centerCurrent)
             onHeightChanged: Qt.callLater(centerCurrent)
@@ -247,10 +247,18 @@ Item {
                 readonly property bool interlude: modelData.text.trim() === ""
                 readonly property bool seekable: LyricsService.synced
                     && (MprisController.activePlayer?.canSeek ?? false) && modelData.t >= 0
+                // Fade context out before the viewport can slice its glyphs.
+                readonly property real viewportMargin: Math.min(y - lyricLines.contentY,
+                    lyricLines.contentY + lyricLines.height - y - height)
+                    - height * (scale / restingScale - 1) / 2
+                readonly property real edgeOpacity: !LyricsService.synced || distance === 0 ? 1
+                    : Math.max(0, Math.min(1, viewportMargin / Styling.fontSize(0)))
+                property real cueOpacity: !LyricsService.synced || distance === 0 ? 1
+                    : (distance === 1 ? 0.3 : (distance === 2 ? 0.12 : 0.04))
                 width: lyricLines.width
                 implicitHeight: interlude ? marker.implicitHeight : lineText.implicitHeight
                 height: implicitHeight * restingScale
-                opacity: !LyricsService.synced || distance === 0 ? 1 : (distance === 1 ? 0.3 : (distance === 2 ? 0.12 : 0.04))
+                opacity: cueOpacity * edgeOpacity
                 scale: restingScale
                 onHeightChanged: {
                     if (lyricLine.index === lyricLines.currentIndex)
@@ -260,7 +268,7 @@ Item {
                     if (lyricLine.index === lyricLines.currentIndex)
                         Qt.callLater(lyricLines.centerCurrent);
                 }
-                Behavior on opacity { NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuad } }
+                Behavior on cueOpacity { NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuad } }
                 Behavior on scale { NumberAnimation { duration: Config.animDuration; easing.type: Easing.OutQuad } }
 
                 activeFocusOnTab: seekable
