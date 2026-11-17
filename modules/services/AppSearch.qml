@@ -137,8 +137,25 @@ Singleton {
 
 
     
-    readonly property list<DesktopEntry> list: Array.from(DesktopEntries.applications.values)
-        .sort((a, b) => a.name.localeCompare(b.name))
+    property list<DesktopEntry> list: []
+    signal applicationsUpdated()
+
+    function refreshApplications() {
+        list = Array.from(DesktopEntries.applications.values)
+            .sort((a, b) => a.name.localeCompare(b.name));
+        iconCache = ({});
+        invalidateCache();
+        buildIndex();
+        applicationsUpdated();
+    }
+
+    Connections {
+        target: DesktopEntries
+
+        function onApplicationsChanged() {
+            root.refreshApplications();
+        }
+    }
     
     // Index structure: [{ name: "lower", command: "lower", keywords: ["lower"], original: appObject }, ...]
     property var searchIndex: []
@@ -166,11 +183,6 @@ Singleton {
         allAppsCache = null;
     }
 
-    onListChanged: {
-        allAppsCache = null;
-        buildIndex();
-    }
-
     // The cached ranking sorts by usage score, so any usage change makes it stale.
     Connections {
         target: UsageTracker
@@ -179,8 +191,7 @@ Singleton {
     }
 
     Component.onCompleted: {
-        buildIndex();
-        // Pre-build cache in background if possible, or just wait for first access
+        refreshApplications();
     }
     
 

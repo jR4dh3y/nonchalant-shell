@@ -141,6 +141,14 @@ Item {
             }
         }
 
+        Connections {
+            target: AppSearch
+
+            function onApplicationsUpdated() {
+                appLauncher.updateFilteredApps();
+            }
+        }
+
         onFilteredAppsChanged: {
             resultsList.enableScrollAnimation = false;
             resultsList.contentY = 0;
