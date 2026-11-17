@@ -27,6 +27,10 @@ PopupWindow {
     property int shadowMargin: 16  // Room around the surface for the spring stretch
     property string variant: "popup"  // StyledRect variant for background
     property string contentVariant: ""
+    // See MorphSurface: select content by `presentedKey` so switching an open
+    // popup fades the outgoing content out before the incoming one appears.
+    property string contentKey: ""
+    readonly property string presentedKey: surface.presentedKey
 
     // Behavior configuration
     property bool closeOnFocusLost: true
@@ -39,9 +43,35 @@ PopupWindow {
 
     property int contentWidth: 220
     property int contentHeight: 150
+    // Room for content the popup may switch to while open (a tray grid
+    // becoming an app menu), so switching never resizes the window.
+    property int reservedWidth: 0
+    property int reservedHeight: 0
 
-    readonly property int totalWidth: contentWidth + shadowMargin * 2
-    readonly property int totalHeight: contentHeight + shadowMargin * 2
+    // The window only grows while it is up. Resizing it under an animating
+    // body re-anchors it a frame apart from the body and clips a shrinking
+    // body to its new size; the body morphs inside a stable frame instead.
+    property int frameWidth: 0
+    property int frameHeight: 0
+    function fitFrame(): void {
+        const width = Math.max(root.contentWidth, root.reservedWidth);
+        const height = Math.max(root.contentHeight, root.reservedHeight);
+        root.frameWidth = root.visible ? Math.max(root.frameWidth, width) : width;
+        root.frameHeight = root.visible ? Math.max(root.frameHeight, height) : height;
+    }
+    onContentWidthChanged: fitFrame()
+    onContentHeightChanged: fitFrame()
+    onReservedWidthChanged: fitFrame()
+    onReservedHeightChanged: fitFrame()
+    onVisibleChanged: fitFrame()
+    Component.onCompleted: fitFrame()
+
+    readonly property int totalWidth: frameWidth + shadowMargin * 2
+    // A left dock's popup spans the dock's full height, so it never moves;
+    // the body is placed inside it, centred on its control.
+    readonly property real dockHeight: root.leftBar ? (root.anchor.window?.contentItem?.height ?? 0) : 0
+    readonly property int totalHeight: root.dockHeight > 0 ? Math.ceil(root.dockHeight) : frameHeight + shadowMargin * 2
+    property real anchorCenterY: 0
 
     implicitWidth: totalWidth
     implicitHeight: totalHeight
@@ -65,7 +95,8 @@ PopupWindow {
         root.anchor.rect.x = root.leftBar
             ? edge.x + root.visualMargin - root.shadowMargin
             : origin.x + (root.anchorItem.width - root.totalWidth) / 2;
-        root.anchor.rect.y = origin.y + (root.leftBar
+        root.anchorCenterY = origin.y + root.anchorItem.height / 2;
+        root.anchor.rect.y = root.dockHeight > 0 ? 0 : origin.y + (root.leftBar
             ? (root.anchorItem.height - root.totalHeight) / 2
             : root.bottomBar
                 ? -root.totalHeight - root.visualMargin + root.shadowMargin
@@ -92,16 +123,23 @@ PopupWindow {
 
     MorphSurface {
         id: surface
+        objectName: root.objectName ? root.objectName + "Surface" : ""
 
         x: root.shadowMargin
-        y: root.shadowMargin
+        y: root.dockHeight > 0 ? 0 : root.shadowMargin
+        width: root.frameWidth
+        height: root.dockHeight > 0 ? root.totalHeight : root.frameHeight
         contentWidth: root.contentWidth
         contentHeight: root.contentHeight
+        // Centred on the control, kept the visual margin inside the screen.
+        restY: Math.max(root.visualMargin, Math.min(root.totalHeight - root.visualMargin - root.contentHeight,
+            root.anchorCenterY - root.contentHeight / 2))
         originWidth: root.anchorItem.width
         fromBottom: root.bottomBar
         fromLeft: root.leftBar
         variant: root.variant
         contentVariant: root.contentVariant
+        contentKey: root.contentKey
         padding: root.popupPadding
         maxStretch: root.shadowMargin - 2
 

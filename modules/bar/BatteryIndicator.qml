@@ -68,80 +68,24 @@ Item {
             hoverOpacity: root.flat ? 0.12 : 0.25
         }
 
-        // Circular progress indicator (only if battery available)
-        Item {
-            id: progressCanvas
+        // Battery meter; shares the radial meter so it follows roundness.
+        BarRadialMeter {
+            id: progressMeter
             anchors.centerIn: parent
-            width: root.flat ? (root.meterSize - 2) : 32
-            height: width
+            width: controlSize
+            height: controlSize
             visible: Battery.available && root.showMeter
-
-            property real angle: (Battery.percentage / 100) * (360 - 2 * gapAngle)
-            property real radius: root.flat ? (root.meterSize / 2 - 4.5) : 12
-            property real lineWidth: root.flat ? 2.2 : 3
-            property real gapAngle: 45
-
-            Canvas {
-                id: canvas
-                anchors.fill: parent
-                antialiasing: true
-
-                onPaint: {
-                    let ctx = getContext("2d");
-                    ctx.reset();
-
-                    let centerX = width / 2;
-                    let centerY = height / 2;
-                    let radius = progressCanvas.radius;
-                    let lineWidth = progressCanvas.lineWidth;
-
-                    ctx.lineCap = "round";
-
-                    // Base start angle (matching CircularControl: bottom + gap)
-                    let baseStartAngle = (Math.PI / 2) + (progressCanvas.gapAngle * Math.PI / 180);
-                    let progressAngleRad = progressCanvas.angle * Math.PI / 180;
-
-                    // Draw background track (remaining part)
-                    let totalAngleRad = (360 - 2 * progressCanvas.gapAngle) * Math.PI / 180;
-
-                    ctx.strokeStyle = root.flat ? Qt.rgba(1, 1, 1, 0.14) : Colors.outlineVariant;
-                    ctx.lineWidth = lineWidth;
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, radius, baseStartAngle + progressAngleRad, baseStartAngle + totalAngleRad, false);
-                    ctx.stroke();
-
-                    // Draw progress
-                    if (progressCanvas.angle > 0) {
-                        ctx.strokeStyle = root.getBatteryColor();
-                        ctx.lineWidth = lineWidth;
-                        ctx.beginPath();
-                        ctx.arc(centerX, centerY, radius, baseStartAngle, baseStartAngle + progressAngleRad, false);
-                        ctx.stroke();
-                    }
-                }
-
-                Connections {
-                    target: progressCanvas
-                    function onAngleChanged() {
-                        canvas.requestPaint();
-                    }
-                }
-
-                Connections {
-                    target: Battery
-                    function onPercentageChanged() {
-                        canvas.requestPaint();
-                    }
-                }
-            }
-
-            Behavior on angle {
-                enabled: Config.animDuration > 0
-                NumberAnimation {
-                    duration: 400
-                    easing.type: Easing.OutCubic
-                }
-            }
+            controlSize: root.flat ? (root.meterSize - 2) : 32
+            meterRadius: root.flat ? (root.meterSize / 2 - 4.5) : 12
+            lineWidth: root.flat ? 2.2 : 3
+            cornerRadius: root.flat
+                ? Math.max(0, Styling.pillRadius(root.meterSize) - (root.meterSize / 2 - meterRadius))
+                : Math.max(0, Math.min(root.startRadius, root.endRadius) - (root.meterSize / 2 - meterRadius))
+            startAngle: 135
+            spanAngle: 270
+            value: Battery.percentage / 100
+            trackColor: root.flat ? Qt.rgba(1, 1, 1, 0.14) : Colors.outlineVariant
+            progressColor: root.getBatteryColor()
         }
 
         // Central icon (Lightning/Plug for battery, PowerProfile icon otherwise)

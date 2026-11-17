@@ -141,7 +141,47 @@ Item {
             }
         }
 
+        Connections {
+            target: AppSearch
+
+            function onApplicationsUpdated() {
+                appLauncher.refreshInPlace();
+            }
+        }
+
+        // A background install or update rebuilds the list without moving
+        // the reader: the selected app and scroll position carry over.
+        property bool preserveView: false
+        function refreshInPlace(): void {
+            const selectedId = selectedIndex >= 0 && selectedIndex < appsModel.count
+                ? appsModel.get(selectedIndex).appId : "";
+            const keepCount = loadedCount;
+            const keepY = resultsList.contentY;
+            preserveView = true;
+            updateFilteredApps();
+            preserveView = false;
+            // Unchanged results leave filteredApps untouched; rebuild anyway.
+            updateAppsModel(keepCount);
+            if (selectedId !== "") {
+                let index = -1;
+                for (let i = 0; i < appsModel.count; i++) {
+                    if (appsModel.get(i).appId === selectedId) {
+                        index = i;
+                        break;
+                    }
+                }
+                selectedIndex = index >= 0 ? index : Math.min(selectedIndex, appsModel.count - 1);
+            }
+            resultsList.enableScrollAnimation = false;
+            resultsList.contentY = Math.max(0, Math.min(keepY, resultsList.contentHeight - resultsList.height));
+            Qt.callLater(() => {
+                resultsList.enableScrollAnimation = true;
+            });
+        }
+
         onFilteredAppsChanged: {
+            if (preserveView)
+                return;
             resultsList.enableScrollAnimation = false;
             resultsList.contentY = 0;
             updateAppsModel();
@@ -150,7 +190,7 @@ Item {
             });
         }
 
-        function updateAppsModel() {
+        function updateAppsModel(minimumLoaded = 0) {
             // Stop any existing loading
             incrementalLoader.stop();
             
@@ -166,7 +206,7 @@ Item {
             appsModel.clear();
             
             // Load first batch immediately for instant feedback
-            let initialBatch = Math.min(appLauncher.batchSize, newApps.length);
+            let initialBatch = Math.min(Math.max(appLauncher.batchSize, minimumLoaded), newApps.length);
             for (let i = 0; i < initialBatch; i++) {
                 let app = newApps[i];
                 appsModel.append({

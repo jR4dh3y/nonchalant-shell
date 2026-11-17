@@ -320,6 +320,8 @@ Item {
                         id: profileTabs
                         anchors.fill: parent
                         anchors.margins: profileSelector.inset
+                        // Gap between tabs matches the selector's edge padding.
+                        spacing: profileSelector.inset
 
                         Repeater {
                             id: profileRepeater
@@ -332,7 +334,7 @@ Item {
                                 required property string modelData
                                 readonly property bool selected: PowerProfile.currentProfile === modelData
                                 objectName: "powerProfileTab-" + modelData
-                                width: profileTabs.width / root.profileModes.length
+                                width: (profileTabs.width - profileTabs.spacing * (root.profileModes.length - 1)) / root.profileModes.length
                                 height: profileTabs.height
                                 padding: Styling.fontSize(-4) * 0.6
                                 enabled: PowerProfile.isAvailable && PowerProfile.availableProfiles.indexOf(modelData) !== -1

@@ -14,13 +14,20 @@ BarPopup {
     property int controlSize: Styling.fontSize(0) + 20
     property real maximumHeight: controlSize * 6
     property SystemTrayItem menuItem: null
+    // The app menu on screen; follows `menuItem` once the outgoing view has
+    // faded out.
+    property SystemTrayItem shownItem: null
     readonly property list<SystemTrayItem> trayItems: SystemTray.items.values
     readonly property bool hasItems: trayItems.length > 0
     readonly property int columns: Math.max(1, Math.min(4, trayItems.length))
 
-    contentWidth: root.menuItem ? menu.implicitWidth + popupPadding * 2
+    contentKey: root.menuItem ? "menu:" + root.menuItem.id : "grid"
+    onPresentedKeyChanged: root.shownItem = root.menuItem
+    contentWidth: root.shownItem ? menu.implicitWidth + popupPadding * 2
         : grid.implicitWidth + popupPadding * 2
     contentHeight: Math.min(body.implicitHeight + popupPadding * 2, maximumHeight)
+    reservedWidth: Math.max(menu.implicitWidth, grid.implicitWidth) + popupPadding * 2
+    reservedHeight: maximumHeight
 
     onIsOpenChanged: {
         if (isOpen)
@@ -33,6 +40,8 @@ BarPopup {
     onTrayItemsChanged: {
         if (root.menuItem && !root.trayItems.includes(root.menuItem))
             root.menuItem = null;
+        if (root.shownItem && !root.trayItems.includes(root.shownItem))
+            root.shownItem = null;
     }
 
     Shortcut {
@@ -48,7 +57,7 @@ BarPopup {
         spacing: root.popupPadding
 
         RowLayout {
-            visible: root.menuItem !== null
+            visible: root.shownItem !== null
             Layout.fillWidth: true
             Layout.preferredHeight: root.controlSize
             spacing: root.popupPadding
@@ -83,7 +92,7 @@ BarPopup {
 
             StyledText {
                 Layout.fillWidth: true
-                text: root.menuItem?.title ?? ""
+                text: root.shownItem?.title ?? ""
                 font.weight: Font.DemiBold
                 color: Colors.overBackground
                 elide: Text.ElideRight
@@ -91,7 +100,7 @@ BarPopup {
         }
 
         ScrollView {
-            visible: root.menuItem === null
+            visible: root.shownItem === null
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.preferredHeight: grid.implicitHeight
@@ -126,11 +135,11 @@ BarPopup {
         SysTrayMenu {
             id: menu
             objectName: "trayFlyoutMenu"
-            visible: root.menuItem !== null
+            visible: root.shownItem !== null
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.preferredHeight: implicitHeight
-            menu: root.menuItem?.menu ?? null
+            menu: root.shownItem?.menu ?? null
             onActionTriggered: root.close()
         }
     }
