@@ -77,7 +77,8 @@ Item {
     Binding {
         target: root.powerHost
         property: "dockShown"
-        value: root.reveal
+        // A bar hidden by `Config.bar.screenList` leaves Mod+X to the popup.
+        value: root.reveal && root.visible
         when: root.powerHost !== null
     }
 

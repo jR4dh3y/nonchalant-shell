@@ -515,6 +515,19 @@ GLib.MainLoop().run()
 '''
 
 
+def add_probe(text, anchor, binding):
+    start = text.find(anchor)
+    if start < 0:
+        return text
+    body = start + len(anchor)
+    # The next lines up to the first child or blank line hold the object's
+    # own bindings.
+    end = text.find("\n\n", body)
+    if "objectName:" in text[body:end if end >= 0 else len(text)].split("{", 1)[0]:
+        return text
+    return text[:body] + binding + text[body:]
+
+
 def private_shell(fixture):
     shell = fixture / "shell"
     shell.mkdir()
@@ -528,13 +541,12 @@ def private_shell(fixture):
         for name in MOTION_FILES:
             text = subprocess.run(["git", "-C", str(ROOT), "show", f"{baseline}:{name}"],
                                   capture_output=True, text=True, check=True).stdout
-            # Probe names only; no behaviour change.
-            text = text.replace("            id: dashboardSurface\n",
-                                '            id: dashboardSurface\n            objectName: "dashboardSurface"\n', 1)
-            text = text.replace("        id: timePopup\n",
-                                '        id: timePopup\n        objectName: "clockTimePopup"\n', 1)
-            text = text.replace("        id: surface\n",
-                                '        id: surface\n        objectName: root.objectName ? root.objectName + "Surface" : ""\n', 1)
+            # Probe names only; no behaviour change. Baselines that already
+            # name a probe keep their own binding, since QML rejects a second.
+            text = add_probe(text, "            id: dashboardSurface\n", '            objectName: "dashboardSurface"\n')
+            text = add_probe(text, "        id: timePopup\n", '        objectName: "clockTimePopup"\n')
+            text = add_probe(text, "        id: surface\n",
+                             '        objectName: root.objectName ? root.objectName + "Surface" : ""\n')
             (shell / name).write_text(text)
     shell_text = (ROOT / "shell.qml").read_text()
     final_brace = shell_text.rfind("}")
@@ -639,11 +651,15 @@ def exercise(fixture, artifacts, mode):
             print(shell_log.read_text()[-4000:])
         return 1
     finally:
-        (artifacts / f"traces-{mode}.json").write_text(json.dumps(results))
-        shell_log = fixture / "shell.log"
-        if shell_log.exists():
-            (artifacts / f"shell-{mode}.log").write_text(shell_log.read_text())
-        session.stop()
+        try:
+            (artifacts / f"traces-{mode}.json").write_text(json.dumps(results))
+            shell_log = fixture / "shell.log"
+            if shell_log.exists():
+                (artifacts / f"shell-{mode}.log").write_text(shell_log.read_text())
+        except OSError as error:
+            print("artifact write failed", repr(error))
+        finally:
+            session.stop()
 
 
 # Fastest legitimate content fade: OutQuad out over the shared fade-out

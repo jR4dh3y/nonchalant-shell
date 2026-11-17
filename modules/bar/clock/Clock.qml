@@ -843,7 +843,9 @@ Item {
                 sourceComponent: VerticalControlMenu {
                     mode: root.lastControlMode
                     onModeRequested: mode => root.showControlMenu(mode)
-                    lyricsActive: dashboardPopup.isOpen && root.controlMode === "media"
+                    // Stays on while the media page is presented, so a handoff
+                    // snapshot captures its cues rather than an empty view.
+                    lyricsActive: dashboardPopup.isOpen && dashboardSurface.controlShown && root.lastControlMode === "media"
                     maximumSize: Math.max(0, Math.min(dashboardPopup.width - dashboardPopup.edgeGap,
                         dashboardPopup.height - dashboardPopup.edgeGap * 2) - dashboardSurface.controlPadding * 2)
                     onCloseRequested: dashboardPopup.close()

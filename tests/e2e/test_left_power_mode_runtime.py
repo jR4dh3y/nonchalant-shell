@@ -11,6 +11,7 @@ from pathlib import Path
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -503,18 +504,34 @@ class LeftPowerModeRuntimeTests(unittest.TestCase):
                 f'<listen>unix:path={Path(env["XDG_RUNTIME_DIR"]) / "bus"}</listen>'
                 '<policy context="default"><allow send_destination="*"/>'
                 '<allow receive_sender="*"/><allow own="*"/></policy></busconfig>')
+            # Its own process group, so a timeout reaches the worker and it
+            # can stop its compositors before the runtime directory goes.
+            worker = subprocess.Popen(["dbus-run-session", f"--config-file={bus_config}", "--",
+                sys.executable, __file__, "--exercise", str(fixture), str(artifacts)],
+                env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True)
             try:
-                result = subprocess.run(["dbus-run-session", f"--config-file={bus_config}", "--",
-                    sys.executable, __file__, "--exercise", str(fixture), str(artifacts)],
-                    env=env, capture_output=True, text=True, timeout=150)
-                (artifacts / "exercise.log").write_text(result.stdout + result.stderr)
-                self.assertEqual(result.returncode, 0, f"see {artifacts / 'exercise.log'}")
-                print(result.stdout[-2000:])
+                try:
+                    output, _ = worker.communicate(timeout=150)
+                except subprocess.TimeoutExpired:
+                    os.killpg(worker.pid, signal.SIGTERM)
+                    try:
+                        output, _ = worker.communicate(timeout=20)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(worker.pid, signal.SIGKILL)
+                        output, _ = worker.communicate()
+                    (artifacts / "exercise.log").write_text(output)
+                    self.fail(f"exercise timed out; see {artifacts / 'exercise.log'}")
+                (artifacts / "exercise.log").write_text(output)
+                self.assertEqual(worker.returncode, 0, f"see {artifacts / 'exercise.log'}")
+                print(output[-2000:])
             finally:
                 shutil.rmtree(env["XDG_RUNTIME_DIR"])
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 4 and sys.argv[1] == "--exercise":
+        # A timeout's SIGTERM unwinds through exercise()'s finally, which
+        # stops the compositors.
+        signal.signal(signal.SIGTERM, lambda *_: sys.exit(1))
         raise SystemExit(exercise(Path(sys.argv[2]), Path(sys.argv[3])))
     unittest.main()

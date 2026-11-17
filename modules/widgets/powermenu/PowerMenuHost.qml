@@ -51,6 +51,10 @@ Item {
 
         menuOpen = true;
         if (inDock) {
+            // A popup still collapsing from a dock switch must not keep
+            // its exclusive keyboard focus and backdrop.
+            root.revealed = false;
+            powerWindow.visible = false;
             dockMode.show();
             return;
         }

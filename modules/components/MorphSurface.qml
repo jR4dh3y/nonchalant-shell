@@ -322,7 +322,9 @@ Item {
             id: snapshot
             // Held only for a handoff, so the texture is released at rest.
             sourceItem: outgoing.visible ? page : null
-            live: false
+            // Frozen while it holds a page; live with no source lets Qt
+            // drop the texture instead of keeping the last frame.
+            live: sourceItem === null
             hideSource: false
             visible: false
             onScheduledUpdateCompleted: root.finishHandoff(true)

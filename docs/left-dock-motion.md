@@ -23,11 +23,13 @@ primitives; hosts only describe where the body rests.
 - **Dashboard switches crossfade in place.** Opening springs (OutBack);
   closing is monotonic (InCubic). Switching between the dashboard and a
   control menu freezes the outgoing page into a texture (one frame of
-  latency), pins it where it rested under the rounded mask, and fades it out
-  while the incoming page fades in at its own rest position and the frame
-  morphs and its chrome fades. A contracting edge therefore conceals the
-  outgoing panel exactly as a growing edge reveals the incoming one, so
-  dashboard → menu mirrors menu → dashboard. Content never slides with an
+  latency) and pins it where it rested under the rounded mask. It fades
+  through: the outgoing copy fades out first and the incoming page fades in
+  at its own rest position only once most of it is gone, so two unrelated
+  layouts never overlap. The frame keeps morphing and its chrome fades
+  throughout, which carries the motion across the brief gap. A contracting
+  edge conceals the outgoing panel exactly as a growing edge reveals the
+  incoming one, so dashboard → menu mirrors menu → dashboard. Content never slides with an
   edge and is never scaled. Device and audio tabs switch immediately. The
   tray retains its outgoing and incoming fades.
 
@@ -36,7 +38,7 @@ primitives; hosts only describe where the body rests.
 | Surface | Source | Entry points | Defect before | Fix | Runtime check |
 | --- | --- | --- | --- | --- | --- |
 | Dashboard open/close | `Clock.qml`, `MorphSurface.qml` | Clock click, `notifications`/`stats`/`weather` IPC | Frameless body clipped the cards with a square rectangle while growing out of the clock | Rounded content mask while moving | Frames frozen mid-open: corners show only the empty screen |
-| Dashboard ↔ Wi-Fi/Bluetooth/battery, sound/mic, media | `Clock.qml`, `MorphSurface.qml` | Device and audio droplets, media pill, IPC | Content faded completely out before the frame began to move; then the dashboard vanished on the first frame and the menu slid down with the contracting top edge | Anchored crossfade from a frozen copy of the outgoing page; `restY` glides with the size; chrome fades | Combined content opacity stays above 0.85, outgoing copy and incoming page hold still, bottom edge fixed, top edge monotonic |
+| Dashboard ↔ Wi-Fi/Bluetooth/battery, sound/mic, media | `Clock.qml`, `MorphSurface.qml` | Device and audio droplets, media pill, IPC | Content faded completely out before the frame began to move; then the dashboard vanished on the first frame and the menu slid down with the contracting top edge | Anchored fade-through from a frozen copy of the outgoing page; `restY` glides with the size; chrome fades | Outgoing and incoming pages barely overlap and any blank gap is brief; both hold still, bottom edge fixed, top edge monotonic |
 | Wi-Fi ↔ Bluetooth ↔ battery tabs, sound ↔ mic | `VerticalControlMenu.qml` | Selector tabs, Left/Right keys, droplets | Panel faded completely out between modes | Immediate panel switch | Content stays opaque; bottom edge fixed during each switch |
 | Dashboard sections | `Clock.qml` | `stats`, `weather` IPC | Same as dashboard switches when the size changes | `restY` | Bottom edge fixed |
 | Tray grid → app menu → back | `TrayFlyout.qml`, `BarPopup.qml` | Tray droplet, right-click, menu-only apps, back button | Window re-centred and resized instantly; body top jumped ~80 px; shrink clipped by the already-small window | Full-height, grow-only window; body centred on the trigger; content fade | Window geometry constant; body centre fixed; fast reversal |
