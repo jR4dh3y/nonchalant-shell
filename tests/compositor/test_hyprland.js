@@ -165,9 +165,20 @@ test("named workspace identities use addresses rather than display names or nume
     assert.equal(normalized.id, "ws:deadbeef");
     assert.equal(normalized.isNamed, true);
     assert.equal(normalized.special, false);
-    assert.equal(codec.focusWorkspace(normalized), 'hl.dsp.focus({ workspace = "Design" })');
+    assert.equal(codec.focusWorkspace(normalized), 'hl.dsp.focus({ workspace = "ws:deadbeef" })');
     workspace.id = 1;
     assert.equal(codec.normalize([monitor], [workspace], []).workspaces[0].isNamed, true);
+});
+
+test("numbered workspaces focus by address and label by their numeric display name", () => {
+    const { monitor, workspace } = fixture();
+    workspace.address = "11";
+    workspace.id = 11;
+    workspace.name = "1";
+    const normalized = codec.normalize([monitor], [workspace], []).workspaces[0];
+    assert.equal(normalized.idx, 1);
+    assert.equal(normalized.isNamed, false);
+    assert.equal(codec.focusWorkspace(normalized), 'hl.dsp.focus({ workspace = "11" })');
 });
 
 test("targeted close never requires a focus command or defaults to the active window", () => {
@@ -176,9 +187,9 @@ test("targeted close never requires a focus command or defaults to the active wi
 });
 
 test("workspace moves preserve the explicit follow policy", () => {
-    const workspace = { id: "-2", idx: -2, name: "Web", isNamed: true, special: false };
-    assert.equal(codec.moveWindowToWorkspace("abc", workspace, false), 'hl.dsp.window.move({ window = "address:0xabc", workspace = "Web", follow = false })');
-    assert.equal(codec.moveWindowToWorkspace("abc", workspace, true), 'hl.dsp.window.move({ window = "address:0xabc", workspace = "Web", follow = true })');
+    const workspace = { id: "1", idx: 1, name: "Web", isNamed: true, special: false };
+    assert.equal(codec.moveWindowToWorkspace("abc", workspace, false), 'hl.dsp.window.move({ window = "address:0xabc", workspace = "1", follow = false })');
+    assert.equal(codec.moveWindowToWorkspace("abc", workspace, true), 'hl.dsp.window.move({ window = "address:0xabc", workspace = "1", follow = true })');
 });
 
 test("logout and monitor power use the Lua dispatchers", () => {
@@ -189,7 +200,7 @@ test("logout and monitor power use the Lua dispatchers", () => {
 
 test("Lua quoting handles quotes, slashes, control characters, and Unicode without code injection", () => {
     assert.equal(codec.luaString('A"\\\n雪'), '"A\\"\\\\\\010雪"');
-    const workspace = { id: "x", idx: -1, name: 'a\",follow=true})', isNamed: true, special: false };
+    const workspace = { id: 'a\",follow=true})', idx: -1, name: "x", isNamed: true, special: false };
     assert.match(codec.focusWorkspace(workspace), /workspace = "a\\",follow=true\}\)"/);
 });
 
@@ -204,4 +215,19 @@ test("adjacent navigation stays on the output, excludes special workspaces, and 
     assert.equal(codec.adjacentWorkspace(workspaces, "A", -1), null);
     assert.equal(codec.adjacentWorkspace(workspaces, "missing", 1), null);
     assert.throws(() => codec.adjacentWorkspace(workspaces, "A", 0), /direction/);
+});
+
+test("windows follow layout position rather than map order so reordering columns reorders the list", () => {
+    const { monitor, workspace } = fixture();
+    const make = (address, at, floating = false) => ({
+        address, title: address, activated: false, urgent: false, workspace, monitor,
+        lastIpcObject: { class: address, pid: 1, at, size: [400, 400], floating, fullscreen: 0 }
+    });
+    // Map order a, b, c, f; layout order is c, a, b with a floating window last.
+    const toplevels = [make("a", [1700, -80]), make("b", [2200, -80]), make("c", [1300, -80]), make("f", [1290, -90], true)];
+    const order = () => codec.normalize([monitor], [workspace], toplevels).windows.map(window => window.id);
+    assert.deepEqual(order(), ["0xc", "0xa", "0xb", "0xf"]);
+    // Stacked tiles in one column order top to bottom.
+    toplevels[1].lastIpcObject.at = [1700, 400];
+    assert.deepEqual(order(), ["0xc", "0xa", "0xb", "0xf"]);
 });

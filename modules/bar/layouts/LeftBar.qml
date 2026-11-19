@@ -35,9 +35,9 @@ Item {
     readonly property int barTargetHeight: barWidth
     readonly property int totalBarHeight: barTargetHeight + root.edgeMargin
 
-    // Keep one floating gap at the screen edge and another beside the dock so
-    // tiled windows do not touch the pills.
-    readonly property int baseOuterMargin: root.edgeMargin * 2
+    // Niri's 1px focus ring (config-quickshell.kdl) paints outside the window.
+    // Reserve that pixel too so both visible gaps remain edgeMargin wide.
+    readonly property int baseOuterMargin: root.edgeMargin * 2 + (CompositorService.compositor === "niri" ? 1 : 0)
     readonly property bool shadowsEnabled: false
 
     readonly property list<CompositorWorkspace> visibleWorkspaces: CompositorService.workspacesForOutput(root.screen.name)

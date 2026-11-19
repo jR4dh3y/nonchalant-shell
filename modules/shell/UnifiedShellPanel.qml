@@ -150,6 +150,27 @@ PanelWindow {
         id: visualContent
         anchors.fill: parent
 
+        // Dim the desktop behind any open menu. Drawn inside this panel so it
+        // works the same on Niri and Hyprland. It sits under every shell item,
+        // so the bar, the open menu, toasts and the OSD stay at full brightness.
+        // needsFullScreenInput already excludes the island's OSD/notification
+        // modes, so those never trigger it.
+        Rectangle {
+            id: menuDim
+            anchors.fill: parent
+            z: -1
+            color: "black"
+            opacity: unifiedPanel.needsFullScreenInput ? 0.35 : 0
+            visible: opacity > 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 180
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
+
         BarContent {
             id: barContent
             anchors.fill: parent

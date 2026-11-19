@@ -37,6 +37,12 @@ PanelWindow {
     property var perScreenWallpapers: wallpaperConfig.adapter.perScreenWallpapers || {}
     property string effectiveWallpaper: perScreenWallpapers[currentScreenName] || currentWallpaper
     property string currentScreenName: wallpaper.screen ? wallpaper.screen.name : ""
+    // Screen becomes null during unplug; cleanup must still target that output.
+    property string playerScreenName: ""
+    onCurrentScreenNameChanged: {
+        if (currentScreenName)
+            playerScreenName = currentScreenName;
+    }
     property alias tintEnabled: wallpaperAdapter.tintEnabled
     property alias wallpaperMode: wallpaperAdapter.wallpaperMode
     property int thumbnailsVersion: 0
@@ -480,7 +486,10 @@ PanelWindow {
     }
 
     function stopMpvpaper(targetScreen) {
-        globalKillMpvpaperProcess.targetMonitor = targetScreen || currentScreenName || "ALL";
+        const monitor = targetScreen || playerScreenName;
+        if (!monitor)
+            return;
+        globalKillMpvpaperProcess.targetMonitor = monitor;
         globalKillMpvpaperProcess.running = true;
     }
 
@@ -1332,7 +1341,7 @@ PanelWindow {
         Process {
             id: killMpvpaperProcess
             running: false
-            command: ["bash", decodeURIComponent(Qt.resolvedUrl("mpvpaper.sh").toString().replace("file://", "")), "stop", wallpaper.currentScreenName ? wallpaper.currentScreenName : "ALL"]
+            command: ["bash", decodeURIComponent(Qt.resolvedUrl("mpvpaper.sh").toString().replace("file://", "")), "stop", wallpaper.playerScreenName]
 
             onExited: function (exitCode) {
                 console.log("Killed mpvpaper processes for screen", wallpaper.currentScreenName, ", exit code:", exitCode);
@@ -1351,7 +1360,7 @@ PanelWindow {
             // Kill mpvpaper if switching to any non-video wallpaper
             if (source) {
                 var fileType = getFileType(source);
-                if (fileType !== 'video') {
+                if (fileType !== 'video' && wallpaper.playerScreenName) {
                     killMpvpaperProcess.running = true;
                 }
             }

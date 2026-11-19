@@ -55,21 +55,11 @@ Item {
         sourceComponent: StyledRect {
             variant: "pane"
             radius: Styling.radius(4)
-            implicitWidth: stats.implicitWidth
+            implicitWidth: monitor.implicitWidth
 
-            Flickable {
+            SidePaneSystemMonitor {
+                id: monitor
                 anchors.fill: parent
-                contentWidth: width
-                contentHeight: stats.implicitHeight
-                flickableDirection: Flickable.VerticalFlick
-                boundsBehavior: Flickable.StopAtBounds
-                clip: true
-
-                IslandStatsPanel {
-                    id: stats
-                    width: parent.width
-                    height: implicitHeight
-                }
             }
         }
     }
