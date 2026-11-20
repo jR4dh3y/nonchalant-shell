@@ -65,7 +65,7 @@ StyledRect {
             text: root.iconText
             font.family: Icons.font
             font.pixelSize: 20
-            color: Styling.srItem("overprimary")
+            color: Styling.srItem("overprimary", root.shellPalette)
             visible: root.iconText.length > 0
         }
 
@@ -86,18 +86,18 @@ StyledRect {
                 font.family: root.prefixIcon.length > 0 ? Icons.font : Config.theme.font
                 font.pixelSize: root.prefixIcon.length > 0 ? 18 : Config.theme.fontSize - 1
                 // font.weight: Font.Bold
-                color: Styling.srItem("primary")
+                color: Styling.srItem("primary", root.shellPalette)
             }
         }
 
         TextField {
             id: textField
             Layout.fillWidth: true
-            placeholderTextColor: Colors.outline
+            placeholderTextColor: root.shellPalette.outline
             font.family: Config.theme.font
             font.pixelSize: Config.theme.fontSize
             font.hintingPreference: Font.PreferFullHinting
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             background: null
             echoMode: root.passwordMode ? TextInput.Password : TextInput.Normal
             horizontalAlignment: root.centerText ? TextInput.AlignHCenter : TextInput.AlignLeft

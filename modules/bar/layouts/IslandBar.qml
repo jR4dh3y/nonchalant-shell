@@ -21,6 +21,7 @@ import ".."
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     anchors.fill: parent
     required property ShellScreen screen
@@ -193,7 +194,7 @@ Item {
     readonly property color batteryColor: {
         let _ = Battery.percentage;
         let __ = Battery.isPluggedIn;
-        return Battery.statusColor();
+        return Battery.statusColor(root.shellPalette);
     }
 
     readonly property bool audioMuted: Audio.sink?.audio?.muted ?? false
@@ -825,14 +826,14 @@ Item {
                     anchors.rightMargin: 12
                     height: 4
                     radius: Styling.pillRadius(height)
-                    color: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
+                    color: root.shellPalette.surfaceContainerHighest
 
                     Rectangle {
                         height: parent.height
                         radius: parent.radius
                         width: Math.max(height, parent.width * Math.max(0, Math.min(1, root.osdValue)))
                         visible: root.osdValue > 0
-                        color: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
+                        color: root.osdMuted ? root.shellPalette.outlineVariant : Styling.srItem("overprimary", root.shellPalette)
 
                         Behavior on width {
                             enabled: Motion.enabled
@@ -970,9 +971,9 @@ Item {
                                     verticalAlignment: Text.AlignVCenter
                                     progress: (root.isMediaPlaying && MprisController.length > 0) ? MprisController.progress : 0.0
                                     isPlaying: root.isMediaPlaying
-                                    baseColor: Colors.overBackground
-                                    fillColor: Colors.primary
-                                    highlightColor: Colors.primaryFixed ?? Colors.primary
+                                    baseColor: root.shellPalette.overBackground
+                                    fillColor: root.shellPalette.primary
+                                    highlightColor: root.shellPalette.primaryFixed ?? root.shellPalette.primary
                                 }
 
                                 MouseArea {
@@ -992,7 +993,7 @@ Item {
                             // Separator
                             Text {
                                 text: "|"
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 opacity: 0.5
                                 font.pixelSize: Styling.fontSize(-2)
                                 renderType: Text.NativeRendering
@@ -1019,7 +1020,7 @@ Item {
                                         font.family: Config.theme.monoFont
                                         font.pixelSize: Styling.fontSize(-1)
                                         font.bold: true
-                                        color: dateMouse.containsMouse ? Colors.primary : Colors.overBackground
+                                        color: dateMouse.containsMouse ? root.shellPalette.primary : root.shellPalette.overBackground
                                         renderType: Text.NativeRendering
                                     }
                                 }
@@ -1043,7 +1044,7 @@ Item {
                             // Separator
                             Text {
                                 text: "|"
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 opacity: 0.5
                                 font.pixelSize: Styling.fontSize(-2)
                                 renderType: Text.NativeRendering
@@ -1059,7 +1060,7 @@ Item {
                             // Separator before controls
                             Text {
                                 text: "|"
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 opacity: 0.5
                                 font.pixelSize: Styling.fontSize(-2)
                                 renderType: Text.NativeRendering
@@ -1075,7 +1076,7 @@ Item {
                             Text {
                                 visible: root.alertsCount > 0 || root.hasNotifications
                                 text: "|"
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 opacity: 0.5
                                 font.pixelSize: Styling.fontSize(-2)
                                 renderType: Text.NativeRendering
@@ -1102,7 +1103,7 @@ Item {
                                         text: Icons.bell
                                         font.family: Icons.font
                                         font.pixelSize: 13
-                                        color: root.hasNotifications ? Colors.primary : (alertsMouse.containsMouse ? Colors.primary : Colors.overBackground)
+                                        color: root.hasNotifications ? root.shellPalette.primary : (alertsMouse.containsMouse ? root.shellPalette.primary : root.shellPalette.overBackground)
                                         renderType: Text.NativeRendering
                                     }
 
@@ -1111,7 +1112,7 @@ Item {
                                         font.family: Config.theme.monoFont
                                         font.pixelSize: Styling.fontSize(-2)
                                         font.bold: true
-                                        color: root.hasNotifications ? Colors.primary : (alertsMouse.containsMouse ? Colors.primary : Colors.overBackground)
+                                        color: root.hasNotifications ? root.shellPalette.primary : (alertsMouse.containsMouse ? root.shellPalette.primary : root.shellPalette.overBackground)
                                         renderType: Text.NativeRendering
                                     }
                                 }

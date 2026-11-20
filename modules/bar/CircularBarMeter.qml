@@ -7,6 +7,7 @@ import qs.modules.theme
 // Scrollable bar meter; flat controls share the droplet radial geometry.
 Item {
     id: root
+    property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property Item bar
     property bool layerEnabled: false
@@ -18,7 +19,9 @@ Item {
     property real value: 0
     property string icon: ""
     property real iconSize: root.flat ? 11 : 14
-    property color progressColor: Styling.srItem("overprimary")
+    property color progressColor: Styling.srItem("overprimary", root.shellPalette)
+    // Glyph ink; inactive states (muted) pass the subdued role.
+    property color iconColor: root.shellPalette.overBackground
     property string tooltipText: ""
     property bool clickEnabled: true
     property bool isHovered: false
@@ -59,7 +62,6 @@ Item {
 
         HoverTint {
             hovered: root.isHovered
-            hoverOpacity: root.flat ? 0.12 : 0.2
         }
 
         BarRadialMeter {
@@ -74,7 +76,7 @@ Item {
             lineWidth: root.flat ? standardLineWidth : 3
             startAngle: root.flat ? 140 : 135
             spanAngle: root.flat ? 260 : 270
-            trackColor: root.flat ? Qt.alpha(Colors.overBackground, 0.24) : Colors.outlineVariant
+            trackColor: root.flat ? Qt.alpha(root.shellPalette.overBackground, 0.24) : root.shellPalette.outlineVariant
             value: root.normalizedValue
             progressColor: root.progressColor
         }
@@ -84,7 +86,7 @@ Item {
             text: root.icon
             font.family: Icons.font
             font.pixelSize: root.iconSize
-            color: Colors.overBackground
+            color: root.iconColor
         }
 
         MouseArea {

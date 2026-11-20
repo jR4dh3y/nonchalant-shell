@@ -7,6 +7,7 @@ import qs.config
 
 Button {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property string textStr: ""
 
@@ -46,7 +47,12 @@ Button {
     background: Item {
         HoverTint {
             hovered: root.hovered && !root.isSeparator
-            hoverOpacity: 1
+            pressed: root.down && !root.isSeparator
+            radius: Styling.radius(0)
+        }
+
+        FocusRing {
+            shown: root.visualFocus && !root.isSeparator
             radius: Styling.radius(0)
         }
 
@@ -54,7 +60,7 @@ Button {
         Rectangle {
             visible: root.isSeparator
             height: 1
-            color: Colors.surfaceBright
+            color: root.shellPalette.surfaceBright
             anchors.centerIn: parent
             width: parent.width - 16
         }
@@ -82,15 +88,15 @@ Button {
                 width: 14
                 height: 14
                 radius: Styling.scaledRadius(3)
-                color: root.checkState === Qt.Unchecked ? "transparent" : Colors.primary
-                border.color: root.checkState === Qt.Unchecked ? Colors.outline : Colors.primary
+                color: root.checkState === Qt.Unchecked ? "transparent" : root.shellPalette.primary
+                border.color: root.checkState === Qt.Unchecked ? root.shellPalette.outline : root.shellPalette.primary
                 border.width: 1.5
 
                 StyledText {
                     anchors.centerIn: parent
                     visible: root.checkState !== Qt.Unchecked
                     text: root.checkState === Qt.PartiallyChecked ? "\u2212" : "\u2713"
-                    color: Colors.overPrimary
+                    color: root.shellPalette.overPrimary
                     font.pixelSize: 10
                     font.bold: true
                 }
@@ -104,7 +110,7 @@ Button {
                 height: 14
                 radius: Styling.scaledRadius(7)
                 color: "transparent"
-                border.color: root.checkState === Qt.Checked ? Colors.primary : Colors.outline
+                border.color: root.checkState === Qt.Checked ? root.shellPalette.primary : root.shellPalette.outline
                 border.width: 1.5
 
                 Rectangle {
@@ -113,7 +119,7 @@ Button {
                     width: 7
                     height: 7
                     radius: Styling.scaledRadius(4)
-                    color: Colors.primary
+                    color: root.shellPalette.primary
                 }
             }
         }
@@ -131,7 +137,7 @@ Button {
                     text: root.iconSource
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: root.hovered ? Colors.overPrimary : Colors.overBackground
+                    color: root.shellPalette.overBackground
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -151,7 +157,7 @@ Button {
         StyledText {
             Layout.fillWidth: true
             text: root.cleanText
-            color: root.hovered ? Colors.overPrimary : Colors.overBackground
+            color: root.shellPalette.overBackground
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
             elide: Text.ElideRight
@@ -162,7 +168,7 @@ Button {
         StyledText {
             visible: root.hasSubmenu
             text: root.expanded ? "\u25BE" : "\u25B8"
-            color: root.hovered ? Colors.overPrimary : Colors.overBackground
+            color: root.shellPalette.overBackground
             font.pixelSize: Styling.fontSize(0)
             verticalAlignment: Text.AlignVCenter
         }

@@ -9,6 +9,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property var actions: []
     property bool showWhen: true
     property var notificationObject: null
@@ -45,14 +46,18 @@ Item {
 
                 background: StyledRect {
                     id: buttonBg
-                    readonly property color textColor: root.urgency === NotificationUrgency.Critical
-                        ? Colors.shadow
-                        : buttonBg.item
+                    // The fill's paired ink: overError on critical, never shadow.
+                    readonly property color textColor: buttonBg.item
 
-                    variant: root.urgency === NotificationUrgency.Critical
-                        ? "error"
-                        : (parent.pressed ? "primary" : (parent.hovered ? "focus" : "common"))
+                    // Critical actions fill with error; others are a
+                    // primaryContainer call to action with a neutral hover lift.
+                    variant: root.urgency === NotificationUrgency.Critical ? "error" : "primarycontainer"
                     radius: Styling.radius(4)
+
+                    HoverTint {
+                        hovered: actionButton.hovered
+                        pressed: actionButton.pressed
+                    }
                 }
 
                 contentItem: Text {

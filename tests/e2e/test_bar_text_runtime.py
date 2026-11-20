@@ -28,6 +28,7 @@ ShellRoot {
     CompositorWorkspace {
         id: testWorkspace
         Component.onCompleted: this.id = "1"
+        idx: 1
         active: true
         output: Quickshell.screens[0].name
         windows: compositorState.windows.filter(window => window.workspaceId === "1").length
@@ -110,12 +111,61 @@ ShellRoot {
                         "A newly created switcher must populate an already loaded workspace list")
                     tryVerify(() => bar.item.activeWorkspaceButton !== null)
                     const button = bar.item.activeWorkspaceButton
+                    const highlight = findChild(bar.item, component === left
+                        ? "verticalWorkspaceHighlight" : "activeWorkspaceHighlight")
+                    verify(highlight !== null)
+                    compare(highlight.variant, "primary")
+                    if (component === left) {
+                        verify(!button.showLabel && button.showWindows)
+                    } else {
+                        const label = findChild(button, "workspaceButton-1-label")
+                        tryCompare(label, "visible", false)
+                        verify(button.active && button.occupied)
+                    }
                     testWorkspace.name = "Renamed " + index
                     compare(bar.item.activeWorkspaceButton, button,
                         "A metadata update must not recreate workspace delegates")
                     bar.sourceComponent = undefined
                 }
                 console.log("BAR_WORKSPACE_INITIALIZATION_PASSED")
+            }
+
+            function test_horizontal_workspace_occupancy() {
+                testWorkspace.name = "media"
+                testWorkspace.isNamed = true
+                compositorState.workspaces = [testWorkspace, secondWorkspace, thirdWorkspace]
+                testWindow.workspaceId = "2"
+                compositorState.windows = [testWindow]
+                bar.sourceComponent = taskbar
+                tryVerify(() => bar.item !== null)
+                const active = findChild(bar.item, "workspaceButton-1-label")
+                const second = findChild(bar.item, "workspaceButton-2-label")
+                const third = findChild(bar.item, "workspaceButton-3-label")
+                const highlight = findChild(bar.item, "activeWorkspaceHighlight")
+                const secondBackground = findChild(bar.item, "workspaceButton-2-background")
+                const thirdBackground = findChild(bar.item, "workspaceButton-3-background")
+                const occupiedInk = Colors.secondary
+                tryCompare(active, "visible", true)
+                compare(active.text, "media")
+                compare(active.color, Styling.srItem("primary", Colors))
+                verify(second.visible && third.visible)
+                compare(highlight.variant, "primary")
+                compare(secondBackground.variant, "transparent")
+                compare(second.color, occupiedInk)
+                compare(thirdBackground.variant, "transparent")
+                compare(third.color, Colors.overSurfaceVariant)
+
+                testWindow.workspaceId = "3"
+                tryCompare(secondBackground, "variant", "transparent")
+                tryCompare(second, "color", Colors.overSurfaceVariant)
+                compare(thirdBackground.variant, "transparent")
+                tryCompare(third, "color", occupiedInk)
+                testWindow.workspaceId = "1"
+                tryVerify(() => bar.item.activeWorkspaceButton.occupied)
+                compare(highlight.variant, "primary")
+                tryCompare(active, "visible", false)
+                testWorkspace.isNamed = false
+                console.log("BAR_HORIZONTAL_WORKSPACE_OCCUPANCY_PASSED")
             }
 
             function test_vertical_workspace_occupancy() {
@@ -126,28 +176,43 @@ ShellRoot {
                 tryVerify(() => bar.item !== null)
                 const occupied = findChild(bar.item, "verticalWorkspaceButton-2")
                 const empty = findChild(bar.item, "verticalWorkspaceButton-3")
+                const highlight = findChild(bar.item, "verticalWorkspaceHighlight")
+                compare(highlight.variant, "primary")
+                verify(bar.item.activeWorkspaceButton.showLabel)
+                compare(bar.item.activeWorkspaceButton.foregroundColor, Styling.srItem("primary", Colors))
                 verify(occupied !== undefined && empty !== undefined)
-                compare(occupied.foregroundColor, Styling.srItem("overprimary"))
-                compare(empty.foregroundColor, Colors.overBackground)
+                const occupiedInk = Colors.secondary
+                compare(occupied.foregroundColor, occupiedInk)
+                compare(empty.foregroundColor, Colors.overSurfaceVariant)
                 compare(occupied.description, "1 window")
                 const snapshots = Quickshell.env("NONCHALANT_BAR_SNAPSHOTS")
                 if (snapshots) grabImage(bar.item.barHitbox).save(snapshots + "/workspace-occupancy.png")
                 testWindow.workspaceId = "3"
-                tryCompare(occupied, "foregroundColor", Colors.overBackground)
-                tryCompare(empty, "foregroundColor", Styling.srItem("overprimary"))
+                tryCompare(occupied, "foregroundColor", Colors.overSurfaceVariant)
+                tryCompare(empty, "foregroundColor", occupiedInk)
                 compare(occupied.description, "0 windows")
                 compare(empty.description, "1 window")
                 testWorkspace.active = false
                 thirdWorkspace.active = true
-                tryVerify(() => findChild(bar.item, "verticalWorkspaceButton-3")?.showWindows === true)
+                tryVerify(() => {
+                    const active = findChild(bar.item, "verticalWorkspaceButton-3")
+                    return active?.showWindows && !active.showLabel
+                })
+                compare(highlight.variant, "primary")
                 compositorState.windows = []
-                tryVerify(() => findChild(bar.item, "verticalWorkspaceButton-3")?.showLabel === true)
+                tryVerify(() => {
+                    const active = findChild(bar.item, "verticalWorkspaceButton-3")
+                    return active && !active.showWindows && active.showLabel
+                })
+                compare(bar.item.activeWorkspaceButton.iconText, thirdWorkspace.name)
+                compare(bar.item.activeWorkspaceButton.foregroundColor, Styling.srItem("primary", Colors))
+                compare(highlight.variant, "primary")
                 thirdWorkspace.active = false
                 testWorkspace.active = true
                 // Changing the visible workspace set can recreate delegates.
                 tryVerify(() => Qt.colorEqual(
                     findChild(bar.item, "verticalWorkspaceButton-3")?.foregroundColor ?? "transparent",
-                    Colors.overBackground))
+                    Colors.overSurfaceVariant))
                 testWindow.workspaceId = "1"
                 console.log("BAR_WORKSPACE_OCCUPANCY_PASSED")
             }
@@ -312,6 +377,9 @@ ShellRoot {
                 }
                 const sound = findChild(audio, "verticalSoundControl")
                 const mic = findChild(audio, "verticalMicControl")
+                const audioMeters = gauges(audio, [])
+                compare(audioMeters[0].progressColor, Styling.srItem("overprimary", Colors))
+                compare(audioMeters[1].progressColor, Colors.secondary)
                 const soundHover = component(sound, "HoverTint")
                 const micHover = component(mic, "HoverTint")
                 function snapshotAudio(state) {
@@ -347,6 +415,8 @@ ShellRoot {
                 compare(clock.menuOpen, true)
                 compare(sound.selected, true)
                 compare(mic.selected, false)
+                compare(sound.foregroundColor, Styling.srItem("primary", Colors))
+                compare(audioMeters[0].progressColor, sound.foregroundColor)
                 snapshotAudio("speaker-selected")
                 function tab(mode) { return findChild(bar.item, "audioStatusTab-" + mode) }
                 const selector = findChild(bar.item, "audioStatusSelector")
@@ -1109,6 +1179,7 @@ else:
             self.assertIn("BAR_DISPLAY_CONTROL_PASSED", output, output)
             self.assertIn("BAR_WEATHER_SECTION_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_INITIALIZATION_PASSED", output, output)
+            self.assertIn("BAR_HORIZONTAL_WORKSPACE_OCCUPANCY_PASSED", output, output)
             self.assertIn("BAR_WORKSPACE_OCCUPANCY_PASSED", output, output)
             for layout in ("island", "pills"):
                 self.assertIn("BAR_CONTEXT_TEXT_PASSED_" + layout, output, output)

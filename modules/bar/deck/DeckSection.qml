@@ -8,6 +8,7 @@ import qs.modules.theme
 // A titled group inside a card or scrolling list.
 Pane {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     default property alias sectionData: body.data
     property string title: ""
     padding: 0
@@ -19,7 +20,7 @@ Pane {
             text: root.title
             Layout.fillWidth: true
             Layout.leftMargin: Styling.fontSize(0) * 0.3
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
             font.pixelSize: Styling.fontSize(-3)
             font.weight: Font.DemiBold
         }

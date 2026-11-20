@@ -7,6 +7,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property string mode: "compact"
     property bool lyricsEnabled: Config.bar?.lyricsEnabled ?? true
@@ -190,7 +191,7 @@ Item {
         visible: root.shouldRender && root.mode === "detail"
             && (!root.lyricsEnabled || !LyricsService.available)
         text: root.statusText
-        color: Colors.overSurfaceVariant
+        color: root.shellPalette.overSurfaceVariant
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(1)
         horizontalAlignment: Text.AlignHCenter

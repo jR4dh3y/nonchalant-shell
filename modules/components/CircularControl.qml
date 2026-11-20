@@ -159,7 +159,7 @@ StyledRect {
                     let outerX = centerX + outerRadius * Math.cos(handleAngle);
                     let outerY = centerY + outerRadius * Math.sin(handleAngle);
 
-                    ctx.strokeStyle = Colors.overBackground;
+                    ctx.strokeStyle = root.shellPalette.overBackground;
                     ctx.lineWidth = lineWidth;
                     ctx.beginPath();
                     ctx.moveTo(innerX, innerY);
@@ -173,7 +173,7 @@ StyledRect {
                 let remainingEnd = baseStartAngle + totalAngle;
 
                 if (remainingStart < remainingEnd) {
-                    ctx.strokeStyle = Colors.outline;
+                    ctx.strokeStyle = root.shellPalette.outline;
                     ctx.lineWidth = lineWidth;
                     ctx.beginPath();
                     ctx.arc(centerX, centerY, radius, remainingStart, remainingEnd, false);
@@ -213,7 +213,7 @@ StyledRect {
         font.hintingPreference: Font.PreferFullHinting
         anchors.centerIn: parent
         text: root.icon
-        color: Colors.overBackground
+        color: root.shellPalette.overBackground
         font.family: Icons.font
         font.pixelSize: 18
         rotation: root.enableIconRotation ? root.iconRotation : 0

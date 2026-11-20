@@ -8,6 +8,7 @@ import qs.modules.theme
 // Battery flyout: charge, then power profiles, then the way to session actions.
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     signal powerRequested()
     spacing: Styling.fontSize(0) * 0.5
     DeckCard {
@@ -17,7 +18,7 @@ ColumnLayout {
         RowLayout {
             Layout.fillWidth: true
             spacing: Styling.fontSize(0) * 0.6
-            StyledText { text: Battery.getBatteryIcon(); font.family: Icons.font; font.pixelSize: Styling.fontSize(6); color: Colors.primary }
+            StyledText { text: Battery.getBatteryIcon(); font.family: Icons.font; font.pixelSize: Styling.fontSize(6); color: Battery.statusColor(root.shellPalette) }
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
@@ -27,7 +28,7 @@ ColumnLayout {
                     text: Battery.isCharging ? "Charging" + (Battery.timeToFull ? " · " + Battery.timeToFull + " to full" : "")
                         : Battery.isPluggedIn ? "Plugged in" : "On battery" + (Battery.timeToEmpty ? " · " + Battery.timeToEmpty + " left" : "")
                     wrapMode: Text.WordWrap
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     font.pixelSize: Styling.fontSize(-2)
                 }
             }

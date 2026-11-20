@@ -6,6 +6,7 @@ import qs.config
 
 Rectangle {
     id: button
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(button)
 
     required property string day
     required property int isToday
@@ -24,7 +25,8 @@ Rectangle {
         anchors.centerIn: parent
         width: Math.min(parent.width, parent.height)
         height: width
-        variant: (isToday === 1) ? "primary" : "transparent"
+        // Today is the selected day: primaryContainer with its paired ink.
+        variant: (isToday === 1) ? "primarycontainer" : "transparent"
         radius: parent.radius
 
         Text {
@@ -42,13 +44,14 @@ Rectangle {
             font.family: Config.defaultFont
             color: {
                 if (isToday === 1)
-                    return Styling.srItem("primary");
+                    return Styling.srItem("primarycontainer", button.shellPalette);
                 if (bold) {
-                    return isCurrentDayOfWeek ? Colors.overBackground : Colors.outline;
+                    return isCurrentDayOfWeek ? button.shellPalette.overBackground : button.shellPalette.overSurfaceVariant;
                 }
                 if (isToday === 0)
-                    return Colors.overSurface;
-                return Colors.withAlpha(Colors.overSurfaceVariant, 0.7);
+                    return button.shellPalette.overSurface;
+                // Other-month days stay readable: subdued ink, no extra fade.
+                return button.shellPalette.overSurfaceVariant;
             }
 
             Behavior on color {

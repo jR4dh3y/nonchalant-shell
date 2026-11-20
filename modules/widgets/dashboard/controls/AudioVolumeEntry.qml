@@ -11,6 +11,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property PwNode node
     property string icon: ""
@@ -70,7 +71,7 @@ Item {
                         }
                         font.family: Icons.font
                         font.pixelSize: 16
-                        color: root.isMuted ? Colors.error : Colors.overBackground
+                        color: root.isMuted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
 
                         Behavior on color {
                             enabled: Config.animDuration > 0
@@ -102,10 +103,10 @@ Item {
                 scroll: false
                 progressColor: {
                     if (root.isMuted)
-                        return Colors.outline;
+                        return root.shellPalette.outlineVariant;
                     if (Audio.protectionTriggered && root.isMainDevice)
-                        return Colors.warning;
-                    return Styling.srItem("overprimary");
+                        return root.shellPalette.warning;
+                    return Styling.srItem("overprimary", root.shellPalette);
                 }
 
                 onValueChanged: {
@@ -135,7 +136,7 @@ Item {
                 text: root.isMainDevice ? Audio.friendlyDeviceName(root.node) : Audio.appNodeDisplayName(root.node)
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
             }
 
             // Separator line
@@ -151,7 +152,7 @@ Item {
                 text: Icons.shieldCheck
                 font.family: Icons.font
                 font.pixelSize: 12
-                color: Colors.warning
+                color: root.shellPalette.warning
 
                 StyledToolTip {
                     show: parent.visible && protectionIndicatorMa.containsMouse
@@ -172,7 +173,7 @@ Item {
                 text: `${Math.round(root.volume * 100)}%`
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 horizontalAlignment: Text.AlignRight
             }
         }

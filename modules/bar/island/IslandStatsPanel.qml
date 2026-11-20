@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property bool showHeader: false
     signal backRequested()
@@ -69,6 +70,8 @@ Item {
                 anchors.margins: 12
                 spacing: 10
 
+                    // Series identities: CPU, GPU and disk primary, memory
+                    // secondary, network tertiary; 90% load turns the bar to error.
                     // 1. CPU Row
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -91,7 +94,7 @@ Item {
                                     text: Icons.cpu
                                     font.family: Icons.font
                                     font.pixelSize: 13
-                                    color: Styling.srItem("primary")
+                                    color: Styling.srItem("primary", root.shellPalette)
                                 }
                             }
 
@@ -107,7 +110,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(-1)
                                     font.bold: true
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     elide: Text.ElideRight
                                 }
 
@@ -121,7 +124,7 @@ Item {
                                     }
                                     font.family: Config.theme.monoFont
                                     font.pixelSize: Styling.fontSize(-3)
-                                    color: Colors.overSurfaceVariant
+                                    color: SystemResources.cpuTemp >= 90 ? root.shellPalette.danger : root.shellPalette.overSurfaceVariant
                                 }
                             }
 
@@ -132,7 +135,7 @@ Item {
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(0)
                                 font.bold: true
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                             }
                         }
 
@@ -149,7 +152,7 @@ Item {
                                 height: parent.height
                                 width: (SystemResources.cpuUsage > 0) ? Math.max(2, cpuTrack.width * Math.min(1.0, SystemResources.cpuUsage / 100)) : 0
                                 radius: Styling.scaledRadius(2)
-                                variant: "primary"
+                                variant: SystemResources.cpuUsage >= 90 ? "error" : "primary"
 
                                 Behavior on width {
                                     NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
@@ -162,7 +165,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         height: 1
-                        color: Colors.outlineVariant
+                        color: root.shellPalette.outlineVariant
                         opacity: 0.2
                     }
 
@@ -179,7 +182,7 @@ Item {
                                 implicitWidth: 26
                                 implicitHeight: 26
                                 radius: Styling.scaledRadius(13)
-                                variant: "primary"
+                                variant: "secondary"
 
                                 Text {
                                     anchors.centerIn: parent
@@ -188,7 +191,7 @@ Item {
                                     text: Icons.ram
                                     font.family: Icons.font
                                     font.pixelSize: 13
-                                    color: Styling.srItem("primary")
+                                    color: Styling.srItem("secondary", root.shellPalette)
                                 }
                             }
 
@@ -204,7 +207,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(-1)
                                     font.bold: true
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                 }
 
                                 Text {
@@ -213,7 +216,7 @@ Item {
                                     text: `${(SystemResources.ramUsed / 1024 / 1024).toFixed(1)} GB / ${(SystemResources.ramTotal / 1024 / 1024).toFixed(1)} GB`
                                     font.family: Config.theme.monoFont
                                     font.pixelSize: Styling.fontSize(-3)
-                                    color: Colors.overSurfaceVariant
+                                    color: root.shellPalette.overSurfaceVariant
                                 }
                             }
 
@@ -224,7 +227,7 @@ Item {
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(0)
                                 font.bold: true
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                             }
                         }
 
@@ -241,7 +244,7 @@ Item {
                                 height: parent.height
                                 width: (SystemResources.ramUsage > 0) ? Math.max(2, ramTrack.width * Math.min(1.0, SystemResources.ramUsage / 100)) : 0
                                 radius: Styling.scaledRadius(2)
-                                variant: "primary"
+                                variant: "secondary"
 
                                 Behavior on width {
                                     NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
@@ -254,7 +257,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         height: 1
-                        color: Colors.outlineVariant
+                        color: root.shellPalette.outlineVariant
                         opacity: 0.2
                     }
 
@@ -287,7 +290,7 @@ Item {
                                         text: Icons.gpu
                                         font.family: Icons.font
                                         font.pixelSize: 13
-                                        color: Styling.srItem("primary")
+                                        color: Styling.srItem("primary", root.shellPalette)
                                     }
                                 }
 
@@ -303,7 +306,7 @@ Item {
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-1)
                                         font.bold: true
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         elide: Text.ElideRight
                                     }
 
@@ -319,7 +322,7 @@ Item {
                                         }
                                         font.family: Config.theme.monoFont
                                         font.pixelSize: Styling.fontSize(-3)
-                                        color: Colors.overSurfaceVariant
+                                        color: root.shellPalette.overSurfaceVariant
                                     }
                                 }
 
@@ -330,7 +333,7 @@ Item {
                                     font.family: Config.theme.monoFont
                                     font.pixelSize: Styling.fontSize(0)
                                     font.bold: true
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                 }
                             }
 
@@ -357,7 +360,7 @@ Item {
                             Rectangle {
                                 Layout.fillWidth: true
                                 height: 1
-                                color: Colors.outlineVariant
+                                color: root.shellPalette.outlineVariant
                                 opacity: 0.2
                             }
                         }
@@ -392,7 +395,7 @@ Item {
                                         text: Icons.disk
                                         font.family: Icons.font
                                         font.pixelSize: 13
-                                        color: Styling.srItem("primary")
+                                        color: Styling.srItem("primary", root.shellPalette)
                                     }
                                 }
 
@@ -408,7 +411,7 @@ Item {
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-1)
                                         font.bold: true
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         elide: Text.ElideRight
                                     }
 
@@ -418,7 +421,7 @@ Item {
                                         text: `${root.formatStorage(SystemResources.diskUsed[diskDelegate.modelData] || 0)} / ${root.formatStorage(SystemResources.diskTotal[diskDelegate.modelData] || 0)}`
                                         font.family: Config.theme.monoFont
                                         font.pixelSize: Styling.fontSize(-3)
-                                        color: Colors.overSurfaceVariant
+                                        color: root.shellPalette.overSurfaceVariant
                                     }
                                 }
 
@@ -429,7 +432,7 @@ Item {
                                     font.family: Config.theme.monoFont
                                     font.pixelSize: Styling.fontSize(0)
                                     font.bold: true
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                 }
                             }
 
@@ -445,7 +448,7 @@ Item {
                                     height: parent.height
                                     width: (diskDelegate.diskUsageVal > 0) ? Math.max(2, diskTrack.width * Math.min(1.0, diskDelegate.diskUsageVal / 100)) : 0
                                     radius: Styling.scaledRadius(2)
-                                    variant: "primary"
+                                    variant: diskDelegate.diskUsageVal >= 90 ? "error" : "primary"
 
                                     Behavior on width {
                                         NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
@@ -456,7 +459,7 @@ Item {
                             Rectangle {
                                 Layout.fillWidth: true
                                 height: 1
-                                color: Colors.outlineVariant
+                                color: root.shellPalette.outlineVariant
                                 opacity: 0.2
                             }
                         }
@@ -471,7 +474,7 @@ Item {
                             implicitWidth: 26
                             implicitHeight: 26
                             radius: Styling.scaledRadius(13)
-                            variant: "primary"
+                            variant: "tertiary"
 
                             Text {
                                 anchors.centerIn: parent
@@ -480,7 +483,7 @@ Item {
                                 text: NetworkService.vpnConnected ? Icons.vpnKey : (NetworkService.wifiEnabled ? Icons.wifiHigh : Icons.ethernet)
                                 font.family: Icons.font
                                 font.pixelSize: 13
-                                color: Styling.srItem("primary")
+                                color: Styling.srItem("tertiary", root.shellPalette)
                             }
                         }
 
@@ -496,7 +499,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.bold: true
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                                 elide: Text.ElideRight
                             }
 
@@ -506,7 +509,7 @@ Item {
                                 text: `↓ ${root.formatSpeed(SystemResources.networkDownloadSpeed)}   ↑ ${root.formatSpeed(SystemResources.networkUploadSpeed)}`
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-3)
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                             }
                         }
                     }

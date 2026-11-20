@@ -11,28 +11,34 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property bool schemeListExpanded: false
-    readonly property var matugenSchemes: [
-        "scheme-wallpaper",
-        "scheme-content",
-        "scheme-expressive",
-        "scheme-fidelity",
-        "scheme-fruit-salad",
-        "scheme-monochrome",
-        "scheme-neutral",
-        "scheme-rainbow",
-        "scheme-tonal-spot",
-        "scheme-vibrant"
-    ]
+    readonly property var schemeLabels: ({
+        "scheme-wallpaper": "Wallpaper",
+        "scheme-content-dominant": "Content",
+        "scheme-expressive-dominant": "Expressive",
+        "scheme-fidelity": "Fidelity",
+        "scheme-fruit-salad": "Fruit Salad",
+        "scheme-monochrome": "Monochrome",
+        "scheme-neutral": "Neutral",
+        "scheme-rainbow": "Rainbow",
+        "scheme-smart": "Smart (Material)",
+        "scheme-tonal-spot": "Tonal Spot",
+        "scheme-tonal-spot-contrast": "Tonal Spot (Contrast)",
+        "scheme-content": "Content (Saturated accents)",
+        "scheme-expressive": "Expressive (Saturated accents)",
+        "scheme-vibrant": "Vibrant (Material)",
+        "scheme-noctalia-vibrant": "Vibrant (Noctalia-style)"
+    })
     property var presets: GlobalStates.wallpaperManager ? GlobalStates.wallpaperManager.colorPresets : []
 
     property var combinedModel: {
         var currentPresets = presets;
         var list = [];
-        for (var i = 0; i < matugenSchemes.length; i++) {
+        for (const scheme of Object.keys(schemeLabels)) {
             list.push({
-                id: matugenSchemes[i],
-                label: getSchemeDisplayName(matugenSchemes[i]),
+                id: scheme,
+                label: schemeLabels[scheme],
                 type: "matugen"
             });
         }
@@ -154,19 +160,7 @@ Item {
     Component.onCompleted: updateSelectedIndex()
 
     function getSchemeDisplayName(scheme) {
-        const map = {
-            "scheme-wallpaper": "Wallpaper",
-            "scheme-content": "Content",
-            "scheme-expressive": "Expressive",
-            "scheme-fidelity": "Fidelity",
-            "scheme-fruit-salad": "Fruit Salad",
-            "scheme-monochrome": "Monochrome",
-            "scheme-neutral": "Neutral",
-            "scheme-rainbow": "Rainbow",
-            "scheme-tonal-spot": "Tonal Spot",
-            "scheme-vibrant": "Vibrant"
-        };
-        return map[scheme] || scheme;
+        return schemeLabels[scheme] || scheme;
     }
 
     function getCurrentDisplayName() {
@@ -192,9 +186,14 @@ Item {
     }
 
     StyledRect {
-        variant: keyboardNavigationActive && schemeButton.activeFocus ? "focus" : "pane"
+        variant: "pane"
         radius: Styling.radius(4)
         anchors.fill: parent
+
+        // Keyboard focus is an outline; the selected scheme keeps its own fill.
+        FocusRing {
+            shown: keyboardNavigationActive && schemeButton.activeFocus
+        }
 
         ColumnLayout {
             id: mainLayout
@@ -295,7 +294,7 @@ Item {
                     }
 
                     background: Rectangle {
-                        color: Colors.surfaceContainerLow
+                        color: root.shellPalette.surfaceContainerLow
                         radius: Styling.radius(0)
                     }
 
@@ -307,7 +306,7 @@ Item {
                         StyledText {
                             id: schemeLabel
                             text: schemeButton.text
-                            color: Colors.overSurface
+                            color: root.shellPalette.overSurface
                             width: Math.min(Math.ceil(implicitWidth), parent.width)
                             height: Math.ceil(implicitHeight)
                             x: Math.round((parent.width - width) / 2)
@@ -335,7 +334,7 @@ Item {
                         implicitWidth: 72
                         implicitHeight: 40
                         radius: Styling.radius(0)
-                        color: Colors.surfaceContainerLow
+                        color: root.shellPalette.surfaceContainerLow
 
                         Text {
                             renderType: Text.NativeRendering
@@ -345,7 +344,7 @@ Item {
                             anchors.leftMargin: 10
                             anchors.verticalCenter: parent.verticalCenter
                             text: Icons.sun
-                            color: Config.theme.lightMode ? Styling.srItem("primary") : Colors.overBackground
+                            color: Config.theme.lightMode ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overBackground
                             font.family: Icons.font
                             font.pixelSize: 20
                         }
@@ -358,7 +357,7 @@ Item {
                             anchors.rightMargin: 8
                             anchors.verticalCenter: parent.verticalCenter
                             text: Icons.moon
-                            color: Config.theme.lightMode ? Colors.overBackground : Styling.srItem("primary")
+                            color: Config.theme.lightMode ? root.shellPalette.overBackground : Styling.srItem("primary", root.shellPalette)
                             font.family: Icons.font
                             font.pixelSize: 20
                         }
@@ -388,6 +387,7 @@ Item {
 
     PopupWindow {
         id: schemeListPopup
+        readonly property ShellPalette shellPalette: root.shellPalette
         anchor.item: schemeButton
         anchor.rect.x: 0
         anchor.rect.y: schemeButton.height + 4
@@ -463,7 +463,7 @@ Item {
                                 anchors.leftMargin: 12
                                 anchors.rightMargin: 8
                                 text: modelData.label
-                                color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
+                                color: delegateRoot.isSelected ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurface
                                 font.family: Config.theme.font
                                 font.pixelSize: Config.theme.fontSize
                                 font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal

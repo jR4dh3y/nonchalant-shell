@@ -5,6 +5,7 @@ import qs.config
 
 Menu {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root.parent)
 
     // Propiedades principales
     property var items: []
@@ -43,15 +44,15 @@ Menu {
     property int itemHeight: 36
 
     // Propiedades de estilo del menú
-    property color backgroundColor: Colors.background
-    property color borderColor: Colors.surfaceBright
+    property color backgroundColor: root.shellPalette.background
+    property color borderColor: root.shellPalette.surfaceBright
     property int borderWidth: 2
     property real menuRadius: Styling.radius(0)
 
     // Propiedades de highlight por defecto
-    property color defaultHighlightColor: Styling.srItem("overprimary")
-    property color defaultTextColor: Colors.overPrimary
-    property color normalTextColor: Colors.overBackground
+    property color defaultHighlightColor: Styling.srItem("overprimary", root.shellPalette)
+    property color defaultTextColor: root.shellPalette.overPrimary
+    property color normalTextColor: root.shellPalette.overBackground
 
     // Propiedades internas
     property int hoveredIndex: -1
@@ -180,7 +181,7 @@ Menu {
                 anchors.fill: parent
                 anchors.topMargin: isSeparatorItem ? 4 : 0
                 anchors.bottomMargin: isSeparatorItem ? 4 : 0
-                color: isSeparatorItem ? Colors.surface : "transparent"
+                color: isSeparatorItem ? root.shellPalette.surface : "transparent"
                 radius: isSeparatorItem ? 0 : (root.menuRadius > 6 ? root.menuRadius - 6 : 0)
             }
 

@@ -242,6 +242,6 @@ Item {
 
     Component {
         id: wallpapersComponent
-        WallpapersTab {}
+        WallpapersTab { screenName: root.screenName }
     }
 }

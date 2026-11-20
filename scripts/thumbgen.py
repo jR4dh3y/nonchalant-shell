@@ -16,7 +16,7 @@ from typing import List, Optional, Tuple
 
 # Supported extensions
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".avi", ".mkv"}
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".bmp"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".tif", ".tiff", ".bmp"}
 GIF_EXTENSIONS = {".gif"}
 
 # Default thumbnail size

@@ -8,6 +8,7 @@ import "../../../../config/defaults/theme.js" as ThemeDefaults
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property var colorNames
     required property var stops
@@ -74,7 +75,10 @@ Item {
             "overtertiary": "srOverTertiary",
             "error": "srError",
             "errorfocus": "srErrorFocus",
-            "overerror": "srOverError"
+            "overerror": "srOverError",
+            "primarycontainer": "srPrimaryContainer",
+            "secondarycontainer": "srSecondaryContainer",
+            "errorcontainer": "srErrorContainer"
         };
         const variantKey = variantKeyMap[variantId] || "srCommon";
         // Guard against undefined ThemeDefaults.data
@@ -107,7 +111,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-1)
                 font.weight: Font.Medium
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
             }
 
             Separator {
@@ -121,7 +125,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-1)
                 font.weight: Font.Medium
-                color: Styling.srItem("overprimary")
+                color: Styling.srItem("overprimary", root.shellPalette)
                 visible: root.selectedStopIndex >= 0 && root.selectedStopIndex < root.stops.length
             }
         }
@@ -191,7 +195,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     height: 32
                     radius: Styling.radius(-4)
-                    border.color: Colors.outline
+                    border.color: root.shellPalette.outline
                     border.width: 2
                     clip: true
 
@@ -200,35 +204,20 @@ Item {
                         anchors.fill: parent
                         anchors.margins: 2 // Keep inside border
 
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.clearRect(0, 0, width, height);
+                        readonly property var resolvedStops: root.stops.map(stop => [Config.resolveColor(stop[0], root.shellPalette), stop[1]])
+                        onResolvedStopsChanged: requestPaint()
 
-                            var stops = root.stops;
-                            if (!stops || stops.length === 0)
+                        onPaint: {
+                            const ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            if (!resolvedStops.length)
                                 return;
 
-                            var grad = ctx.createLinearGradient(0, 0, width, 0);
-                            for (var i = 0; i < stops.length; i++) {
-                                var s = stops[i];
-                                grad.addColorStop(s[1], Config.resolveColor(s[0]));
-                            }
-
-                            ctx.fillStyle = grad;
+                            const gradient = ctx.createLinearGradient(0, 0, width, 0);
+                            for (const [color, position] of resolvedStops)
+                                gradient.addColorStop(position, color);
+                            ctx.fillStyle = gradient;
                             ctx.fillRect(0, 0, width, height);
-                        }
-
-                        Connections {
-                            target: root
-                            function onStopsChanged() {
-                                gradientPreviewCanvas.requestPaint();
-                            }
-                        }
-                        Connections {
-                            target: Colors
-                            function onLoaded() {
-                                gradientPreviewCanvas.requestPaint();
-                            }
                         }
 
                         // Repaint when size changes
@@ -263,7 +252,7 @@ Item {
                             height: 6
                             anchors.top: parent.top
                             anchors.horizontalCenter: parent.horizontalCenter
-                            color: stopHandle.isSelected ? Styling.srItem("overprimary") : Colors.outline
+                            color: stopHandle.isSelected ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
                         }
 
                         // Handle visual (centered)
@@ -273,8 +262,8 @@ Item {
                             height: 16
                             radius: 8
                             anchors.centerIn: parent
-                            color: Config.resolveColor(stopHandle.stopColor)
-                            border.color: stopHandle.isSelected ? Styling.srItem("overprimary") : Colors.outline
+                            color: Config.resolveColor(stopHandle.stopColor, root.shellPalette)
+                            border.color: stopHandle.isSelected ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
                             border.width: stopHandle.isSelected ? 2 : 1
 
                             // Inner highlight
@@ -301,7 +290,7 @@ Item {
                             height: 6
                             anchors.bottom: parent.bottom
                             anchors.horizontalCenter: parent.horizontalCenter
-                            color: stopHandle.isSelected ? Styling.srItem("overprimary") : Colors.outline
+                            color: stopHandle.isSelected ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
                         }
 
                         MouseArea {

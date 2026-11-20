@@ -4,9 +4,11 @@ import qs.config
 import qs.modules.theme
 
 Rectangle {
+    id: paletteOwner
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(paletteOwner)
     property bool vert: false
 
-    color: Colors.overBackground
+    color: paletteOwner.shellPalette.overBackground
     opacity: 0.1
     radius: Styling.radius(0)
 

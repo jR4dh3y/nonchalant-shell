@@ -7,6 +7,7 @@ import qs.modules.theme
 
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     spacing: Styling.fontSize(0) * 0.3
     RowLayout {
         Layout.fillWidth: true
@@ -34,7 +35,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 text: MprisController.trackArtists
                 visible: text !== ""
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 font.pixelSize: Styling.fontSize(-3)
                 elide: Text.ElideRight
             }

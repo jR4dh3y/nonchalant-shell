@@ -5,6 +5,7 @@ import qs.modules.bar
 import qs.modules.services
 import qs.modules.globals
 import qs.modules.components
+import qs.modules.theme
 import qs.modules.widgets.launcher
 import qs.modules.widgets.powermenu
 import qs.modules.notifications
@@ -16,6 +17,7 @@ PanelWindow {
     id: unifiedPanel
 
     required property ShellScreen targetScreen
+    readonly property ShellPalette shellPalette: DisplayPalettes.forScreen(targetScreen?.name ?? "")
     screen: targetScreen
 
     anchors {
@@ -159,7 +161,7 @@ PanelWindow {
             id: menuDim
             anchors.fill: parent
             z: -1
-            color: "black"
+            color: unifiedPanel.shellPalette.scrim
             opacity: unifiedPanel.needsFullScreenInput ? 0.35 : 0
             visible: opacity > 0
 

@@ -5,6 +5,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     // =========================================================================
     // API Properties
@@ -14,8 +15,8 @@ Item {
     property real startAngleDeg: 180 // 9 o'clock
     property real spanAngleDeg: 180  // Clockwise sweep
     
-    property color accentColor: Colors.primary
-    property color trackColor: Colors.outline
+    property color accentColor: root.shellPalette.primary
+    property color trackColor: root.shellPalette.outline
     
     property real lineWidth: 6
     property real ringPadding: 12    // Padding from edge
@@ -306,7 +307,7 @@ Item {
         
         // 3. Handle (Line)
         ShapePath {
-            strokeColor: Colors.overBackground
+            strokeColor: root.shellPalette.overBackground
             strokeWidth: root.animatedHandleWidth
             strokeStyle: ShapePath.SolidLine
             capStyle: ShapePath.RoundCap

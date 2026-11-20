@@ -7,11 +7,12 @@ import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
 import Quickshell
-import Quickshell.Io
+import qs.modules.globals
 import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int maxContentWidth: 480
     readonly property int contentWidth: Math.min(width, maxContentWidth)
@@ -49,19 +50,6 @@ Item {
             colorPickerCallback(color);
         }
         colorPickerCurrentColor = color;
-    }
-
-    FileView {
-        id: wallpaperConfig
-        // QUICKSHELL-GIT: path: Quickshell.cachePath("wallpapers.json")
-        path: Quickshell.env("HOME") + "/.cache/nonchalant/wallpapers.json"
-
-        JsonAdapter {
-            property string currentWall: ""
-            property string wallPath: ""
-            property string matugenScheme: "scheme-wallpaper"
-            property string activeColorPreset: ""
-        }
     }
 
     // Convert sr property name to variant id (srBg -> bg, srPrimaryFocus -> primaryfocus)
@@ -167,7 +155,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 Layout.bottomMargin: -4
                             }
 
@@ -182,7 +170,7 @@ Item {
                                     text: "Wallpapers"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -200,7 +188,7 @@ Item {
                                         anchors.margins: 8
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         selectByMouse: true
                                         clip: true
                                         verticalAlignment: TextInput.AlignVCenter
@@ -211,18 +199,12 @@ Item {
                                             verticalAlignment: Text.AlignVCenter
                                             text: "Default"
                                             font: parent.font
-                                            color: Colors.overSurfaceVariant
+                                            color: root.shellPalette.overSurfaceVariant
                                             visible: !parent.text && !parent.activeFocus
                                         }
 
-                                        text: wallpaperConfig.adapter.wallPath
-
-                                        onEditingFinished: {
-                                            if (wallpaperConfig.adapter.wallPath !== text) {
-                                                wallpaperConfig.adapter.wallPath = text;
-                                                wallpaperConfig.writeAdapter();
-                                            }
-                                        }
+                                        text: GlobalStates.wallpaperManager?.wallpaperDir ?? ""
+                                        onEditingFinished: GlobalStates.wallpaperManager?.setWallpaperDir(text)
                                     }
                                 }
                             }
@@ -254,7 +236,7 @@ Item {
                                     text: "Animation"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -262,7 +244,7 @@ Item {
                                     id: animDurationSlider
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 20
-                                    progressColor: Styling.srItem("overprimary")
+                                    progressColor: Styling.srItem("overprimary", root.shellPalette)
                                     tooltipText: `${Math.round(value * 1000)}ms`
                                     scroll: true
                                     stepSize: 0.01  // 10ms steps (1/100 of 1000ms)
@@ -292,7 +274,7 @@ Item {
                                     text: Config.theme.animDuration + "ms"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 50
                                 }
@@ -309,7 +291,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 Layout.bottomMargin: -4
                             }
 
@@ -324,7 +306,7 @@ Item {
                                     text: "UI Font"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -342,7 +324,7 @@ Item {
                                         anchors.margins: 8
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         selectByMouse: true
                                         clip: true
                                         verticalAlignment: TextInput.AlignVCenter
@@ -379,7 +361,7 @@ Item {
                                         anchors.margins: 8
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         selectByMouse: true
                                         clip: true
                                         verticalAlignment: TextInput.AlignVCenter
@@ -414,7 +396,7 @@ Item {
                                     text: "px"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overSurfaceVariant
+                                    color: root.shellPalette.overSurfaceVariant
                                 }
                             }
 
@@ -429,7 +411,7 @@ Item {
                                     text: "Mono Font"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -447,7 +429,7 @@ Item {
                                         anchors.margins: 8
                                         font.family: Config.theme.monoFont
                                         font.pixelSize: Styling.monoFontSize(0)
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         selectByMouse: true
                                         clip: true
                                         verticalAlignment: TextInput.AlignVCenter
@@ -484,7 +466,7 @@ Item {
                                         anchors.margins: 8
                                         font.family: Config.theme.monoFont
                                         font.pixelSize: Styling.monoFontSize(0)
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         selectByMouse: true
                                         clip: true
                                         verticalAlignment: TextInput.AlignVCenter
@@ -519,7 +501,7 @@ Item {
                                     text: "px"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overSurfaceVariant
+                                    color: root.shellPalette.overSurfaceVariant
                                 }
                             }
 
@@ -534,7 +516,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 Layout.bottomMargin: -4
                             }
 
@@ -546,7 +528,7 @@ Item {
                                     id: roundnessSlider
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 20
-                                    progressColor: Styling.srItem("overprimary")
+                                    progressColor: Styling.srItem("overprimary", root.shellPalette)
                                     tooltipText: `${Math.round(value * 20)}`
                                     scroll: true
                                     stepSize: 0.05  // 1/20 = 0.05 for integer steps in 0-20 range
@@ -578,7 +560,7 @@ Item {
                                     text: Math.round(roundnessSlider.value * 20)
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 24
                                 }
@@ -606,7 +588,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 Layout.bottomMargin: -4
                             }
 
@@ -621,7 +603,7 @@ Item {
                                     text: "Opacity"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -629,7 +611,7 @@ Item {
                                     id: shadowOpacitySlider
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 20
-                                    progressColor: Styling.srItem("overprimary")
+                                    progressColor: Styling.srItem("overprimary", root.shellPalette)
                                     tooltipText: `${Math.round(value * 100)}%`
                                     scroll: true
                                     stepSize: 0.01
@@ -658,7 +640,7 @@ Item {
                                     text: Math.round(shadowOpacitySlider.value * 100) + "%"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
                                 }
@@ -675,7 +657,7 @@ Item {
                                     text: "Blur"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -683,7 +665,7 @@ Item {
                                     id: shadowBlurSlider
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 20
-                                    progressColor: Styling.srItem("overprimary")
+                                    progressColor: Styling.srItem("overprimary", root.shellPalette)
                                     tooltipText: `${(value * 4).toFixed(1)}`
                                     scroll: true
                                     stepSize: 0.01
@@ -713,7 +695,7 @@ Item {
                                     text: Config.theme.shadowBlur.toFixed(1)
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
                                 }
@@ -730,7 +712,7 @@ Item {
                                     text: "Offset X"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -738,7 +720,7 @@ Item {
                                     id: shadowXOffsetSlider
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 20
-                                    progressColor: Styling.srItem("overprimary")
+                                    progressColor: Styling.srItem("overprimary", root.shellPalette)
                                     tooltipText: `${Math.round((value - 0.5) * 40)}`
                                     scroll: true
                                     stepSize: 0.025  // 1/40 for integer steps in -20 to +20 range
@@ -768,7 +750,7 @@ Item {
                                     text: Config.theme.shadowXOffset
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
                                 }
@@ -784,7 +766,7 @@ Item {
                                     text: "Offset Y"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -792,7 +774,7 @@ Item {
                                     id: shadowYOffsetSlider
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 20
-                                    progressColor: Styling.srItem("overprimary")
+                                    progressColor: Styling.srItem("overprimary", root.shellPalette)
                                     tooltipText: `${Math.round((value - 0.5) * 40)}`
                                     scroll: true
                                     stepSize: 0.025  // 1/40 for integer steps in -20 to +20 range
@@ -822,7 +804,7 @@ Item {
                                     text: Config.theme.shadowYOffset
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 40
                                 }
@@ -839,7 +821,7 @@ Item {
                                     text: "Color"
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     Layout.preferredWidth: 80
                                 }
 
@@ -862,9 +844,9 @@ Item {
                                             Layout.preferredWidth: 16
                                             Layout.preferredHeight: 16
                                             radius: 4
-                                            color: Config.resolveColor(Config.theme.shadowColor)
+                                            color: Config.resolveColor(Config.theme.shadowColor, root.shellPalette)
                                             border.width: 1
-                                            border.color: Colors.outline
+                                            border.color: root.shellPalette.outline
                                         }
 
                                         Text {
@@ -881,7 +863,7 @@ Item {
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        color: Styling.srItem("overprimary")
+                                        color: Styling.srItem("overprimary", root.shellPalette)
                                         radius: shadowColorButton.radius ?? 0
                                         opacity: shadowColorButton.isHovered ? 0.15 : 0
 
@@ -902,7 +884,7 @@ Item {
                                         onExited: shadowColorButton.isHovered = false
 
                                         onClicked: {
-                                            root.openColorPicker(Colors.availableColorNames, Config.theme.shadowColor, "Select Shadow Color", function (color) {
+                                            root.openColorPicker(root.shellPalette.availableColorNames, Config.theme.shadowColor, "Select Shadow Color", function (color) {
                                                 Config.theme.shadowColor = color;
                                             });
                                         }
@@ -944,7 +926,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 Layout.bottomMargin: -4
                             }
 
@@ -1063,7 +1045,7 @@ Item {
 
                                                     Rectangle {
                                                         anchors.fill: parent
-                                                        color: Styling.srItem("overprimary")
+                                                        color: Styling.srItem("overprimary", root.shellPalette)
                                                         radius: variantTagRow.radius ?? 0
                                                         opacity: variantTagRow.isHovered ? 0.15 : 0
 
@@ -1103,13 +1085,13 @@ Item {
 
                                         background: Rectangle {
                                             implicitHeight: 8
-                                            color: Colors.surface
+                                            color: root.shellPalette.surface
                                             radius: Styling.scaledRadius(4)
                                         }
 
                                         contentItem: Rectangle {
                                             implicitHeight: 8
-                                            color: Styling.srItem("overprimary")
+                                            color: Styling.srItem("overprimary", root.shellPalette)
                                             radius: Styling.scaledRadius(4)
                                         }
 
@@ -1224,7 +1206,7 @@ Item {
                                             Rectangle {
                                                 id: hoverOverlay
                                                 anchors.fill: parent
-                                                color: Styling.srItem("overprimary")
+                                                color: Styling.srItem("overprimary", root.shellPalette)
                                                 radius: variantTag.radius ?? 0
                                                 opacity: variantTag.isHovered ? 0.15 : 0
 
@@ -1308,7 +1290,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.Medium
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                                 Layout.bottomMargin: -4
                             }
 
@@ -1406,7 +1388,7 @@ Item {
                 text: toggleRow.label
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 Layout.fillWidth: true
             }
 
@@ -1417,7 +1399,7 @@ Item {
                 text: toggleRow.description
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true
             }
@@ -1440,8 +1422,8 @@ Item {
                 x: toggleSwitch.leftPadding
                 y: parent.height / 2 - height / 2
                 radius: Styling.pillRadius(height)
-                color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
-                border.color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.outline
+                color: toggleSwitch.checked ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.surfaceBright
+                border.color: toggleSwitch.checked ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
 
                 Behavior on color {
                     enabled: Config.animDuration > 0
@@ -1456,7 +1438,7 @@ Item {
                     width: parent.height - 4
                     height: width
                     radius: Styling.pillRadius(width)
-                    color: toggleSwitch.checked ? Colors.background : Colors.overSurfaceVariant
+                    color: toggleSwitch.checked ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
 
                     Behavior on x {
                         enabled: Config.animDuration > 0

@@ -6,6 +6,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property string text: ""
     property string fontFamily: Config.theme.font
@@ -16,9 +17,9 @@ Item {
     property int verticalAlignment: Text.AlignVCenter
     property real progress: 0.0
     property bool isPlaying: false
-    property color baseColor: Colors.overBackground
-    property color fillColor: Colors.primary
-    property color highlightColor: Colors.primaryFixed ?? Colors.primary
+    property color baseColor: root.shellPalette.overBackground
+    property color fillColor: root.shellPalette.primary
+    property color highlightColor: root.shellPalette.primaryFixed ?? root.shellPalette.primary
 
     readonly property bool showFluidBar: root.isPlaying && root.progress > 0.0
 

@@ -12,6 +12,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 464
     implicitHeight: 320
@@ -242,8 +243,8 @@ Item {
                             font.family: Icons.font
                             font.pixelSize: 20
                             color: root.selectedIndex === index
-                                ? Styling.srItem("primary")
-                                : Colors.outline
+                                ? Styling.srItem("primary", root.shellPalette)
+                                : root.shellPalette.outline
 
                             Behavior on color {
                                 enabled: Config.animDuration > 0
@@ -265,8 +266,8 @@ Item {
                             width: parent.width
                             text: ProjectPickerService.projectName(row.modelData)
                             color: root.selectedIndex === index
-                                ? Styling.srItem("primary")
-                                : Colors.overBackground
+                                ? Styling.srItem("primary", root.shellPalette)
+                                : root.shellPalette.overBackground
                             font.family: Config.theme.font
                             font.pixelSize: Config.theme.fontSize
                             font.weight: Font.Bold
@@ -287,8 +288,8 @@ Item {
                             width: parent.width
                             text: ProjectPickerService.displayPath(row.modelData)
                             color: root.selectedIndex === index
-                                ? Styling.srItem("primary")
-                                : Colors.outline
+                                ? Styling.srItem("primary", root.shellPalette)
+                                : root.shellPalette.overSurfaceVariant
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
                             elide: Text.ElideMiddle
@@ -310,7 +311,7 @@ Item {
                         text: Icons.copy
                         font.family: Icons.font
                         font.pixelSize: 16
-                        color: Styling.srItem("primary")
+                        color: Styling.srItem("primary", root.shellPalette)
                         Layout.alignment: Qt.AlignVCenter
                         opacity: 0.75
                     }
@@ -348,7 +349,7 @@ Item {
                 text: ProjectPickerService.scanning
                     ? "Scanning projects..."
                     : (root.searchText.length > 0 ? "No matching projects" : "No projects found")
-                color: Colors.outline
+                color: root.shellPalette.overSurfaceVariant
                 font.family: Config.theme.font
                 font.pixelSize: Config.theme.fontSize
             }

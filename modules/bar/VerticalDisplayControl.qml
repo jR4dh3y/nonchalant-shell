@@ -7,6 +7,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property Item bar
     required property int controlSize
@@ -36,6 +37,7 @@ Item {
         visible: root.brightnessAvailable || NightLightService.active
         controlSize: root.controlSize
         value: root.brightnessAvailable ? root.brightness : NightLightService.normalizedTemperature
+        progressColor: root.brightnessAvailable ? root.shellPalette.tertiary : root.shellPalette.secondary
         startAngle: 140 + 48 * root.splitAmount
         spanAngle: 260 - 96 * root.splitAmount
     }
@@ -47,6 +49,7 @@ Item {
         controlSize: root.controlSize
         value: NightLightService.normalizedTemperature
         foregroundColor: temperatureHalf.foregroundColor
+        progressColor: root.shellPalette.secondary
         startAngle: 8
         spanAngle: 164 * root.splitAmount
     }
@@ -55,7 +58,7 @@ Item {
         id: half
         required property bool temperature
         readonly property bool pressed: mouse.pressed
-        readonly property color foregroundColor: Colors.overBackground
+        readonly property color foregroundColor: root.shellPalette.overBackground
         readonly property string title: temperature
             ? "Night Light: " + NightLightService.temperature + " K"
             : "Brightness " + Math.round(root.brightness * 100) + "%"

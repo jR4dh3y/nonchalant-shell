@@ -13,6 +13,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int maxContentWidth: 480
     readonly property int contentWidth: Math.min(width, maxContentWidth)
@@ -182,7 +183,7 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
                         font.weight: Font.Medium
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                     }
 
                     // Device list
@@ -219,7 +220,7 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
                         font.weight: Font.Medium
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                     }
 
                     // Main volume control
@@ -250,7 +251,7 @@ Item {
                         text: "No applications using audio"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
-                        color: Colors.outline
+                        color: root.shellPalette.outline
                         Layout.alignment: Qt.AlignHCenter
                         Layout.topMargin: 16
                     }

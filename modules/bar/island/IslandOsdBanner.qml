@@ -9,6 +9,7 @@ import qs.modules.services
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property Item bar: null
     property string indicator: "volume" // "volume" | "mic" | "brightness"
@@ -141,7 +142,7 @@ Item {
                 visible: root.indicator === "brightness"
                 size: 20
                 value: root.value
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
 
             DynamicVolumeIcon {
@@ -150,7 +151,8 @@ Item {
                 size: 20
                 value: root.value
                 muted: root.muted
-                color: root.muted ? Colors.error : Colors.overBackground
+                // Muted is inactive, not an error.
+                color: root.muted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
             }
 
             Text {
@@ -161,7 +163,7 @@ Item {
                 text: root.muted ? Icons.micSlash : Icons.mic
                 font.family: Icons.font
                 font.pixelSize: 20
-                color: root.muted ? Colors.error : Colors.overBackground
+                color: root.muted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
             }
 
             MouseArea {
@@ -210,7 +212,7 @@ Item {
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-1)
                     font.bold: true
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     Layout.alignment: Qt.AlignVCenter
                 }
 
@@ -225,7 +227,7 @@ Item {
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-1)
                     font.bold: true
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     Layout.alignment: Qt.AlignVCenter
                 }
             }
@@ -238,8 +240,8 @@ Item {
                 scroll: false
                 thickness: 3
                 handleSpacing: 0
-                progressColor: root.muted ? Colors.outline : Styling.srItem("overprimary")
-                backgroundColor: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
+                progressColor: root.muted ? root.shellPalette.outlineVariant : Styling.srItem("overprimary", root.shellPalette)
+                backgroundColor: root.shellPalette.surfaceContainerHighest
                 onValueChanged: {
                     if (isDragging) {
                         root.adjustToExplicitValue(value);

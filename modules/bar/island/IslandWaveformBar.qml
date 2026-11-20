@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 400
     implicitHeight: 38
@@ -32,9 +33,10 @@ Item {
         }
     }
 
-    readonly property color primaryColor: Colors.primary
-    readonly property color surfaceBrightColor: Colors.surfaceBright
-    onPrimaryColorChanged: canvas.requestPaint()
+    // The waveform is a media series: tertiary, distinct from primary controls.
+    readonly property color waveColor: root.shellPalette.tertiary
+    readonly property color surfaceBrightColor: root.shellPalette.surfaceBright
+    onWaveColorChanged: canvas.requestPaint()
     onSurfaceBrightColorChanged: canvas.requestPaint()
     onDisplayProgressChanged: canvas.requestPaint()
     onCurrentAmplitudeChanged: canvas.requestPaint()
@@ -153,7 +155,7 @@ Item {
                     const playedLen = playedX - playedStartX;
                     if (playedLen > 0) {
                         ctx.beginPath();
-                        ctx.strokeStyle = root.primaryColor;
+                        ctx.strokeStyle = root.waveColor;
                         ctx.lineWidth = strokeW;
                         ctx.lineCap = "round";
                         ctx.lineJoin = "round";
@@ -205,7 +207,7 @@ Item {
                 width: handleW
                 height: handleH
                 radius: width / 2
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
 
                 Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
                 Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
@@ -222,7 +224,7 @@ Item {
                 text: root.formatTime(root.isDragging ? root.dragProgress * root.length : root.position)
                 font.family: Config.theme.monoFont
                 font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
             }
 
             Item {
@@ -235,7 +237,7 @@ Item {
                 text: root.length > 0 ? root.formatTime(root.length) : "--:--"
                 font.family: Config.theme.monoFont
                 font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
             }
         }
     }

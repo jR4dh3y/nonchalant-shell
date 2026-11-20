@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import qs.modules.globals
 import qs.modules.theme
 import "defaults/theme.js" as ThemeDefaults
 import "defaults/bar.js" as BarDefaults
@@ -452,6 +451,60 @@ Singleton {
                 property string itemColor: "error"
                 property real opacity: 1.0
             }
+
+            property JsonObject srPrimaryContainer: JsonObject {
+                property string label: "Primary Container"
+                property list<var> gradient: [["primaryContainer", 0.0]]
+                property string gradientType: "linear"
+                property int gradientAngle: 0
+                property real gradientCenterX: 0.5
+                property real gradientCenterY: 0.5
+                property real halftoneDotMin: 0.0
+                property real halftoneDotMax: 2.0
+                property real halftoneStart: 0.0
+                property real halftoneEnd: 1.0
+                property string halftoneDotColor: "primary"
+                property string halftoneBackgroundColor: "primaryContainer"
+                property list<var> border: ["primaryContainer", 0]
+                property string itemColor: "overPrimaryContainer"
+                property real opacity: 1.0
+            }
+
+            property JsonObject srSecondaryContainer: JsonObject {
+                property string label: "Secondary Container"
+                property list<var> gradient: [["secondaryContainer", 0.0]]
+                property string gradientType: "linear"
+                property int gradientAngle: 0
+                property real gradientCenterX: 0.5
+                property real gradientCenterY: 0.5
+                property real halftoneDotMin: 0.0
+                property real halftoneDotMax: 2.0
+                property real halftoneStart: 0.0
+                property real halftoneEnd: 1.0
+                property string halftoneDotColor: "secondary"
+                property string halftoneBackgroundColor: "secondaryContainer"
+                property list<var> border: ["secondaryContainer", 0]
+                property string itemColor: "overSecondaryContainer"
+                property real opacity: 1.0
+            }
+
+            property JsonObject srErrorContainer: JsonObject {
+                property string label: "Error Container"
+                property list<var> gradient: [["errorContainer", 0.0]]
+                property string gradientType: "linear"
+                property int gradientAngle: 0
+                property real gradientCenterX: 0.5
+                property real gradientCenterY: 0.5
+                property real halftoneDotMin: 0.0
+                property real halftoneDotMax: 2.0
+                property real halftoneStart: 0.0
+                property real halftoneEnd: 1.0
+                property string halftoneDotColor: "error"
+                property string halftoneBackgroundColor: "errorContainer"
+                property list<var> border: ["errorContainer", 0]
+                property string itemColor: "overErrorContainer"
+                property real opacity: 1.0
+            }
         }
     }
 
@@ -758,18 +811,6 @@ Singleton {
     property int animDuration: theme.animDuration
     property bool tintIcons: theme.tintIcons
 
-    // Handle lightMode changes
-    onLightModeChanged: {
-        console.log("lightMode changed to:", lightMode);
-        if (GlobalStates.wallpaperManager) {
-            var wallpaperManager = GlobalStates.wallpaperManager;
-            if (wallpaperManager.currentWallpaper) {
-                console.log("Re-running Matugen due to lightMode change");
-                wallpaperManager.runMatugenForCurrentWallpaper();
-            }
-        }
-    }
-
     // Bar configuration
     property alias bar: barLoader.adapter
     property bool showBackground: theme.srBarBg.opacity > 0
@@ -795,31 +836,10 @@ Singleton {
         aiLoader.adapter.workingDirectory = path || "";
     }
 
-    // Color helpers
-    function isHexColor(colorValue) {
-        if (!colorValue || typeof colorValue !== 'string')
-            return false;
-        const normalized = colorValue.toLowerCase().trim();
-        return normalized.startsWith('#') || normalized.startsWith('rgb');
-    }
-
-    function resolveColor(colorValue) {
-        if (!colorValue) return "transparent"; // Fallback
-        
-        if (isHexColor(colorValue)) {
-            return colorValue;
-        }
-        
-        // Check Colors singleton
-        if (typeof Colors === 'undefined' || !Colors) return "transparent";
-        
-        return Colors[colorValue] || "transparent"; 
-    }
-
-    function resolveColorWithOpacity(colorValue, opacity) {
-        if (!colorValue) return Qt.rgba(0,0,0,0);
-        
-        const color = isHexColor(colorValue) ? Qt.color(colorValue) : (Colors[colorValue] || Qt.color("transparent"));
-        return Qt.rgba(color.r, color.g, color.b, opacity);
+    function resolveColor(value: string, palette: ShellPalette): color {
+        const normalized = value.trim().toLowerCase();
+        if (normalized.startsWith("#") || normalized.startsWith("rgb"))
+            return Qt.color(value);
+        return palette?.[value] ?? "transparent";
     }
 }

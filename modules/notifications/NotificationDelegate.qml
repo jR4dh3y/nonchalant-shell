@@ -16,6 +16,7 @@ import "./notification_utils.js" as NotificationUtils
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property var notificationObject: null
     property var notifications: []
     property string summary: ""
@@ -174,7 +175,7 @@ Item {
                                         font.pixelSize: Config.theme.fontSize
                                         font.weight: Font.Bold
                                         font.underline: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) && onlyNotification
-                                        color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Styling.srItem("overprimary")
+                                        color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? root.shellPalette.danger : Styling.srItem("overprimary", root.shellPalette)
                                         elide: Text.ElideRight
                                         maximumLineCount: 1
                                         wrapMode: Text.NoWrap
@@ -196,7 +197,7 @@ Item {
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-2)
                                         font.weight: Font.Bold
-                                        color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Colors.outline
+                                        color: root.shellPalette.overSurfaceVariant
                                         elide: Text.ElideRight
                                         maximumLineCount: 1
                                         wrapMode: Text.NoWrap
@@ -214,7 +215,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Config.theme.fontSize
                                     font.weight: Font.Bold
-                                    color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Colors.outline
+                                    color: root.shellPalette.overSurfaceVariant
                                     verticalAlignment: Text.AlignVCenter
                                     visible: text !== ""
                                     Layout.alignment: Qt.AlignVCenter
@@ -229,7 +230,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Config.theme.fontSize
                                 font.weight: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Font.Bold : Font.Normal
-                                color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Colors.overBackground
+                                color: root.shellPalette.overBackground
                                 wrapMode: onlyNotification ? Text.Wrap : Text.NoWrap
                                 maximumLineCount: onlyNotification ? 3 : 1
                                 elide: Text.ElideRight
@@ -305,7 +306,7 @@ Item {
                                             font.pixelSize: Config.theme.fontSize
                                             font.weight: Font.Bold
                                             font.underline: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) && expanded
-                                            color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Styling.srItem("overprimary")
+                                            color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? root.shellPalette.danger : Styling.srItem("overprimary", root.shellPalette)
                                             elide: Text.ElideRight
                                         }
 
@@ -316,7 +317,7 @@ Item {
                                             font.family: Config.theme.font
                                             font.pixelSize: Config.theme.fontSize
                                             font.weight: Font.Bold
-                                            color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Colors.outline
+                                            color: root.shellPalette.overSurfaceVariant
                                             visible: text !== ""
                                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                                         }
@@ -338,7 +339,7 @@ Item {
                                                 font.family: Config.theme.font
                                                 font.pixelSize: root.fontSize
                                                 font.weight: NotificationUtils.isCriticalUrgency(modelData?.urgency) ? Font.Bold : Font.Normal
-                                                color: NotificationUtils.isCriticalUrgency(modelData?.urgency) ? Colors.criticalText : Colors.overBackground
+                                                color: root.shellPalette.overBackground
                                                 wrapMode: Text.Wrap
                                                 maximumLineCount: 3
                                                 elide: Text.ElideRight
@@ -363,7 +364,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Config.theme.fontSize
                                     font.weight: Font.Bold
-                                    color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Styling.srItem("overprimary")
+                                    color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? root.shellPalette.danger : Styling.srItem("overprimary", root.shellPalette)
                                     elide: Text.ElideRight
                                 }
 
@@ -374,7 +375,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: Config.theme.fontSize
                                     font.weight: Font.Bold
-                                    color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Colors.outline
+                                    color: root.shellPalette.overSurfaceVariant
                                     visible: latestNotification && latestNotification.body && latestNotification.body.length > 0
                                 }
 
@@ -385,7 +386,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: root.fontSize
                                     font.weight: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Font.Bold : Font.Normal
-                                    color: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency) ? Colors.criticalText : Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     wrapMode: Text.NoWrap
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
@@ -428,6 +429,7 @@ Item {
                     model: root.validActions
 
                     Button {
+                        id: delegateActionButton
                         Layout.fillWidth: true
                         Layout.preferredHeight: 32
 
@@ -440,12 +442,17 @@ Item {
                         background: StyledRect {
                             id: delegateBtnBg
                             readonly property bool isCritical: latestNotification && NotificationUtils.isCriticalUrgency(latestNotification?.urgency)
-                            readonly property color textColor: isCritical ? Colors.shadow : delegateBtnBg.item
+                            readonly property color textColor: delegateBtnBg.item
 
-                            variant: isCritical
-                                ? "error"
-                                : (parent.pressed ? "primary" : (parent.hovered ? "focus" : "common"))
+                            // Critical actions fill with error and its paired ink;
+                            // others are a primaryContainer call to action.
+                            variant: isCritical ? "error" : "primarycontainer"
                             radius: Styling.radius(4)
+
+                            HoverTint {
+                                hovered: delegateActionButton.hovered
+                                pressed: delegateActionButton.pressed
+                            }
                         }
 
                         contentItem: Text {

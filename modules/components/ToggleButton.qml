@@ -9,6 +9,7 @@ import qs.config
 
 Button {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property string buttonIcon
     required property string tooltipText
@@ -46,10 +47,8 @@ Button {
         bottomRightRadius: root.endRadius
 
         HoverTint {
-            color: bg.item
             hovered: root.hovered
             pressed: root.pressed
-            pressedOpacity: 0.5
         }
     }
 
@@ -63,7 +62,7 @@ Button {
             textFormat: Text.RichText
             font.family: Icons.font
             font.pixelSize: 18
-            color: root.pressed ? Colors.background : (Styling.srItem("overprimary") || Colors.foreground)
+            color: Styling.srItem("overprimary", root.shellPalette)
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }

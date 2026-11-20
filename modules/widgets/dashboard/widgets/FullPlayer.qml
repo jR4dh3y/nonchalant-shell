@@ -150,8 +150,8 @@ StyledRect {
                 id: realSeekBar
                 value: MprisController.progress
                 anchors.fill: parent
-                accentColor: Colors.primary
-                trackColor: Colors.outline
+                accentColor: player.shellPalette.primary
+                trackColor: player.shellPalette.outline
                 lineWidth: 6
                 wavy: Config.performance.wavyLine
                 waveAmplitude: player.isPlaying ? 3 : 0
@@ -185,7 +185,7 @@ StyledRect {
                     id: clippedDisc
                     anchors.fill: parent
                     radius: width / 2
-                    color: Colors.surface
+                    color: player.shellPalette.surface
 
                     Image {
                         mipmap: true
@@ -209,7 +209,7 @@ StyledRect {
                                 height: 20
                                 sourceComponent: WavyLine {
                                     anchors.fill: parent
-                                    color: Colors.primary
+                                    color: player.shellPalette.primary
                                     frequency: 2
                                     amplitudeMultiplier: 2
                                 }
@@ -324,7 +324,7 @@ StyledRect {
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? implicitHeight : 0
                 text: player.hasActivePlayer ? (MprisController.activePlayer?.trackTitle ?? "") : "Nothing Playing"
-                color: Colors.overBackground
+                color: player.shellPalette.overBackground
                 font.pixelSize: Config.theme.fontSize + 2
                 font.weight: Font.Bold
                 font.family: Config.theme.font
@@ -340,7 +340,7 @@ StyledRect {
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? implicitHeight : 0
                 text: player.hasActivePlayer ? (MprisController.activePlayer?.trackAlbum ?? "") : "Enjoy the silence"
-                color: Colors.overBackground
+                color: player.shellPalette.overBackground
                 font.pixelSize: Config.theme.fontSize
                 font.family: Config.theme.font
                 horizontalAlignment: Text.AlignHCenter
@@ -356,7 +356,7 @@ StyledRect {
                 Layout.fillWidth: true
                 Layout.preferredHeight: visible ? implicitHeight : 0
                 text: player.hasActivePlayer ? (MprisController.activePlayer?.trackArtist ?? "") : "¯\\_(ツ)_/¯"
-                color: Colors.overBackground
+                color: player.shellPalette.overBackground
                 font.pixelSize: Config.theme.fontSize
                 font.family: Config.theme.font
                 horizontalAlignment: Text.AlignHCenter
@@ -504,7 +504,7 @@ StyledRect {
             font.hintingPreference: Font.PreferFullHinting
             Layout.alignment: Qt.AlignHCenter
             text: player.hasActivePlayer ? (player.formatTime(player.position) + " / " + (player.length > 0 ? player.formatTime(player.length) : "--:--")) : "--:-- / --:--"
-            color: Colors.overBackground
+            color: player.shellPalette.overBackground
             font.pixelSize: Config.theme.fontSize - 2
             font.family: Config.theme.font
             opacity: 0.5
@@ -521,7 +521,7 @@ StyledRect {
         // Scrim
         Rectangle {
             anchors.fill: parent
-            color: Colors.shadow
+            color: player.shellPalette.shadow
             opacity: 0.4
             radius: player.radius
 
@@ -575,7 +575,7 @@ StyledRect {
                             text: player.getPlayerIcon(modelData)
                             font.family: Icons.font
                             font.pixelSize: 18
-                            color: Colors.overBackground
+                            color: player.shellPalette.overBackground
                         }
 
                         Text {
@@ -583,7 +583,7 @@ StyledRect {
                             font.hintingPreference: Font.PreferFullHinting
                             Layout.fillWidth: true
                             text: (modelData?.trackTitle || modelData?.identity || "Unknown Player")
-                            color: Colors.overBackground
+                            color: player.shellPalette.overBackground
                             font.family: Config.theme.font
                             elide: Text.ElideRight
                         }
@@ -612,7 +612,7 @@ StyledRect {
         text: icon
         font.family: Icons.font
         font.pixelSize: 20
-        color: mouseArea.containsMouse ? Colors.primary : Colors.overBackground
+        color: mouseArea.containsMouse ? player.shellPalette.primary : player.shellPalette.overBackground
         scale: mouseArea.pressed ? 0.92 : 1.0
 
         PressBehavior on scale {

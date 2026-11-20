@@ -11,6 +11,7 @@ import qs.modules.globals
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property var cascadeItems: []
     property int cascadeIndex: 0
     property bool isClearing: false
@@ -152,7 +153,7 @@ Item {
                         Layout.fillHeight: true
                         radius: Notifications.silent ? Styling.radius(-4) : Styling.radius(0)
 
-                        readonly property color dndItem: Notifications.silent ? itemColor : Styling.srItem("overprimary")
+                        readonly property color dndItem: Notifications.silent ? itemColor : Styling.srItem("overprimary", root.shellPalette)
 
                         Text {
                             renderType: Text.NativeRendering
@@ -181,7 +182,7 @@ Item {
                         Layout.fillHeight: true
                         radius: Styling.radius(0)
 
-                        readonly property color clearItem: root.isClearing ? Colors.overSurfaceVariant : (broomHover.pressed ? itemColor : Styling.srItem("overerror"))
+                        readonly property color clearItem: root.isClearing ? root.shellPalette.overSurfaceVariant : (broomHover.pressed ? itemColor : Styling.srItem("overerror", root.shellPalette))
 
                         Text {
                             renderType: Text.NativeRendering
@@ -266,7 +267,7 @@ Item {
                     layer.effect: MultiEffect {
                         brightness: 1.0
                         colorization: 1.0
-                        colorizationColor: Styling.srItem("pane")
+                        colorizationColor: Styling.srItem("pane", root.shellPalette)
                     }
                 }
             }

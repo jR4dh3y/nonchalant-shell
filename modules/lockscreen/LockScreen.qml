@@ -16,6 +16,7 @@ import qs.config
 // Lock surface UI - shown on each screen when locked
 WlSessionLockSurface {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forScreen(root.screen?.name ?? "")
 
     // WlSessionLock.secure is set only after niri has covered every output.
     // The shell passes it in so entry animation never races surface mapping.
@@ -35,7 +36,7 @@ WlSessionLockSurface {
 
     // An opaque surface is important here. Transparent session-lock surfaces
     // can briefly show an undefined compositor buffer while they map.
-    color: Colors.background
+    color: root.shellPalette.background
 
     function beginEntry() {
         if (entryStarted || !lockSecure || unlocking)
@@ -146,7 +147,7 @@ WlSessionLockSurface {
     Rectangle {
         id: dimOverlay
         anchors.fill: parent
-        color: Colors.background
+        color: root.shellPalette.background
         // The scrim only clears for the lockshot (identical pixels to the
         // pre-lock desktop - seamless). Without a shot it stays opaque until
         // startAnim dims the wallpaper in, so the clean wallpaper can never
@@ -187,7 +188,7 @@ WlSessionLockSurface {
                 text: Config.bar.use12hFormat ? (clockContainer.currentTime.getHours() % 12 || 12).toString() : Qt.formatTime(clockContainer.currentTime, "hh")
                 font.family: "League Gothic"
                 font.pixelSize: 240
-                color: Colors.primaryFixed
+                color: root.shellPalette.primaryFixed
                 antialiasing: true
                 opacity: startAnim ? 1 : 0
 
@@ -221,7 +222,7 @@ WlSessionLockSurface {
                 text: Qt.formatTime(clockContainer.currentTime, "mm")
                 font.family: "League Gothic"
                 font.pixelSize: 240
-                color: Colors.primaryFixedDim
+                color: root.shellPalette.primaryFixedDim
                 antialiasing: true
                 anchors.verticalCenter: undefined
                 anchors.top: hoursText.top
@@ -383,7 +384,8 @@ WlSessionLockSurface {
         // Single pill input only — no outer "bg" frame around it.
         StyledRect {
             id: passwordInputBox
-            variant: showError ? "error" : "common"
+            // Invalid password: the paired error container, ink from .item.
+            variant: showError ? "errorcontainer" : "common"
             anchors.centerIn: parent
             width: parent.width
             height: parent.height

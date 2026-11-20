@@ -14,6 +14,7 @@ import "./notification_utils.js" as NotificationUtils
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property var notificationGroup
     property var notifications: notificationGroup?.notifications ?? []
     property int notificationCount: notifications.length
@@ -238,7 +239,7 @@ Item {
                             textFormat: Text.RichText
                             font.family: Icons.font
                             font.pixelSize: 16
-                            color: topRow.showAppName ? Colors.outline : Styling.srItem("overprimary")
+                            color: topRow.showAppName ? root.shellPalette.overSurfaceVariant : Styling.srItem("overprimary", root.shellPalette)
                             visible: !groupSmallAppIcon.visible
                         }
 
@@ -252,7 +253,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Config.theme.fontSize
                             font.weight: Font.Bold
-                            color: topRow.showAppName ? Colors.outline : Styling.srItem("overprimary")
+                            color: topRow.showAppName ? root.shellPalette.overSurfaceVariant : Styling.srItem("overprimary", root.shellPalette)
                         }
                         Text {
                             renderType: Text.NativeRendering
@@ -263,7 +264,7 @@ Item {
                             text: root.multipleNotifications ? "" : NotificationUtils.getFriendlyNotifTimeString(notificationGroup?.time)
                             font.family: Config.theme.font
                             font.pixelSize: Config.theme.fontSize
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             visible: text !== ""
                         }
                     }

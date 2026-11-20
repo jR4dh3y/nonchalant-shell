@@ -12,6 +12,7 @@ import Quickshell.Io
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     anchors.fill: parent
 
     required property ShellScreen targetScreen
@@ -198,7 +199,7 @@ Item {
                                 text: Icons.list
                                 font.family: Icons.font
                                 font.pixelSize: 16
-                                color: root.menuExpanded ? Styling.srItem("overprimary") : Colors.overSurface
+                                color: root.menuExpanded ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.overSurface
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -224,7 +225,7 @@ Item {
                                 text: Icons.edit
                                 font.family: Icons.font
                                 font.pixelSize: 16
-                                color: Colors.overSurface
+                                color: root.shellPalette.overSurface
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -254,7 +255,7 @@ Item {
                                 text: Icons.pin
                                 font.family: Icons.font
                                 font.pixelSize: 16
-                                color: GlobalStates.assistantPinned ? Styling.srItem("overprimary") : Colors.overSurface
+                                color: GlobalStates.assistantPinned ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.overSurface
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -291,7 +292,7 @@ Item {
                                 text: GlobalStates.assistantPosition === "right" ? Icons.caretRight : Icons.caretLeft
                                 font.family: Icons.font
                                 font.pixelSize: 16
-                                color: Colors.overSurface
+                                color: root.shellPalette.overSurface
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -316,7 +317,7 @@ Item {
                         anchors.bottom: parent.bottom
                         width: parent.width
                         height: 1
-                        color: Colors.outline
+                        color: root.shellPalette.outline
                         opacity: 0.15
                     }
                 }
@@ -423,7 +424,7 @@ Item {
                                     renderType: Text.NativeRendering
                                     font.hintingPreference: Font.PreferFullHinting
                                     text: "Chat History"
-                                    color: Colors.overSurface
+                                    color: root.shellPalette.overSurface
                                     font.family: Config.theme.font
                                     font.pixelSize: 18
                                     font.weight: Font.Bold
@@ -456,7 +457,7 @@ Item {
                                                     renderType: Text.NativeRendering
                                                     font.hintingPreference: Font.PreferFullHinting
                                                     text: modelData.title || "New Chat"
-                                                    color: Ai.currentChatId === modelData.id ? Styling.srItem("primary") : Colors.overSurface
+                                                    color: Ai.currentChatId === modelData.id ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurface
                                                     font.family: Config.theme.font
                                                     font.pixelSize: 14
                                                     font.weight: Font.Medium
@@ -471,7 +472,7 @@ Item {
                                                         let date = new Date(parseInt(modelData.id));
                                                         return date.toLocaleString(Qt.locale(), "MMM dd, hh:mm a");
                                                     }
-                                                    color: Ai.currentChatId === modelData.id ? Styling.srItem("primary") : Colors.outline
+                                                    color: Ai.currentChatId === modelData.id ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
                                                     font.family: Config.theme.font
                                                     font.pixelSize: 11
                                                     elide: Text.ElideRight
@@ -488,7 +489,8 @@ Item {
                                                 contentItem: Text {
                                                     text: Icons.trash
                                                     font.family: Icons.font
-                                                    color: parent.hovered ? Colors.error : Colors.outline
+                                                    color: Ai.currentChatId === modelData.id ? Styling.srItem("primary", root.shellPalette)
+                                                        : (parent.hovered ? root.shellPalette.danger : root.shellPalette.overSurfaceVariant)
                                                     font.pixelSize: 14
                                                     horizontalAlignment: Text.AlignHCenter
                                                     verticalAlignment: Text.AlignVCenter
@@ -500,7 +502,8 @@ Item {
                                         }
 
                                         background: StyledRect {
-                                            variant: Ai.currentChatId === modelData.id ? "focus" : (parent.hovered ? "surfaceVariant" : "transparent")
+                                            // The current chat is selected (primary, paired with its ink above).
+                                            variant: Ai.currentChatId === modelData.id ? "primary" : (parent.hovered ? "focus" : "transparent")
                                             radius: Styling.radius(6)
                                         }
 
@@ -662,13 +665,13 @@ Item {
                             Text {
                                 renderType: Text.NativeRendering
                                 font.hintingPreference: Font.PreferFullHinting
-                                text: "Hello, <font color='" + Styling.srItem("overprimary") + "'>" + mainChatArea.username + "</font>."
+                                text: "Hello, <font color='" + Styling.srItem("overprimary", root.shellPalette) + "'>" + mainChatArea.username + "</font>."
                                 font.family: Config.theme.font
                                 font.pixelSize: 32
                                 font.weight: Font.Bold
                                 textFormat: Text.StyledText
                                 Layout.alignment: Qt.AlignHCenter
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                             }
                         }
 
@@ -684,7 +687,7 @@ Item {
                                     renderType: Text.NativeRendering
                                     font.hintingPreference: Font.PreferFullHinting
                                     text: Ai.currentModel ? Ai.currentModel.name : ""
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     font.family: Config.theme.font
                                     font.pixelSize: 16
                                     font.weight: Font.Bold
@@ -804,13 +807,13 @@ Item {
                                                     contentItem: Text {
                                                         text: messageDelegate.isEditing ? Icons.accept : Icons.edit
                                                         font.family: Icons.font
-                                                        color: parent.down ? Colors.overPrimary : (parent.isHovered ? Colors.overSurface : Colors.overSurface)
+                                                        color: root.shellPalette.overSurface
                                                         horizontalAlignment: Text.AlignHCenter
                                                         verticalAlignment: Text.AlignVCenter
                                                     }
 
                                                     background: StyledRect {
-                                                        variant: parent.down ? "primary" : (parent.isHovered ? "focus" : "common")
+                                                        variant: parent.down || parent.isHovered ? "focus" : "common"
                                                         radius: Styling.radius(4)
                                                     }
 
@@ -838,13 +841,13 @@ Item {
                                                     contentItem: Text {
                                                         text: Icons.copy
                                                         font.family: Icons.font
-                                                        color: parent.down ? Colors.overPrimary : (parent.isHovered ? Colors.overSurface : Colors.overSurface)
+                                                        color: root.shellPalette.overSurface
                                                         horizontalAlignment: Text.AlignHCenter
                                                         verticalAlignment: Text.AlignVCenter
                                                     }
 
                                                     background: StyledRect {
-                                                        variant: parent.down ? "primary" : (parent.isHovered ? "focus" : "common")
+                                                        variant: parent.down || parent.isHovered ? "focus" : "common"
                                                         radius: Styling.radius(4)
                                                     }
 
@@ -870,13 +873,13 @@ Item {
                                                     contentItem: Text {
                                                         text: Icons.arrowCounterClockwise
                                                         font.family: Icons.font
-                                                        color: parent.down ? Colors.overPrimary : (parent.isHovered ? Colors.overSurface : Colors.overSurface)
+                                                        color: root.shellPalette.overSurface
                                                         horizontalAlignment: Text.AlignHCenter
                                                         verticalAlignment: Text.AlignVCenter
                                                     }
 
                                                     background: StyledRect {
-                                                        variant: parent.down ? "primary" : (parent.isHovered ? "focus" : "common")
+                                                        variant: parent.down || parent.isHovered ? "focus" : "common"
                                                         radius: Styling.radius(4)
                                                     }
 
@@ -892,15 +895,15 @@ Item {
                                                 anchors.right: isUser ? parent.right : undefined
                                                 anchors.left: isUser ? undefined : parent.left
 
-                                                // User = primary; assistant = surface (better contrast than secondary on dark themes)
-                                                variant: isSystem ? "internalbg" : (isUser ? "primary" : "surface")
+                                                // User = primary; assistant = pane (surface); system = internalbg.
+                                                variant: isSystem ? "internalbg" : (isUser ? "primary" : "pane")
                                                 radius: Styling.radius(12)
                                                 border.width: messageDelegate.isEditing ? 2 : 0
-                                                border.color: Styling.srItem("overprimary")
+                                                border.color: Styling.srItem("overprimary", root.shellPalette)
 
                                                 readonly property color contentColor: isSystem
-                                                    ? Colors.outline
-                                                    : (isUser ? bubble.itemColor : Colors.overSurface)
+                                                    ? root.shellPalette.outline
+                                                    : (isUser ? bubble.itemColor : root.shellPalette.overSurface)
 
                                                 ColumnLayout {
                                                     id: bubbleContent
@@ -930,7 +933,7 @@ Item {
                                                                     text: Icons.terminal
                                                                     font.family: Icons.font
                                                                     font.pixelSize: 14
-                                                                    color: Styling.srItem("overprimary")
+                                                                    color: Styling.srItem("overprimary", root.shellPalette)
                                                                 }
 
                                                                 ColumnLayout {
@@ -941,7 +944,7 @@ Item {
                                                                         renderType: Text.NativeRendering
                                                                         Layout.fillWidth: true
                                                                         text: messageDelegate.toolResultTitle
-                                                                        color: Colors.overSurface
+                                                                        color: root.shellPalette.overSurface
                                                                         font.family: Config.theme.font
                                                                         font.pixelSize: 13
                                                                         font.weight: Font.Medium
@@ -953,7 +956,7 @@ Item {
                                                                         Layout.fillWidth: true
                                                                         visible: messageDelegate.toolResultDetail.length > 0
                                                                         text: messageDelegate.toolResultDetail
-                                                                        color: Colors.outline
+                                                                        color: root.shellPalette.outline
                                                                         font.family: Config.theme.font
                                                                         font.pixelSize: 11
                                                                         elide: Text.ElideRight
@@ -964,7 +967,7 @@ Item {
                                                                     text: messageDelegate.toolExpanded ? Icons.caretUp : Icons.caretDown
                                                                     font.family: Icons.font
                                                                     font.pixelSize: 12
-                                                                    color: Colors.outline
+                                                                    color: root.shellPalette.outline
                                                                 }
                                                             }
                                                         }
@@ -972,8 +975,7 @@ Item {
                                                         StyledRect {
                                                             Layout.fillWidth: true
                                                             visible: messageDelegate.toolExpanded
-                                                            variant: "surface"
-                                                            color: Colors.surface
+                                                            variant: "pane"
                                                             radius: Styling.radius(6)
                                                             implicitHeight: Math.min(toolResultScroll.contentHeight + 12, 180)
 
@@ -994,7 +996,7 @@ Item {
                                                                     font.hintingPreference: Font.PreferFullHinting
                                                                     text: modelData.content || ""
                                                                     textFormat: Text.PlainText
-                                                                    color: Colors.outline
+                                                                    color: root.shellPalette.outline
                                                                     font.family: "Monospace"
                                                                     font.pixelSize: 11
                                                                     wrapMode: Text.WrapAnywhere
@@ -1128,7 +1130,7 @@ Item {
                                                         Rectangle {
                                                             Layout.fillWidth: true
                                                             height: 1
-                                                            color: Colors.outline
+                                                            color: root.shellPalette.outline
                                                             opacity: 0.2
                                                             visible: (modelData.content || "").length > 0
                                                         }
@@ -1141,7 +1143,7 @@ Item {
                                                                 text: Icons.terminal
                                                                 font.family: Icons.font
                                                                 font.pixelSize: 14
-                                                                color: Styling.srItem("overprimary")
+                                                                color: Styling.srItem("overprimary", root.shellPalette)
                                                             }
 
                                                             ColumnLayout {
@@ -1152,7 +1154,7 @@ Item {
                                                                     renderType: Text.NativeRendering
                                                                     Layout.fillWidth: true
                                                                     text: parent.parent.parent.toolTitle
-                                                                    color: Colors.overSurface
+                                                                    color: root.shellPalette.overSurface
                                                                     font.family: Config.theme.font
                                                                     font.pixelSize: 13
                                                                     font.weight: Font.Medium
@@ -1164,7 +1166,7 @@ Item {
                                                                     Layout.fillWidth: true
                                                                     visible: parent.parent.parent.toolDetail.length > 0
                                                                     text: parent.parent.parent.toolDetail
-                                                                    color: Colors.outline
+                                                                    color: root.shellPalette.outline
                                                                     font.family: "Monospace"
                                                                     font.pixelSize: 11
                                                                     elide: Text.ElideRight
@@ -1191,7 +1193,7 @@ Item {
 
                                                                 contentItem: Text {
                                                                     text: parent.text
-                                                                    color: Colors.overError
+                                                                    color: root.shellPalette.overError
                                                                     font.family: Config.theme.font
                                                                     horizontalAlignment: Text.AlignHCenter
                                                                     verticalAlignment: Text.AlignVCenter
@@ -1212,7 +1214,7 @@ Item {
 
                                                                 contentItem: Text {
                                                                     text: parent.text
-                                                                    color: Colors.overPrimary
+                                                                    color: root.shellPalette.overPrimary
                                                                     font.family: Config.theme.font
                                                                     horizontalAlignment: Text.AlignHCenter
                                                                     verticalAlignment: Text.AlignVCenter
@@ -1229,7 +1231,7 @@ Item {
                                                 id: modelIndicator
                                                 visible: !isUser && !isSystem && (modelData.model ? true : false)
                                                 text: retryMode ? "Retry with another model " + Icons.caretRight : (modelData.model || "")
-                                                color: Colors.outline
+                                                color: root.shellPalette.outline
                                                 font.family: Config.theme.font
                                                 font.pixelSize: Styling.fontSize(-2)
                                                 font.weight: Font.Medium
@@ -1284,7 +1286,7 @@ Item {
                                                     width: 7
                                                     height: 7
                                                     radius: Styling.scaledRadius(4)
-                                                    color: Styling.srItem("overprimary")
+                                                    color: Styling.srItem("overprimary", root.shellPalette)
                                                     opacity: 0.5
 
                                                     SequentialAnimation on opacity {
@@ -1316,7 +1318,7 @@ Item {
                                         Text {
                                             renderType: Text.NativeRendering
                                             text: Ai.statusText.length > 0 ? Ai.statusText : "Thinking…"
-                                            color: Colors.outline
+                                            color: root.shellPalette.outline
                                             font.family: Config.theme.font
                                             font.pixelSize: 12
                                             elide: Text.ElideRight
@@ -1334,14 +1336,14 @@ Item {
                                                     text: Icons.stop
                                                     font.family: Icons.font
                                                     font.pixelSize: 12
-                                                    color: Colors.overError
+                                                    color: root.shellPalette.overError
                                                     anchors.verticalCenter: parent.verticalCenter
                                                 }
                                                 Text {
                                                     text: "Stop"
                                                     font.family: Config.theme.font
                                                     font.pixelSize: 12
-                                                    color: Colors.overError
+                                                    color: root.shellPalette.overError
                                                     anchors.verticalCenter: parent.verticalCenter
                                                 }
                                             }
@@ -1453,7 +1455,7 @@ Item {
 
                                                     StyledRect {
                                                         anchors.fill: parent
-                                                        variant: "surface"
+                                                        variant: "pane"
                                                         radius: Styling.radius(6)
 
                                                         ClippingRectangle {
@@ -1486,13 +1488,13 @@ Item {
                                                             text: Icons.cancel
                                                             font.family: Icons.font
                                                             font.pixelSize: 10
-                                                            color: Colors.overSurface
+                                                            color: root.shellPalette.overSurface
                                                             horizontalAlignment: Text.AlignHCenter
                                                             verticalAlignment: Text.AlignVCenter
                                                         }
 
                                                         background: Rectangle {
-                                                            color: Colors.surfaceBright
+                                                            color: root.shellPalette.surfaceBright
                                                             radius: Styling.scaledRadius(8)
                                                         }
 
@@ -1520,9 +1522,9 @@ Item {
                                             focus: true
                                             activeFocusOnTab: true
                                             placeholderText: mainChatArea.isWelcome ? "Ask AI or type /help..." : "Message AI..."
-                                            placeholderTextColor: Colors.outline
+                                            placeholderTextColor: root.shellPalette.outline
                                             font.pixelSize: 14
-                                            color: Colors.overBackground
+                                            color: root.shellPalette.overBackground
                                             wrapMode: TextEdit.Wrap
 
                                             onTextChanged: {
@@ -1601,13 +1603,13 @@ Item {
                                             text: Icons.plus
                                             font.family: Icons.font
                                             font.pixelSize: 20
-                                            color: Colors.outline
+                                            color: root.shellPalette.outline
                                             horizontalAlignment: Text.AlignHCenter
                                             verticalAlignment: Text.AlignVCenter
                                         }
 
                                         background: Rectangle {
-                                            color: parent.hovered ? Colors.surfaceBright : "transparent"
+                                            color: parent.hovered ? root.shellPalette.surfaceBright : "transparent"
                                             radius: Styling.scaledRadius(16)
                                         }
 
@@ -1623,13 +1625,13 @@ Item {
                                             text: Icons.paperPlane
                                             font.family: Icons.font
                                             font.pixelSize: 20
-                                            color: Styling.srItem("overprimary")
+                                            color: Styling.srItem("overprimary", root.shellPalette)
                                             horizontalAlignment: Text.AlignHCenter
                                             verticalAlignment: Text.AlignVCenter
                                         }
 
                                         background: Rectangle {
-                                            color: parent.hovered ? Colors.surfaceBright : "transparent"
+                                            color: parent.hovered ? root.shellPalette.surfaceBright : "transparent"
                                             radius: Styling.scaledRadius(16)
                                         }
 
@@ -1716,8 +1718,8 @@ Item {
                                                 font.family: Config.theme.font
                                                 font.weight: Font.Bold
                                                 color: (suggestionDelegate.highlighted || suggestionDelegate.hovered)
-                                                    ? Colors.primary
-                                                    : Colors.overSurface
+                                                    ? root.shellPalette.primary
+                                                    : root.shellPalette.overSurface
                                             }
 
                                             Text {
@@ -1725,7 +1727,7 @@ Item {
                                                 font.hintingPreference: Font.PreferFullHinting
                                                 text: model.description
                                                 font.family: Config.theme.font
-                                                color: Colors.outline
+                                                color: root.shellPalette.outline
                                                 Layout.fillWidth: true
                                                 elide: Text.ElideRight
                                             }
@@ -1753,7 +1755,7 @@ Item {
                             anchors.horizontalCenter: inputContainer.horizontalCenter
 
                             text: Ai.currentModel ? Ai.currentModel.name : ""
-                            color: Colors.outline
+                            color: root.shellPalette.outline
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
                             font.weight: Font.Medium

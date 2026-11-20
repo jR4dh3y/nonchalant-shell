@@ -114,7 +114,7 @@ def run_schema_tests(collector: TestResultCollector, verbose: bool):
 def run_compositor_tests(collector: TestResultCollector, verbose: bool):
     print("\n--- Running Actual Compositor Codecs (Node.js) ---")
     files = ["tests/compositor/test_niri.js", "tests/compositor/test_hyprland.js"]
-    code, stdout, stderr, duration = run_command(["node", "--test", *files])
+    code, stdout, stderr, duration = run_command(["node", "--test", "--test-reporter=tap", *files])
     passed_match = re.search(r"^# pass (\d+)$", stdout, re.MULTILINE)
     failed_match = re.search(r"^# fail (\d+)$", stdout, re.MULTILINE)
     passed = int(passed_match.group(1)) if passed_match else 0
@@ -226,6 +226,7 @@ def main():
         run_unittest_suite("Tier 4: Deck Runtime", "tests.e2e.test_deck_runtime", collector, args.verbose)
         run_unittest_suite("Tier 4: Tooltip Lifecycle Runtime", "tests.e2e.test_tooltip_runtime", collector, args.verbose)
         run_unittest_suite("Tier 4: Niri Colors Runtime", "tests.e2e.test_niri_colors_runtime", collector, args.verbose)
+        run_unittest_suite("Tier 4: Display Palettes Runtime", "tests.e2e.test_display_palettes_runtime", collector, args.verbose)
 
     if args.json:
         report = {

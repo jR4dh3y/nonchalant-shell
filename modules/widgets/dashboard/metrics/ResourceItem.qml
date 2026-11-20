@@ -6,10 +6,11 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property string icon: ""
     property string label: ""
-    property color barColor: Styling.srItem("overprimary")
+    property color barColor: Styling.srItem("overprimary", root.shellPalette)
 
     implicitHeight: 24
 
@@ -24,7 +25,7 @@ Item {
             text: root.icon
             font.family: Icons.font
             font.pixelSize: 18
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: 20
         }

@@ -130,7 +130,7 @@ StyledRect {
                     Layout.preferredHeight: 48
                     icon: Icons.nightLight
                     value: NightLightService.normalizedTemperature
-                    accentColor: Styling.srItem("overprimary")
+                    accentColor: Styling.srItem("overprimary", root.shellPalette)
                     isToggleable: true
                     isToggled: NightLightService.active
                     showMeter: NightLightService.active

@@ -4,6 +4,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property string text: ""
     property font font: Qt.font({
@@ -11,7 +12,7 @@ Item {
         pixelSize: Styling.fontSize(-1),
         bold: true
     })
-    property color color: Colors.overBackground
+    property color color: root.shellPalette.overBackground
     property bool animated: Motion.enabled
 
     TextMetrics {

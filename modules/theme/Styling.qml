@@ -102,6 +102,12 @@ Singleton {
             return Config.theme.srErrorFocus;
         case "overerror":
             return Config.theme.srOverError;
+        case "primarycontainer":
+            return Config.theme.srPrimaryContainer;
+        case "secondarycontainer":
+            return Config.theme.srSecondaryContainer;
+        case "errorcontainer":
+            return Config.theme.srErrorContainer;
         case "barbg":
             return Config.theme.srBarBg;
         default:
@@ -109,7 +115,15 @@ Singleton {
         }
     }
 
-    function srItem(variant) {
-        return Config.resolveColor(getStyledRectConfig(variant).itemColor);
+    function srItem(variant: string, palette: ShellPalette): color {
+        return Config.resolveColor(getStyledRectConfig(variant).itemColor, palette);
+    }
+
+    function workspaceLabelColor(active: bool, occupied: bool, urgent: bool, palette: ShellPalette): color {
+        if (active)
+            return srItem("primary", palette);
+        if (urgent)
+            return palette.danger;
+        return occupied ? palette.secondary : palette.overSurfaceVariant;
     }
 }

@@ -5,11 +5,13 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property real value: 0.5
     property bool muted: false
     property real size: 18
-    property color color: muted ? Colors.error : (clampedValue < 0.01 ? Colors.overSurfaceVariant : (clampedValue <= 0.85 ? Colors.primary : Colors.yellow))
+    // Muted and silent are inactive, not errors; a loud level warns.
+    property color color: muted || clampedValue < 0.01 ? root.shellPalette.overSurfaceVariant : (clampedValue <= 0.85 ? root.shellPalette.primary : root.shellPalette.warning)
     property bool animated: true
     property bool useMaterialFont: false
     property bool useCanvas: false

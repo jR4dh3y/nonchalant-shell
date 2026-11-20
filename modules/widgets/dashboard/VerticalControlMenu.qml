@@ -9,6 +9,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property string mode: "wifi"
     readonly property string shownMode: mode
@@ -108,11 +109,14 @@ Item {
                     Accessible.selected: tab.selected
                     scale: tab.pressed ? 0.92 : 1
                     PressBehavior on scale { pressed: tab.pressed }
+                    // The primary highlight marks the selected tab; hover lifts the
+                    // others and keyboard focus is an outline.
                     background: StyledRect {
                         variant: "focus"
-                        backgroundOpacity: tab.visualFocus ? 1 : 0
+                        backgroundOpacity: 0
                         radius: Styling.pillRadius(width)
-                        HoverTint { hovered: tab.hovered; pressed: tab.pressed }
+                        HoverTint { hovered: tab.hovered && !tab.selected; pressed: tab.pressed && !tab.selected }
+                        FocusRing { shown: tab.visualFocus }
                     }
                     contentItem: StyledText {
                         text: root.audioMenu
@@ -120,7 +124,7 @@ Item {
                             : (tab.modelData === "wifi" ? Icons.wifiHigh : (tab.modelData === "bluetooth" ? Icons.bluetooth : Icons.batteryHigh))
                         font.family: Icons.font
                         font.pixelSize: Styling.fontSize(5)
-                        color: tab.selected ? tabHighlight.item : Colors.overBackground
+                        color: tab.selected ? tabHighlight.item : root.shellPalette.overBackground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }

@@ -12,6 +12,7 @@ import "../../widgets/dashboard/widgets"
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property string currentTime: ""
     property string currentDayAbbrev: ""
@@ -38,9 +39,10 @@ Item {
     readonly property bool timeToolsOpen: timePopup.isOpen
     readonly property bool anyPopupOpen: popupOpen || menuOpen || timeToolsOpen
     readonly property bool clockSelected: popupOpen || timeToolsOpen || (menuOpen && (!root.vertical || !root.controlMode))
+    // Selected reads as the accent on every layout; only the geometry differs.
     readonly property color clockItemColor: root.detached
-        ? Styling.srItem(root.clockSelected ? "focus" : "pane")
-        : (root.clockSelected ? buttonBg.item : Colors.overBackground)
+        ? Styling.srItem(root.clockSelected ? "primary" : "pane", root.shellPalette)
+        : (root.clockSelected ? buttonBg.item : root.shellPalette.overBackground)
 
     function formatDuration(seconds) {
         const safeSeconds = Math.max(0, seconds);
@@ -169,8 +171,8 @@ Item {
     // Main button
     FloatingSurface {
         id: buttonBg
-        variant: root.detached ? "popup" : (root.vertical ? (root.clockSelected ? "focus" : "common") : (root.clockSelected ? "primary" : "bg"))
-        contentVariant: root.detached ? (root.clockSelected ? "focus" : "pane") : ""
+        variant: root.detached ? "popup" : (root.vertical ? (root.clockSelected ? "primary" : "common") : (root.clockSelected ? "primary" : "bg"))
+        contentVariant: root.detached ? (root.clockSelected ? "primary" : "pane") : ""
         contentInset: root.detached ? Math.round(root.verticalWidth / 10) : 0
         radius: root.detached ? Styling.pillRadius(root.verticalWidth) : root.radius
         backgroundOpacity: root.vertical && !root.detached && !root.clockSelected ? 0 : -1
@@ -456,7 +458,7 @@ Item {
                                     StyledText {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: forecastDayRow.modelData.dayName
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
                                         font.weight: Font.Medium
@@ -473,7 +475,7 @@ Item {
                                     StyledText {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: (Math.round(forecastDayRow.modelData.maxTemp) >= 0 ? "+" : "") + Math.round(forecastDayRow.modelData.maxTemp) + "\u00B0"
-                                        color: Colors.overBackground
+                                        color: root.shellPalette.overBackground
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
                                         font.weight: Font.Bold
@@ -483,7 +485,7 @@ Item {
                                     StyledText {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: (Math.round(forecastDayRow.modelData.minTemp) >= 0 ? "+" : "") + Math.round(forecastDayRow.modelData.minTemp) + "\u00B0"
-                                        color: Colors.outline
+                                        color: root.shellPalette.outline
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
                                         font.weight: Font.Normal

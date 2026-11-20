@@ -6,6 +6,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property Item sourceItem: null  // The icon item to tint
     property bool fullTint: false  // If true, apply solid primary color instead of shader
 
@@ -40,7 +41,7 @@ Item {
                     required property string modelData
                     width: 1
                     height: 1
-                    color: Colors[modelData]
+                    color: root.shellPalette[modelData]
                 }
             }
         }
@@ -91,7 +92,7 @@ Item {
                 source: internalSource
                 brightness: 1.0
                 colorization: 1.0
-                colorizationColor: Styling.srItem("overprimary")
+                colorizationColor: Styling.srItem("overprimary", root.shellPalette)
             }
 
             // Shader-based tint

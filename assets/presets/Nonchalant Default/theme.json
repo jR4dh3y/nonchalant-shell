@@ -487,5 +487,80 @@
         ],
         "itemColor": "error",
         "opacity": 1
+    },
+    "srPrimaryContainer": {
+        "label": "Primary Container",
+        "gradient": [
+            [
+                "primaryContainer",
+                0
+            ]
+        ],
+        "gradientType": "linear",
+        "gradientAngle": 0,
+        "gradientCenterX": 0.5,
+        "gradientCenterY": 0.5,
+        "halftoneDotMin": 0,
+        "halftoneDotMax": 2,
+        "halftoneStart": 0,
+        "halftoneEnd": 1,
+        "halftoneDotColor": "primary",
+        "halftoneBackgroundColor": "primaryContainer",
+        "border": [
+            "primaryContainer",
+            0
+        ],
+        "itemColor": "overPrimaryContainer",
+        "opacity": 1
+    },
+    "srSecondaryContainer": {
+        "label": "Secondary Container",
+        "gradient": [
+            [
+                "secondaryContainer",
+                0
+            ]
+        ],
+        "gradientType": "linear",
+        "gradientAngle": 0,
+        "gradientCenterX": 0.5,
+        "gradientCenterY": 0.5,
+        "halftoneDotMin": 0,
+        "halftoneDotMax": 2,
+        "halftoneStart": 0,
+        "halftoneEnd": 1,
+        "halftoneDotColor": "secondary",
+        "halftoneBackgroundColor": "secondaryContainer",
+        "border": [
+            "secondaryContainer",
+            0
+        ],
+        "itemColor": "overSecondaryContainer",
+        "opacity": 1
+    },
+    "srErrorContainer": {
+        "label": "Error Container",
+        "gradient": [
+            [
+                "errorContainer",
+                0
+            ]
+        ],
+        "gradientType": "linear",
+        "gradientAngle": 0,
+        "gradientCenterX": 0.5,
+        "gradientCenterY": 0.5,
+        "halftoneDotMin": 0,
+        "halftoneDotMax": 2,
+        "halftoneStart": 0,
+        "halftoneEnd": 1,
+        "halftoneDotColor": "error",
+        "halftoneBackgroundColor": "errorContainer",
+        "border": [
+            "errorContainer",
+            0
+        ],
+        "itemColor": "overErrorContainer",
+        "opacity": 1
     }
 }

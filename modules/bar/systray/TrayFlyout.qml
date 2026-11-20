@@ -75,7 +75,6 @@ BarPopup {
                     variant: "common"
                     radius: Styling.radius(0)
                     HoverTint {
-                        color: backSurface.item
                         hovered: backButton.hovered
                         pressed: backButton.pressed
                     }
@@ -94,7 +93,7 @@ BarPopup {
                 Layout.fillWidth: true
                 text: root.shownItem?.title ?? ""
                 font.weight: Font.DemiBold
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 elide: Text.ElideRight
             }
         }

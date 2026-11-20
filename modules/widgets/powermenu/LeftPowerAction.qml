@@ -7,6 +7,7 @@ import qs.modules.theme
 // confirmation capsule while armed.
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property string key
     required property string label
@@ -44,7 +45,7 @@ Item {
     StyledRect {
         id: surface
         anchors.fill: parent
-        variant: root.armed ? "error" : (root.selected ? "focus" : "pane")
+        variant: root.armed ? "errorcontainer" : (root.selected ? "focus" : "pane")
         backgroundOpacity: root.detached || root.armed ? 1 : 0
         enableBorder: false
         enableShadow: false
@@ -52,8 +53,8 @@ Item {
         clip: true
 
         HoverTint {
-            hovered: mouse.containsMouse
-            pressed: mouse.pressed
+            hovered: mouse.containsMouse && !root.armed
+            pressed: mouse.pressed && !root.armed
         }
 
         StyledText {
@@ -82,7 +83,7 @@ Item {
         font.pixelSize: Styling.fontSize(4) * (root.detached ? 1.2 : 1)
         font.weight: root.selected ? Font.DemiBold : Font.Medium
         color: root.armed || root.selected ? surface.item
-            : root.key === "poweroff" ? Colors.red : Colors.overBackground
+            : root.key === "poweroff" ? root.shellPalette.danger : root.shellPalette.overBackground
     }
 
     MouseArea {

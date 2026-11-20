@@ -7,8 +7,9 @@ import qs.modules.components
 
 Popup {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root.parent)
 
-    property color initialColor: Colors.surface
+    property color initialColor: root.shellPalette.surface
     property string title: "Select Color"
     property real hue: 0
     property real saturation: 1
@@ -80,7 +81,7 @@ Popup {
                 font.family: Styling.defaultFont
                 font.pixelSize: Styling.fontSize(1)
                 font.weight: Font.Medium
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 elide: Text.ElideRight
             }
         }
@@ -94,7 +95,7 @@ Popup {
                 text: "Saturation " + Math.round(root.saturation * 100) + "%"
                 font.family: Styling.defaultFont
                 font.pixelSize: Styling.fontSize(-1)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
 
             Item { Layout.fillWidth: true }
@@ -105,7 +106,7 @@ Popup {
                 text: "Value " + Math.round(root.value * 100) + "%"
                 font.family: Styling.defaultFont
                 font.pixelSize: Styling.fontSize(-1)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
         }
         Item {
@@ -157,7 +158,7 @@ Popup {
                     radius: width / 2
                     color: "transparent"
                     border.width: 2
-                    border.color: Colors.overBackground
+                    border.color: root.shellPalette.overBackground
                     z: 1
 
                     Rectangle {
@@ -165,7 +166,7 @@ Popup {
                         width: 3
                         height: 3
                         radius: width / 2
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
                 }
             }
@@ -213,7 +214,7 @@ Popup {
                 text: "Hue"
                 font.family: Styling.defaultFont
                 font.pixelSize: Styling.fontSize(-1)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
 
             Item { Layout.fillWidth: true }
@@ -224,7 +225,7 @@ Popup {
                 text: Math.round(root.hue) + "°"
                 font.family: Styling.defaultFont
                 font.pixelSize: Styling.fontSize(-1)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
         }
 
@@ -268,7 +269,7 @@ Popup {
                 variant: "common"
                 radius: width / 2
                 border.width: 2
-                border.color: Colors.overBackground
+                border.color: root.shellPalette.overBackground
             }
         }
 
@@ -281,7 +282,7 @@ Popup {
                 text: "Alpha"
                 font.family: Styling.defaultFont
                 font.pixelSize: Styling.fontSize(-1)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
 
             Item { Layout.fillWidth: true }
@@ -292,7 +293,7 @@ Popup {
                 text: Math.round(root.alpha * 100) + "%"
                 font.family: Styling.defaultFont
                 font.pixelSize: Styling.fontSize(-1)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
         }
 
@@ -337,7 +338,7 @@ Popup {
                 variant: "common"
                 radius: width / 2
                 border.width: 2
-                border.color: Colors.overBackground
+                border.color: root.shellPalette.overBackground
             }
         }
 
@@ -362,7 +363,7 @@ Popup {
                     text: cancelButton.text
                     font.family: Styling.defaultFont
                     font.pixelSize: Styling.fontSize(-1)
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }

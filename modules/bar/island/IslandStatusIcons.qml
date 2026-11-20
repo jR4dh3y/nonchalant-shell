@@ -9,6 +9,7 @@ import qs.config
 
 RowLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property Item bar
 
@@ -97,9 +98,8 @@ RowLayout {
         readonly property bool isPressed: brightMouse.pressed && isHovered
 
         readonly property color iconColor: {
-            if (isHovered) return Colors.primary;
-            if (brightnessVal <= 0.15) return Colors.overSurfaceVariant;
-            return Colors.overBackground;
+            if (brightnessVal <= 0.15) return root.shellPalette.overSurfaceVariant;
+            return root.shellPalette.overBackground;
         }
 
         StyledRect {
@@ -165,10 +165,9 @@ RowLayout {
         readonly property bool isPressed: volMouse.pressed && isHovered
 
         readonly property color iconColor: {
-            if (isMuted) return Colors.error;
-            if (isHovered) return Colors.primary;
-            if (volumeVal < 0.01) return Colors.overSurfaceVariant;
-            return Colors.overBackground;
+            // Muted is inactive; hover is the neutral focus lift below.
+            if (isMuted || volumeVal < 0.01) return root.shellPalette.overSurfaceVariant;
+            return root.shellPalette.overBackground;
         }
 
         StyledRect {
@@ -236,10 +235,11 @@ RowLayout {
         readonly property bool isPressed: batMouse.pressed && isHovered
 
         readonly property color iconColor: {
-            if (percent < 20 && !charging) return Colors.error;
-            if (charging) return Colors.primary;
-            if (isHovered) return Colors.primary;
-            return Colors.overBackground;
+            // Battery.statusColor thresholds; plain ink when the level is fine.
+            if (charging) return root.shellPalette.success;
+            if (percent <= 15) return root.shellPalette.danger;
+            if (percent <= 30) return root.shellPalette.warning;
+            return root.shellPalette.overBackground;
         }
 
         StyledRect {

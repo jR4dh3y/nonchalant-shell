@@ -12,6 +12,7 @@ import qs.config
 // the pane, so nothing scrolls and no row looks different from the others.
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     readonly property int gap: 8
     implicitWidth: 420
@@ -134,6 +135,10 @@ Item {
                 id: tile
                 required property int index
                 readonly property var modelData: root.tileData(root.tileKeys[index] ?? "")
+                readonly property string key: root.tileKeys[index] ?? ""
+                // Series identities match the Island/Pills stats panel: memory
+                // secondary, network tertiary, the rest primary. 90% load is error.
+                readonly property string seriesVariant: key === "ram" ? "secondary" : (key === "net" ? "tertiary" : "primary")
 
                 // An odd last tile spans both columns so the grid stays full.
                 readonly property bool spansRow: index === root.tileKeys.length - 1 && root.tileKeys.length % 2 === 1
@@ -161,14 +166,14 @@ Item {
                             implicitWidth: 24
                             implicitHeight: 24
                             radius: Styling.scaledRadius(12)
-                            variant: "primary"
+                            variant: tile.seriesVariant
 
                             StyledText {
                                 anchors.centerIn: parent
                                 text: tile.modelData.icon
                                 font.family: Icons.font
                                 font.pixelSize: 12
-                                color: Styling.srItem("primary")
+                                color: Styling.srItem(tile.seriesVariant, root.shellPalette)
                             }
                         }
 
@@ -197,7 +202,7 @@ Item {
                         text: tile.modelData.detail
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-3)
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         elide: Text.ElideRight
                     }
 
@@ -214,7 +219,7 @@ Item {
                             height: parent.height
                             width: track.width * Math.max(0, Math.min(1, tile.modelData.fraction))
                             radius: Styling.scaledRadius(2)
-                            variant: "primary"
+                            variant: tile.key !== "net" && tile.modelData.fraction >= 0.9 ? "error" : tile.seriesVariant
 
                             Behavior on width {
                                 NumberAnimation { duration: 200; easing.type: Easing.OutCubic }

@@ -6,6 +6,7 @@ import qs.modules.theme
 // The three-dot instrumental marker occupies a lyric row, never an underline.
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property real progress: 0
     property real phase: 0
@@ -26,7 +27,7 @@ Item {
                 width: root.dotSize
                 height: width
                 radius: width / 2
-                color: root.progress * 3 > index ? Colors.primary : Colors.overSurfaceVariant
+                color: root.progress * 3 > index ? root.shellPalette.primary : root.shellPalette.overSurfaceVariant
                 opacity: root.playing ? 0.65 + 0.35 * Math.sin(root.phase * 2 - index * 0.6) : 0.65
             }
         }

@@ -11,6 +11,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property PwNode node
     property bool isOutput: true
@@ -53,7 +54,7 @@ Item {
                 text: root.isOutput ? Icons.speakerHigh : Icons.mic
                 font.family: Icons.font
                 font.pixelSize: 18
-                color: root.isSelected ? Styling.srItem("primary") : Colors.overBackground
+                color: root.isSelected ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overBackground
             }
 
             // Device name
@@ -65,7 +66,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Config.theme.fontSize
                 font.weight: root.isSelected ? Font.Bold : Font.Normal
-                color: root.isSelected ? Styling.srItem("primary") : Colors.overBackground
+                color: root.isSelected ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overBackground
                 elide: Text.ElideRight
             }
 
@@ -77,7 +78,7 @@ Item {
                 text: Icons.accept
                 font.family: Icons.font
                 font.pixelSize: 16
-                color: Styling.srItem("primary")
+                color: Styling.srItem("primary", root.shellPalette)
             }
         }
     }

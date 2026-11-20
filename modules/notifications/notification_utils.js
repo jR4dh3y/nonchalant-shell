@@ -58,12 +58,10 @@ const processNotificationBody = (body, appName) => {
     return processedBody;
 };
 
-// Urgency arrives as an int enum live (NotificationUrgency) but persists as
-// a string ("normal"/"critical") via Notifications.Notif. Normalize both.
+// NotificationUrgency.Critical reaches the views as 2, "2", or "critical".
 const isCriticalUrgency = (u) => {
-    if (u === undefined || u === null)
-        return false;
-    return u === 2 || String(u).toLowerCase() === "critical";
+    const urgency = String(u).toLowerCase();
+    return urgency === "2" || urgency === "critical";
 };
 
 const toUrgencyEnum = (u, NotificationUrgency) => {

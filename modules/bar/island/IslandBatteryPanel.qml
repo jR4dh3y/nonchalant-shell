@@ -11,6 +11,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 420
     implicitHeight: Math.max(340, mainColumn.implicitHeight + 28)
@@ -33,14 +34,6 @@ Item {
         function onCurrentProfileChanged(): void { root.updateSelectedProfileTab(); }
     }
 
-    function getBatteryColor(): color {
-        if (!Battery.available) return Colors.overBackground;
-        const pct = Battery.percentage;
-        if (pct <= 20) return Colors.red;
-        if (pct <= 50) return Colors.yellow;
-        return Colors.green;
-    }
-
     Component {
         id: defaultTitle
         StyledText {
@@ -48,7 +41,7 @@ Item {
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(1)
             font.bold: true
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
         }
     }
 
@@ -86,7 +79,7 @@ Item {
                     text: Icons.arrowLeft
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -111,6 +104,7 @@ Item {
 
             // Live status badge
             StyledRect {
+                id: statusBadge
                 implicitWidth: statusRow.implicitWidth + 14
                 implicitHeight: 22
                 radius: Styling.scaledRadius(11)
@@ -130,7 +124,7 @@ Item {
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-4)
                         font.bold: true
-                        color: Battery.isCharging ? Colors.overPrimary : Colors.overBackground
+                        color: statusBadge.item
                     }
                 }
             }
@@ -166,7 +160,7 @@ Item {
                             text: Battery.available ? Battery.getBatteryIcon() : Icons.lightning
                             font.family: Icons.font
                             font.pixelSize: 22
-                            color: root.getBatteryColor()
+                            color: Battery.statusColor(root.shellPalette)
                         }
                     }
 
@@ -182,7 +176,7 @@ Item {
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(3)
                             font.bold: true
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                         }
 
                         Text {
@@ -198,7 +192,7 @@ Item {
                             }
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                         }
                     }
                 }
@@ -215,7 +209,7 @@ Item {
                         width: Math.max(6, Math.min(parent.width, parent.width * (Battery.percentage / 100)))
                         height: parent.height
                         radius: Styling.scaledRadius(3)
-                        variant: Battery.percentage <= 20 ? "error" : "primary"
+                        variant: !Battery.isCharging && Battery.percentage <= 15 ? "error" : "primary"
 
                         Behavior on width {
                             enabled: Config.animDuration > 0
@@ -244,14 +238,14 @@ Item {
                     StyledText {
                         text: Battery.isCharging ? "Charge rate" : "Power draw"
                         font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                     }
                     StyledText {
                         objectName: "batteryPowerRate"
                         text: Battery.available ? Math.abs(Battery.primaryDevice.changeRate).toFixed(1) + " W" : "Unavailable"
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(1)
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
                 }
 
@@ -261,14 +255,14 @@ Item {
                     StyledText {
                         text: "Battery health"
                         font.pixelSize: Styling.fontSize(-2)
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                     }
                     StyledText {
                         objectName: "batteryHealth"
                         text: root.healthDevice ? Math.round(root.healthDevice.healthPercentage) + "%" : "Unavailable"
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(1)
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
                 }
             }
@@ -294,7 +288,7 @@ Item {
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-3)
                     font.bold: true
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
 
                 StyledRect {
@@ -348,12 +342,10 @@ Item {
                                     backgroundOpacity: 0
                                     radius: Styling.pillRadius(height)
                                     border.width: profileButton.visualFocus ? Math.max(1, Math.round(Styling.fontSize(-4) / 8)) : 0
-                                    border.color: Colors.primary
+                                    border.color: root.shellPalette.primary
                                     HoverTint {
                                         hovered: profileButton.hovered && !profileButton.selected
-                                        pressed: profileButton.pressed
-                                        hoverOpacity: 0.08
-                                        pressedOpacity: 0.12
+                                        pressed: profileButton.pressed && !profileButton.selected
                                     }
                                 }
                                 contentItem: Item {
@@ -365,7 +357,7 @@ Item {
                                             text: PowerProfile.getProfileIcon(profileButton.modelData)
                                             font.family: Icons.font
                                             font.pixelSize: Styling.fontSize(-1)
-                                            color: profileButton.selected ? profileHighlight.item : Colors.overBackground
+                                            color: profileButton.selected ? profileHighlight.item : root.shellPalette.overBackground
                                         }
                                         StyledText {
                                             id: profileLabel
@@ -374,7 +366,7 @@ Item {
                                             font.family: Config.theme.font
                                             font.pixelSize: Styling.fontSize(-2)
                                             font.weight: Font.Medium
-                                            color: profileButton.selected ? profileHighlight.item : Colors.overBackground
+                                            color: profileButton.selected ? profileHighlight.item : root.shellPalette.overBackground
                                             elide: Text.ElideRight
                                         }
                                     }
