@@ -9,6 +9,7 @@ import qs.modules.theme
 
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property QsMenuHandle menu: null
     property SystemTrayItem menuItem: null
     readonly property list<SystemTrayItem> items: SystemTray.items.values
@@ -110,7 +111,7 @@ ColumnLayout {
                 StyledText {
                     visible: SystemTray.items.values.length === 0
                     text: "No background apps in the system tray."
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
         }

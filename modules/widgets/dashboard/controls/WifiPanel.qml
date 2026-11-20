@@ -11,6 +11,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int maxContentWidth: 480
     readonly property int contentWidth: Math.min(width, maxContentWidth)
@@ -57,7 +58,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 title: "Wi-Fi"
                 statusText: NetworkService.wifiConnecting ? "Connecting..." : (NetworkService.wifiStatus === "limited" ? "Limited" : "")
-                statusColor: NetworkService.wifiStatus === "limited" ? Colors.warning : Styling.srItem("overprimary")
+                statusColor: NetworkService.wifiStatus === "limited" ? root.shellPalette.warning : Styling.srItem("overprimary", root.shellPalette)
                 showToggle: true
                 toggleChecked: NetworkService.wifiStatus !== "disabled"
 
@@ -119,7 +120,7 @@ Item {
             text: NetworkService.wifiEnabled ? "No networks found" : "Wi-Fi is disabled"
             font.family: Config.theme.font
             font.pixelSize: Config.theme.fontSize
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
         }
     }
 }

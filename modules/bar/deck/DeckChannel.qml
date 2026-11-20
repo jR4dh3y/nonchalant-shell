@@ -9,6 +9,7 @@ import qs.modules.theme
 // Faders and read-only meters share this strip so levels read the same everywhere.
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     required property string label
     property string glyph: ""
     property real value: 0
@@ -16,6 +17,9 @@ ColumnLayout {
     property bool muted: false
     property bool muteCapable: false
     property bool interactive: true
+    // Series color for the level: primary by default, memory and microphone
+    // secondary, thresholds danger/warning. Muted or unavailable is inactive.
+    property color levelColor: root.shellPalette.primary
     property string readout: !available ? "—" : String(Math.round(value * 100))
     property string unit: !available ? "" : muted ? " muted" : "%"
     signal edited(real value)
@@ -30,13 +34,13 @@ ColumnLayout {
             text: root.readout
             font.pixelSize: Styling.fontSize(6)
             font.weight: Font.DemiBold
-            color: root.available && !root.muted ? Colors.overBackground : Colors.overSurfaceVariant
+            color: root.available && !root.muted ? root.shellPalette.overBackground : root.shellPalette.overSurfaceVariant
         }
         StyledText {
             text: root.unit
             anchors.baseline: readoutValue.baseline
             font.pixelSize: Styling.fontSize(-3)
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
         }
     }
     Slider {
@@ -86,8 +90,7 @@ ColumnLayout {
                 height: parent.height * Math.max(0, Math.min(1, slider.position))
                 radius: parent.radius
                 variant: "focus"
-                color: root.muted || !root.available ? Colors.overSurfaceVariant : Colors.primary
-                opacity: root.muted || !root.available ? 0.35 : 1
+                color: root.muted || !root.available ? root.shellPalette.outlineVariant : root.levelColor
                 enableBorder: false
                 Behavior on height { enabled: DeckMotion.enabled && !slider.pressed; NumberAnimation { duration: DeckMotion.cardDuration; easing.type: DeckMotion.travelEasing } }
             }
@@ -100,7 +103,7 @@ ColumnLayout {
             height: Styling.fontSize(0) * (slider.pressed ? 0.75 : 0.55)
             radius: Styling.pillRadius(height)
             variant: "focus"
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             enableBorder: slider.visualFocus
         }
         WheelHandler {
@@ -134,7 +137,7 @@ ColumnLayout {
             text: root.glyph
             font.family: Icons.font
             font.pixelSize: Styling.fontSize(3)
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
             Accessible.ignored: true
         }
     }
@@ -145,6 +148,6 @@ ColumnLayout {
         elide: Text.ElideRight
         font.pixelSize: Styling.fontSize(-3)
         font.weight: Font.Medium
-        color: root.available ? Colors.overBackground : Colors.overSurfaceVariant
+        color: root.available ? root.shellPalette.overBackground : root.shellPalette.overSurfaceVariant
     }
 }

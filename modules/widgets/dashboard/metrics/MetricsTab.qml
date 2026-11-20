@@ -8,6 +8,7 @@ import qs.config
 
 Rectangle {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     color: "transparent"
     implicitWidth: 250
@@ -108,7 +109,7 @@ Rectangle {
         required property string primaryText
         required property string secondaryText
         property int temperature: -1
-        property color accentColor: Colors.red
+        property color accentColor: root.shellPalette.primary
 
         width: parent ? parent.width : implicitWidth
         spacing: 4
@@ -121,7 +122,7 @@ Rectangle {
             text: detail.primaryText
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-2)
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             elide: Text.ElideMiddle
         }
 
@@ -137,7 +138,8 @@ Rectangle {
             text: Icons.temperature
             font.family: Icons.font
             font.pixelSize: Styling.fontSize(-2)
-            color: detail.accentColor
+            // A severe reading is a status, whatever the series color.
+            color: detail.temperature >= 90 ? root.shellPalette.danger : detail.accentColor
         }
 
         Text {
@@ -148,7 +150,7 @@ Rectangle {
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-2)
             font.weight: Font.Medium
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
         }
 
         Text {
@@ -159,7 +161,7 @@ Rectangle {
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-2)
             font.weight: Font.Medium
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
         }
     }
 
@@ -177,14 +179,14 @@ Rectangle {
                 width: parent.width
                 icon: Icons.cpu
                 label: SystemResources.cpuModel || "CPU"
-                barColor: Colors[Colors.metricRole("cpu", SystemResources.cpuUsage)]
+                barColor: root.shellPalette[root.shellPalette.metricRole("cpu", SystemResources.cpuUsage)]
             }
 
             DetailRow {
                 primaryText: root.formatFrequency(SystemResources.cpuFrequency)
                 secondaryText: `${Math.round(SystemResources.cpuUsage)}%`
                 temperature: SystemResources.cpuTemp
-                accentColor: Colors[Colors.metricRole("cpu", SystemResources.cpuUsage)]
+                accentColor: root.shellPalette[root.shellPalette.metricRole("cpu", SystemResources.cpuUsage)]
             }
         }
 
@@ -196,7 +198,7 @@ Rectangle {
                 width: parent.width
                 icon: Icons.ram
                 label: "RAM"
-                barColor: Colors[Colors.metricRole("memory", SystemResources.ramUsage)]
+                barColor: root.shellPalette[root.shellPalette.metricRole("memory", SystemResources.ramUsage)]
             }
 
             DetailRow {
@@ -218,7 +220,7 @@ Rectangle {
                 required property int index
                 readonly property string driver: SystemResources.gpuDrivers[index] || "none"
                 readonly property bool toVfio: driver === "vfio-pci"
-                readonly property color accentColor: Colors[Colors.metricRole("gpu", SystemResources.gpuUsages[index] ?? 0)]
+                readonly property color accentColor: root.shellPalette[root.shellPalette.metricRole("gpu", SystemResources.gpuUsages[index] ?? 0)]
 
                 width: parent.width
                 spacing: 4
@@ -263,7 +265,7 @@ Rectangle {
                         }
                     }
                     label: diskColumn.modelData
-                    barColor: Colors[Colors.metricRole("disk", SystemResources.diskUsage[diskColumn.modelData] ?? 0)]
+                    barColor: root.shellPalette[root.shellPalette.metricRole("disk", SystemResources.diskUsage[diskColumn.modelData] ?? 0)]
                 }
 
                 DetailRow {
@@ -281,7 +283,7 @@ Rectangle {
                 width: parent.width
                 icon: root.networkIcon
                 label: root.networkLabel
-                barColor: Colors[Colors.metricRole("network", 0)]
+                barColor: root.shellPalette[root.shellPalette.metricRole("network", 0)]
             }
 
             RowLayout {
@@ -294,7 +296,7 @@ Rectangle {
                     text: Icons.arrowUp
                     font.family: Icons.font
                     font.pixelSize: Styling.fontSize(-2)
-                    color: Colors.red
+                    color: root.shellPalette.tertiary
                 }
 
                 Text {
@@ -304,7 +306,7 @@ Rectangle {
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
                     font.weight: Font.Medium
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 Text {
@@ -313,7 +315,7 @@ Rectangle {
                     text: "/"
                     font.family: Icons.font
                     font.pixelSize: Styling.fontSize(-2)
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 Text {
@@ -322,7 +324,7 @@ Rectangle {
                     text: Icons.arrowDown
                     font.family: Icons.font
                     font.pixelSize: Styling.fontSize(-2)
-                    color: Colors.cyan
+                    color: root.shellPalette.secondary
                 }
 
                 Text {
@@ -332,7 +334,7 @@ Rectangle {
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
                     font.weight: Font.Medium
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 Text {
@@ -342,7 +344,7 @@ Rectangle {
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
                     font.weight: Font.Medium
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 Separator {
@@ -358,7 +360,7 @@ Rectangle {
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
                     font.weight: Font.Medium
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
             }
         }

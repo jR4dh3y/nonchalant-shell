@@ -8,6 +8,7 @@ import qs.modules.theme
 // Put artwork in its own ClippingRectangle, never the foreground labels.
 Rectangle {
     id: root
+    property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     clip: true
     antialiasing: true
@@ -39,23 +40,23 @@ Rectangle {
 
     readonly property real halftoneEnd: variantConfig.halftoneEnd
 
-    readonly property color halftoneDotColor: Config.resolveColor(variantConfig.halftoneDotColor)
+    readonly property color halftoneDotColor: Config.resolveColor(variantConfig.halftoneDotColor, root.shellPalette)
 
-    readonly property color halftoneBackgroundColor: Config.resolveColor(variantConfig.halftoneBackgroundColor)
+    readonly property color halftoneBackgroundColor: Config.resolveColor(variantConfig.halftoneBackgroundColor, root.shellPalette)
 
     readonly property var borderData: variantConfig.border
 
-    readonly property color solidColor: Config.resolveColor(variantConfig.color)
+    readonly property color solidColor: Config.resolveColor(variantConfig.color ?? "", root.shellPalette)
     readonly property bool hasSolidColor: variantConfig.color !== undefined && variantConfig.color !== ""
 
-    readonly property color itemColor: Config.resolveColor(variantConfig.itemColor)
+    readonly property color itemColor: Config.resolveColor(variantConfig.itemColor, root.shellPalette)
     property color item: itemColor
 
     readonly property real rectOpacity: backgroundOpacity >= 0 ? backgroundOpacity : variantConfig.opacity
 
     // Check if gradient is actually a single color (optimization: treat as solid)
     readonly property bool isSingleColorGradient: gradientStops && gradientStops.length === 1
-    readonly property color singleGradientColor: isSingleColorGradient ? Config.resolveColor(gradientStops[0][0]) : "transparent"
+    readonly property color singleGradientColor: isSingleColorGradient ? Config.resolveColor(gradientStops[0][0], root.shellPalette) : "transparent"
 
     // Whether we need a multi-stop gradient shader
     readonly property bool needsGradientShader: (gradientType === "linear" || gradientType === "radial") && !isSingleColorGradient && gradientStops && gradientStops.length >= 2
@@ -66,7 +67,7 @@ Rectangle {
     // Resolve gradient stops into vec4 color array for shader uniforms
     function resolveStopColor(index) {
         if (!gradientStops || index >= gradientStops.length) return Qt.vector4d(0,0,0,0);
-        const resolved = Config.resolveColor(gradientStops[index][0]);
+        const resolved = Config.resolveColor(gradientStops[index][0], root.shellPalette);
         // Qt.color() ensures hex strings become proper color objects with .r/.g/.b/.a
         const c = Qt.color(resolved);
         return Qt.vector4d(c.r, c.g, c.b, c.a);
@@ -215,6 +216,6 @@ Rectangle {
         }
     }
 
-    border.color: Config.resolveColor(borderData?.[0] ?? "transparent")
+    border.color: Config.resolveColor(borderData?.[0] ?? "transparent", root.shellPalette)
     border.width: root.enableBorder ? (borderData?.[1] ?? 0) : 0
 }

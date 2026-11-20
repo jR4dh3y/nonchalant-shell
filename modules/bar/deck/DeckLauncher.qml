@@ -14,6 +14,7 @@ import qs.modules.theme
 // results sit in separate cards below it, and only the list scrolls.
 FocusScope {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     required property bool open
     required property real barClearance
     required property bool bottomEdge
@@ -128,16 +129,16 @@ FocusScope {
                         Layout.leftMargin: root.em * 0.4
                         text: Icons.magnifyingGlass
                         font.family: Icons.font
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                     }
                     TextField {
                         id: search
                         objectName: "deckLauncherInput"
                         Layout.fillWidth: true
                         placeholderText: root.projects ? "Open a project…" : "Search apps…"
-                        placeholderTextColor: Colors.overSurfaceVariant
+                        placeholderTextColor: root.shellPalette.overSurfaceVariant
                         Accessible.name: placeholderText
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                         font.family: Config.theme.font
                         background: null
                         onTextChanged: root.refresh()
@@ -308,7 +309,7 @@ FocusScope {
                                     text: row.project ? Icons.folder : Icons.apps
                                     font.family: Icons.font
                                     font.pixelSize: Styling.fontSize(2)
-                                    color: row.current ? Styling.srItem("primary") : Colors.overSurfaceVariant
+                                    color: row.current ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
                                 }
                             }
                             ColumnLayout {
@@ -319,7 +320,7 @@ FocusScope {
                                     text: row.name
                                     elide: Text.ElideRight
                                     font.weight: row.current ? Font.DemiBold : Font.Medium
-                                    color: row.current ? Styling.srItem("primary") : Colors.overBackground
+                                    color: row.current ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overBackground
                                 }
                                 StyledText {
                                     Layout.fillWidth: true
@@ -327,7 +328,7 @@ FocusScope {
                                     text: row.detail
                                     elide: row.project ? Text.ElideLeft : Text.ElideRight
                                     font.pixelSize: Styling.fontSize(-3)
-                                    color: row.current ? Styling.srItem("primary") : Colors.overSurfaceVariant
+                                    color: row.current ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
                                     opacity: row.current ? 0.8 : 1
                                 }
                             }
@@ -339,7 +340,7 @@ FocusScope {
                     visible: root.resultCount === 0
                     text: root.projects ? (ProjectPickerService.scanning ? "Looking for projects…" : "No matching projects") : "No matching apps"
                     horizontalAlignment: Text.AlignHCenter
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
         }

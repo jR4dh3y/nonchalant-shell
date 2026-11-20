@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
@@ -92,7 +93,7 @@ Item {
                     text: Icons.arrowLeft
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -111,7 +112,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(1)
                 font.bold: true
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
 
             Item { Layout.fillWidth: true }
@@ -129,6 +130,8 @@ Item {
 
             ElasticHighlight {
                 id: highlight
+                // Destructive actions arm on an error container, others on the accent.
+                variant: root.actions[root.selectedIndex]?.danger ? "errorcontainer" : "primary"
                 radius: Styling.radius(2)
                 targetItem: root.selectedIndex >= 0 ? actionRepeater.itemAt(root.selectedIndex) : null
                 originX: actionRow.x
@@ -168,7 +171,7 @@ Item {
                             text: actionItem.modelData.icon
                             font.family: Icons.font
                             font.pixelSize: 20
-                            color: actionItem.selected ? highlight.item : (actionItem.modelData.danger ? Colors.red : Colors.overBackground)
+                            color: actionItem.selected ? highlight.item : (actionItem.modelData.danger ? root.shellPalette.danger : root.shellPalette.overBackground)
 
                             Behavior on color {
                                 enabled: Config.animDuration > 0

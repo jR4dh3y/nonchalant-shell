@@ -13,6 +13,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 480
     implicitHeight: 460
@@ -146,7 +147,7 @@ Item {
                     text: Icons.arrowLeft
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -166,7 +167,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(1)
                 font.bold: true
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
 
             // Count Pill
@@ -186,7 +187,7 @@ Item {
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-3)
                     font.bold: true
-                    color: Colors.overPrimary
+                    color: root.shellPalette.overPrimary
                 }
             }
 
@@ -211,7 +212,7 @@ Item {
                     text: Notifications.silent ? Icons.bellZ : Icons.bell
                     font.family: Icons.font
                     font.pixelSize: 15
-                    color: Notifications.silent ? Colors.overPrimary : Colors.overBackground
+                    color: Notifications.silent ? root.shellPalette.overPrimary : root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -243,7 +244,7 @@ Item {
                     text: Icons.broom
                     font.family: Icons.font
                     font.pixelSize: 15
-                    color: root.isClearing ? Colors.overSurfaceVariant : (broomMouse.containsMouse ? Colors.overError : Colors.overBackground)
+                    color: root.isClearing ? root.shellPalette.overSurfaceVariant : (broomMouse.containsMouse ? root.shellPalette.overError : root.shellPalette.overBackground)
                 }
 
                 MouseArea {
@@ -280,7 +281,7 @@ Item {
                     text: Icons.bell
                     font.family: Icons.font
                     font.pixelSize: 32
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     opacity: 0.5
                 }
 
@@ -291,7 +292,7 @@ Item {
                     text: "No notifications"
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
 

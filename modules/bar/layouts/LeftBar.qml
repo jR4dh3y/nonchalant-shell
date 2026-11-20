@@ -17,6 +17,7 @@ import ".."
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property ShellScreen screen
 
@@ -35,9 +36,9 @@ Item {
     readonly property int barTargetHeight: barWidth
     readonly property int totalBarHeight: barTargetHeight + root.edgeMargin
 
-    // Keep one floating gap at the screen edge and another beside the dock so
-    // tiled windows do not touch the pills.
-    readonly property int baseOuterMargin: root.edgeMargin * 2
+    // Niri's 1px focus ring (config-quickshell.kdl) paints outside the window.
+    // Reserve that pixel too so both visible gaps remain edgeMargin wide.
+    readonly property int baseOuterMargin: root.edgeMargin * 2 + (CompositorService.compositor === "niri" ? 1 : 0)
     readonly property bool shadowsEnabled: false
 
     readonly property list<CompositorWorkspace> visibleWorkspaces: CompositorService.workspacesForOutput(root.screen.name)
@@ -123,9 +124,9 @@ Item {
         property bool showLabel: true
         property bool occupied: false
         property bool urgent: false
-        readonly property color foregroundColor: button.urgent ? Colors.red
-            : button.selected ? buttonSurface.item
-            : button.occupied ? Styling.srItem("overprimary") : Colors.overBackground
+        readonly property color foregroundColor: button.externalHighlight
+            ? Styling.workspaceLabelColor(button.selected, button.occupied, button.urgent, root.shellPalette)
+            : button.selected ? buttonSurface.item : root.shellPalette.overBackground
 
         signal scrolled(real delta)
         signal secondaryClicked
@@ -145,7 +146,7 @@ Item {
         StyledRect {
             id: buttonSurface
             anchors.fill: parent
-            variant: button.selected ? "focus" : (button.detached ? "pane" : "common")
+            variant: button.selected && !button.externalHighlight ? "primarycontainer" : button.detached ? "pane" : "common"
             backgroundOpacity: button.detached || (button.selected && !button.externalHighlight) ? 1 : 0
             enableBorder: !button.externalHighlight && !button.detached
             radius: button.detached ? Styling.pillRadius(width) : root.outerRadius
@@ -160,6 +161,9 @@ Item {
         StyledText {
             anchors.centerIn: parent
             visible: button.showLabel && button.iconSource === ""
+            width: button.textLabel ? button.width : implicitWidth
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
             text: button.iconText
             font.family: button.textLabel ? Config.theme.font : Icons.font
             font.pixelSize: button.textLabel ? Config.theme.fontSize : Styling.fontSize(4) * (button.detached ? 1.2 : 1)
@@ -290,7 +294,7 @@ Item {
                 readonly property real powerHeight: Math.min(fullHeight, sessionColumn.implicitHeight + root.contentPadding * 2)
                 y: (fullHeight - powerHeight) * root.powerFold
                 height: fullHeight - y
-                variant: "pane"
+                variant: "bg"
                 radius: Styling.pillRadius(width)
                 backgroundOpacity: 1
             }
@@ -347,7 +351,7 @@ Item {
                         ElasticHighlight {
                             objectName: "verticalWorkspaceHighlight"
                             targetItem: workspaceHighlightTarget
-                            variant: "focus"
+                            variant: "primary"
                             radius: root.outerRadius
                             opacity: root.activeWorkspaceIndex >= 0 ? 1 : 0
                             scale: root.activeWorkspaceButton?.scale ?? 1
@@ -373,7 +377,7 @@ Item {
                                     showLabel: !showWindows
                                     objectName: "verticalWorkspaceButton-" + modelData
                                     externalHighlight: true
-                                    iconText: String(workspace?.idx ?? "")
+                                    iconText: selected && workspace?.isNamed ? workspace.name : String(workspace?.idx ?? "")
                                     textLabel: true
                                     selected: workspace?.active ?? false
                                     occupied: windows.length > 0

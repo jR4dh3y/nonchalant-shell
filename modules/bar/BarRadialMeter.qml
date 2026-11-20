@@ -8,6 +8,7 @@ import "../components/RoundedTrack.js" as RoundedTrack
 // Shared geometry for the audio, brightness and device-status droplets.
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property real controlSize
     property real value: 0
@@ -20,9 +21,10 @@ Item {
     // Concentric with the pill-shaped button around it, so the ring squares
     // off together with the button as roundness drops.
     property real cornerRadius: Math.max(0, Styling.pillRadius(root.controlSize) - (root.controlSize / 2 - root.meterRadius))
-    property color foregroundColor: Colors.overBackground
-    property color trackColor: Qt.alpha(root.foregroundColor, 0.24)
-    property color progressColor: Styling.srItem("overprimary")
+    property color foregroundColor: root.shellPalette.overBackground
+    // One raised neutral track for every rail gauge, independent of selection.
+    property color trackColor: root.shellPalette.surfaceContainerHighest
+    property color progressColor: Styling.srItem("overprimary", root.shellPalette)
     readonly property real normalizedValue: Math.max(0, Math.min(1, root.value))
 
     // Point on the ring at `deg` (Qt angles), for markers placed along it.

@@ -8,15 +8,14 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property color foregroundColor
     property bool selected: false
     readonly property real chargeLevel: Battery.available ? Math.max(0, Math.min(1, Battery.percentage / 100)) : 1
     readonly property int wifiDots: NetworkService.wifiConnected
         ? Math.max(1, Math.min(4, Math.ceil(NetworkService.networkStrength / 25))) : 0
-    readonly property color chargeColor: !Battery.available ? root.foregroundColor
-        : Battery.isCharging ? Colors.green
-        : Battery.percentage <= 20 ? Colors.red : Styling.srItem("overprimary")
+    readonly property color chargeColor: Battery.available ? Battery.statusColor(root.shellPalette) : root.foregroundColor
 
     implicitWidth: Math.round(Styling.fontSize(4) * 1.6)
     implicitHeight: implicitWidth
@@ -100,7 +99,7 @@ Item {
             preferredRendererType: Shape.CurveRenderer
             ShapePath {
                 strokeColor: "transparent"
-                fillColor: Colors.green
+                fillColor: root.shellPalette.success
                 PathSvg { path: "M 4 0 L 0 5.5 H 3 L 2 10 L 7 3.5 H 4 Z" }
             }
         }

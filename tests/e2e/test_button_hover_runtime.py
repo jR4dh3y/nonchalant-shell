@@ -147,7 +147,8 @@ ShellRoot {
                     for (const day of days) {
                         const text = label(day)
                         verify(text !== null)
-                        const muted = Colors.withAlpha(Colors.overSurfaceVariant, 0.7)
+                        // Off-month days use the subdued role without an extra fade.
+                        const muted = Colors.overSurfaceVariant
                         tryVerify(() => ["r", "g", "b", "a"].every(channel =>
                             Math.abs(text.color[channel] - muted[channel]) <= 1 / 255))
                         for (const background of [Colors.background, Colors.surface]) {
@@ -158,7 +159,7 @@ ShellRoot {
                                 text.color.b * alpha + background.b * (1 - alpha), 1))
                             const second = luminance(background)
                             const ratio = (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
-                            verify(ratio >= 3, "Off-month day " + day.day + " contrast is " + ratio.toFixed(2))
+                            verify(ratio >= 4.5, "Off-month day " + day.day + " contrast is " + ratio.toFixed(2))
                             const normal = luminance(Colors.overSurface)
                             const normalRatio = (Math.max(normal, second) + 0.05) / (Math.min(normal, second) + 0.05)
                             verify(ratio < normalRatio, "Off-month dates are more muted than current-month dates")

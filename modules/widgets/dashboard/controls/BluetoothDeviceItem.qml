@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property BluetoothDevice device
 
@@ -89,7 +90,8 @@ Item {
                 }
                 font.family: Icons.font
                 font.pixelSize: 20
-                color: root.device?.connected ? Styling.srItem("overprimary") : Colors.overBackground
+                // Connected is applied context (secondary); the connect action is primary.
+                color: root.device?.connected ? root.shellPalette.secondary : root.shellPalette.overBackground
             }
 
             // Device name and status
@@ -105,7 +107,7 @@ Item {
                     font.family: Config.theme.font
                     font.pixelSize: Config.theme.fontSize
                     font.weight: Font.Medium
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     elide: Text.ElideRight
                 }
 
@@ -137,7 +139,7 @@ Item {
                     }
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
-                    color: !root.device?.paired && root.device?.pairError ? Colors.error : Colors.overSurfaceVariant
+                    color: !root.device?.paired && root.device?.pairError ? root.shellPalette.danger : root.shellPalette.overSurfaceVariant
                     elide: Text.ElideRight
 
                     Behavior on opacity {
@@ -172,14 +174,11 @@ Item {
                     font.family: Icons.font
                     font.pixelSize: 18
                     color: {
+                        // Same ramp as the system battery: plain when fine.
                         const battery = root.device?.battery ?? 0;
-                        if (battery > 60)
-                            return Colors.green;
-                        if (battery > 40)
-                            return Colors.yellow;
-                        if (battery > 20)
-                            return Colors.red;
-                        return Colors.error;
+                        if (battery <= 15)
+                            return root.shellPalette.danger;
+                        return battery <= 30 ? root.shellPalette.warning : root.shellPalette.overBackground;
                     }
                 }
             }
@@ -221,7 +220,7 @@ Item {
                     text: "Forget"
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-1)
-                    color: Styling.srItem("error")
+                    color: Styling.srItem("error", root.shellPalette)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -265,7 +264,7 @@ Item {
                     }
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-1)
-                    color: root.device?.connected ? Colors.overSurfaceVariant : Styling.srItem("primary")
+                    color: root.device?.connected ? root.shellPalette.overSurfaceVariant : Styling.srItem("primary", root.shellPalette)
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }

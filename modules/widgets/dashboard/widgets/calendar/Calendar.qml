@@ -7,6 +7,7 @@ import "layout.js" as CalendarLayout
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int monthShift: 0
     property date currentDate: new Date()
@@ -81,7 +82,8 @@ Item {
 
                     StyledRect {
                         id: leftButton
-                        variant: leftMouseArea.pressed ? "primary" : (leftMouseArea.containsMouse ? "focus" : "internalbg")
+                        // Press keeps the hover lift; scale gives the press feedback.
+                        variant: leftMouseArea.pressed || leftMouseArea.containsMouse ? "focus" : "internalbg"
                         Layout.preferredWidth: 32
                         Layout.fillHeight: true
                         radius: Styling.radius(0)
@@ -91,7 +93,7 @@ Item {
                             pressed: leftMouseArea.pressed
                         }
 
-                        readonly property color buttonItem: leftMouseArea.pressed ? itemColor : Styling.srItem("overprimary")
+                        readonly property color buttonItem: Styling.srItem("overprimary", root.shellPalette)
 
                         Text {
                             renderType: Text.NativeRendering
@@ -114,7 +116,8 @@ Item {
 
                     StyledRect {
                         id: rightButton
-                        variant: rightMouseArea.pressed ? "primary" : (rightMouseArea.containsMouse ? "focus" : "internalbg")
+                        // Press keeps the hover lift; scale gives the press feedback.
+                        variant: rightMouseArea.pressed || rightMouseArea.containsMouse ? "focus" : "internalbg"
                         Layout.preferredWidth: 32
                         Layout.fillHeight: true
                         radius: Styling.radius(0)
@@ -124,7 +127,7 @@ Item {
                             pressed: rightMouseArea.pressed
                         }
 
-                        readonly property color buttonItem: rightMouseArea.pressed ? itemColor : Styling.srItem("overprimary")
+                        readonly property color buttonItem: Styling.srItem("overprimary", root.shellPalette)
 
                         Text {
                             renderType: Text.NativeRendering

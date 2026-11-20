@@ -5,10 +5,12 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property real value: 1.0
     property real size: 20
-    property color color: clampedValue <= 0.22 ? Colors.overSurfaceVariant : (clampedValue <= 0.58 ? Colors.yellow : Colors.primary)
+    // Brightness is not a status: dim, plain, then accent as it rises.
+    property color color: clampedValue <= 0.22 ? root.shellPalette.overSurfaceVariant : (clampedValue <= 0.58 ? root.shellPalette.overBackground : root.shellPalette.primary)
     property bool animated: true
     property real rotationMultiplier: 180
 

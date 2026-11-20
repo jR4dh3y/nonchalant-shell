@@ -13,11 +13,13 @@ import qs.modules.services.compositor
 import qs.modules.globals
 import qs.modules.theme
 import qs.modules.widgets.launcher
+import "../../notifications/notification_utils.js" as NotificationUtils
 import "../island"
 import ".."
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     anchors.fill: parent
     required property ShellScreen screen
@@ -274,7 +276,7 @@ Item {
     readonly property color batteryColor: {
         let _ = Battery.percentage;
         let __ = Battery.isPluggedIn;
-        return Battery.statusColor();
+        return Battery.statusColor(root.shellPalette);
     }
 
     readonly property bool audioMuted: (Audio.sink && Audio.sink.audio) ? Audio.sink.audio.muted : false
@@ -291,6 +293,13 @@ Item {
                 count += grp.notifications.length;
         }
         return count;
+    }
+
+    readonly property bool hasCriticalAlerts: {
+        const alerts = Notifications.silent
+            ? (root.hasNotifications ? Notifications.popupList : [])
+            : Notifications.list;
+        return alerts.some(alert => NotificationUtils.isCriticalUrgency(alert?.urgency));
     }
 
     readonly property CompositorWindow screenFocusedClient: CompositorService.activeWindowForOutput(root.screen.name)
@@ -922,7 +931,7 @@ Item {
                                     required property int index
                                     width: 2.5
                                     radius: 1.25
-                                    color: Colors.primary
+                                    color: root.shellPalette.primary
                                     height: root.isMediaPlaying ? (4 + ((index * 3 + 2) % 10)) : 3
 
                                     SequentialAnimation on height {
@@ -955,9 +964,9 @@ Item {
                             verticalAlignment: Text.AlignVCenter
                             progress: (root.isMediaPlaying && MprisController.length > 0) ? MprisController.progress : 0.0
                             isPlaying: root.isMediaPlaying
-                            baseColor: Colors.overBackground
-                            fillColor: Colors.primary
-                            highlightColor: Colors.primaryFixed ?? Colors.primary
+                            baseColor: root.shellPalette.overBackground
+                            fillColor: root.shellPalette.primary
+                            highlightColor: root.shellPalette.primaryFixed ?? root.shellPalette.primary
                         }
                     }
 
@@ -1037,7 +1046,7 @@ Item {
                         id: timeText
                         anchors.centerIn: parent
                         text: root.formattedTime
-                        color: timePill.isHovered ? Colors.primary : Colors.overBackground
+                        color: timePill.isHovered ? root.shellPalette.primary : root.shellPalette.overBackground
                     }
 
                     MouseArea {
@@ -1197,7 +1206,8 @@ Item {
                             text: root.inlineOsdIcon
                             font.family: Icons.font
                             font.pixelSize: 13
-                            color: Colors[Colors.accentRole(root.osdIndicator)]
+                            // Muted is inactive, not an error: subdued ink and fill.
+                            color: root.osdMuted ? root.shellPalette.overSurfaceVariant : root.shellPalette.primary
                             renderType: Text.NativeRendering
                         }
 
@@ -1205,14 +1215,14 @@ Item {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 4
                             radius: Styling.scaledRadius(2)
-                            color: Colors.withAlpha(Colors.overBackground, 0.15)
+                            color: root.shellPalette.surfaceContainerHighest
                             clip: true
 
                             Rectangle {
                                 width: parent.width * Math.max(0, Math.min(1, root.inlineOsdValue))
                                 height: 4
                                 radius: Styling.scaledRadius(2)
-                                color: Colors[Colors.accentRole(root.osdIndicator)]
+                                color: root.osdMuted ? root.shellPalette.outlineVariant : root.shellPalette.primary
                                 Behavior on width {
                                     enabled: Motion.enabled
                                     SmoothedAnimation {
@@ -1229,7 +1239,7 @@ Item {
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-2)
                             font.bold: true
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             renderType: Text.NativeRendering
                         }
                     }
@@ -1238,6 +1248,7 @@ Item {
                 // ── PILL 5: ALERTS PILL (NOTIFICATION COUNTER) ──
                 StyledRect {
                     id: alertsPill
+                    objectName: "pillsAlerts"
                     visible: root.alertsCount > 0 || root.hasNotifications
                     implicitHeight: root.pillHeight
                     implicitWidth: alertsRow.implicitWidth + 16
@@ -1249,6 +1260,8 @@ Item {
 
                     readonly property bool isHovered: alertsHover.hovered && !root.isExpanded && !root.isMorphing
                     readonly property bool isPressed: alertsMouse.pressed && isHovered
+                    readonly property color foregroundColor: root.hasCriticalAlerts ? root.shellPalette.danger
+                        : root.hasNotifications || isHovered ? root.shellPalette.primary : root.shellPalette.overBackground
 
                     scale: isPressed ? 0.90 : 1.0
                     opacity: root.isExpanded ? 0.0 : 1.0
@@ -1294,10 +1307,10 @@ Item {
                         spacing: 4
 
                         StyledText {
-                            text: Icons.bell
+                            text: root.hasCriticalAlerts ? Icons.bellRinging : Icons.bell
                             font.family: Icons.font
                             font.pixelSize: 13
-                            color: root.hasNotifications ? Colors.primary : (alertsPill.isHovered ? Colors.primary : Colors.overBackground)
+                            color: alertsPill.foregroundColor
                             renderType: Text.NativeRendering
                         }
 
@@ -1306,7 +1319,7 @@ Item {
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-2)
                             font.bold: true
-                            color: root.hasNotifications ? Colors.primary : (alertsPill.isHovered ? Colors.primary : Colors.overBackground)
+                            color: alertsPill.foregroundColor
                             renderType: Text.NativeRendering
                         }
                     }

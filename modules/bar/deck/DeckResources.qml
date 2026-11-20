@@ -8,6 +8,7 @@ import qs.modules.theme
 // Same channel grammar as Controls, read-only: meters on the left, detail rack on the right.
 RowLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     readonly property bool sampled: SystemResources.cpuModel !== "" || SystemResources.ramTotal > 0
     spacing: Styling.fontSize(0) * 0.5
 
@@ -38,6 +39,7 @@ RowLayout {
                 glyph: Icons.cpu
                 available: root.sampled
                 value: SystemResources.cpuUsage / 100
+                levelColor: root.shellPalette[root.shellPalette.metricRole("cpu", SystemResources.cpuUsage)]
             }
             DeckChannel {
                 objectName: "deckMeterMemory"
@@ -48,6 +50,7 @@ RowLayout {
                 glyph: Icons.ram
                 available: root.sampled
                 value: SystemResources.ramUsage / 100
+                levelColor: root.shellPalette[root.shellPalette.metricRole("memory", SystemResources.ramUsage)]
             }
             DeckChannel {
                 objectName: "deckMeterGpu"
@@ -58,6 +61,7 @@ RowLayout {
                 label: "GPU"
                 glyph: Icons.gpu
                 value: SystemResources.gpuUsage / 100
+                levelColor: root.shellPalette[root.shellPalette.metricRole("gpu", SystemResources.gpuUsage)]
             }
             DeckChannel {
                 objectName: "deckMeterHeat"
@@ -69,6 +73,7 @@ RowLayout {
                 glyph: Icons.thermometer
                 available: SystemResources.cpuTemp >= 0
                 value: Math.max(0, SystemResources.cpuTemp) / 100
+                levelColor: SystemResources.cpuTemp >= 90 ? root.shellPalette.danger : root.shellPalette.primary
                 readout: available ? String(SystemResources.cpuTemp) : "—"
                 unit: available ? "°C" : ""
             }
@@ -113,7 +118,7 @@ RowLayout {
                     Layout.fillWidth: true
                     StyledText {
                         text: reading.modelData.name
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         font.pixelSize: Styling.fontSize(-2)
                     }
                     StyledText {
@@ -131,7 +136,7 @@ RowLayout {
         StyledText {
             Layout.fillWidth: true
             text: "Sampling runs only while this page is open."
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
             font.pixelSize: Styling.fontSize(-3)
             wrapMode: Text.WordWrap
         }

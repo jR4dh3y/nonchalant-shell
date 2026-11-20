@@ -8,9 +8,11 @@ import qs.modules.theme
 import qs.modules.components
 import qs.modules.services
 import qs.modules.notifications
+import "../../notifications/notification_utils.js" as NotificationUtils
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     readonly property var activeNotif: {
         const list = Notifications.popupList;
@@ -22,12 +24,7 @@ Item {
     readonly property string appName: activeNotif ? String(activeNotif.appName || "") : ""
     readonly property string summary: activeNotif ? String(activeNotif.summary || "") : ""
     readonly property string body: activeNotif ? String(activeNotif.body || "") : ""
-    readonly property bool isCritical: {
-        if (!activeNotif)
-            return false;
-        const u = activeNotif.urgency;
-        return u === 2 || u === "critical" || String(u).toLowerCase() === "critical";
-    }
+    readonly property bool isCritical: NotificationUtils.isCriticalUrgency(activeNotif?.urgency)
     readonly property int count: Notifications.popupList ? Notifications.popupList.length : 0
 
     width: 420
@@ -120,7 +117,7 @@ Item {
                     text: root.isCritical ? Icons.alert : Icons.bell
                     font.family: Icons.font
                     font.pixelSize: 15
-                    color: root.isCritical ? Colors.error : Styling.srItem("overprimary")
+                    color: root.isCritical ? root.shellPalette.danger : Styling.srItem("overprimary", root.shellPalette)
                 }
             }
 
@@ -133,7 +130,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-1)
                 font.weight: Font.DemiBold
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 elide: Text.ElideRight
             }
 
@@ -146,7 +143,7 @@ Item {
                 font.family: Config.theme.monoFont
                 font.pixelSize: Styling.fontSize(-2)
                 font.bold: true
-                color: Styling.srItem("overprimary")
+                color: Styling.srItem("overprimary", root.shellPalette)
             }
 
             // Dismiss 'x' button
@@ -174,7 +171,7 @@ Item {
                     text: Icons.cancel
                     font.family: Icons.font
                     font.pixelSize: 13
-                    color: closeMouse.containsMouse ? Colors.overBackground : Colors.outline
+                    color: closeMouse.containsMouse ? root.shellPalette.overBackground : root.shellPalette.outline
                 }
 
                 MouseArea {
@@ -197,7 +194,7 @@ Item {
             font.family: Config.theme.font
             font.pixelSize: Config.theme.fontSize
             font.weight: Font.DemiBold
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             wrapMode: Text.Wrap
             maximumLineCount: 2
             elide: Text.ElideRight
@@ -213,7 +210,7 @@ Item {
             textFormat: Text.StyledText
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-1)
-            color: Colors.outline
+            color: root.shellPalette.outline
             wrapMode: Text.Wrap
             maximumLineCount: 3
             elide: Text.ElideRight

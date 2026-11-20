@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     Keys.priority: Keys.AfterItem
     Keys.onEscapePressed: GlobalStates.settingsWindowVisible = false
@@ -323,14 +324,14 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(3)
                         font.weight: Font.Bold
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
 
                     Text {
                         text: "Settings"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                     }
                 }
 
@@ -400,14 +401,21 @@ Item {
                                 font.pixelSize: Styling.fontSize(-2)
                                 font.weight: Font.DemiBold
                                 font.letterSpacing: 0.6
-                                color: Colors.outline
+                                color: root.shellPalette.overSurfaceVariant
                             }
 
+                            // Current page fills with primary, hover lifts, and the
+                            // keyboard target is outlined so the three never merge.
                             StyledRect {
                                 anchors.fill: parent
-                                visible: !sidebarRow.isHeading && (sidebarRow.isCurrent || sidebarRow.isKeyboardTarget || sidebarRow.hovered)
+                                visible: !sidebarRow.isHeading
                                 variant: sidebarRow.isCurrent ? "primary" : "focus"
+                                backgroundOpacity: sidebarRow.isCurrent || sidebarRow.hovered ? -1 : 0
                                 radius: Styling.radius(-4)
+
+                                FocusRing {
+                                    shown: sidebarRow.isKeyboardTarget
+                                }
                             }
 
                             RowLayout {
@@ -421,7 +429,7 @@ Item {
                                     text: sidebarRow.modelData.icon ?? ""
                                     font.family: Icons.font
                                     font.pixelSize: 16
-                                    color: sidebarRow.isCurrent ? Styling.srItem("primary") : Colors.overSurfaceVariant
+                                    color: sidebarRow.isCurrent ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
                                 }
 
                                 ColumnLayout {
@@ -434,7 +442,7 @@ Item {
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-1)
                                         font.weight: sidebarRow.isCurrent ? Font.DemiBold : Font.Normal
-                                        color: sidebarRow.isCurrent ? Styling.srItem("primary") : Colors.overBackground
+                                        color: sidebarRow.isCurrent ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overBackground
                                         elide: Text.ElideRight
                                     }
 
@@ -444,7 +452,7 @@ Item {
                                         text: sidebarRow.modelData.parentLabel ?? ""
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(-3)
-                                        color: Colors.overSurfaceVariant
+                                        color: root.shellPalette.overSurfaceVariant
                                         elide: Text.ElideRight
                                     }
                                 }
@@ -473,7 +481,7 @@ Item {
                         text: "No settings found"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                     }
                 }
             }
@@ -534,7 +542,7 @@ Item {
                                 font.family: navSlot.modelData.glyph === "×"
                                     ? Config.theme.font : Icons.font
                                 font.pixelSize: navSlot.modelData.glyph === "×" ? 22 : 16
-                                color: navButton.enabled ? Colors.overBackground : Colors.outline
+                                color: navButton.enabled ? root.shellPalette.overBackground : root.shellPalette.outline
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -581,7 +589,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: pageTab.modelData.id === root.currentTabId ? Font.DemiBold : Font.Normal
-                            color: pageTab.modelData.id === root.currentTabId ? Styling.srItem("primary") : Colors.overBackground
+                            color: pageTab.modelData.id === root.currentTabId ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overBackground
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             elide: Text.ElideRight

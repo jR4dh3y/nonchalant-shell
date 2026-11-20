@@ -5,12 +5,28 @@ import argparse
 import json
 import math
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from PIL import Image, ImageOps
 
+try:
+    from . import noctalia_vibrant
+except ImportError:  # Run as a script: the sibling module is on sys.path.
+    import noctalia_vibrant
+
 RGB = tuple[float, float, float]
+# accent: container + fixed roles; slot: terminal extras; container: container
+# pair only; status: color and foreground only.
+RoleKind = Literal["accent", "slot", "container", "status"]
 Lab = tuple[float, float, float]
+
+
+@dataclass(frozen=True)
+class WallpaperColors:
+    neutral: Lab
+    accents: list[Lab]
 
 
 def linear(channel: float) -> float:
@@ -74,8 +90,7 @@ def hue_distance(first: Lab, second: Lab) -> float:
     return min(distance, 360 - distance)
 
 
-def extract(image_path: Path) -> list[Lab]:
-    """Population and chroma both matter; large gray areas must not bury accents."""
+def sample_clusters(image_path: Path) -> list[tuple[int, Lab]]:
     with Image.open(image_path) as original:
         image = ImageOps.exif_transpose(original).convert("RGBA")
         image.thumbnail((256, 256), Image.Resampling.LANCZOS)
@@ -90,14 +105,20 @@ def extract(image_path: Path) -> list[Lab]:
     quantized = sample.quantize(colors=64, method=Image.Quantize.MEDIANCUT)
     palette = quantized.getpalette()
     counts = quantized.getcolors()
-    candidates = [(count, lab(tuple(c / 255 for c in palette[index * 3:index * 3 + 3])))
-                  for count, index in counts]
+    return [(count, lab(tuple(c / 255 for c in palette[index * 3:index * 3 + 3])))
+            for count, index in counts]
+
+
+def extract(image_path: Path) -> WallpaperColors:
+    candidates = sample_clusters(image_path)
+    neutral = dominant_neutral(candidates)
+    population = sum(count for count, _ in candidates)
     colorful = [(count, value) for count, value in candidates
-                if count / len(pixels) >= 0.002 and math.hypot(*value[1:]) >= 0.035
+                if count / population >= 0.002 and math.hypot(*value[1:]) >= 0.035
                 and 0.15 < value[0] < 0.95]
     if not colorful:
-        return [max(candidates, key=lambda entry: entry[0])[1]]
-    score = lambda entry: math.sqrt(entry[0] / len(pixels)) * math.hypot(*entry[1][1:])
+        return WallpaperColors(neutral, [max(candidates, key=lambda entry: entry[0])[1]])
+    score = lambda entry: math.sqrt(entry[0] / population) * math.hypot(*entry[1][1:])
     colorful.sort(key=score, reverse=True)
     selected = [colorful.pop(0)[1]]
     while colorful and len(selected) < 6:
@@ -121,13 +142,40 @@ def extract(image_path: Path) -> list[Lab]:
         chosen = max(distinct, key=lambda entry: score(entry) * distance(entry[1]))
         selected.append(chosen[1])
         colorful.remove(chosen)
-    return selected
+    return WallpaperColors(neutral, selected)
 
 
-def build_palette(sources: list[Lab], mode: str) -> dict[str, str]:
-    dark = mode == "dark"
-    neutral = sources[0]
-    result: dict[str, str] = {}
+def dominant_neutral(candidates: list[tuple[int, Lab]]) -> Lab:
+    # Count a hue across its shades so a small saturated region cannot tint the
+    # entire shell. Grays compete as a group without lending an arbitrary hue.
+    gray = sum(count for count, color in candidates if math.hypot(*color[1:]) < 0.025)
+    colorful = [(count, color) for count, color in candidates if math.hypot(*color[1:]) >= 0.025]
+    largest: list[tuple[int, Lab]] = []
+    population = gray
+    for _, seed in colorful:
+        neighbors = [(count, color) for count, color in colorful if hue_distance(seed, color) <= 20]
+        count = sum(count for count, _ in neighbors)
+        if count > population:
+            largest, population = neighbors, count
+    if not largest:
+        return (0.0, 0.0, 0.0)
+    lightness, a, b = (sum(count * color[channel] for count, color in largest) / population
+                       for channel in range(3))
+    return lightness, a, b
+
+
+# Fixed status hues (red, amber, green). These are seeds; the generator keeps
+# the hue and moves lightness until the role is readable in the chosen mode.
+STATUS_SEEDS: dict[str, Lab] = {
+    "error": lab((0xfd / 255, 0x46 / 255, 0x63 / 255)),
+    "warning": lab((0xf0 / 255, 0xa0 / 255, 0x1e / 255)),
+    "success": lab((0x3f / 255, 0xb9 / 255, 0x50 / 255)),
+}
+
+
+def surface_roles(neutral: Lab, dark: bool) -> dict[str, str]:
+    # Increasing surface emphasis needs a lighter fill in dark mode and a
+    # darker fill in light mode. Controls use surfaceBright in both.
     surfaces = {
         "surfaceDim": (0.19, 0.87), "surfaceContainerLowest": (0.16, 0.99),
         "surfaceContainerLow": (0.23, 0.96), "background": (0.25, 0.95),
@@ -139,16 +187,23 @@ def build_palette(sources: list[Lab], mode: str) -> dict[str, str]:
         "overSurfaceVariant": (0.80, 0.36), "inverseSurface": (0.94, 0.25),
         "inverseOnSurface": (0.25, 0.94),
     }
-    for name, levels in surfaces.items():
-        result[name] = hex_color(tone(neutral, levels[0 if dark else 1], 0.015))
-    result.update(shadow="#000000", scrim="#000000", sourceColor=hex_color(tone(neutral, neutral[0])))
-    background = tone(neutral, 0.40 if dark else 0.85, 0.015)
+    return {name: hex_color(tone(neutral, levels[0 if dark else 1], 0.015))
+            for name, levels in surfaces.items()}
+
+
+def build_palette(colors: WallpaperColors, mode: str) -> dict[str, str]:
+    dark = mode == "dark"
+    neutral, sources = colors.neutral, colors.accents
+    result = surface_roles(neutral, dark)
+    source = sources[0]
+    result.update(shadow="#000000", scrim="#000000", sourceColor=hex_color(tone(source, source[0])))
+    background = tuple(int(result["surfaceBright"][index:index + 2], 16) / 255 for index in (1, 3, 5))
 
     def foreground(rgb: RGB) -> str:
         choices = [tone(neutral, 0.12, 0.01), tone(neutral, 0.98, 0.01)]
         return hex_color(max(choices, key=lambda value: contrast(rgb, value)))
 
-    def add_role(name: str, source: Lab) -> None:
+    def add_role(name: str, source: Lab, kind: RoleKind = "slot") -> None:
         lightness = min(0.82, max(0.70, source[0])) if dark else min(0.48, source[0])
         accent = tone(source, lightness)
         # Accents are also used as small text on the brightest shell container.
@@ -159,32 +214,38 @@ def build_palette(sources: list[Lab], mode: str) -> dict[str, str]:
         container = tone(source, 0.32 if dark else 0.90, 0.10)
         title = name[0].upper() + name[1:]
         result[name] = hex_color(accent)
-        result[name + "Container"] = hex_color(container)
         result["over" + title] = foreground(accent)
+        if kind == "status":
+            return
+        result[name + "Container"] = hex_color(container)
         result["over" + title + "Container"] = foreground(container)
-        if name in ("primary", "secondary", "tertiary"):
+        if kind == "accent":
             fixed = tone(source, 0.90)
             dim = tone(source, 0.80)
             result[name + "Fixed"] = hex_color(fixed)
             result[name + "FixedDim"] = hex_color(dim)
             result["over" + title + "Fixed"] = foreground(dim)
             result["over" + title + "FixedVariant"] = foreground(dim)
-        else:
+        elif kind == "slot":
             result["light" + title] = hex_color(tone(source, min(0.95, lightness + 0.08)))
             result[name + "Source"] = hex_color(tone(source, source[0]))
             result[name + "Value"] = result[name + "Source"]
 
     for index, name in enumerate(("primary", "secondary", "tertiary")):
-        add_role(name, sources[index % len(sources)])
-    # Legacy role names are slots in the image palette, not fixed hue families.
-    # Every slot must change with its sampled wallpaper color.
+        add_role(name, sources[index % len(sources)], "accent")
+    # Legacy role names are terminal slots in the image palette, not fixed hue
+    # families. Every slot must change with its sampled wallpaper color.
     for index, name in enumerate(("red", "green", "yellow", "blue", "magenta", "cyan")):
         add_role(name, sources[index % len(sources)])
     add_role("white", (0.92, neutral[1] * 0.08, neutral[2] * 0.08))
     result.pop("lightWhite")
-    for suffix in ("", "Container"):
-        result["error" + suffix] = result["red" + suffix]
-        result["overError" + suffix] = result["overRed" + suffix]
+    # Status roles keep their meaning on every wallpaper: error is always red,
+    # warning amber, success green. Only lightness adapts for readability.
+    add_role("error", STATUS_SEEDS["error"], "container")
+    for name in ("warning", "success"):
+        add_role(name, STATUS_SEEDS[name], "status")
+    # The error role is already readable as text here, so danger matches it.
+    result["danger"], result["overDanger"] = result["error"], result["overError"]
     result["surfaceTint"] = result["primary"]
     result["inversePrimary"] = hex_color(tone(sources[0], 0.45 if dark else 0.80))
     return result
@@ -194,9 +255,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image", type=Path)
     parser.add_argument("mode", choices=("dark", "light"))
+    parser.add_argument("--vibrant", action="store_true",
+                        help="use the Noctalia v5 Vibrant scheme (scripts/noctalia_vibrant.py)")
+    parser.add_argument("--surfaces-for", type=Path, metavar="PALETTE",
+                        help="use wallpaper neutrals with an existing generated palette")
+    parser.add_argument("--monochrome", action="store_true")
     args = parser.parse_args()
     try:
-        print(json.dumps(build_palette(extract(args.image), args.mode), indent=2))
+        if args.surfaces_for:
+            neutral = (0.0, 0.0, 0.0) if args.monochrome else dominant_neutral(sample_clusters(args.image))
+            palette = json.loads(args.surfaces_for.read_text())
+            palette.update(surface_roles(neutral, args.mode == "dark"))
+        elif args.vibrant:
+            palette = noctalia_vibrant.generate(args.image, args.mode)
+        else:
+            palette = build_palette(extract(args.image), args.mode)
+        print(json.dumps(palette, indent=2))
         return 0
     except (OSError, ValueError) as error:
         print(json.dumps({"error": str(error)}), file=sys.stderr)

@@ -13,10 +13,29 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-mkdir -p -- "$(dirname -- "$output_path")"
-staging_dir=$(mktemp -d "${output_path}.XXXXXX")
+if [[ $output_path == - ]]; then
+  staging_dir=$(mktemp -d)
+else
+  mkdir -p -- "$(dirname -- "$output_path")"
+  staging_dir=$(mktemp -d "${output_path}.XXXXXX")
+fi
 trap 'rm -rf -- "$staging_dir"' EXIT
 temporary_path="$staging_dir/colors.json"
+
+case ${image_path,,} in
+  *.mp4|*.webm|*.mov|*.avi|*.mkv)
+    if ! command -v ffmpeg >/dev/null 2>&1; then
+      printf '%s\n' '{"error":"FFmpeg is required for video wallpaper colors"}' >&2
+      exit 127
+    fi
+    frame_path="$staging_dir/frame.png"
+    if ! ffmpeg -nostdin -v quiet -i "$image_path" -frames:v 1 -threads 1 "$frame_path"; then
+      printf '%s\n' '{"error":"FFmpeg could not decode a wallpaper frame"}' >&2
+      exit 1
+    fi
+    image_path=$frame_path
+    ;;
+esac
 
 validate_palette() {
   python3 - "$temporary_path" "$script_dir/../assets/matugen/colors.json" <<'PY'
@@ -39,23 +58,84 @@ except (OSError, ValueError) as error:
 PY
 }
 
-if [[ $scheme == scheme-wallpaper ]]; then
+publish_palette() {
+  if [[ $output_path == - ]]; then
+    cat -- "$temporary_path"
+  else
+    mv -- "$temporary_path" "$output_path"
+  fi
+}
+
+set_surface_roles() {
+  local normalized="$staging_dir/normalized.json"
+  local surface_args=()
+  if [[ $scheme == scheme-monochrome ]]; then
+    surface_args+=(--monochrome)
+  fi
+  python3 "$script_dir/wallpaper_palette.py" "$image_path" "$mode" \
+    --surfaces-for "$temporary_path" "${surface_args[@]}" > "$normalized" &&
+    mv -- "$normalized" "$temporary_path"
+}
+
+if [[ $scheme == scheme-wallpaper || $scheme == scheme-noctalia-vibrant ]]; then
   if ! python3 -c 'from PIL import Image' >/dev/null 2>&1; then
     printf '%s\n' '{"error":"Pillow is required for wallpaper colors"}' >&2
     exit 127
   fi
-  python3 "$script_dir/wallpaper_palette.py" "$image_path" "$mode" > "$temporary_path"
+  extractor_args=("$image_path" "$mode")
+  [[ $scheme == scheme-noctalia-vibrant ]] && extractor_args+=(--vibrant)
+  python3 "$script_dir/wallpaper_palette.py" "${extractor_args[@]}" > "$temporary_path"
   validate_palette
-  mv -- "$temporary_path" "$output_path"
+  publish_palette
   exit 0
 fi
 
-# Matugen flag names vary by release; only pass supported source preferences.
+# Matugen cannot decode AVIF. Check the contents because wallpaper filenames
+# sometimes have a WebP or JPEG extension even when they contain AVIF.
+image_path=$(python3 - "$image_path" "$staging_dir/avif.png" <<'PY'
+import sys
+
+source, normalized = sys.argv[1:]
+try:
+    from PIL import Image, ImageOps
+
+    with Image.open(source) as image:
+        if image.format == "AVIF":
+            ImageOps.exif_transpose(image).save(normalized)
+            source = normalized
+except (ImportError, OSError):
+    pass
+print(source)
+PY
+)
+
+# Matugen options vary by release.
 matugen_supports() {
   matugen image --help 2>/dev/null | grep -qw -- "$1"
 }
 
 if command -v matugen >/dev/null 2>&1; then
+  prefer=${MATUGEN_PREFER:-}
+  contrast_args=()
+  case $scheme in
+    scheme-content-dominant|scheme-expressive-dominant)
+      scheme=${scheme%-dominant}
+      prefer=
+      ;;
+    scheme-content|scheme-expressive)
+      prefer=${prefer:-saturation}
+      ;;
+    scheme-tonal-spot-contrast)
+      scheme=scheme-tonal-spot
+      contrast_args=(--contrast 0.5)
+      ;;
+    scheme-smart)
+      if ! matugen_supports scheme-smart; then
+        echo "Matugen lacks Smart; using Tonal Spot" >&2
+        scheme=scheme-tonal-spot
+      fi
+      ;;
+  esac
   # Give each invocation its own output; an old shared cache is never success.
   python3 - "$matugen_config" "$staging_dir/config.toml" "$temporary_path" <<'PY'
 import json
@@ -76,14 +156,15 @@ PY
     -c "$staging_dir/config.toml"
     -t "$scheme"
     -m "$mode"
+    "${contrast_args[@]}"
   )
-  if matugen_supports --prefer; then
-    args+=(--prefer "${MATUGEN_PREFER:-saturation}")
+  if [[ -n $prefer ]] && matugen_supports --prefer; then
+    args+=(--prefer "$prefer")
   elif matugen_supports --source-color-index; then
     args+=(--source-color-index 0)
   fi
-  if "${args[@]}" && validate_palette; then
-    mv -- "$temporary_path" "$output_path"
+  if "${args[@]}" >&2 && validate_palette && set_surface_roles && validate_palette; then
+    publish_palette
     exit 0
   fi
   echo "matugen failed; trying wallust fallback..." >&2
@@ -112,7 +193,7 @@ if (( ${#palette[@]} < 16 )); then
   exit 1
 fi
 
-# Elevated surfaces so chrome is not crushed pure black (hue tracks wallpaper).
+# Fill the legacy contract before applying the shared neutral surface roles.
 jq -n \
   --arg background "${palette[0]}" \
   --arg foreground "${palette[15]}" \
@@ -185,9 +266,11 @@ jq -n \
     white: $foreground, whiteContainer: $surface_bright, whiteSource: $foreground, whiteValue: $foreground,
     overWhite: $background, overWhiteContainer: $foreground,
     error: $light_red, errorContainer: $red, overError: $background, overErrorContainer: $foreground,
+    danger: $light_red, overDanger: $background,
+    warning: $light_yellow, overWarning: $background, success: $light_green, overSuccess: $background,
     sourceColor: $blue
   }' > "$temporary_path"
 
+set_surface_roles
 validate_palette
-mv -- "$temporary_path" "$output_path"
-echo "Generated Nonchalant colors with wallust (matugen is unavailable)."
+publish_palette

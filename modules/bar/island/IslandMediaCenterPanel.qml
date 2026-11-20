@@ -72,9 +72,9 @@ StyledRect {
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
-                GradientStop { position: 0.0; color: root.squareArtwork ? Qt.alpha(Colors.background, 0.45) : "#55000000" }
-                GradientStop { position: 0.5; color: root.squareArtwork ? Qt.alpha(Colors.background, 0.25) : "#77000000" }
-                GradientStop { position: 1.0; color: root.squareArtwork ? Qt.alpha(Colors.background, 0.85) : "#aa000000" }
+                GradientStop { position: 0.0; color: root.squareArtwork ? Qt.alpha(root.shellPalette.background, 0.45) : "#55000000" }
+                GradientStop { position: 0.5; color: root.squareArtwork ? Qt.alpha(root.shellPalette.background, 0.25) : "#77000000" }
+                GradientStop { position: 1.0; color: root.squareArtwork ? Qt.alpha(root.shellPalette.background, 0.85) : "#aa000000" }
             }
         }
     }
@@ -151,7 +151,7 @@ StyledRect {
                         text: Icons.player
                         font.family: Icons.font
                         font.pixelSize: Styling.fontSize(6)
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
                 }
 
@@ -182,7 +182,7 @@ StyledRect {
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(2)
                     font.bold: true
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     elide: Text.ElideRight
                     Layout.fillWidth: true
 
@@ -197,7 +197,7 @@ StyledRect {
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(0)
                     font.bold: true
-                    color: Colors.primary
+                    color: root.shellPalette.primary
                     elide: Text.ElideRight
                     Layout.fillWidth: true
 
@@ -264,7 +264,7 @@ StyledRect {
                     text: Icons.shuffle
                     font.family: Icons.font
                     font.pixelSize: 15
-                    color: MprisController.hasShuffle ? Colors.overPrimary : Colors.overBackground
+                    color: MprisController.hasShuffle ? root.shellPalette.overPrimary : root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -298,7 +298,7 @@ StyledRect {
                     text: Icons.previous
                     font.family: Icons.font
                     font.pixelSize: 16
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -330,7 +330,7 @@ StyledRect {
                     text: root.isPlaying ? Icons.pause : Icons.play
                     font.family: Icons.font
                     font.pixelSize: 20
-                    color: Colors.overPrimary
+                    color: root.shellPalette.overPrimary
                 }
 
                 MouseArea {
@@ -361,7 +361,7 @@ StyledRect {
                     text: Icons.next
                     font.family: Icons.font
                     font.pixelSize: 16
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -395,7 +395,7 @@ StyledRect {
                     text: MprisController.loopState === 2 ? Icons.repeatOnce : Icons.repeat
                     font.family: Icons.font
                     font.pixelSize: 15
-                    color: MprisController.loopState !== 0 ? Colors.overPrimary : Colors.overBackground
+                    color: MprisController.loopState !== 0 ? root.shellPalette.overPrimary : root.shellPalette.overBackground
                 }
 
                 MouseArea {

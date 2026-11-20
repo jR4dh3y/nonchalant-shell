@@ -16,6 +16,7 @@ import qs.config
 // starts polkit-gnome late, so it only takes over if this failed to register.
 Scope {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forScreen(root.targetScreen?.name ?? "")
 
     readonly property PolkitAgent agent: agentLoader.item
     readonly property AuthFlow flow: root.agent?.flow ?? null
@@ -141,7 +142,7 @@ Scope {
         // Clicks on the backdrop are swallowed: dismissing must be explicit.
         Rectangle {
             anchors.fill: parent
-            color: Colors.withAlpha(Colors.scrim, 0.45)
+            color: root.shellPalette.withAlpha(root.shellPalette.scrim, 0.45)
             opacity: card.shown ? 1 : 0
 
             Behavior on opacity {
@@ -243,7 +244,7 @@ Scope {
                             StyledText {
                                 Layout.fillWidth: true
                                 text: root.flow?.actionId ?? ""
-                                color: Colors.outline
+                                color: root.shellPalette.outline
                                 font.pixelSize: Styling.fontSize(-2)
                                 elide: Text.ElideMiddle
                                 visible: text !== ""
@@ -262,8 +263,13 @@ Scope {
 
                         Layout.fillWidth: true
                         Layout.preferredHeight: 44
-                        variant: root.showFailure ? "error" : (passwordInput.activeFocus ? "focus" : "common")
+                        // Invalid uses the paired error container; focus is an outline.
+                        variant: root.showFailure ? "errorcontainer" : "common"
                         radius: Styling.pillRadius(height)
+
+                        FocusRing {
+                            shown: passwordInput.activeFocus && !root.showFailure
+                        }
 
                         RowLayout {
                             anchors.fill: parent
@@ -299,7 +305,7 @@ Scope {
                                 enabled: root.flow?.isResponseRequired ?? false
                                 echoMode: root.flow?.responseVisible ? TextInput.Normal : TextInput.Password
                                 placeholderText: String(root.flow?.inputPrompt ?? "").replace(/:\s*$/, "") || "Password"
-                                placeholderTextColor: Colors.withAlpha(passwordBox.item, 0.5)
+                                placeholderTextColor: root.shellPalette.withAlpha(passwordBox.item, 0.5)
                                 color: passwordBox.item
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(0)
@@ -317,7 +323,7 @@ Scope {
                         Layout.fillWidth: true
                         readonly property string supplementary: root.flow?.supplementaryMessage ?? ""
                         text: root.showFailure && supplementary === "" ? "Authentication failed. Try again." : supplementary
-                        color: root.showFailure || root.flow?.supplementaryIsError ? Colors.error : Colors.outline
+                        color: root.showFailure || root.flow?.supplementaryIsError ? root.shellPalette.danger : root.shellPalette.overSurfaceVariant
                         font.pixelSize: Styling.fontSize(-1)
                         wrapMode: Text.Wrap
                         visible: text !== ""
@@ -388,13 +394,18 @@ Scope {
             id: buttonSurface
 
             anchors.fill: parent
-            variant: button.activeFocus ? "focus" : button.variant
+            // Keyboard focus outlines the button and keeps its own fill.
+            variant: button.variant
             enableBorder: false
             radius: Styling.pillRadius(height)
 
             HoverTint {
                 hovered: buttonMouse.containsMouse
                 pressed: buttonMouse.pressed
+            }
+
+            FocusRing {
+                shown: button.activeFocus
             }
 
             StyledText {

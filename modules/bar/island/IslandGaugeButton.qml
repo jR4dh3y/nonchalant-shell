@@ -21,7 +21,7 @@ StyledRect {
     property string icon: ""
     property int iconSize: 22
     property bool active: false
-    property color iconColor: active ? Colors.overPrimary : Colors.overBackground
+    property color iconColor: active ? root.item : root.shellPalette.overBackground
     variant: active ? "primary" : (mouseArea.containsMouse ? "focus" : "internalbg")
     scale: mouseArea.pressed ? 0.92 : 1.0
 
@@ -31,8 +31,8 @@ StyledRect {
 
     // Radial progress properties
     property real value: 0.0
-    property color arcColor: Colors.primary
-    property color trackColor: Qt.rgba(1, 1, 1, 0.14)
+    property color arcColor: root.shellPalette.primary
+    property color trackColor: root.shellPalette.surfaceContainerHighest
     property bool showArc: false
     property bool isMuted: false
     property string tooltipText: ""

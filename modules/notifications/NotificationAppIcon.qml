@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property string appIcon: ""
     property string appName: ""
     property string summary: ""
@@ -63,6 +64,7 @@ Item {
         color: "transparent"
 
         StyledRect {
+            id: fallbackIcon
             anchors.fill: parent
             variant: root.urgency == NotificationUrgency.Critical ? "error" : "common"
             radius: root.radius
@@ -80,7 +82,7 @@ Item {
                 }
                 font.family: Icons.font
                 font.pixelSize: root.size * 0.5
-                color: root.urgency == NotificationUrgency.Critical ? Colors.criticalText : Styling.srItem("overprimary")
+                color: root.urgency == NotificationUrgency.Critical ? fallbackIcon.item : Styling.srItem("overprimary", root.shellPalette)
 
                 SequentialAnimation on opacity {
                     running: root.urgency == NotificationUrgency.Critical

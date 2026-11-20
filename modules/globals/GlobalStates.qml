@@ -4,12 +4,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.services
+import qs.modules.widgets.dashboard.wallpapers
 import qs.config
 
 Singleton {
     id: root
 
-    property var wallpaperManager: null
+    property WallpaperManager wallpaperManager: null
     // Dynamic frame-path -> revision dictionary; QML has no typed map property.
     property var wallpaperFrameRevisions: ({})
 

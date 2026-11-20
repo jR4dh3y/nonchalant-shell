@@ -67,7 +67,7 @@ StyledRect {
             color: "transparent"
             gradient: Gradient {
                 GradientStop { position: 0.0; color: root.squareArtwork ? "transparent" : "#44000000" }
-                GradientStop { position: 1.0; color: root.squareArtwork ? Qt.alpha(Colors.background, 0.95) : "#88000000" }
+                GradientStop { position: 1.0; color: root.squareArtwork ? Qt.alpha(root.shellPalette.background, 0.95) : "#88000000" }
             }
         }
     }
@@ -78,7 +78,7 @@ StyledRect {
         text: Icons.disc
         font.family: Icons.font
         font.pixelSize: Styling.fontSize(36)
-        color: Colors.overSurfaceVariant
+        color: root.shellPalette.overSurfaceVariant
     }
 
     ColumnLayout {
@@ -153,7 +153,7 @@ StyledRect {
                                     text: Icons.player
                                     font.family: Icons.font
                                     font.pixelSize: 18
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                 }
                             }
                         }
@@ -172,7 +172,7 @@ StyledRect {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             elide: Text.ElideRight
                             Layout.fillWidth: true
                         }
@@ -184,7 +184,7 @@ StyledRect {
                             text: root.trackArtist
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             elide: Text.ElideRight
                             Layout.fillWidth: true
                         }
@@ -224,7 +224,7 @@ StyledRect {
                         text: Icons.previous
                         font.family: Icons.font
                         font.pixelSize: 15
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
 
                     MouseArea {
@@ -256,7 +256,7 @@ StyledRect {
                         text: root.isPlaying ? Icons.pause : Icons.play
                         font.family: Icons.font
                         font.pixelSize: 18
-                        color: Colors.overPrimary
+                        color: root.shellPalette.overPrimary
                     }
 
                     MouseArea {
@@ -287,7 +287,7 @@ StyledRect {
                         text: Icons.next
                         font.family: Icons.font
                         font.pixelSize: 15
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
 
                     MouseArea {

@@ -7,6 +7,7 @@ import qs.config
 
 Button {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property bool visibleWhen: true
     property int urgency: NotificationUrgency.Normal
 
@@ -21,13 +22,14 @@ Button {
 
     background: StyledRect {
         id: buttonBg
-        readonly property color iconColor: root.urgency === NotificationUrgency.Critical
-            ? Colors.shadow
-            : (root.pressed ? Colors.overError : Colors.error)
+        // Quiet at rest, danger on hover, a paired error container on press;
+        // critical cards keep the error fill with its own ink.
+        readonly property color iconColor: root.urgency === NotificationUrgency.Critical || root.pressed ? buttonBg.item
+            : (root.hovered ? root.shellPalette.danger : root.shellPalette.overSurfaceVariant)
 
         variant: root.urgency === NotificationUrgency.Critical
             ? "error"
-            : (root.pressed ? "error" : (root.hovered ? "focus" : "common"))
+            : (root.pressed ? "errorcontainer" : (root.hovered ? "focus" : "common"))
         radius: Styling.radius(4)
     }
 

@@ -7,6 +7,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property int controlSize
     property string selectedMode: ""
@@ -25,6 +26,7 @@ Item {
         anchors.fill: parent
         controlSize: root.controlSize
         foregroundColor: soundHalf.foregroundColor
+        progressColor: soundHalf.selected ? soundHalf.foregroundColor : Styling.srItem("overprimary", root.shellPalette)
         value: root.soundMuted ? 0 : root.soundLevel
         startAngle: 188
         spanAngle: 164
@@ -33,6 +35,7 @@ Item {
         anchors.fill: parent
         controlSize: root.controlSize
         foregroundColor: micHalf.foregroundColor
+        progressColor: micHalf.selected ? micHalf.foregroundColor : root.shellPalette.secondary
         value: root.micMuted ? 0 : root.micLevel
         startAngle: 8
         spanAngle: 164
@@ -46,7 +49,9 @@ Item {
         readonly property string title: microphone ? "Microphone" : "Volume"
         readonly property string mode: microphone ? "mic" : "sound"
         readonly property bool selected: root.selectedMode === mode
-        readonly property color foregroundColor: selected ? halfSurface.item : Colors.overBackground
+        // Keep the selected icon and gauge legible against the accent fill.
+        readonly property color foregroundColor: selected ? halfSurface.item
+            : muted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
         readonly property alias mouse: halfMouse
         // Keep each half's fill and icon beneath the shared radial meters.
         z: -1
@@ -66,7 +71,7 @@ Item {
                 height: root.height
                 y: half.microphone ? -root.height / 2 : 0
                 radius: Styling.pillRadius(width)
-                variant: half.selected ? "focus" : "pane"
+                variant: half.selected ? "primary" : "pane"
                 enableBorder: false
                 enableShadow: false
                 HoverTint {
@@ -83,7 +88,7 @@ Item {
                 : (root.soundMuted ? Icons.speakerSlash : Icons.speakerHigh)
             font.family: Icons.font
             font.pixelSize: root.controlSize * 0.29
-            color: parent.muted ? Colors.red : half.foregroundColor
+            color: half.foregroundColor
         }
 
         MouseArea {

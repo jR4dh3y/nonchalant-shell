@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
 Lockscreen Wallpaper Frame Extractor for Nonchalant
-Extracts first frame from video/GIF wallpapers for lockscreen background.
-Only processes video and GIF files - skips regular images.
+Extracts a cached still for video, GIF, WebP and AVIF wallpapers.
 """
 
+import hashlib
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Optional, Tuple
 
 # Supported extensions for processing
-# FFmpeg also decodes WebP, which is used for wallpaper playback when the
-# Qt image plugins do not provide a WebP decoder.
-VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".avi", ".mkv", ".webp"}
+VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".avi", ".mkv"}
 GIF_EXTENSIONS = {".gif"}
+WEB_IMAGE_EXTENSIONS = {".webp", ".avif"}
 
 
 class LockscreenWallpaperGenerator:
@@ -38,51 +38,43 @@ class LockscreenWallpaperGenerator:
         print(f"✓ Lockscreen cache: {self.lockscreen_dir}")
         return True
 
-    def is_video_or_gif(self) -> bool:
-        """Check if current wallpaper is a video or GIF."""
+    def needs_frame(self) -> bool:
         ext = self.current_wallpaper.suffix.lower()
-        return ext in VIDEO_EXTENSIONS or ext in GIF_EXTENSIONS
+        return ext in VIDEO_EXTENSIONS | GIF_EXTENSIONS | WEB_IMAGE_EXTENSIONS
 
     def get_output_path(self) -> Path:
         """Get output path for lockscreen wallpaper."""
         if self.lockscreen_dir is None:
             raise RuntimeError("Lockscreen directory not initialized")
 
-        # Create output filename: original_name.extension.jpg
-        output_name = self.current_wallpaper.name + ".jpg"
+        output_name = hashlib.md5(os.fsencode(self.current_wallpaper), usedforsecurity=False).hexdigest() + ".jpg"
         return self.lockscreen_dir / output_name
 
     def extract_first_frame(self) -> Tuple[bool, str]:
-        """Extract first frame from video/GIF using FFmpeg."""
+        """Decode a still that the shell can load as a JPEG."""
         output_path = self.get_output_path()
 
         try:
-            # FFmpeg command to extract first frame
-            cmd = [
-                "ffmpeg",
-                "-y",
-                "-i",
-                str(self.current_wallpaper),
-                "-vframes",
-                "1",  # Extract only first frame
-                "-q:v",
-                "2",  # High quality
-                "-f",
-                "image2",  # Force image format
-                str(output_path),
-            ]
+            if self.current_wallpaper.suffix.lower() in WEB_IMAGE_EXTENSIONS | GIF_EXTENSIONS:
+                from PIL import Image, ImageOps
 
-            print(f"⚡ Extracting first frame...")
-
-            # Run FFmpeg
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-
-            if result.returncode == 0 and output_path.exists():
-                print(f"✅ Frame saved: {output_path.name}")
+                with tempfile.TemporaryDirectory(dir=output_path.parent) as directory:
+                    staged = Path(directory) / "frame.jpg"
+                    with Image.open(self.current_wallpaper) as image:
+                        ImageOps.exif_transpose(image).convert("RGB").save(staged, quality=95)
+                    staged.replace(output_path)
                 return True, "Success"
-            else:
-                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-                return False, error_msg
+
+            with tempfile.TemporaryDirectory(dir=output_path.parent) as directory:
+                staged = Path(directory) / "frame.jpg"
+                result = subprocess.run(
+                    ["ffmpeg", "-nostdin", "-v", "error", "-i", str(self.current_wallpaper),
+                     "-frames:v", "1", "-q:v", "2", str(staged)],
+                    capture_output=True, text=True, timeout=30)
+                if result.returncode != 0 or not staged.exists():
+                    return False, result.stderr.strip() or "No drawable video frame"
+                staged.replace(output_path)
+            return True, "Success"
 
         except subprocess.TimeoutExpired:
             return False, "Timeout"
@@ -98,8 +90,7 @@ class LockscreenWallpaperGenerator:
         if not self.validate_wallpaper():
             return 1
 
-        # Check if wallpaper is video or GIF
-        if not self.is_video_or_gif():
+        if not self.needs_frame():
             ext = self.current_wallpaper.suffix.lower()
             print(f"ℹ️  Wallpaper is a regular image ({ext})")
             print("ℹ️  No processing needed - use wallpaper directly")

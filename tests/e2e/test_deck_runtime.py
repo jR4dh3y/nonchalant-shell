@@ -306,6 +306,19 @@ ShellRoot {
                 click("deckWorkspace-ws2")
                 compare(CompositorService.backend.lastAction, "workspace:ws2")
                 const workspace = item("deckWorkspace-ws1")
+                const empty = item("deckWorkspace-ws2")
+                compare(workspace.label, "")
+                compare(workspace.background.variant, "primary")
+                compare(empty.ink, workspace.shellPalette.overSurfaceVariant)
+                workspace.workspace.active = false
+                empty.workspace.active = true
+                compare(workspace.ink, workspace.shellPalette.secondary)
+                tryCompare(workspace.background, "backgroundOpacity", 0)
+                compare(empty.label, empty.workspace.name)
+                compare(empty.ink, Styling.srItem("primary", empty.shellPalette))
+                compare(empty.background.variant, "primary")
+                empty.workspace.active = false
+                workspace.workspace.active = true
                 mouseWheel(workspace, workspace.width / 2, workspace.height / 2, 0, -120)
                 compare(CompositorService.backend.lastAction, "adjacent:1")
                 GlobalShortcuts.run("dashboard")

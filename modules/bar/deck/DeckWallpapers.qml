@@ -11,8 +11,9 @@ import qs.modules.widgets.dashboard.wallpapers
 
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     required property ShellScreen screen
-    readonly property Wallpaper manager: GlobalStates.wallpaperManager
+    readonly property WallpaperManager manager: GlobalStates.wallpaperManager
     readonly property list<string> paths: (manager?.wallpaperPaths ?? []).filter(path =>
         search.text === "" || path.split("/").pop().toLowerCase().includes(search.text.toLowerCase()))
     readonly property string selectedPath: manager?.perScreenWallpapers?.[screen.name] || manager?.currentWallpaper || ""
@@ -29,16 +30,16 @@ ColumnLayout {
                 Layout.leftMargin: Styling.fontSize(0) * 0.5
                 text: Icons.magnifyingGlass
                 font.family: Icons.font
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
             }
             TextField {
                 id: search
                 objectName: "deckWallpaperSearch"
                 Layout.fillWidth: true
                 placeholderText: "Find a wallpaper…"
-                placeholderTextColor: Colors.overSurfaceVariant
+                placeholderTextColor: root.shellPalette.overSurfaceVariant
                 Accessible.name: "Find a wallpaper"
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 font.family: Config.theme.font
                 background: null
             }
@@ -92,7 +93,7 @@ ColumnLayout {
                     visible: root.paths.length === 0
                     wrapMode: Text.WordWrap
                     text: !root.manager ? "Wallpaper service is unavailable." : search.text !== "" ? "No wallpapers match your search." : "No wallpapers found in your wallpaper folder."
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
         }

@@ -39,7 +39,7 @@ Item {
     ElasticHighlight {
         objectName: root.objectName + "-highlight"
         targetItem: root.focusedIndex >= 0 ? highlightTarget : null
-        variant: "primary"
+        variant: "focus"
         radius: Styling.radius(-4)
         scale: root.focusedButton?.scale ?? 1
     }
@@ -89,7 +89,6 @@ Item {
                     HoverTint {
                         hovered: appMouse.containsMouse && !appButton.windowData.is_focused
                         pressed: appMouse.pressed
-                        hoverOpacity: 0.18
                     }
                 }
 

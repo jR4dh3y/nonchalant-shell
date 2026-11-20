@@ -13,6 +13,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property bool showHeader: false
     signal backRequested()
@@ -103,7 +104,7 @@ Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             variant: "internalbg"
-                            color: Colors.background
+                            color: root.shellPalette.background
                             radius: Styling.radius(0)
 
                             Text {
@@ -114,7 +115,7 @@ Item {
                                 text: root.currentScreenName || "Screen"
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
-                                color: Colors.overSurface
+                                color: root.shellPalette.overSurface
                                 font.family: Config.theme.font
                                 font.pixelSize: Config.theme.fontSize
                                 font.weight: Font.Medium
@@ -133,7 +134,7 @@ Item {
                                 font.hintingPreference: Font.PreferFullHinting
                                 anchors.centerIn: parent
                                 text: Icons.accept
-                                color: root.isPerScreen ? Styling.srItem("primary") : Colors.overSurfaceVariant
+                                color: root.isPerScreen ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
                                 font.family: Icons.font
                                 font.pixelSize: 20
                                 opacity: root.isPerScreen ? 1.0 : 0.2
@@ -216,7 +217,7 @@ Item {
                     text: Icons.image
                     font.family: Icons.font
                     font.pixelSize: 32
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     opacity: 0.5
                 }
 
@@ -227,7 +228,7 @@ Item {
                     text: "No wallpapers found"
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
 
@@ -259,7 +260,8 @@ Item {
                     StyledRect {
                         anchors.fill: parent
                         radius: Styling.radius(2)
-                        variant: delegateItem.isCurrent ? "primary" : "common"
+                        // Applied wallpaper is context: secondary, like the dashboard grid.
+                        variant: delegateItem.isCurrent ? "secondary" : "common"
                         enableBorder: delegateItem.isCurrent
                         clip: true
 
@@ -303,7 +305,7 @@ Item {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             height: 18
-                            variant: "primary"
+                            variant: "secondary"
                             radius: 0
 
                             Text {
@@ -314,7 +316,7 @@ Item {
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-4)
                                 font.bold: true
-                                color: Colors.overPrimary
+                                color: Styling.srItem("secondary", root.shellPalette)
                             }
                         }
 
@@ -330,7 +332,7 @@ Item {
                                     if (root.isPerScreen && root.currentScreenName !== "") {
                                         GlobalStates.wallpaperManager.setWallpaper(delegateItem.modelData, root.currentScreenName);
                                     } else {
-                                        GlobalStates.wallpaperManager.setWallpaper(delegateItem.modelData);
+                                        GlobalStates.wallpaperManager.setWallpaper(delegateItem.modelData, "");
                                     }
                                 }
                             }

@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property string variantId
 
@@ -37,7 +38,7 @@ Item {
     }
 
     // List of available color names from Colors singleton
-    readonly property var colorNames: Colors.availableColorNames
+    readonly property var colorNames: root.shellPalette.availableColorNames
 
     // Gradient type options
     readonly property var gradientTypes: ["linear", "radial", "halftone"]
@@ -181,7 +182,7 @@ Item {
                         CircularControl {
                             icon: Icons.circleHalf
                             value: root.variantConfig ? root.variantConfig.opacity : 1.0
-                            accentColor: Styling.srItem("overprimary")
+                            accentColor: Styling.srItem("overprimary", root.shellPalette)
                             isToggleable: false
                             isToggled: false
                             showBackground: false
@@ -245,9 +246,9 @@ Item {
                                 width: 20
                                 height: 20
                                 radius: width / 2
-                                color: root.variantConfig ? Config.resolveColor(root.variantConfig.border[0]) : Colors.outline
+                                color: root.variantConfig ? Config.resolveColor(root.variantConfig.border[0], root.shellPalette) : root.shellPalette.outline
                                 border.width: 2
-                                border.color: Colors.overBackground
+                                border.color: root.shellPalette.overBackground
                                 z: 0
                             }
 
@@ -256,7 +257,7 @@ Item {
                                 anchors.fill: parent
                                 icon: ""
                                 value: root.variantConfig ? root.variantConfig.border[1] / 16 : 0
-                                accentColor: root.variantConfig ? Config.resolveColor(root.variantConfig.border[0]) : Colors.outline
+                                accentColor: root.variantConfig ? Config.resolveColor(root.variantConfig.border[0], root.shellPalette) : root.shellPalette.outline
                                 isToggleable: true
                                 isToggled: false
                                 showBackground: false
@@ -342,7 +343,7 @@ Item {
                     text: Icons.arrowDown
                     font.family: Icons.font
                     font.pixelSize: 20
-                    color: Styling.srItem("overprimary")
+                    color: Styling.srItem("overprimary", root.shellPalette)
                     rotation: root.variantConfig ? root.variantConfig.gradientAngle : 0
 
                     Behavior on rotation {
@@ -364,7 +365,7 @@ Item {
                         font.family: Styling.defaultFont
                         font.pixelSize: Styling.fontSize(-2)
                         font.bold: true
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                         opacity: 0.6
                     }
 
@@ -375,7 +376,7 @@ Item {
                         font.family: Styling.defaultFont
                         font.pixelSize: Styling.fontSize(1)
                         font.bold: true
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
                 }
 
@@ -430,7 +431,7 @@ Item {
                         font.family: Styling.defaultFont
                         font.pixelSize: Styling.fontSize(0)
                         font.bold: true
-                        color: Styling.srItem("overprimary")
+                        color: Styling.srItem("overprimary", root.shellPalette)
                         Layout.preferredWidth: 20
                     }
 
@@ -462,7 +463,7 @@ Item {
                         font.family: Styling.defaultFont
                         font.pixelSize: Styling.fontSize(0)
                         font.bold: true
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                         Layout.preferredWidth: 40
                         horizontalAlignment: Text.AlignRight
                     }
@@ -480,7 +481,7 @@ Item {
                         font.family: Styling.defaultFont
                         font.pixelSize: Styling.fontSize(0)
                         font.bold: true
-                        color: Styling.srItem("overprimary")
+                        color: Styling.srItem("overprimary", root.shellPalette)
                         Layout.preferredWidth: 20
                     }
 
@@ -512,7 +513,7 @@ Item {
                         font.family: Styling.defaultFont
                         font.pixelSize: Styling.fontSize(0)
                         font.bold: true
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                         Layout.preferredWidth: 40
                         horizontalAlignment: Text.AlignRight
                     }
@@ -591,7 +592,7 @@ Item {
                                 text: Icons.arrowDown
                                 font.family: Icons.font
                                 font.pixelSize: 18
-                                color: Styling.srItem("overprimary")
+                                color: Styling.srItem("overprimary", root.shellPalette)
                                 rotation: root.variantConfig ? root.variantConfig.gradientAngle : 0
 
                                 Behavior on rotation {
@@ -611,7 +612,7 @@ Item {
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             Layout.preferredWidth: 60
                         }
 
@@ -645,7 +646,7 @@ Item {
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: Styling.srItem("overprimary")
+                            color: Styling.srItem("overprimary", root.shellPalette)
                             Layout.preferredWidth: 40
                             horizontalAlignment: Text.AlignRight
                         }
@@ -662,7 +663,7 @@ Item {
                             text: Icons.circle
                             font.family: Icons.font
                             font.pixelSize: 18
-                            color: Styling.srItem("overprimary")
+                            color: Styling.srItem("overprimary", root.shellPalette)
                             Layout.preferredWidth: 24
                         }
 
@@ -673,7 +674,7 @@ Item {
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             Layout.preferredWidth: 60
                         }
 
@@ -683,7 +684,7 @@ Item {
                             text: root.variantConfig ? root.variantConfig.halftoneDotMin.toFixed(1) : "2.0"
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(-1)
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             opacity: 0.7
                         }
 
@@ -716,7 +717,7 @@ Item {
                             text: "-"
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(0)
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             opacity: 0.5
                         }
 
@@ -749,7 +750,7 @@ Item {
                             text: root.variantConfig ? root.variantConfig.halftoneDotMax.toFixed(1) : "8.0"
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(-1)
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             opacity: 0.7
                         }
                     }
@@ -765,7 +766,7 @@ Item {
                             text: Icons.range
                             font.family: Icons.font
                             font.pixelSize: 18
-                            color: Styling.srItem("overprimary")
+                            color: Styling.srItem("overprimary", root.shellPalette)
                             Layout.preferredWidth: 24
                         }
 
@@ -776,7 +777,7 @@ Item {
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             Layout.preferredWidth: 60
                         }
 
@@ -786,7 +787,7 @@ Item {
                             text: root.variantConfig ? (root.variantConfig.halftoneStart * 100).toFixed(0) + "%" : "0%"
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(-1)
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             opacity: 0.7
                         }
 
@@ -816,7 +817,7 @@ Item {
                             text: "-"
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(0)
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             opacity: 0.5
                         }
 
@@ -846,7 +847,7 @@ Item {
                             text: root.variantConfig ? (root.variantConfig.halftoneEnd * 100).toFixed(0) + "%" : "100%"
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(-1)
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             opacity: 0.7
                         }
                     }

@@ -39,7 +39,8 @@ function normalize(monitors, workspaces, toplevels) {
         }) : null;
         return {
             id: workspaceId(workspace),
-            idx: Number(workspace.id),
+            // HDMI workspaces 11-19 are named "1"-"9"; show and order them by that.
+            idx: /^[1-9][0-9]*$/.test(String(workspace.name)) && Number(workspace.id) > 0 ? Number(workspace.name) : Number(workspace.id),
             name: String(workspace.name || workspace.id),
             isNamed: special || Number(workspace.id) < 1 || !/^[1-9][0-9]*$/.test(String(workspace.name)),
             output: specialMonitor?.name || workspace.monitor?.name || "",
@@ -104,6 +105,29 @@ function normalize(monitors, workspaces, toplevels) {
             geometry: geometry
         };
     });
+    // Hyprland lists toplevels in map order, so reordering columns/windows
+    // never changes the list. Mirror Niri: order by workspace, then by layout
+    // position (left to right, top to bottom), with floating windows last.
+    const workspaceIdx = {};
+    workspaceValues.forEach(workspace => workspaceIdx[workspace.id] = workspace.idx);
+    const mapOrder = new Map(windows.map((window, index) => [window, index]));
+    windows.sort((a, b) => {
+        const workspaceOrder = (workspaceIdx[a.workspaceId] ?? 0) - (workspaceIdx[b.workspaceId] ?? 0);
+        if (workspaceOrder !== 0)
+            return workspaceOrder;
+        if (a.floating !== b.floating)
+            return a.floating ? 1 : -1;
+        if (a.geometryKnown && b.geometryKnown) {
+            // Compare in layout space; window geometry is already output-relative.
+            const columnOrder = a.geometry[0] - b.geometry[0];
+            if (columnOrder !== 0)
+                return columnOrder;
+            const rowOrder = a.geometry[1] - b.geometry[1];
+            if (rowOrder !== 0)
+                return rowOrder;
+        }
+        return mapOrder.get(a) - mapOrder.get(b);
+    });
     const fullscreenOutputs = outputs.filter(output => windows.some(window => {
         const workspace = workspaceValues.find(value => value.id === window.workspaceId);
         return window.output === output.name && window.fullscreen && workspace?.active === true;
@@ -122,7 +146,9 @@ function luaString(value) {
 function workspaceSelector(workspace) {
     if (!workspace || !workspace.id)
         throw new Error("Workspace no longer exists");
-    return luaString(String(workspace.name));
+    // Select by Hyprland's address ("2"), never the display name: on Hyprland
+    // 0.57 focusing "dev" creates a second, empty named workspace "dev".
+    return luaString(String(workspace.id));
 }
 
 function focusWorkspace(workspace) {

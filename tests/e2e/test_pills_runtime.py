@@ -13,6 +13,7 @@ QML = r'''
 import QtQuick
 import QtTest
 import Quickshell
+import Quickshell.Services.Notifications
 import qs.config
 import qs.modules.bar.layouts
 import qs.modules.services
@@ -223,6 +224,23 @@ ShellRoot {
                 console.log("PILLS_BACKGROUND_NOTIFICATION_PASSED")
             }
 
+            function test_critical_alert_uses_danger_color() {
+                const normal = Notifications.notifyInternal({
+                    appName: "Review test", summary: "Normal", popup: false
+                })
+                const critical = Notifications.notifyInternal({
+                    appName: "Review test", summary: "Critical", popup: false,
+                    urgency: NotificationUrgency.Critical
+                })
+                const counter = findChild(bar, "pillsAlerts")
+                tryCompare(counter, "visible", true)
+                tryCompare(counter, "foregroundColor", bar.shellPalette.danger)
+                Notifications.discardNotification(critical.id)
+                tryCompare(counter, "foregroundColor", bar.shellPalette.overBackground)
+                Notifications.discardNotification(normal.id)
+                tryCompare(counter, "visible", false)
+            }
+
             function test_stats_badges_share_configured_accent() {
                 const panel = childOfType(bar, "IslandStatsPanel")
                 verify(panel !== null)
@@ -266,19 +284,27 @@ ShellRoot {
                                 Icons.vpnKey, Icons.wifiHigh, Icons.ethernet]
                             const badges = descendants(panel, item => glyphs.includes(item.text))
                             compare(badges.length, 6, "CPU, RAM, both GPUs, disk and network")
+                            // Series identities: memory secondary, network tertiary,
+                            // the rest primary (which follows the custom srPrimary).
+                            const fillOf = variant => variant === "primary" ? Colors[role] : Colors[variant]
                             for (const icon of badges) {
                                 const badge = styledParent(icon)
                                 verify(badge !== null)
-                                compare(badge.variant, "primary")
-                                tryCompare(badge, "singleGradientColor", Colors[role])
-                                tryCompare(icon, "color", Styling.srItem("primary"))
+                                const expected = icon.text === Icons.ram ? "secondary"
+                                    : (icon.text === Icons.cpu || icon.text === Icons.gpu || icon.text === Icons.disk ? "primary" : "tertiary")
+                                compare(badge.variant, expected)
+                                tryCompare(badge, "singleGradientColor", fillOf(expected))
+                                tryCompare(icon, "color", Styling.srItem(expected, Colors))
                             }
                             const fills = descendants(panel, item =>
                                 item.variant !== undefined && styledParent(item)?.height === 4)
                             compare(fills.length, 5, "CPU, RAM, both GPUs and disk progress fills")
-                            for (const fill of fills) {
-                                compare(fill.variant, "primary")
-                                tryCompare(fill, "singleGradientColor", Colors[role])
+                            // CPU, RAM, GPU 0, GPU 1, disk; CPU and disk turn error from 90%.
+                            const critical = usage >= 90 ? "error" : "primary"
+                            const expectedFills = [critical, "secondary", "primary", "primary", critical]
+                            for (let index = 0; index < fills.length; index++) {
+                                compare(fills[index].variant, expectedFills[index])
+                                tryCompare(fills[index], "singleGradientColor", fillOf(expectedFills[index]))
                             }
                         }
                     }

@@ -11,6 +11,7 @@ import qs.config
 
 PanelWindow {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forScreen(root.screen?.name ?? "")
 
     property ShellScreen targetScreen
     screen: targetScreen
@@ -74,7 +75,7 @@ PanelWindow {
                 visible: GlobalStates.osdIndicator === "brightness"
                 size: 24
                 value: root.osdValue
-                color: Colors.overBackground
+                color: Styling.srItem("overprimary", root.shellPalette)
                 Layout.alignment: Qt.AlignVCenter
             }
 
@@ -91,7 +92,8 @@ PanelWindow {
                 }
                 font.family: Icons.font
                 font.pixelSize: 22
-                color: Colors.overBackground
+                // Muted is inactive, not an error.
+                color: root.osdMuted ? root.shellPalette.overSurfaceVariant : Styling.srItem("overprimary", root.shellPalette)
                 Layout.alignment: Qt.AlignVCenter
             }
 
@@ -117,7 +119,7 @@ PanelWindow {
                         font.family: Config.theme.font
                         font.pixelSize: 15
                         font.bold: false
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                         Layout.alignment: Qt.AlignBottom
                     }
 
@@ -130,7 +132,7 @@ PanelWindow {
                         font.family: Config.theme.font
                         font.pixelSize: 15
                         font.bold: false
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                         Layout.alignment: Qt.AlignBottom
                     }
                 }
@@ -143,8 +145,8 @@ PanelWindow {
                     enabled: false
                     thickness: 3
                     handleSpacing: 0
-                    progressColor: root.osdMuted ? Colors.outline : Styling.srItem("overprimary")
-                    backgroundColor: Qt.rgba(Colors.overBackground.r, Colors.overBackground.g, Colors.overBackground.b, 0.2)
+                    progressColor: root.osdMuted ? root.shellPalette.outlineVariant : Styling.srItem("overprimary", root.shellPalette)
+                    backgroundColor: root.shellPalette.surfaceContainerHighest
                 }
             }
         }

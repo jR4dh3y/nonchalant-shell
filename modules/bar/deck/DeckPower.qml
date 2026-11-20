@@ -7,6 +7,7 @@ import qs.modules.theme
 
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property string armedAction: ""
     signal actionRequested(string action)
     spacing: Styling.fontSize(0) * 0.5
@@ -66,6 +67,7 @@ ColumnLayout {
                 objectName: "deckPower-" + modelData
                 Layout.fillWidth: true
                 accent: true
+                destructive: modelData === "poweroff"
                 glyph: ({ lock: Icons.lock, suspend: Icons.suspend, hibernate: Icons.hibernate, logout: Icons.logout, reboot: Icons.reboot, poweroff: Icons.shutdown })[modelData]
                 label: root.armedAction === modelData ? "Click again to " + root.actionLabel(modelData).toLowerCase() : root.actionLabel(modelData)
                 selected: root.armedAction === modelData
@@ -81,7 +83,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 text: root.armedAction ? "Click again within 3 seconds." : "Log out, restart, and shut down ask twice."
                 font.pixelSize: Styling.fontSize(-3)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 wrapMode: Text.WordWrap
             }
             DeckAction {

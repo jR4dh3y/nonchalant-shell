@@ -21,8 +21,14 @@ Button {
 
     background: StyledRect {
         id: buttonBackground
-        variant: root.expanded ? (root.hovered ? "primaryfocus" : "primary") : (root.hovered ? "focus" : "common")
+        // The collapsed count reads as a secondary badge; expanded is the active state.
+        variant: root.expanded ? (root.hovered ? "primaryfocus" : "primary") : "secondarycontainer"
         radius: Styling.radius(0)
+
+        HoverTint {
+            hovered: root.hovered && !root.expanded
+            pressed: root.pressed && !root.expanded
+        }
     }
 
     contentItem: Row {

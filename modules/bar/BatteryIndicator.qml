@@ -9,6 +9,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property Item bar: null
     property bool isHovered: false
@@ -27,9 +28,9 @@ Item {
 
     signal activated
 
-    // Function to interpolate color between green and red based on battery percentage
+    // Shared charge ramp (Battery.statusColor): success, danger, warning, accent.
     function getBatteryColor() {
-        return Battery.statusColor();
+        return Battery.statusColor(root.shellPalette);
     }
 
     Layout.preferredWidth: meterSize
@@ -65,7 +66,6 @@ Item {
         // Background highlight on hover
         HoverTint {
             hovered: root.isHovered && !root.popupOpen
-            hoverOpacity: root.flat ? 0.12 : 0.25
         }
 
         // Battery meter; shares the radial meter so it follows roundness.
@@ -84,7 +84,7 @@ Item {
             startAngle: 135
             spanAngle: 270
             value: Battery.percentage / 100
-            trackColor: root.flat ? Qt.rgba(1, 1, 1, 0.14) : Colors.outlineVariant
+            trackColor: root.shellPalette.outlineVariant
             progressColor: root.getBatteryColor()
         }
 
@@ -95,7 +95,7 @@ Item {
             text: !root.showMeter && Battery.available ? Battery.getBatteryIcon() : Battery.available ? (Battery.isPluggedIn ? Icons.plug : Icons.lightning) : PowerProfile.getProfileIcon(PowerProfile.currentProfile)
             font.family: Icons.font
             font.pixelSize: !root.showMeter ? Styling.fontSize(4) : root.flat ? (Battery.available ? 11 : 14) : (Battery.available ? 14 : 18)
-            color: root.popupOpen ? buttonBg.item : Colors.overBackground
+            color: root.popupOpen ? buttonBg.item : root.shellPalette.overBackground
 
             Behavior on color {
                 enabled: Config.animDuration > 0
@@ -177,14 +177,14 @@ Item {
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(0)
                             font.bold: true
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                         }
 
                         StyledText {
                             text: Battery.isPluggedIn ? (Battery.timeToFull !== "" ? "Full in " + Battery.timeToFull : "Fully charged") : (Battery.timeToEmpty !== "" ? Battery.timeToEmpty + " remaining" : "")
                             font.family: Styling.defaultFont
                             font.pixelSize: Styling.fontSize(-1)
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             opacity: 0.8
                             Layout.fillWidth: true
                             elide: Text.ElideRight

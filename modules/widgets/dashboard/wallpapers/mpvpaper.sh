@@ -25,19 +25,10 @@ SHADER="${2:-}"
 MONITOR="${3:-ALL}"
 MODE="${4:-crop}"
 
-# When a specific monitor is targeted, we don't kill all mpvpaper instances,
-# just the one for that monitor if possible.
-if [ "$MONITOR" = "ALL" ]; then
-    pkill -x "mpvpaper" 2>/dev/null || true
-else
-    (pgrep -x mpvpaper 2>/dev/null || true) | while read -r pid; do
-        if ps -p "$pid" -o args= 2>/dev/null | grep -q "$MONITOR"; then
-            kill "$pid" 2>/dev/null || true
-        fi
-    done
-fi
-RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
-SOCKET="${RUNTIME_DIR}/nonchalant_mpv_socket_${MONITOR}_$UID"
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-${HOME}/.cache/nonchalant}"
+mkdir -p -- "$RUNTIME_DIR"
+SOCKET="${RUNTIME_DIR}/nonchalant_mpv_socket_${MONITOR}"
+rm -f -- "$SOCKET"
 
 case "$MODE" in
     fit)
@@ -60,4 +51,4 @@ if [ -n "$SHADER" ] && [ -f "$SHADER" ]; then
 	MPV_OPTS="$MPV_OPTS glsl-shaders=$SHADER"
 fi
 
-nohup mpvpaper -o "$MPV_OPTS" "$MONITOR" "$WALLPAPER" >"${RUNTIME_DIR}/mpvpaper_${MONITOR}.log" 2>&1 &
+exec mpvpaper -o "$MPV_OPTS" "$MONITOR" "$WALLPAPER"

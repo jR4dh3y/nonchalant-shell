@@ -96,5 +96,11 @@
   "yellowContainer": "{{colors.yellow_container.default.hex}}",
   "yellowSource": "{{colors.yellow_source.default.hex}}",
   "yellowValue": "{{colors.yellow_value.default.hex}}",
-  "sourceColor": "{{colors.source_color.default.hex}}"
+  "sourceColor": "{{colors.source_color.default.hex}}",
+  "warning": "{{colors.yellow.default.hex}}",
+  "overWarning": "{{colors.on_yellow.default.hex}}",
+  "success": "{{colors.green.default.hex}}",
+  "overSuccess": "{{colors.on_green.default.hex}}",
+  "danger": "{{colors.error.default.hex}}",
+  "overDanger": "{{colors.on_error.default.hex}}"
 }

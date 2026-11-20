@@ -12,6 +12,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 400
     implicitHeight: Math.min(480, mainColumn.implicitHeight + 28)
@@ -46,7 +47,7 @@ Item {
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(1)
             font.bold: true
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
         }
     }
 
@@ -83,7 +84,7 @@ Item {
                     text: Icons.arrowLeft
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -123,7 +124,7 @@ Item {
                         text: AudioFormat.kindIcon
                         font.family: Icons.font
                         font.pixelSize: 13
-                        color: Colors.primary
+                        color: root.shellPalette.primary
                     }
 
                     Text {
@@ -133,7 +134,7 @@ Item {
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-2)
                         font.bold: true
-                        color: Colors.overBackground
+                        color: root.shellPalette.overBackground
                     }
                 }
             }
@@ -161,7 +162,7 @@ Item {
                     text: root.isMuted ? Icons.speakerSlash : (root.volume > 0.5 ? Icons.speakerHigh : (root.volume > 0 ? Icons.speakerLow : Icons.speakerSlash))
                     font.family: Icons.font
                     font.pixelSize: 18
-                    color: root.isMuted ? Colors.red : Colors.overBackground
+                    color: root.isMuted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -178,7 +179,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 18
                 value: root.volume
-                progressColor: root.isMuted ? Colors.outlineVariant : Colors.primary
+                progressColor: root.isMuted ? root.shellPalette.outlineVariant : root.shellPalette.primary
                 onValueChanged: {
                     if (Audio.sink?.audio && Math.abs(value - root.volume) > 0.01) {
                         Audio.sink.audio.volume = value;
@@ -193,7 +194,7 @@ Item {
                 font.family: Config.theme.monoFont
                 font.pixelSize: Styling.fontSize(0)
                 font.bold: true
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
         }
 
@@ -221,7 +222,7 @@ Item {
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-2)
                         font.bold: true
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         Layout.topMargin: 4
                     }
 
@@ -242,9 +243,10 @@ Item {
                             readonly property bool isCurrent: delegateRoot.modelData === Audio.sink || String(delegateRoot.modelData.id) === root.activeSinkId
 
                             StyledRect {
+                                id: deviceSurface
                                 anchors.fill: parent
                                 radius: Styling.radius(2)
-                                variant: delegateRoot.isCurrent ? "primary" : (devMouse.containsMouse ? "pane" : "internalbg")
+                                variant: delegateRoot.isCurrent ? "primary" : (devMouse.containsMouse ? "focus" : "internalbg")
                                 enableBorder: delegateRoot.isCurrent
                                 scale: devMouse.pressed ? 0.95 : 1.0
 
@@ -264,7 +266,7 @@ Item {
                                         text: Icons.speakerHigh
                                         font.family: Icons.font
                                         font.pixelSize: 16
-                                        color: delegateRoot.isCurrent ? Colors.overPrimary : Colors.overBackground
+                                        color: deviceSurface.item
                                     }
 
                                     Text {
@@ -275,7 +277,7 @@ Item {
                                         font.family: Config.theme.font
                                         font.pixelSize: Styling.fontSize(0)
                                         font.bold: delegateRoot.isCurrent
-                                        color: delegateRoot.isCurrent ? Colors.overPrimary : Colors.overBackground
+                                        color: deviceSurface.item
                                         elide: Text.ElideRight
                                     }
 
@@ -286,7 +288,7 @@ Item {
                                         text: Icons.check
                                         font.family: Icons.font
                                         font.pixelSize: 16
-                                        color: Colors.overPrimary
+                                        color: deviceSurface.item
                                     }
                                 }
 
@@ -312,7 +314,7 @@ Item {
                         text: "No output devices found"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         opacity: 0.6
                         Layout.topMargin: 2
                         Layout.bottomMargin: 2
@@ -326,7 +328,7 @@ Item {
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(-2)
                         font.bold: true
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         Layout.topMargin: 8
                     }
 
@@ -381,7 +383,7 @@ Item {
                                                 text: appDelegate.isAppMuted ? Icons.speakerSlash : (appDelegate.appVolume > 0.5 ? Icons.speakerHigh : (appDelegate.appVolume > 0 ? Icons.speakerLow : Icons.speakerSlash))
                                                 font.family: Icons.font
                                                 font.pixelSize: 13
-                                                color: appDelegate.isAppMuted ? Colors.red : Colors.overBackground
+                                                color: appDelegate.isAppMuted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
                                             }
 
                                             MouseArea {
@@ -404,7 +406,7 @@ Item {
                                             font.family: Config.theme.font
                                             font.pixelSize: Styling.fontSize(-1)
                                             font.bold: true
-                                            color: Colors.overBackground
+                                            color: root.shellPalette.overBackground
                                             elide: Text.ElideRight
                                         }
 
@@ -414,7 +416,7 @@ Item {
                                             text: Math.round(appDelegate.appVolume * 100) + "%"
                                             font.family: Config.theme.monoFont
                                             font.pixelSize: Styling.fontSize(-2)
-                                            color: Colors.overSurfaceVariant
+                                            color: root.shellPalette.overSurfaceVariant
                                         }
                                     }
 
@@ -424,7 +426,7 @@ Item {
                                         Layout.leftMargin: 2
                                         Layout.rightMargin: 2
                                         value: appDelegate.appVolume
-                                        progressColor: appDelegate.isAppMuted ? Colors.outlineVariant : Colors.primary
+                                        progressColor: appDelegate.isAppMuted ? root.shellPalette.outlineVariant : root.shellPalette.primary
                                         onValueChanged: {
                                             if (appDelegate.modelData?.audio && Math.abs(value - appDelegate.appVolume) > 0.01) {
                                                 Audio.setNodeVolume(appDelegate.modelData, value);
@@ -445,7 +447,7 @@ Item {
                         text: "No applications playing audio"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         opacity: 0.6
                         Layout.topMargin: 2
                         Layout.bottomMargin: 4

@@ -11,6 +11,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 420
     implicitHeight: mainColumn.implicitHeight + 28
@@ -60,7 +61,7 @@ Item {
                     text: Icons.arrowLeft
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -87,7 +88,7 @@ Item {
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(1)
                     font.bold: true
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 Text {
@@ -101,7 +102,7 @@ Item {
                     }
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-1)
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     elide: Text.ElideRight
                     Layout.maximumWidth: 180
                 }
@@ -127,7 +128,7 @@ Item {
                     text: Icons.arrowsClockwise
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: WeatherService.isLoading ? Colors.primary : Colors.overBackground
+                    color: WeatherService.isLoading ? root.shellPalette.primary : root.shellPalette.overBackground
 
                     RotationAnimation on rotation {
                         running: WeatherService.isLoading
@@ -211,7 +212,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.Medium
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                             }
 
                             // Weather condition emoji
@@ -233,7 +234,7 @@ Item {
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.bold: true
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                             }
 
                             // Min temperature (+24°)
@@ -244,7 +245,7 @@ Item {
                                 text: (Math.round(dayCol.modelData.minTemp) >= 0 ? "+" : "") + Math.round(dayCol.modelData.minTemp) + "°"
                                 font.family: Config.theme.monoFont
                                 font.pixelSize: Styling.fontSize(-2)
-                                color: Colors.overSurfaceVariant
+                                color: root.shellPalette.overSurfaceVariant
                             }
                         }
 
@@ -257,7 +258,7 @@ Item {
                             anchors.topMargin: 8
                             anchors.bottomMargin: 8
                             width: 1
-                            color: Colors.outlineVariant ?? Qt.rgba(1, 1, 1, 0.12)
+                            color: root.shellPalette.outlineVariant ?? Qt.rgba(1, 1, 1, 0.12)
                             opacity: 0.35
                         }
                     }

@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     implicitHeight: content.implicitHeight + 24
     width: 300
 
@@ -206,7 +207,7 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(8)
                         font.weight: Font.Bold
-                        color: root.alarmActive ? Styling.srItem("overprimary") : Colors.overBackground
+                        color: root.alarmActive ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.overBackground
                         Layout.topMargin: -6
                     }
                     
@@ -236,7 +237,7 @@ Item {
                     height: parent.height
                     width: root.visualProgress * parent.width
                     radius: Styling.scaledRadius(2)
-                    color: Styling.srItem("overprimary")
+                    color: Styling.srItem("overprimary", root.shellPalette)
                 }
             }
 
@@ -314,7 +315,7 @@ Item {
         font.family: Config.theme.monoFont
         font.pixelSize: Styling.fontSize(8)
         font.weight: Font.Bold
-        color: root.alarmActive ? (Math.floor(Date.now() / 500) % 2 === 0 ? Styling.srItem("overprimary") : Colors.overBackground) : Colors.overBackground
+        color: root.alarmActive ? (Math.floor(Date.now() / 500) % 2 === 0 ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.overBackground) : root.shellPalette.overBackground
         
         background: Item {}
         padding: 0; leftPadding: 0; rightPadding: 0

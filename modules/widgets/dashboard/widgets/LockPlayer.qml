@@ -93,7 +93,7 @@ StyledRect {
             sourceComponent: WavyLine {
                 anchors.fill: parent
                 frequency: 4
-                color: Colors.surfaceBright
+                color: lockPlayer.shellPalette.surfaceBright
                 amplitudeMultiplier: 4
                 lineWidth: 2
                 fullLength: width
@@ -131,7 +131,7 @@ StyledRect {
                 id: artworkContainer
                 anchors.fill: parent
                 radius: Styling.pillRadius(height)
-                color: Colors.surface
+                color: lockPlayer.shellPalette.surface
 
                 Image {
                     mipmap: true
@@ -184,7 +184,7 @@ StyledRect {
                 anchors.centerIn: parent
                 text: lockPlayer.isPlaying ? Icons.pause : Icons.play
                 textFormat: Text.RichText
-                color: Styling.srItem("overprimary")
+                color: Styling.srItem("overprimary", lockPlayer.shellPalette)
                 font.pixelSize: 24
                 font.family: Icons.font
                 opacity: playPauseHover.hovered ? 1.0 : 0.0
@@ -234,7 +234,7 @@ StyledRect {
                     Layout.fillWidth: true
                     text: MprisController.activePlayer?.trackTitle ?? "No hay reproducción activa"
                     textFormat: Text.PlainText
-                    color: Colors.overBackground
+                    color: lockPlayer.shellPalette.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.weight: Font.Bold
                     font.family: Config.theme.font
@@ -249,7 +249,7 @@ StyledRect {
                     Layout.fillWidth: true
                     text: MprisController.activePlayer?.trackArtist ?? ""
                     textFormat: Text.PlainText
-                    color: Colors.overBackground
+                    color: lockPlayer.shellPalette.overBackground
                     font.pixelSize: Config.theme.fontSize
                     font.family: Config.theme.font
                     elide: Text.ElideRight
@@ -280,7 +280,7 @@ StyledRect {
                     id: previousBtn
                     text: Icons.previous
                     textFormat: Text.RichText
-                    color: previousHover.hovered ? Styling.srItem("overprimary") : Colors.overBackground
+                    color: previousHover.hovered ? Styling.srItem("overprimary", lockPlayer.shellPalette) : lockPlayer.shellPalette.overBackground
                     font.pixelSize: 20
                     font.family: Icons.font
                     opacity: MprisController.canGoPrevious ? 1.0 : 0.3
@@ -318,8 +318,8 @@ StyledRect {
 
                     player: MprisController.activePlayer
                     useCustomColors: true
-                    customProgressColor: Styling.srItem("overprimary")
-                    customBackgroundColor: Colors.surfaceBright
+                    customProgressColor: Styling.srItem("overprimary", lockPlayer.shellPalette)
+                    customBackgroundColor: lockPlayer.shellPalette.surfaceBright
                 }
 
                 Text {
@@ -328,7 +328,7 @@ StyledRect {
                     id: nextBtn
                     text: Icons.next
                     textFormat: Text.RichText
-                    color: nextHover.hovered ? Styling.srItem("overprimary") : Colors.overBackground
+                    color: nextHover.hovered ? Styling.srItem("overprimary", lockPlayer.shellPalette) : lockPlayer.shellPalette.overBackground
                     font.pixelSize: 20
                     font.family: Icons.font
                     opacity: MprisController.canGoNext ? 1.0 : 0.3
@@ -376,7 +376,7 @@ StyledRect {
                         }
                     }
                     textFormat: Text.RichText
-                    color: modeHover.hovered ? Styling.srItem("overprimary") : Colors.overBackground
+                    color: modeHover.hovered ? Styling.srItem("overprimary", lockPlayer.shellPalette) : lockPlayer.shellPalette.overBackground
                     font.pixelSize: 20
                     font.family: Icons.font
                     opacity: {
@@ -446,7 +446,7 @@ StyledRect {
                         return Icons.player;
                     }
                     textFormat: Text.RichText
-                    color: playerIconHover.hovered ? Styling.srItem("overprimary") : Colors.overBackground
+                    color: playerIconHover.hovered ? Styling.srItem("overprimary", lockPlayer.shellPalette) : lockPlayer.shellPalette.overBackground
                     font.pixelSize: 20
                     font.family: Icons.font
                     opacity: MprisController.activePlayer ? 1.0 : 0.3
@@ -533,8 +533,8 @@ StyledRect {
                                 menuItems.push({
                                     text: player.trackTitle || player.identity || "Unknown Player",
                                     icon: getPlayerIcon(player),
-                                    highlightColor: Styling.srItem("overprimary"),
-                                    textColor: Colors.overPrimary,
+                                    highlightColor: Styling.srItem("overprimary", lockPlayer.shellPalette),
+                                    textColor: lockPlayer.shellPalette.overPrimary,
                                     onTriggered: () => {
                                         MprisController.setActivePlayer(player);
                                         playersMenu.close();

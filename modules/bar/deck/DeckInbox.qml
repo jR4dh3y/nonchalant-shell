@@ -6,10 +6,12 @@ import Quickshell
 import qs.modules.components
 import qs.modules.services
 import qs.modules.theme
+import "../../notifications/notification_utils.js" as NotificationUtils
 
 // Inbox: a fixed header card above a scrolling stack of notification cards.
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     spacing: Styling.fontSize(0) * 0.5
 
     function ago(time: real): string {
@@ -74,6 +76,7 @@ ColumnLayout {
                     id: notice
                     required property Notifications.Notif modelData
                     required property int index
+                    readonly property bool isCritical: NotificationUtils.isCriticalUrgency(modelData.urgency)
                     Layout.fillWidth: true
                     order: index + 1
                     RowLayout {
@@ -100,10 +103,10 @@ ColumnLayout {
                             StyledText {
                                 anchors.centerIn: parent
                                 visible: !noticeIcon.visible
-                                text: notice.modelData.urgency === "critical" ? Icons.bellRinging : Icons.bell
+                                text: notice.isCritical ? Icons.bellRinging : Icons.bell
                                 font.family: Icons.font
                                 font.pixelSize: Styling.fontSize(2)
-                                color: Colors.primary
+                                color: notice.isCritical ? root.shellPalette.danger : root.shellPalette.primary
                             }
                         }
                         ColumnLayout {
@@ -118,7 +121,7 @@ ColumnLayout {
                                     text: notice.modelData.summary
                                     textFormat: Text.PlainText
                                     elide: Text.ElideRight
-                                    color: Colors.primary
+                                    color: notice.isCritical ? root.shellPalette.danger : root.shellPalette.primary
                                     font.weight: Font.DemiBold
                                 }
                                 StyledText {
@@ -126,12 +129,12 @@ ColumnLayout {
                                     visible: notice.modelData.appName !== ""
                                     text: "· " + notice.modelData.appName
                                     elide: Text.ElideRight
-                                    color: Colors.overSurfaceVariant
+                                    color: root.shellPalette.overSurfaceVariant
                                     font.pixelSize: Styling.fontSize(-3)
                                 }
                                 StyledText {
                                     text: root.ago(notice.modelData.time)
-                                    color: Colors.overSurfaceVariant
+                                    color: root.shellPalette.overSurfaceVariant
                                     font.pixelSize: Styling.fontSize(-3)
                                 }
                             }
@@ -186,7 +189,7 @@ ColumnLayout {
                     Layout.bottomMargin: Styling.fontSize(0)
                     text: Notifications.silent ? "All caught up. Do not disturb is on." : "All caught up."
                     horizontalAlignment: Text.AlignHCenter
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
         }

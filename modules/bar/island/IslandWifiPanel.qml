@@ -12,6 +12,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 400
     implicitHeight: 340
@@ -32,7 +33,7 @@ Item {
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(1)
             font.bold: true
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             elide: Text.ElideRight
         }
     }
@@ -68,7 +69,7 @@ Item {
                     text: Icons.arrowLeft
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -99,7 +100,7 @@ Item {
                 text: NetworkService.wifiConnecting ? "Connecting..." : (NetworkService.wifiStatus === "limited" ? "Limited" : (NetworkService.vpnConnected ? ("VPN: " + (NetworkService.vpnName || "Active")) : ""))
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
-                color: NetworkService.wifiStatus === "limited" ? Colors.warning : Styling.srItem("overprimary")
+                color: NetworkService.wifiStatus === "limited" ? root.shellPalette.warning : Styling.srItem("overprimary", root.shellPalette)
                 elide: Text.ElideRight
             }
 
@@ -125,7 +126,7 @@ Item {
                     text: Icons.globe
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: NetworkService.wifiStatus === "limited" ? Styling.srItem("overprimary") : (globeMouse.containsMouse ? Colors.overBackground : Colors.overSurfaceVariant)
+                    color: NetworkService.wifiStatus === "limited" ? Styling.srItem("overprimary", root.shellPalette) : (globeMouse.containsMouse ? root.shellPalette.overBackground : root.shellPalette.overSurfaceVariant)
                 }
 
                 MouseArea {
@@ -165,7 +166,7 @@ Item {
                     text: Icons.popOpen
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -203,7 +204,7 @@ Item {
                     text: Icons.arrowsClockwise
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: (NetworkService.wifiScanning || NetworkService.isUpdating) ? Styling.srItem("overprimary") : (NetworkService.wifiEnabled ? Colors.overBackground : Colors.outline)
+                    color: (NetworkService.wifiScanning || NetworkService.isUpdating) ? Styling.srItem("overprimary", root.shellPalette) : (NetworkService.wifiEnabled ? root.shellPalette.overBackground : root.shellPalette.outline)
 
                     RotationAnimation on rotation {
                         running: NetworkService.wifiScanning || NetworkService.isUpdating
@@ -246,8 +247,8 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: Styling.pillRadius(height)
-                    color: NetworkService.wifiEnabled ? Styling.srItem("overprimary") : Colors.surfaceBright
-                    border.color: NetworkService.wifiEnabled ? Styling.srItem("overprimary") : Colors.outline
+                    color: NetworkService.wifiEnabled ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.surfaceBright
+                    border.color: NetworkService.wifiEnabled ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
                     border.width: 1
 
                     Behavior on color {
@@ -261,7 +262,7 @@ Item {
                         width: parent.height - 4
                         height: width
                         radius: Styling.pillRadius(width)
-                        color: NetworkService.wifiEnabled ? Colors.background : Colors.overSurfaceVariant
+                        color: NetworkService.wifiEnabled ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
 
                         Behavior on x {
                             enabled: Config.animDuration > 0
@@ -325,7 +326,7 @@ Item {
                 text: NetworkService.wifiEnabled ? "No networks found" : "Wi-Fi is disabled"
                 font.family: Config.theme.font
                 font.pixelSize: Config.theme.fontSize
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
             }
 
             // Scanning indicator when list is empty
@@ -338,7 +339,7 @@ Item {
                     text: Icons.arrowsClockwise
                     font.family: Icons.font
                     font.pixelSize: 16
-                    color: Styling.srItem("overprimary")
+                    color: Styling.srItem("overprimary", root.shellPalette)
 
                     RotationAnimation on rotation {
                         running: NetworkService.wifiScanning
@@ -353,7 +354,7 @@ Item {
                     text: "Scanning for networks..."
                     font.family: Config.theme.font
                     font.pixelSize: Config.theme.fontSize
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
         }

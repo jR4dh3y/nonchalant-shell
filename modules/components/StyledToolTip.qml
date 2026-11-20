@@ -8,6 +8,7 @@ import qs.modules.components
 
 ToolTip {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root.parent)
     property string tooltipText: ""
     property string description: ""
     property bool show: false
@@ -49,7 +50,7 @@ ToolTip {
 
         StyledText {
             text: root.tooltipText
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             font.pixelSize: Config.theme.fontSize
             font.weight: Font.Bold
             font.family: Config.theme.font
@@ -58,7 +59,7 @@ ToolTip {
         StyledText {
             text: root.description
             visible: root.description.length > 0
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             font.pixelSize: Config.theme.fontSize - 2
             font.family: Config.theme.font
         }

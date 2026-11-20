@@ -5,6 +5,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property string source: ""
     property real radius: 0
     property bool tintEnabled: false
@@ -39,7 +40,7 @@ Item {
                 Rectangle {
                     width: 1
                     height: 1
-                    color: Colors[modelData]
+                    color: root.shellPalette[modelData]
                 }
             }
         }

@@ -8,8 +8,9 @@ import qs.modules.theme
 // edges crisp for static shell chrome. Prefer this over bare Text for labels.
 Text {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
-    color: Colors.overBackground
+    color: root.shellPalette.overBackground
     font.family: Config.theme.font
     font.pixelSize: Styling.fontSize(0)
     renderType: Text.NativeRendering

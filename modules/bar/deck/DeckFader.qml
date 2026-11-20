@@ -7,6 +7,7 @@ import qs.modules.theme
 // Thin horizontal scrubber for continuous positions such as playback.
 Slider {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     required property string label
     property bool available: true
     signal edited(real value)
@@ -30,7 +31,7 @@ Slider {
             height: parent.height
             radius: Styling.pillRadius(height)
             variant: "focus"
-            color: Colors.primary
+            color: root.shellPalette.primary
             enableBorder: false
         }
     }
@@ -41,7 +42,7 @@ Slider {
         height: width
         radius: Styling.pillRadius(width)
         variant: "focus"
-        color: Colors.overBackground
+        color: root.shellPalette.overBackground
         enableBorder: root.visualFocus
     }
 }

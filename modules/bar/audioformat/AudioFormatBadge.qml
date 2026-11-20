@@ -54,13 +54,13 @@ StyledRect {
             text: AudioFormat.kindIcon
             font.family: Icons.font
             font.pixelSize: 14
-            color: root.flat && root.isHovered ? Colors.primary : Colors.overBackground
+            color: root.flat && root.isHovered ? root.shellPalette.primary : root.shellPalette.overBackground
             Layout.alignment: Qt.AlignVCenter
         }
 
         StyledText {
             text: AudioFormat.formatSummary
-            color: root.flat && root.isHovered ? Colors.primary : Colors.overBackground
+            color: root.flat && root.isHovered ? root.shellPalette.primary : root.shellPalette.overBackground
             Layout.alignment: Qt.AlignVCenter
         }
     }

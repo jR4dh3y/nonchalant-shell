@@ -13,6 +13,7 @@ import qs.config
 // scan when hidden, so every surface that opens it can pair new devices.
 ListView {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     // Width of each row; rows are centered when narrower than the list.
     property int itemWidth: width
@@ -63,7 +64,7 @@ ListView {
         text: ""
         font.pixelSize: Styling.fontSize(-2)
         font.weight: Font.DemiBold
-        color: Colors.overSurfaceVariant
+        color: root.shellPalette.overSurfaceVariant
         leftPadding: 4
         topPadding: 6
         bottomPadding: 2
@@ -102,7 +103,7 @@ ListView {
                 SectionLabel {
                     visible: !row.modelData.paired && BluetoothService.discovering
                     text: "Scanning…"
-                    color: Styling.srItem("overprimary")
+                    color: Styling.srItem("overprimary", root.shellPalette)
                     rightPadding: 4
                 }
             }
@@ -158,7 +159,7 @@ ListView {
                         text: Icons.arrowsClockwise
                         font.family: Icons.font
                         font.pixelSize: 18
-                        color: BluetoothService.discovering ? Styling.srItem("overprimary") : Colors.overBackground
+                        color: BluetoothService.discovering ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.overBackground
 
                         RotationAnimation on rotation {
                             running: BluetoothService.discovering
@@ -179,7 +180,7 @@ ListView {
                             ? "Searching for nearby devices… Put your device in pairing mode."
                             : "No new devices found. Click to scan again."
                         font.pixelSize: Styling.fontSize(-1)
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
@@ -202,6 +203,6 @@ ListView {
         anchors.centerIn: parent
         visible: !BluetoothService.enabled && root.count === 0
         text: "Bluetooth is disabled"
-        color: Colors.overSurfaceVariant
+        color: root.shellPalette.overSurfaceVariant
     }
 }

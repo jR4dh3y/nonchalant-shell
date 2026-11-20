@@ -9,6 +9,7 @@ import qs.modules.theme
 
 ColumnLayout {
     id: networkRow
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(networkRow)
     required property WifiAccessPoint modelData
     required property ScrollView viewport
     Layout.fillWidth: true
@@ -51,9 +52,9 @@ ColumnLayout {
             Layout.fillWidth: true
             echoMode: TextInput.Password
             placeholderText: "Network password"
-            placeholderTextColor: Colors.overSurfaceVariant
+            placeholderTextColor: networkRow.shellPalette.overSurfaceVariant
             Accessible.name: "Password for " + networkRow.modelData.ssid
-            color: Colors.overBackground
+            color: networkRow.shellPalette.overBackground
             font.family: Config.theme.font
             background: StyledRect { variant: "internalbg"; radius: Styling.radius(-8) }
             onVisibleChanged: {

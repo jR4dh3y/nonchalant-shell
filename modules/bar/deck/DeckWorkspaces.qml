@@ -10,6 +10,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     required property ShellScreen screen
     property bool compact: false
     readonly property list<CompositorWorkspace> workspaces: CompositorService.workspacesForOutput(screen.name)
@@ -57,14 +58,19 @@ Item {
                     required property string modelData
                     readonly property CompositorWorkspace workspace: CompositorService.workspaceById(modelData)
                     readonly property int windowCount: CompositorService.windowsForWorkspace(modelData).length
+                    readonly property bool urgent: workspace?.is_urgent ?? false
+                    readonly property string number: String(workspace?.idx ?? "")
+                    readonly property string displayName: workspace?.isNamed ? workspace.name : number
                     objectName: "deckWorkspace-" + modelData
-                    width: root.unit
+                    width: selected && windowCount === 0 ? Math.max(root.unit, implicitWidth + Styling.fontSize(0) / 2) : root.unit
                     height: root.unit
                     padding: 0
-                    label: String(workspace?.idx ?? "")
+                    label: selected ? (windowCount > 0 ? "" : displayName) : number
                     labelAlignment: Text.AlignHCenter
                     selected: workspace?.active ?? false
-                    description: (workspace?.isNamed ? workspace.name : "Workspace " + (workspace?.idx ?? ""))
+                    accent: true
+                    ink: Styling.workspaceLabelColor(selected, windowCount > 0, urgent, root.shellPalette)
+                    description: (workspace?.isNamed ? displayName : "Workspace " + number)
                         + " · " + windowCount + (windowCount === 1 ? " window" : " windows") + " · Scroll to switch"
                     onClicked: DeckActions.focusWorkspace(modelData)
                     wheelEnabled: true
@@ -85,16 +91,16 @@ Item {
                                 height: width
                                 radius: Styling.pillRadius(width)
                                 variant: "focus"
-                                color: tab.ink
+                                color: tab.selected ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.secondary
                                 opacity: tab.selected ? 0.9 : 0.6
                                 enableBorder: false
                             }
                         }
                     }
                     StyledRect {
-                        visible: tab.workspace?.is_urgent ?? false
+                        visible: tab.urgent
                         variant: "focus"
-                        color: Colors.red
+                        color: root.shellPalette.danger
                         enableBorder: false
                         width: Styling.fontSize(0) * 0.3
                         height: width

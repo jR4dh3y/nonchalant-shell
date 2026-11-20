@@ -9,6 +9,7 @@ import qs.config
 // Inline color picker view for ThemePanel
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property var colorNames
     required property string currentColor
@@ -38,7 +39,7 @@ Item {
         if (val.startsWith("#")) {
             return val.replace("#", "").toUpperCase();
         }
-        const resolved = Config.resolveColor(val);
+        const resolved = Config.resolveColor(val, root.shellPalette);
         return resolved ? resolved.toString().replace("#", "").toUpperCase().slice(0, 6) : "000000";
     }
 
@@ -86,7 +87,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(1)
                 font.weight: Font.Medium
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 Layout.fillWidth: true
             }
         }
@@ -107,8 +108,8 @@ Item {
                     Layout.preferredWidth: 28
                     Layout.preferredHeight: 28
                     radius: Styling.radius(-4)
-                    color: Config.resolveColor(root.currentColor)
-                    border.color: Colors.outline
+                    color: Config.resolveColor(root.currentColor, root.shellPalette)
+                    border.color: root.shellPalette.outline
                     border.width: 1
                 }
 
@@ -118,7 +119,7 @@ Item {
                     text: "#"
                     font.family: "monospace"
                     font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     opacity: 0.6
                 }
 
@@ -138,7 +139,7 @@ Item {
 
                     font.family: "monospace"
                     font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     verticalAlignment: Text.AlignVCenter
                     selectByMouse: true
                     maximumLength: 8
@@ -183,7 +184,7 @@ Item {
                     text: "Custom"
                     font.family: Styling.defaultFont
                     font.pixelSize: Styling.fontSize(-1)
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     opacity: 0.5
                 }
 
@@ -225,7 +226,7 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Colors.outline
+            color: root.shellPalette.outline
             opacity: 0.2
         }
 
@@ -267,8 +268,8 @@ Item {
                             Layout.preferredWidth: 20
                             Layout.preferredHeight: 20
                             radius: 10
-                            color: Colors[colorItem.modelData] || "transparent"
-                            border.color: Colors.outline
+                            color: root.shellPalette[colorItem.modelData] || "transparent"
+                            border.color: root.shellPalette.outline
                             border.width: 1
                         }
 
@@ -309,7 +310,7 @@ Item {
     CustomColorPicker {
         id: customColorPicker
         parent: Overlay.overlay
-        initialColor: Config.resolveColor(root.currentColor)
+        initialColor: Config.resolveColor(root.currentColor, root.shellPalette)
         title: root.dialogTitle
 
         onColorSelected: color => root.colorSelected(color)

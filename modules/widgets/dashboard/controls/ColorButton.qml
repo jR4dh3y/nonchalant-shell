@@ -43,8 +43,8 @@ StyledRect {
             Layout.preferredWidth: root.compact ? 24 : 32
             Layout.preferredHeight: root.compact ? 24 : 32
             radius: root.circlePreview ? (root.compact ? 12 : 16) : Styling.radius(-4)
-            color: Config.resolveColor(root.currentColor)
-            border.color: Colors.outline
+            color: Config.resolveColor(root.currentColor, root.shellPalette)
+            border.color: root.shellPalette.outline
             border.width: 1
         }
 

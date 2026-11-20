@@ -12,6 +12,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 400
     implicitHeight: 340
@@ -44,7 +45,7 @@ Item {
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(1)
             font.bold: true
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             elide: Text.ElideRight
         }
     }
@@ -80,7 +81,7 @@ Item {
                     text: Icons.arrowLeft
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -111,7 +112,7 @@ Item {
                 text: "Scanning..."
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
-                color: Styling.srItem("overprimary")
+                color: Styling.srItem("overprimary", root.shellPalette)
                 elide: Text.ElideRight
             }
 
@@ -136,7 +137,7 @@ Item {
                     text: Icons.popOpen
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -174,7 +175,7 @@ Item {
                     text: Icons.arrowsClockwise
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: (BluetoothService.discovering || BluetoothService.isUpdating) ? Styling.srItem("overprimary") : (BluetoothService.enabled ? Colors.overBackground : Colors.outline)
+                    color: (BluetoothService.discovering || BluetoothService.isUpdating) ? Styling.srItem("overprimary", root.shellPalette) : (BluetoothService.enabled ? root.shellPalette.overBackground : root.shellPalette.outline)
 
                     RotationAnimation on rotation {
                         running: BluetoothService.discovering || BluetoothService.isUpdating
@@ -217,8 +218,8 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: Styling.pillRadius(height)
-                    color: BluetoothService.enabled ? Styling.srItem("overprimary") : Colors.surfaceBright
-                    border.color: BluetoothService.enabled ? Styling.srItem("overprimary") : Colors.outline
+                    color: BluetoothService.enabled ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.surfaceBright
+                    border.color: BluetoothService.enabled ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
                     border.width: 1
 
                     Behavior on color {
@@ -232,7 +233,7 @@ Item {
                         width: parent.height - 4
                         height: width
                         radius: Styling.pillRadius(width)
-                        color: BluetoothService.enabled ? Colors.background : Colors.overSurfaceVariant
+                        color: BluetoothService.enabled ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
 
                         Behavior on x {
                             enabled: Config.animDuration > 0

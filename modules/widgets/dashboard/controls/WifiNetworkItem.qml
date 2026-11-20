@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property WifiAccessPoint network
 
@@ -82,7 +83,8 @@ Item {
                     }
                     font.family: Icons.font
                     font.pixelSize: 20
-                    color: root.network?.active ? Styling.srItem("overprimary") : Colors.overBackground
+                    // Connected is applied context (secondary); the connect action is primary.
+                    color: root.network?.active ? root.shellPalette.secondary : root.shellPalette.overBackground
                 }
 
                 // Lock icon for secure networks
@@ -96,7 +98,7 @@ Item {
                     text: Icons.lock
                     font.family: Icons.font
                     font.pixelSize: 10
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
 
@@ -113,7 +115,7 @@ Item {
                     font.family: Config.theme.font
                     font.pixelSize: Config.theme.fontSize
                     font.weight: Font.Medium
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     elide: Text.ElideRight
                 }
 
@@ -131,7 +133,7 @@ Item {
                     }
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(-2)
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     elide: Text.ElideRight
 
                     Behavior on opacity {
@@ -159,7 +161,7 @@ Item {
                     font.family: Config.theme.font
                     font.pixelSize: 10
                     font.weight: Font.Bold
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
             }
         }
@@ -225,7 +227,7 @@ Item {
                         text: root.network?.active ? "Disconnect" : "Connect"
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
-                        color: root.network?.active ? Colors.overSurfaceVariant : Styling.srItem("primary")
+                        color: root.network?.active ? root.shellPalette.overSurfaceVariant : Styling.srItem("primary", root.shellPalette)
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }

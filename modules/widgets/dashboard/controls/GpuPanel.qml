@@ -9,6 +9,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int maxContentWidth: 480
     readonly property int contentWidth: Math.min(width, maxContentWidth)
@@ -103,7 +104,7 @@ Item {
                 Layout.fillWidth: true
                 title: "RTX 3050"
                 statusText: GpuService.modeLabel + " · VM " + GpuService.vmStateLabel
-                statusColor: GpuService.lastError !== "" ? Colors.error : Styling.srItem("overprimary")
+                statusColor: GpuService.lastError !== "" ? root.shellPalette.danger : Styling.srItem("overprimary", root.shellPalette)
                 actions: [
                     {
                         icon: Icons.sync,

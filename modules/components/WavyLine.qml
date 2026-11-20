@@ -3,11 +3,12 @@ import qs.modules.theme
 
 Canvas {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     // =========================================================================
     // API Properties
     // =========================================================================
-    property color color: Styling.srItem("overprimary")
+    property color color: Styling.srItem("overprimary", root.shellPalette)
     property real lineWidth: 2
     property real frequency: 2
     property real amplitudeMultiplier: 0.5

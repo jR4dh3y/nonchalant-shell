@@ -8,6 +8,7 @@ import qs.modules.theme
 // glyphs, UTF-16 word offsets and wrapping. The fill follows that geometry.
 TextEdit {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property real characterProgress: 0
     property real phase: 0
@@ -85,7 +86,7 @@ TextEdit {
     selectByKeyboard: false
     cursorVisible: false
     textFormat: TextEdit.PlainText
-    color: Colors.overBackground
+    color: root.shellPalette.overBackground
     font.family: Config.theme.font
     font.pixelSize: Styling.fontSize(1)
     font.weight: Font.DemiBold
@@ -114,10 +115,10 @@ TextEdit {
         property real canvasWidth: root.width
         property real canvasHeight: root.height
         property vector2d _pad: Qt.vector2d(0, 0)
-        property vector4d baseColor: Qt.vector4d(Colors.overSurfaceVariant.r, Colors.overSurfaceVariant.g, Colors.overSurfaceVariant.b, Colors.overSurfaceVariant.a)
-        property vector4d fillColor: Qt.vector4d(Colors.primary.r, Colors.primary.g, Colors.primary.b, Colors.primary.a)
+        property vector4d baseColor: Qt.vector4d(root.shellPalette.overSurfaceVariant.r, root.shellPalette.overSurfaceVariant.g, root.shellPalette.overSurfaceVariant.b, root.shellPalette.overSurfaceVariant.a)
+        property vector4d fillColor: Qt.vector4d(root.shellPalette.primary.r, root.shellPalette.primary.g, root.shellPalette.primary.b, root.shellPalette.primary.a)
         property vector4d highlightColor: {
-            const c = Colors.primaryFixed ?? Colors.primary;
+            const c = root.shellPalette.primaryFixed ?? root.shellPalette.primary;
             return Qt.vector4d(c.r, c.g, c.b, c.a);
         }
         property vector4d textCursor: root.fillCursor

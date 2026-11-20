@@ -11,6 +11,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     readonly property var modes: [
         { id: "crop", label: "Crop" },
@@ -126,9 +127,14 @@ Item {
     }
 
     StyledRect {
-        variant: keyboardNavigationActive && modeButton.activeFocus ? "focus" : "pane"
+        variant: "pane"
         radius: Styling.radius(4)
         anchors.fill: parent
+
+        // Keyboard focus is an outline; the selected mode keeps its own fill.
+        FocusRing {
+            shown: keyboardNavigationActive && modeButton.activeFocus
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -209,7 +215,7 @@ Item {
 
                     background: StyledRect {
                         variant: "common"
-                        color: Colors.surfaceContainerLow
+                        color: root.shellPalette.surfaceContainerLow
                         radius: Styling.radius(0)
                     }
 
@@ -219,7 +225,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         text: modeButton.text
-                        color: Colors.overSurface
+                        color: root.shellPalette.overSurface
                         font.family: Config.theme.font
                         font.pixelSize: Config.theme.fontSize
                         renderType: Text.NativeRendering
@@ -231,7 +237,7 @@ Item {
 
                     Text {
                         text: Icons.caretDown
-                        color: Colors.overSurface
+                        color: root.shellPalette.overSurface
                         font.family: Icons.font
                         font.pixelSize: 14
                         renderType: Text.NativeRendering
@@ -244,6 +250,7 @@ Item {
 
     PopupWindow {
         id: modeListPopup
+        readonly property ShellPalette shellPalette: root.shellPalette
         anchor.item: modeButton
         anchor.rect.x: 0
         anchor.rect.y: modeButton.height + 4
@@ -317,7 +324,7 @@ Item {
                                 anchors.leftMargin: 12
                                 anchors.rightMargin: 8
                                 text: modelData.label
-                                color: delegateRoot.isSelected ? Styling.srItem("primary") : Colors.overSurface
+                                color: delegateRoot.isSelected ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurface
                                 font.family: Config.theme.font
                                 font.pixelSize: Config.theme.fontSize
                                 font.weight: delegateRoot.isSelected ? Font.Bold : Font.Normal

@@ -49,7 +49,9 @@ ActionGrid {
         {
             icon: Icons.shutdown,
             tooltip: "Power Off",
-            command: "systemctl poweroff"
+            command: "systemctl poweroff",
+            variant: "errorcontainer",
+            danger: true
         }
     ]
 

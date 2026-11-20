@@ -14,11 +14,14 @@ import QtQuick
 import QtTest
 import Quickshell
 import qs.modules.globals
+import "modules/widgets/dashboard/wallpapers/WallpaperFiles.js" as Files
 
 ShellRoot {
     QtObject {
         id: wallpaper
-        FRAME_FUNCTIONS
+        property string cacheDir: Quickshell.env("HOME") + "/.cache/nonchalant"
+        function getLockscreenFramePath(path) { return Files.framePath(path, cacheDir); }
+        function getLockscreenFrameUrl(path) { return Files.frameUrl(path, cacheDir, GlobalStates.wallpaperFrameRevisions); }
     }
     TestCase {
         name: "WallpaperFrames"
@@ -44,14 +47,6 @@ ShellRoot {
     Timer { interval: 10000; running: true; onTriggered: Qt.quit() }
 }
 '''
-# Exercise the production URL functions without creating desktop PanelWindows.
-wallpaper = (ROOT / "modules/widgets/dashboard/wallpapers/Wallpaper.qml").read_text()
-functions = []
-for name in ("getFileType", "getLockscreenFramePath", "getLockscreenFrameUrl"):
-    start = wallpaper.index("    function " + name + "(")
-    end = wallpaper.index("\n    }", start) + len("\n    }")
-    functions.append(wallpaper[start:end])
-QML = QML.replace("FRAME_FUNCTIONS", "\n".join(functions))
 
 
 @unittest.skipUnless(shutil.which("qs"), "Quickshell is required for runtime checks")

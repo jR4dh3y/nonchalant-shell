@@ -10,6 +10,7 @@ import qs.modules.theme
 // sequence when their page opens.
 Pane {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     default property alias cardData: body.data
     property alias headerData: trailing.data
     property string title: ""
@@ -38,13 +39,13 @@ Pane {
                 text: root.glyph
                 font.family: Icons.font
                 font.pixelSize: Styling.fontSize(0)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
             }
             StyledText {
                 Layout.fillWidth: true
                 text: root.title
                 elide: Text.ElideRight
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 font.pixelSize: Styling.fontSize(-2)
                 font.weight: Font.DemiBold
             }

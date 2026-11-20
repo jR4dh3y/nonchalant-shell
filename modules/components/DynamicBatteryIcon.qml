@@ -5,11 +5,13 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int percent: 100
     property bool charging: false
     property real size: 18
-    property color color: charging ? Colors.green : (percent < 20 ? Colors.error : (percent < 50 ? Colors.yellow : Colors.overBackground))
+    // Same thresholds as Battery.statusColor; plain ink when the level is fine.
+    property color color: charging ? root.shellPalette.success : (percent <= 15 ? root.shellPalette.danger : (percent <= 30 ? root.shellPalette.warning : root.shellPalette.overBackground))
     property bool animated: true
     property bool useMaterialFont: false
 

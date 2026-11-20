@@ -8,6 +8,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int maxContentWidth: 560
     readonly property int contentWidth: Math.min(width, maxContentWidth)
@@ -32,7 +33,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: 24
                 font.weight: Font.Bold
-                color: Colors.overSurface
+                color: root.shellPalette.overSurface
             }
 
             Text {
@@ -40,14 +41,14 @@ Item {
                 text: "The assistant uses Agent Client Protocol (ACP). Each local agent owns its authentication, models, tools, and billing; Nonchalant only provides the sidebar client."
                 font.family: Config.theme.font
                 font.pixelSize: 13
-                color: Colors.outline
+                color: root.shellPalette.overSurfaceVariant
                 wrapMode: Text.Wrap
             }
 
             StyledRect {
                 Layout.fillWidth: true
                 implicitHeight: 64
-                variant: "surface"
+                variant: "pane"
                 radius: Styling.radius(8)
 
                 RowLayout {
@@ -64,7 +65,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: 15
                             font.weight: Font.Bold
-                            color: Colors.overSurface
+                            color: root.shellPalette.overSurface
                         }
 
                         Text {
@@ -72,7 +73,7 @@ Item {
                             text: "Allow ACP agents to start and provide assistant features."
                             font.family: Config.theme.font
                             font.pixelSize: 12
-                            color: Colors.outline
+                            color: root.shellPalette.overSurfaceVariant
                             wrapMode: Text.Wrap
                         }
                     }
@@ -90,14 +91,14 @@ Item {
                 text: "AI is disabled. No ACP agent processes will be started."
                 font.family: Config.theme.font
                 font.pixelSize: 13
-                color: Colors.outline
+                color: root.shellPalette.overSurfaceVariant
                 wrapMode: Text.Wrap
             }
 
             StyledRect {
                 Layout.fillWidth: true
                 implicitHeight: workingDirectoryColumn.implicitHeight + 32
-                variant: "surface"
+                variant: "pane"
                 radius: Styling.radius(8)
                 enabled: Config.ai.enabled ?? true
                 opacity: enabled ? 1 : 0.5
@@ -113,7 +114,7 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: 15
                         font.weight: Font.Bold
-                        color: Colors.overSurface
+                        color: root.shellPalette.overSurface
                     }
 
                     Text {
@@ -121,7 +122,7 @@ Item {
                         text: "New ACP sessions start here. Leave empty to use your home directory."
                         font.family: Config.theme.font
                         font.pixelSize: 12
-                        color: Colors.outline
+                        color: root.shellPalette.overSurfaceVariant
                         wrapMode: Text.Wrap
                     }
 
@@ -130,7 +131,7 @@ Item {
                         Layout.fillWidth: true
                         text: Config.ai && Config.ai.workingDirectory ? Config.ai.workingDirectory : ""
                         placeholderText: "~/code/project"
-                        color: Colors.overSurface
+                        color: root.shellPalette.overSurface
                         font.family: Config.theme.font
                         onEditingFinished: {
                             if (Config.ai && Config.ai.workingDirectory !== text)
@@ -141,7 +142,7 @@ Item {
                             variant: "internalbg"
                             radius: Styling.radius(4)
                             border.width: workingDirectoryInput.activeFocus ? 2 : 0
-                            border.color: Styling.srItem("primary")
+                            border.color: Styling.srItem("primary", root.shellPalette)
                         }
                     }
                 }
@@ -154,7 +155,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: 18
                 font.weight: Font.Bold
-                color: Colors.overSurface
+                color: root.shellPalette.overSurface
             }
 
             Repeater {
@@ -165,7 +166,7 @@ Item {
                     required property var modelData
                     Layout.fillWidth: true
                     implicitHeight: agentColumn.implicitHeight + 32
-                    variant: Ai.currentAgentId === modelData.id ? "focus" : "surface"
+                    variant: Ai.currentAgentId === modelData.id ? "focus" : "pane"
                     radius: Styling.radius(8)
 
                     ColumnLayout {
@@ -196,7 +197,7 @@ Item {
                                     font.family: Config.theme.font
                                     font.pixelSize: 16
                                     font.weight: Font.Bold
-                                    color: Colors.overSurface
+                                    color: root.shellPalette.overSurface
                                 }
 
                                 Text {
@@ -204,7 +205,7 @@ Item {
                                     text: modelData.description || ""
                                     font.family: Config.theme.font
                                     font.pixelSize: 12
-                                    color: Colors.outline
+                                    color: root.shellPalette.overSurfaceVariant
                                     wrapMode: Text.Wrap
                                 }
                             }
@@ -215,7 +216,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: 12
                                 color: Ai.sessionReady && Ai.currentAgentId === modelData.id
-                                    ? Colors.success : Styling.srItem("overprimary")
+                                    ? root.shellPalette.success : Styling.srItem("overprimary", root.shellPalette)
                             }
                         }
 
@@ -232,7 +233,7 @@ Item {
                                 text: modelData.command.join(" ")
                                 font.family: "Monospace"
                                 font.pixelSize: 12
-                                color: Colors.outline
+                                color: root.shellPalette.overSurfaceVariant
                                 wrapMode: Text.WrapAnywhere
                             }
                         }
@@ -242,7 +243,7 @@ Item {
                             text: modelData.installHint || ""
                             font.family: Config.theme.font
                             font.pixelSize: 12
-                            color: Colors.outline
+                            color: root.shellPalette.overSurfaceVariant
                             wrapMode: Text.Wrap
                         }
 
@@ -263,7 +264,7 @@ Item {
 
                                 contentItem: Text {
                                     text: parent.text
-                                    color: Colors.overSurface
+                                    color: root.shellPalette.overSurface
                                     font.family: Config.theme.font
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
@@ -284,7 +285,7 @@ Item {
 
                                 contentItem: Text {
                                     text: parent.text
-                                    color: parent.enabled ? Colors.overPrimary : Colors.outline
+                                    color: parent.enabled ? root.shellPalette.overPrimary : root.shellPalette.outline
                                     font.family: Config.theme.font
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
@@ -299,7 +300,7 @@ Item {
                 Layout.fillWidth: true
                 visible: (Config.ai.enabled ?? true) && Ai.currentSessionModelId.length > 0
                 implicitHeight: activeSessionColumn.implicitHeight + 32
-                variant: "surface"
+                variant: "pane"
                 radius: Styling.radius(8)
 
                 ColumnLayout {
@@ -313,7 +314,7 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: 15
                         font.weight: Font.Bold
-                        color: Colors.overSurface
+                        color: root.shellPalette.overSurface
                     }
 
                     Text {
@@ -322,7 +323,7 @@ Item {
                             + (Ai.currentModeId ? "\nMode: " + Ai.currentModeId : "")
                         font.family: "Monospace"
                         font.pixelSize: 12
-                        color: Colors.outline
+                        color: root.shellPalette.overSurfaceVariant
                         wrapMode: Text.WrapAnywhere
                     }
                 }

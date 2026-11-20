@@ -8,6 +8,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     Layout.fillHeight: true
 
@@ -28,8 +29,8 @@ Item {
     }
 
     // Propiedades opcionales para sobrescribir colores
-    property color customProgressColor: Styling.srItem("overprimary")
-    property color customBackgroundColor: Colors.shadow
+    property color customProgressColor: Styling.srItem("overprimary", root.shellPalette)
+    property color customBackgroundColor: root.shellPalette.shadow
     property bool useCustomColors: false
 
     StyledSlider {
@@ -38,8 +39,8 @@ Item {
         enabled: root.length > 0 && (root.player?.canSeek ?? false)
 
         value: root.playbackProgress()
-        progressColor: root.useCustomColors ? root.customProgressColor : Styling.srItem("overprimary")
-        backgroundColor: root.useCustomColors ? root.customBackgroundColor : Colors.shadow
+        progressColor: root.useCustomColors ? root.customProgressColor : Styling.srItem("overprimary", root.shellPalette)
+        backgroundColor: root.useCustomColors ? root.customBackgroundColor : root.shellPalette.shadow
         wavy: true // Always use WavyLine logic
         playing: root.isPlaying // Control animation state via playing property
         wavyAmplitude: root.isPlaying ? 1 : 0.0

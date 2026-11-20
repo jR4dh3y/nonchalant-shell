@@ -13,6 +13,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     
     implicitWidth: 464
     implicitHeight: 320
@@ -725,11 +726,11 @@ Item {
                                 text: appName
                                 color: {
                                     if (isExpanded) {
-                                        return Styling.srItem("pane");
+                                        return Styling.srItem("pane", root.shellPalette);
                                     } else if (appLauncher.selectedIndex === index) {
-                                        return Styling.srItem("primary");
+                                        return Styling.srItem("primary", root.shellPalette);
                                     } else {
-                                        return Colors.overBackground;
+                                        return root.shellPalette.overBackground;
                                     }
                                 }
                                 font.family: Config.theme.font
@@ -753,11 +754,11 @@ Item {
                                 text: appComment || ""
                                 color: {
                                     if (isExpanded) {
-                                        return Styling.srItem("pane");
+                                        return Styling.srItem("pane", root.shellPalette);
                                     } else if (appLauncher.selectedIndex === index) {
-                                        return Styling.srItem("primary");
+                                        return Styling.srItem("primary", root.shellPalette);
                                     } else {
-                                        return Colors.outline;
+                                        return root.shellPalette.overSurfaceVariant;
                                     }
                                 }
                                 font.family: Config.theme.font
@@ -799,7 +800,7 @@ Item {
                         ClippingRectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36 * 2
-                            color: Colors.background
+                            color: root.shellPalette.background
                             radius: Styling.radius(0)
 
                             ListView {
@@ -812,8 +813,8 @@ Item {
                                     {
                                         text: "Launch",
                                         icon: Icons.launch,
-                                        highlightColor: Styling.srItem("overprimary"),
-                                        textColor: Styling.srItem("primary"),
+                                        variant: "primary",
+                                        textColor: Styling.srItem("primary", root.shellPalette),
                                         action: function () {
                                             appLauncher.executeApp(appId);
                                             Visibilities.setActiveModule("");
@@ -822,8 +823,8 @@ Item {
                                     {
                                         text: "Create Shortcut",
                                         icon: Icons.shortcut,
-                                        highlightColor: Colors.secondary,
-                                        textColor: Styling.srItem("secondary"),
+                                        variant: "secondary",
+                                        textColor: Styling.srItem("secondary", root.shellPalette),
                                         action: function () {
                                             let desktopDir = Quickshell.env("XDG_DESKTOP_DIR") || Quickshell.env("HOME") + "/Desktop";
                                             let timestamp = Date.now();
@@ -846,21 +847,8 @@ Item {
                                 preferredHighlightEnd: height
 
                                 highlight: StyledRect {
-                                    variant: {
-                                        if (optionsListView.currentIndex >= 0 && optionsListView.currentIndex < optionsListView.count) {
-                                            var item = optionsListView.model[optionsListView.currentIndex];
-                                            if (item && item.highlightColor) {
-                                                if (item.highlightColor === Colors.secondary)
-                                                    return "secondary";
-                                                if (item.highlightColor === Colors.tertiary)
-                                                    return "tertiary";
-                                                if (item.highlightColor === Colors.error)
-                                                    return "error";
-                                                return "primary";
-                                            }
-                                        }
-                                        return "primary";
-                                    }
+                                    // Each option names its variant; its textColor is that variant's ink.
+                                    variant: optionsListView.model[optionsListView.currentIndex]?.variant ?? "primary"
                                     radius: Styling.radius(0)
                                     visible: optionsListView.currentIndex >= 0
                                     z: -1
@@ -903,7 +891,7 @@ Item {
                                                     if (optionsListView.currentIndex === index && modelData && modelData.textColor) {
                                                         return modelData.textColor;
                                                     }
-                                                    return Colors.overSurface;
+                                                    return root.shellPalette.overSurface;
                                                 }
 
                                                 Behavior on color {
@@ -927,7 +915,7 @@ Item {
                                                     if (optionsListView.currentIndex === index && modelData && modelData.textColor) {
                                                         return modelData.textColor;
                                                     }
-                                                    return Colors.overSurface;
+                                                    return root.shellPalette.overSurface;
                                                 }
                                                 elide: Text.ElideRight
                                                 maximumLineCount: 1

@@ -9,6 +9,7 @@ import qs.modules.theme
 
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property bool bluetooth: false
     property bool ownsDiscovery: false
     signal settingsRequested(string page)
@@ -109,7 +110,7 @@ ColumnLayout {
                 : NetworkService.wifiConnecting ? "Connecting…" : NetworkService.wifiScanning ? "Looking for networks…"
                 : NetworkService.wifiEnabled ? "Not connected" : "Wi-Fi is turned off"
             wrapMode: Text.WordWrap
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
             font.pixelSize: Styling.fontSize(-1)
         }
         DeckSection {
@@ -172,14 +173,14 @@ ColumnLayout {
                 StyledText {
                     visible: !root.bluetooth && NetworkService.wifiEnabled && availableNetworks.networks.length === 0 && !NetworkService.wifiScanning
                     text: "No other networks found. Try scanning again."
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                 }
                 StyledText {
                     visible: root.bluetooth && BluetoothService.devices.filter(device => !device.connected).length === 0
                     text: BluetoothService.enabled ? BluetoothService.discovering ? "Searching for nearby devices… Put your device in pairing mode." : "No new devices found. Scan to search again." : "Turn Bluetooth on to see devices."
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                 }

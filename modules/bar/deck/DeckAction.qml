@@ -8,6 +8,7 @@ import qs.modules.theme
 
 Button {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     enum Kind { Plain, Tab, Icon, Action, Tile }
     property int kind: DeckAction.Plain
     property string glyph: ""
@@ -19,6 +20,12 @@ Button {
     // Selected accent actions fill with the primary color, like active toggles.
     property bool accent: false
     property bool quiet: false
+    // Inactive content (an empty workspace, a muted channel): subdued ink
+    // until the action is selected or focused.
+    property bool subdued: false
+    // Destructive accent actions arm on an error container and keep a danger
+    // glyph at rest.
+    property bool destructive: false
     wheelEnabled: false
     property string imageSource: ""
     property int textElide: Text.ElideRight
@@ -28,8 +35,9 @@ Button {
     readonly property bool tile: kind === DeckAction.Tile
     readonly property bool filled: selected && accent
     // Tabs draw no selected surface: the rail's sliding indicator sits behind them.
-    readonly property color ink: (kind === DeckAction.Tab || filled) && selected ? Styling.srItem("primary")
-        : selected || visualFocus ? surface.item : Colors.overBackground
+    property color ink: kind === DeckAction.Tab && selected ? Styling.srItem("primary", root.shellPalette)
+        : selected || visualFocus ? surface.item
+        : root.subdued ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
     signal secondaryClicked()
     signal middleClicked()
     signal scrolled(real delta)
@@ -45,13 +53,13 @@ Button {
 
     background: StyledRect {
         id: surface
-        variant: root.filled ? "primary" : "focus"
+        variant: root.filled ? (root.destructive ? "errorcontainer" : "primary") : "focus"
         radius: root.kind === DeckAction.Icon ? Styling.pillRadius(height) : Styling.radius(-6)
         enableBorder: root.visualFocus
         backgroundOpacity: root.kind === DeckAction.Tab && root.selected ? 0
             : root.selected || root.visualFocus || root.kind === DeckAction.Action ? 1 : 0
         Behavior on backgroundOpacity { enabled: DeckMotion.enabled; NumberAnimation { duration: DeckMotion.closeDuration } }
-        HoverTint { hovered: root.hovered; pressed: root.pressed; hoverOpacity: 0.08; pressedOpacity: 0.16 }
+        HoverTint { hovered: root.hovered && !root.selected; pressed: root.pressed && !root.selected }
     }
     contentItem: GridLayout {
         id: contents
@@ -76,7 +84,7 @@ Button {
             text: root.glyph || Icons.apps
             font.family: Icons.font
             font.pixelSize: Styling.fontSize(3)
-            color: root.ink
+            color: root.destructive && !root.selected ? root.shellPalette.danger : root.ink
             // A fixed glyph column keeps labels aligned down a list.
             Layout.preferredWidth: Styling.fontSize(3) * 1.15
             horizontalAlignment: Text.AlignHCenter
@@ -100,7 +108,7 @@ Button {
             text: root.detail
             font.pixelSize: Styling.fontSize(-3)
             font.weight: Font.DemiBold
-            color: root.selected || root.visualFocus ? root.ink : Colors.overSurfaceVariant
+            color: root.selected || root.visualFocus ? root.ink : root.shellPalette.overSurfaceVariant
             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
         }
     }

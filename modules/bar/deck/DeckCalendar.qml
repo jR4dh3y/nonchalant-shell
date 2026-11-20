@@ -10,6 +10,7 @@ import qs.modules.theme
 // weeks share the card's full height.
 RowLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     objectName: "deckCalendar"
     required property date today
     property int monthOffset: 0
@@ -42,7 +43,7 @@ RowLayout {
             Item { Layout.fillHeight: true }
             StyledText {
                 text: root.today.getDate()
-                color: Colors.primary
+                color: root.shellPalette.primary
                 font.pixelSize: Styling.fontSize(0) * 3.6
                 font.weight: Font.Bold
             }
@@ -56,7 +57,7 @@ RowLayout {
             StyledText {
                 Layout.fillWidth: true
                 text: Qt.formatDateTime(root.today, "MMMM yyyy") + " · Week " + root.isoWeek(root.today)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 font.pixelSize: Styling.fontSize(-2)
                 elide: Text.ElideRight
             }
@@ -87,7 +88,7 @@ RowLayout {
                     StyledText {
                         Layout.fillWidth: true
                         text: WeatherService.weatherDescription
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         font.pixelSize: Styling.fontSize(-2)
                         elide: Text.ElideRight
                     }
@@ -98,7 +99,7 @@ RowLayout {
                 visible: WeatherService.dataAvailable
                 text: "H " + Math.round(WeatherService.maxTemp) + "° · L " + Math.round(WeatherService.minTemp) + "°"
                     + (WeatherService.sunset !== "" ? " · Sunset " + WeatherService.sunset : "")
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 font.pixelSize: Styling.fontSize(-3)
                 elide: Text.ElideRight
             }
@@ -106,7 +107,7 @@ RowLayout {
                 Layout.fillWidth: true
                 visible: !WeatherService.dataAvailable
                 text: WeatherService.isLoading ? "Fetching weather…" : "Weather unavailable"
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 font.pixelSize: Styling.fontSize(-1)
             }
         }
@@ -151,7 +152,7 @@ RowLayout {
                     Layout.preferredWidth: 1
                     text: modelData
                     horizontalAlignment: Text.AlignHCenter
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     font.pixelSize: Styling.fontSize(-3)
                     font.weight: index > 4 ? Font.Bold : Font.Medium
                 }
@@ -201,7 +202,8 @@ RowLayout {
                                 anchors.centerIn: parent
                                 width: Math.min(parent.width, parent.height) * 0.92
                                 height: width
-                                variant: "primary"
+                                // Today matches the dashboard calendar: primaryContainer.
+                                variant: "primarycontainer"
                                 radius: Styling.pillRadius(width)
                                 enableBorder: false
                                 visible: day.current
@@ -209,8 +211,7 @@ RowLayout {
                             StyledText {
                                 anchors.centerIn: parent
                                 text: day.shownNumber
-                                color: day.current ? Styling.srItem("primary") : day.inMonth ? Colors.overBackground : Colors.overSurfaceVariant
-                                opacity: day.inMonth ? 1 : 0.55
+                                color: day.current ? Styling.srItem("primarycontainer", root.shellPalette) : day.inMonth ? root.shellPalette.overBackground : root.shellPalette.overSurfaceVariant
                                 font.weight: day.current || day.inMonth ? Font.DemiBold : Font.Normal
                                 font.pixelSize: Styling.fontSize(-2)
                             }

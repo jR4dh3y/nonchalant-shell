@@ -5,14 +5,17 @@ import qs.config
 
 ClippingRectangle {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
-    property color stripeColor: Colors.criticalRed
+    // Critical cue: danger stripes around content that sits on the
+    // mode-aware background, so text keeps its contrast in light mode.
+    property color stripeColor: root.shellPalette.danger
     property int stripeWidth: 8
     property int stripeSpacing: 20
     property int animationDuration: 1000
     property bool animationRunning: true
 
-    color: Colors.shadow
+    color: root.shellPalette.background
 
     Repeater {
         model: Math.ceil((parent.width + parent.height) / root.stripeWidth)
@@ -41,7 +44,7 @@ ClippingRectangle {
         anchors.fill: parent
         anchors.topMargin: 4
         anchors.bottomMargin: 4
-        color: Colors.shadow
+        color: root.shellPalette.background
     }
 
     Rectangle {
@@ -55,6 +58,6 @@ ClippingRectangle {
         anchors.fill: parent
         anchors.topMargin: 8
         anchors.bottomMargin: 8
-        color: Colors.shadow
+        color: root.shellPalette.background
     }
 }

@@ -11,6 +11,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     required property Item bar
     // The island embeds the switcher on its own surface, so it hides this.
@@ -44,7 +45,8 @@ Item {
 
     StyledRect {
         id: activeIndicator
-        variant: "focus"
+        objectName: "activeWorkspaceHighlight"
+        variant: "primary"
         z: 1
         x: root.activeWorkspaceButton ? workspaceRow.x + root.activeWorkspaceButton.x : workspaceRow.x
         y: workspaceRow.y
@@ -101,9 +103,13 @@ Item {
                 readonly property bool active: workspace?.active ?? false
                 readonly property list<CompositorWindow> windows: CompositorService.windowsForWorkspace(modelData)
                 readonly property bool occupied: windows.length > 0
+                readonly property bool urgent: workspace?.is_urgent ?? false
                 readonly property string displayName: workspace?.isNamed ? workspace.name : String(workspace?.idx ?? "")
                 readonly property bool showLabel: !active || !occupied
 
+                objectName: "workspaceButton-" + modelData
+                Accessible.role: Accessible.Button
+                Accessible.name: displayName
                 Layout.preferredWidth: showLabel ? workspaceName.implicitWidth + 16 : Math.max(32, appsRow.implicitWidth + 10)
                 Layout.preferredHeight: 28
                 scale: workspaceMouse.pressed ? 0.94 : 1.0
@@ -121,6 +127,7 @@ Item {
                 }
 
                 StyledRect {
+                    objectName: workspaceButton.objectName + "-background"
                     anchors.fill: parent
                     variant: "transparent"
                     radius: Styling.radius(5)
@@ -134,17 +141,14 @@ Item {
 
                 StyledText {
                     id: workspaceName
+                    objectName: workspaceButton.objectName + "-label"
                     z: 1
                     anchors.centerIn: parent
                     visible: opacity > 0
                     // Opacity-only show/hide — scale resamples glyphs soft.
                     opacity: workspaceButton.showLabel ? 1 : 0
                     text: workspaceButton.displayName
-                    color: workspaceButton.workspace?.is_urgent
-                        ? Colors.red
-                        : (workspaceButton.active
-                            ? activeIndicator.item
-                            : (workspaceButton.occupied ? Styling.srItem("overprimary") : Colors.overBackground))
+                    color: Styling.workspaceLabelColor(workspaceButton.active, workspaceButton.occupied, workspaceButton.urgent, root.shellPalette)
                     font.family: Config.theme.font
                     font.pixelSize: Config.theme.fontSize
                     font.weight: workspaceButton.occupied ? Font.DemiBold : Font.Medium

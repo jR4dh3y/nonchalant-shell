@@ -20,7 +20,8 @@ CircularBarMeter {
             return Icons.speakerLow;
         return Icons.speakerHigh;
     }
-    progressColor: audioDevice?.muted ? Colors.outline : Styling.srItem("overprimary")
+    iconColor: audioDevice?.muted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
+    progressColor: audioDevice?.muted ? root.shellPalette.outlineVariant : Styling.srItem("overprimary", root.shellPalette)
     tooltipText: (audioDevice?.muted ? "Muted " : "Volume ") + Math.round(value * 100) + "%"
 
     onAdjusted: newValue => {

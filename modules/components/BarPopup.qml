@@ -15,6 +15,7 @@ PopupWindow {
 
     // Required: the item this popup anchors to
     required property Item anchorItem
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(anchorItem)
     // Measure the visual gap from the bar's outer edge, while keeping the
     // originating control as the vertical/morph anchor.
     property Item edgeItem: anchorItem

@@ -10,10 +10,11 @@ import qs.config
 // Titlebar for control panels with title, status, toggle and action buttons
 RowLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property string title: ""
     property string statusText: ""
-    property color statusColor: Styling.srItem("overprimary")
+    property color statusColor: Styling.srItem("overprimary", root.shellPalette)
     property bool showToggle: false
     property bool toggleChecked: false
 
@@ -44,7 +45,7 @@ RowLayout {
         font.family: Config.theme.font
         font.pixelSize: Styling.fontSize(0)
         font.weight: Font.Medium
-        color: Colors.overBackground
+        color: root.shellPalette.overBackground
         elide: Text.ElideRight
         // fillWidth makes this shrinkable when the panel is too narrow;
         // maximumWidth: implicitWidth keeps it from expanding into the slack
@@ -108,7 +109,7 @@ RowLayout {
                 text: actionButton.modelData.icon || ""
                 font.family: Icons.font
                 font.pixelSize: 14
-                color: actionButton.isLoading ? Styling.srItem("overprimary") : (actionButton.enabled ? Colors.overBackground : Colors.outline)
+                color: actionButton.isLoading ? Styling.srItem("overprimary", root.shellPalette) : (actionButton.enabled ? root.shellPalette.overBackground : root.shellPalette.outline)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
 
@@ -149,8 +150,8 @@ RowLayout {
             x: toggleSwitch.leftPadding
             y: parent.height / 2 - height / 2
             radius: Styling.pillRadius(height)
-            color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
-            border.color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.outline
+            color: toggleSwitch.checked ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.surfaceBright
+            border.color: toggleSwitch.checked ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
 
             Behavior on color {
                 enabled: Config.animDuration > 0
@@ -165,7 +166,7 @@ RowLayout {
                 width: parent.height - 4
                 height: width
                 radius: Styling.pillRadius(width)
-                color: toggleSwitch.checked ? Colors.background : Colors.overSurfaceVariant
+                color: toggleSwitch.checked ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
 
                 Behavior on x {
                     enabled: Config.animDuration > 0

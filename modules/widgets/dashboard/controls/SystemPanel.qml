@@ -9,6 +9,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int maxContentWidth: 480
     readonly property int contentWidth: Math.min(width, maxContentWidth)
@@ -60,7 +61,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             Layout.bottomMargin: -4
                         }
 
@@ -75,7 +76,7 @@ Item {
                                 text: "Location"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(0)
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                                 Layout.preferredWidth: 100
                             }
 
@@ -93,7 +94,7 @@ Item {
                                     anchors.margins: 8
                                     font.family: Config.theme.font
                                     font.pixelSize: Styling.fontSize(0)
-                                    color: Colors.overBackground
+                                    color: root.shellPalette.overBackground
                                     selectByMouse: true
                                     clip: true
                                     verticalAlignment: TextInput.AlignVCenter
@@ -119,7 +120,7 @@ Item {
                                         visible: !locationInput.text && !locationInput.activeFocus
                                         text: "e.g. Buenos Aires, Tokyo..."
                                         font: locationInput.font
-                                        color: Colors.overSurfaceVariant
+                                        color: root.shellPalette.overSurfaceVariant
                                     }
                                 }
                             }
@@ -136,7 +137,7 @@ Item {
                                 text: "Unit"
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(0)
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                                 Layout.preferredWidth: 100
                             }
 
@@ -210,7 +211,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             Layout.bottomMargin: -4
                         }
 
@@ -220,7 +221,7 @@ Item {
                             text: "Toggle visual effects to improve performance"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             opacity: 0.7
                         }
 
@@ -285,7 +286,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             Layout.bottomMargin: -4
                         }
 
@@ -295,7 +296,7 @@ Item {
                             text: "Configure which disks to monitor"
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             opacity: 0.7
                         }
 
@@ -330,7 +331,7 @@ Item {
                                             anchors.margins: 8
                                             font.family: Config.theme.monoFont
                                             font.pixelSize: Styling.monoFontSize(0)
-                                            color: Colors.overBackground
+                                            color: root.shellPalette.overBackground
                                             selectByMouse: true
                                             clip: true
                                             verticalAlignment: TextInput.AlignVCenter
@@ -349,7 +350,7 @@ Item {
                                                 visible: !diskInput.text && !diskInput.activeFocus
                                                 text: "e.g. /, /home..."
                                                 font: diskInput.font
-                                                color: Colors.overSurfaceVariant
+                                                color: root.shellPalette.overSurfaceVariant
                                             }
                                         }
                                     }
@@ -370,7 +371,7 @@ Item {
                                             text: Icons.trash
                                             font.family: Icons.font
                                             font.pixelSize: 14
-                                            color: Colors.error
+                                            color: root.shellPalette.error
                                         }
 
                                         MouseArea {
@@ -476,7 +477,7 @@ Item {
             text: numberInputRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             Layout.fillWidth: true
         }
 
@@ -494,7 +495,7 @@ Item {
                 anchors.margins: 8
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 selectByMouse: true
                 clip: true
                 verticalAlignment: TextInput.AlignVCenter
@@ -529,7 +530,7 @@ Item {
             text: numberInputRowRoot.suffix
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
             visible: suffix !== ""
         }
     }
@@ -551,7 +552,7 @@ Item {
             text: textInputRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             Layout.preferredWidth: 100
         }
 
@@ -569,7 +570,7 @@ Item {
                 anchors.margins: 8
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 selectByMouse: true
                 clip: true
                 verticalAlignment: TextInput.AlignVCenter
@@ -589,7 +590,7 @@ Item {
                     text: textInputRowRoot.placeholder
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     visible: textInputField.text === ""
                 }
 
@@ -620,7 +621,7 @@ Item {
                 text: label
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
 
             Text {
@@ -630,7 +631,7 @@ Item {
                 text: description
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(-2)
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 opacity: 0.7
             }
         }
@@ -643,7 +644,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: Styling.radius(-4)
-                color: Colors.background
+                color: root.shellPalette.background
                 visible: !checked
             }
 
@@ -667,7 +668,7 @@ Item {
                     font.hintingPreference: Font.PreferFullHinting
                     anchors.centerIn: parent
                     text: Icons.accept
-                    color: Styling.srItem("primary")
+                    color: Styling.srItem("primary", root.shellPalette)
                     font.family: Icons.font
                     font.pixelSize: 16
                     scale: checked ? 1.0 : 0.0

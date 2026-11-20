@@ -754,7 +754,7 @@ class TestFeature16_WeatherDetailsAndMediaCenter(unittest.TestCase):
 
         # 5-day forecast strip with vertical separators
         self.assertIn("WeatherService.forecast.slice(0, 5)", content)
-        self.assertIn("Colors.outlineVariant", content)
+        self.assertIn("root.shellPalette.outlineVariant", content)
         self.assertIn("maxTemp", content)
         self.assertIn("minTemp", content)
 
@@ -928,9 +928,9 @@ class TestFeature18_WallpaperParityAndLifecycle(unittest.TestCase):
         with open("modules/widgets/dashboard/wallpapers/Wallpaper.qml", "r", encoding="utf-8") as f:
             qml_content = f.read()
 
-        self.assertIn("stopMpvpaper", qml_content)
-        self.assertIn("killMpvpaperProcess", qml_content)
-        self.assertIn('getFileType(path) !== \'video\'', qml_content)
+        self.assertIn('exec mpvpaper -o "$MPV_OPTS" "$MONITOR" "$WALLPAPER"', sh_content)
+        self.assertIn('active: Files.type(wallpaper.effectiveWallpaper) === "video"', qml_content)
+        self.assertRegex(qml_content, r"Component.onDestruction: \{\s*wallpaper.videoPlaying = false;\s*mpvpaperProcess.running = false;")
 
 
 class TestFeature20_DropdownStylingPaletteColorsAndDND(unittest.TestCase):
@@ -957,12 +957,14 @@ class TestFeature20_DropdownStylingPaletteColorsAndDND(unittest.TestCase):
         with open("modules/bar/island/IslandStatusIcons.qml", "r", encoding="utf-8") as f:
             status_content = f.read()
 
-        # No hardcoded yellow/green rainbow colors assigned to bar icons
-        self.assertNotIn("Colors.yellow", status_content)
-        self.assertNotIn("Colors.green", status_content)
-        self.assertIn("Colors.overBackground", status_content)
-        self.assertIn("Colors.primary", status_content)
-        self.assertIn("Colors.error", status_content)
+        # Status icons read the fixed status roles, never the terminal slots,
+        # and mute is inactive ink rather than an error.
+        for slot in ("red", "yellow", "green"):
+            self.assertNotIn("shellPalette." + slot, status_content)
+        for role in ("success", "danger", "warning", "overBackground"):
+            self.assertIn("shellPalette." + role, status_content)
+        self.assertIn("if (isMuted || volumeVal < 0.01) return root.shellPalette.overSurfaceVariant;", status_content)
+        self.assertNotIn("shellPalette.error", status_content)
 
     def test_dnd_and_alerts_suppression(self):
         with open("modules/services/Notifications.qml", "r", encoding="utf-8") as f:

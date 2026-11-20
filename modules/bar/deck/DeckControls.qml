@@ -13,6 +13,7 @@ import qs.modules.theme
 // Pages narrower than the three channels and the rack stack the rack below them.
 GridLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     required property ShellScreen screen
     // The dash's settled page width; the rack needs about thirty font sizes beside the levels.
     required property real pageWidth
@@ -48,6 +49,7 @@ GridLayout {
             }
             DeckChannel {
                 objectName: "deckInput"
+                levelColor: root.shellPalette.secondary
                 Layout.fillHeight: true
                 Layout.preferredWidth: Styling.fontSize(0) * 4.4
                 muteCapable: true
@@ -212,7 +214,7 @@ GridLayout {
                     StyledText {
                         visible: Audio.outputDevices.length === 0
                         text: "No output devices"
-                        color: Colors.overSurfaceVariant
+                        color: root.shellPalette.overSurfaceVariant
                         font.pixelSize: Styling.fontSize(-1)
                     }
                 }

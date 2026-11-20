@@ -10,6 +10,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property int maxContentWidth: 480
     readonly property int contentWidth: Math.min(width, maxContentWidth)
@@ -20,7 +21,7 @@ Item {
     }
 
     // Available color names for color picker
-    readonly property var colorNames: Colors.availableColorNames
+    readonly property var colorNames: root.shellPalette.availableColorNames
 
     // Color picker state
     property bool colorPickerActive: false
@@ -75,7 +76,7 @@ Item {
                 text: actionBtn.icon
                 font.family: Icons.font
                 font.pixelSize: 20
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
                 visible: actionBtn.icon !== ""
             }
 
@@ -86,7 +87,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
                 font.bold: true
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 Layout.fillWidth: true
             }
 
@@ -96,7 +97,7 @@ Item {
                 text: Icons.arrowSquareOut
                 font.family: Icons.font
                 font.pixelSize: 18
-                color: Colors.overSurfaceVariant
+                color: root.shellPalette.overSurfaceVariant
             }
         }
 
@@ -137,7 +138,7 @@ Item {
             text: toggleRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             Layout.fillWidth: true
         }
 
@@ -157,8 +158,8 @@ Item {
                 x: toggleSwitch.leftPadding
                 y: parent.height / 2 - height / 2
                 radius: Styling.pillRadius(height)
-                color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.surfaceBright
-                border.color: toggleSwitch.checked ? Styling.srItem("overprimary") : Colors.outline
+                color: toggleSwitch.checked ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.surfaceBright
+                border.color: toggleSwitch.checked ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
 
                 Behavior on color {
                     enabled: Config.animDuration > 0
@@ -173,7 +174,7 @@ Item {
                     width: parent.height - 4
                     height: width
                     radius: Styling.pillRadius(width)
-                    color: toggleSwitch.checked ? Colors.background : Colors.overSurfaceVariant
+                    color: toggleSwitch.checked ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.overSurfaceVariant
 
                     Behavior on x {
                         enabled: Config.animDuration > 0
@@ -207,7 +208,7 @@ Item {
             text: numberInputRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             Layout.fillWidth: true
         }
 
@@ -225,7 +226,7 @@ Item {
                 anchors.margins: 8
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 selectByMouse: true
                 clip: true
                 verticalAlignment: TextInput.AlignVCenter
@@ -260,7 +261,7 @@ Item {
             text: numberInputRowRoot.suffix
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
             visible: suffix !== ""
         }
     }
@@ -282,7 +283,7 @@ Item {
             text: textInputRowRoot.label
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(0)
-            color: Colors.overBackground
+            color: root.shellPalette.overBackground
             Layout.preferredWidth: 100
         }
 
@@ -300,7 +301,7 @@ Item {
                 anchors.margins: 8
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(0)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 selectByMouse: true
                 clip: true
                 verticalAlignment: TextInput.AlignVCenter
@@ -320,7 +321,7 @@ Item {
                     text: textInputRowRoot.placeholder
                     font.family: Config.theme.font
                     font.pixelSize: Styling.fontSize(0)
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                     visible: textInputField.text === ""
                 }
 
@@ -357,7 +358,7 @@ Item {
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-1)
             font.weight: Font.Medium
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
             visible: selectorRowRoot.label !== ""
         }
 
@@ -439,7 +440,7 @@ Item {
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-1)
             font.weight: Font.Medium
-            color: Colors.overSurfaceVariant
+            color: root.shellPalette.overSurfaceVariant
         }
 
         Text {
@@ -448,7 +449,7 @@ Item {
             text: "Empty = all screens"
             font.family: Config.theme.font
             font.pixelSize: Styling.fontSize(-2)
-            color: Colors.outline
+            color: root.shellPalette.outline
             Layout.bottomMargin: 4
         }
 
@@ -574,7 +575,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             Layout.bottomMargin: -4
                         }
 
@@ -676,7 +677,7 @@ Item {
                             text: "When enabled, Nonchalant sends track metadata such as artist and title to LRCLIB to find matching lyrics."
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             wrapMode: Text.Wrap
                         }
 
@@ -721,7 +722,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             Layout.bottomMargin: -4
                         }
 
@@ -765,7 +766,7 @@ Item {
                             text: "When enabled, Nonchalant sends track metadata such as artist and title to LRCLIB to find matching lyrics."
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-2)
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             wrapMode: Text.Wrap
                         }
                     }
@@ -784,7 +785,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             Layout.bottomMargin: -4
                         }
 
@@ -817,7 +818,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
                             font.weight: Font.Medium
-                            color: Colors.overSurfaceVariant
+                            color: root.shellPalette.overSurfaceVariant
                             Layout.bottomMargin: -4
                         }
 

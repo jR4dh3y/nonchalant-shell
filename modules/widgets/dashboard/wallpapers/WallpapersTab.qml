@@ -5,12 +5,12 @@ import Quickshell.Widgets
 import qs.modules.theme
 import qs.modules.components
 import qs.modules.globals
-import qs.modules.services
 import qs.config
 
 // Componente principal para el selector de fondos de pantalla.
 FocusScope {
     id: wallpapersTabRoot
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(wallpapersTabRoot)
 
     // Propiedades personalizadas para la funcionalidad del componente.
     property string searchText: ""
@@ -22,7 +22,8 @@ FocusScope {
         selectedIndex = newIndex;
     }
 
-    readonly property string currentScreenName: CompositorService.focusedMonitor ? CompositorService.focusedMonitor.name : ""
+    required property string screenName
+    readonly property string currentScreenName: screenName
 
     property bool isPerScreen: {
         if (!GlobalStates.wallpaperManager || currentScreenName === "") return false;
@@ -348,7 +349,7 @@ FocusScope {
                             if (isPerScreen && currentScreenName !== "") {
                                 GlobalStates.wallpaperManager.setWallpaper(selectedWallpaper, currentScreenName);
                             } else {
-                                GlobalStates.wallpaperManager.setWallpaper(selectedWallpaper);
+                                GlobalStates.wallpaperManager.setWallpaper(selectedWallpaper, "");
                             }
                         }
                     }
@@ -367,9 +368,13 @@ FocusScope {
                 property bool keyboardNavigationActive: false
 
                 StyledRect {
-                    variant: perScreenCheckboxContainer.keyboardNavigationActive && perScreenCheckbox.activeFocus ? "focus" : "pane"
+                    variant: "pane"
                     anchors.fill: parent
                     radius: Styling.radius(4)
+
+                    FocusRing {
+                        shown: perScreenCheckboxContainer.keyboardNavigationActive && perScreenCheckbox.activeFocus
+                    }
                     opacity: 1.0
 
                     Behavior on opacity {
@@ -388,7 +393,7 @@ FocusScope {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            color: Colors.background
+                            color: wallpapersTabRoot.shellPalette.background
                             radius: Styling.radius(0)
 
                             Text {
@@ -399,7 +404,7 @@ FocusScope {
                                 leftPadding: 10
                                 rightPadding: 10
                                 text: currentScreenName
-                                color: Colors.overSurface
+                                color: wallpapersTabRoot.shellPalette.overSurface
                                 font.family: Config.theme.font
                                 font.pixelSize: Config.theme.fontSize
                                 font.weight: Font.Medium
@@ -455,7 +460,7 @@ FocusScope {
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: Styling.radius(0)
-                                    color: Colors.background
+                                    color: wallpapersTabRoot.shellPalette.background
                                     visible: !perScreenCheckbox.checked
                                 }
 
@@ -479,7 +484,7 @@ FocusScope {
                                         font.hintingPreference: Font.PreferFullHinting
                                         anchors.centerIn: parent
                                         text: Icons.accept
-                                        color: Styling.srItem("primary")
+                                        color: Styling.srItem("primary", wallpapersTabRoot.shellPalette)
                                         font.family: Icons.font
                                         font.pixelSize: 20
                                         scale: perScreenCheckbox.checked ? 1.0 : 0.0
@@ -651,7 +656,7 @@ FocusScope {
                         width: parent.width - wallpapersTabRoot.wallpaperMargin * 2
                         height: parent.height - wallpapersTabRoot.wallpaperMargin * 2
                         color: "transparent"
-                        border.color: Styling.srItem("overprimary")
+                        border.color: Styling.srItem("overprimary", wallpapersTabRoot.shellPalette)
                         border.width: 2
                         visible: selectedIndex >= 0
                         radius: Styling.radius(4)
@@ -665,7 +670,7 @@ FocusScope {
                             anchors.leftMargin: -20
                             anchors.rightMargin: -20
                             color: "transparent"
-                            border.color: Colors.background
+                            border.color: wallpapersTabRoot.shellPalette.background
                             border.width: 28
                             radius: Styling.radius(24)
                             z: 5
@@ -721,7 +726,9 @@ FocusScope {
                                             }
                                             return "";
                                         }
-                                        color: parent.parent.isCurrentWallpaper ? Styling.srItem("overprimary") : Colors.overBackground
+                                        // The applied wallpaper is context (secondary); the
+                                        // keyboard selection owns the primary outline.
+                                        color: parent.parent.isCurrentWallpaper ? wallpapersTabRoot.shellPalette.secondary : wallpapersTabRoot.shellPalette.overBackground
                                         // Small bold filenames are noticeably soft with Qt's
                                         // distance-field renderer on a light background.
                                         renderType: Text.NativeRendering
@@ -837,8 +844,11 @@ FocusScope {
 
                         ClippingRectangle {
                             anchors.fill: parent
-                            color: Colors.surface
+                            color: wallpapersTabRoot.shellPalette.surface
                             radius: Styling.radius(4)
+                            // Applied on this output but not selected: a secondary outline.
+                            border.color: wallpapersTabRoot.shellPalette.secondary
+                            border.width: isCurrentWallpaper && !isSelected ? 2 : 0
 
                                 // Lazy loader que solo carga cuando el item está visible
                                 Loader {
@@ -851,7 +861,7 @@ FocusScope {
                                 // Placeholder mientras carga
                                 Rectangle {
                                     anchors.fill: parent
-                                    color: Colors.surface
+                                    color: wallpapersTabRoot.shellPalette.surface
                                     visible: !parent.active || parent.status !== Loader.Ready
 
                                     Text {
@@ -861,7 +871,7 @@ FocusScope {
                                         text: Icons.circleNotch
                                         font.family: Icons.font
                                         font.pixelSize: 24
-                                        color: Colors.overSurfaceVariant
+                                        color: wallpapersTabRoot.shellPalette.overSurfaceVariant
                                         rotation: 0
 
                                         NumberAnimation on rotation {
@@ -905,7 +915,7 @@ FocusScope {
                                 if (isPerScreen && currentScreenName !== "") {
                                     GlobalStates.wallpaperManager.setWallpaper(modelData, currentScreenName);
                                 } else {
-                                    GlobalStates.wallpaperManager.setWallpaper(modelData);
+                                    GlobalStates.wallpaperManager.setWallpaper(modelData, "");
                                 }
                             }
                         }

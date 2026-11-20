@@ -8,6 +8,7 @@ import qs.config
 
 FocusScope {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property alias actions: repeater.model
     property string layout: "row" // "row" or "grid"
@@ -119,6 +120,11 @@ FocusScope {
                     id: delegateWrapper
                     readonly property bool isSeparator: (modelData.type === "separator")
                     property var actionModel: modelData
+                    // The highlight's paired ink while current, including the
+                    // press (scale gives the press feedback). Destructive
+                    // actions keep a danger glyph at rest.
+                    readonly property color inkColor: index === root.currentIndex && highlight.targetItem ? highlight.item
+                        : (modelData.danger ? root.shellPalette.danger : root.shellPalette.overBackground)
 
                     implicitWidth: isSeparator ? (root.layout === "row" ? 2 : root.buttonSize) : (root.buttonSize + (hasText ? textMetrics.width + root.textSpacing : 0))
                     implicitHeight: isSeparator ? (root.layout === "row" ? root.buttonSize : 2) : root.buttonSize
@@ -190,7 +196,7 @@ FocusScope {
                                 textFormat: Text.RichText
                                 font.family: Icons.font
                                 font.pixelSize: root.iconSize
-                                color: actionButton.pressed ? Styling.srItem("overprimary") : (index === root.currentIndex ? (highlight.targetItem ? highlight.item : Styling.srItem("primary")) : Colors.overBackground)
+                                color: delegateWrapper.inkColor
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
 
@@ -216,7 +222,7 @@ FocusScope {
                                 font.family: Config.defaultFont
                                 font.pixelSize: root.iconSize * 0.7
                                 font.weight: Font.DemiBold
-                                color: actionButton.pressed ? Styling.srItem("overprimary") : (index === root.currentIndex ? (highlight.targetItem ? highlight.item : Styling.srItem("primary")) : Colors.overBackground)
+                                color: delegateWrapper.inkColor
                                 verticalAlignment: Text.AlignVCenter
 
                                 Behavior on color {

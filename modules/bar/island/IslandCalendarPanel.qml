@@ -9,6 +9,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 420
     implicitHeight: mainCol.implicitHeight + 28
@@ -57,7 +58,7 @@ Item {
                     text: Icons.arrowLeft
                     font.family: Icons.font
                     font.pixelSize: 14
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -81,7 +82,7 @@ Item {
                 font.family: Config.theme.font
                 font.pixelSize: Styling.fontSize(1)
                 font.bold: true
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
             }
 
             Item { Layout.fillWidth: true }
@@ -110,7 +111,7 @@ Item {
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(10)
                     font.bold: true
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
             }
         }

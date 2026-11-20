@@ -3,6 +3,7 @@ import qs.modules.theme
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     property real radius: 18
     property bool active: true
@@ -39,7 +40,7 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.5; color: Colors.withAlpha(Colors.overBackground, 0.20) }
+            GradientStop { position: 0.5; color: root.shellPalette.withAlpha(root.shellPalette.overBackground, 0.20) }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
@@ -53,7 +54,7 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.5; color: Colors.primary }
+            GradientStop { position: 0.5; color: root.shellPalette.primary }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }

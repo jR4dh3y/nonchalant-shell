@@ -13,6 +13,7 @@ import qs.config
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     implicitWidth: 400
     implicitHeight: mainColumn.implicitHeight + 28
@@ -147,7 +148,7 @@ Item {
                         font.family: Config.theme.monoFont
                         font.pixelSize: Styling.fontSize(4)
                         font.bold: true
-                        color: clockDateMouse.containsMouse ? Colors.primary : Colors.overBackground
+                        color: clockDateMouse.containsMouse ? root.shellPalette.primary : root.shellPalette.overBackground
 
                         Behavior on color {
                             ColorAnimation { duration: 150 }
@@ -168,7 +169,7 @@ Item {
                         text: Qt.formatDate(new Date(), "ddd, d MMM")
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
-                        color: clockDateMouse.containsMouse ? (Colors.primaryFixed ?? Colors.primary) : Colors.overSurfaceVariant
+                        color: clockDateMouse.containsMouse ? (root.shellPalette.primaryFixed ?? root.shellPalette.primary) : root.shellPalette.overSurfaceVariant
                         Layout.maximumWidth: 160
                         elide: Text.ElideRight
 
@@ -217,7 +218,8 @@ Item {
                         text: WeatherService.weatherSymbol || Icons.sun
                         font.family: Icons.font
                         font.pixelSize: 15
-                        color: Colors.yellow
+                        // Day primary, night secondary; never a terminal slot.
+                        color: WeatherService.isDay ? root.shellPalette.primary : root.shellPalette.secondary
                     }
 
                     Text {
@@ -227,7 +229,7 @@ Item {
                         font.family: Config.theme.font
                         font.pixelSize: Styling.fontSize(-1)
                         font.bold: true
-                        color: weatherMouse.containsMouse ? Colors.primary : Colors.overBackground
+                        color: weatherMouse.containsMouse ? root.shellPalette.primary : root.shellPalette.overBackground
                     }
                 }
 
@@ -263,7 +265,7 @@ Item {
                         text: Notifications.silent ? Icons.bellZ : Icons.bell
                         font.family: Icons.font
                         font.pixelSize: 15
-                        color: Notifications.silent ? Colors.primary : Colors.overBackground
+                        color: Notifications.silent ? root.shellPalette.primary : root.shellPalette.overBackground
                     }
 
                     StyledRect {
@@ -282,7 +284,7 @@ Item {
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-4)
                             font.bold: true
-                            color: Colors.overPrimary
+                            color: root.shellPalette.overPrimary
                         }
                     }
                 }
@@ -315,7 +317,7 @@ Item {
                     text: Icons.gear
                     font.family: Icons.font
                     font.pixelSize: 15
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 MouseArea {
@@ -332,9 +334,10 @@ Item {
             // Power Menu trigger button
             StyledRect {
                 implicitHeight: 32
+                id: powerTile
                 implicitWidth: 32
                 radius: Styling.pillRadius(width)
-                variant: powerMouse.containsMouse ? "error" : "internalbg"
+                variant: powerMouse.containsMouse ? "errorcontainer" : "internalbg"
                 scale: powerMouse.pressed ? 0.92 : 1.0
 
                 PressBehavior on scale {
@@ -349,7 +352,7 @@ Item {
                     text: Icons.shutdown
                     font.family: Icons.font
                     font.pixelSize: 15
-                    color: powerMouse.containsMouse ? Colors.overError : Colors.red
+                    color: powerMouse.containsMouse ? powerTile.item : root.shellPalette.danger
                 }
 
                 MouseArea {
@@ -570,9 +573,9 @@ Item {
                 buttonSize: quickTilesRow.tileButtonSize
                 showArc: true
                 value: root.audioMuted ? 0 : root.audioVolume
-                arcColor: root.audioMuted ? Colors.outlineVariant : Colors.primary
+                arcColor: root.audioMuted ? root.shellPalette.outlineVariant : root.shellPalette.primary
                 icon: root.audioMuted ? Icons.speakerSlash : (root.audioVolume > 0.5 ? Icons.speakerHigh : (root.audioVolume > 0 ? Icons.speakerLow : Icons.speakerSlash))
-                iconColor: root.audioMuted ? Colors.error : Colors.overBackground
+                iconColor: root.audioMuted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
                 tooltipText: (root.audioMuted ? "Muted " : "Volume ") + Math.round(root.audioVolume * 100) + "%"
                 onClicked: (mouse) => {
                     if (mouse.button === Qt.RightButton) {
@@ -594,9 +597,9 @@ Item {
                 readonly property real micVol: Audio.source?.audio?.volume ?? 0.0
                 showArc: true
                 value: micMuted ? 0 : micVol
-                arcColor: micMuted ? Colors.outlineVariant : Colors.primary
+                arcColor: micMuted ? root.shellPalette.outlineVariant : root.shellPalette.secondary
                 icon: micMuted ? Icons.micSlash : Icons.mic
-                iconColor: micMuted ? Colors.error : Colors.overBackground
+                iconColor: micMuted ? root.shellPalette.overSurfaceVariant : root.shellPalette.overBackground
                 tooltipText: (micMuted ? "Mic Muted " : "Mic ") + Math.round(micVol * 100) + "%"
                 onClicked: (mouse) => {
                     if (mouse.button === Qt.RightButton) {
@@ -616,9 +619,9 @@ Item {
                 buttonSize: quickTilesRow.tileButtonSize
                 showArc: Battery.available
                 value: Battery.available ? (Battery.percentage / 100) : 0
-                arcColor: Battery.statusColor()
+                arcColor: Battery.statusColor(root.shellPalette)
                 icon: Battery.isPluggedIn ? Icons.plug : Battery.getBatteryIcon()
-                iconColor: Battery.isPluggedIn ? Colors.primary : (Battery.percentage <= 20 ? Colors.error : Colors.overBackground)
+                iconColor: Battery.isCharging || Battery.percentage <= 30 ? Battery.statusColor(root.shellPalette) : root.shellPalette.overBackground
                 tooltipText: Battery.available ? `${Battery.percentage}%${Battery.isPluggedIn ? " (Charging)" : ""}` : "No Battery"
                 onClicked: (mouse) => root.openBattery()
             }
@@ -628,7 +631,7 @@ Item {
                 buttonSize: quickTilesRow.tileButtonSize
                 active: Notifications.silent
                 icon: Notifications.silent ? Icons.bellSlash : Icons.bell
-                iconColor: Notifications.silent ? Colors.overPrimary : Colors.overBackground
+                iconColor: Notifications.silent ? root.shellPalette.overPrimary : root.shellPalette.overBackground
                 tooltipText: Notifications.silent ? "Do Not Disturb: On" : "Do Not Disturb: Off"
                 onClicked: (mouse) => {
                     Visibilities.closeActiveBarPopup();
@@ -673,7 +676,7 @@ Item {
                     visible: root.brightnessAvailable
                     size: 20
                     value: brightSlider.value
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                     Layout.alignment: Qt.AlignVCenter
                 }
 
@@ -702,7 +705,7 @@ Item {
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-1)
                     font.bold: true
-                    color: Colors.overBackground
+                    color: root.shellPalette.overBackground
                 }
 
                 // Divider
@@ -744,7 +747,7 @@ Item {
                             text: Icons.moon
                             font.family: Icons.font
                             font.pixelSize: 14
-                            color: NightLightService.active ? Colors.overPrimary : Colors.overBackground
+                            color: NightLightService.active ? root.shellPalette.overPrimary : root.shellPalette.overBackground
                         }
 
                         Text {
@@ -758,7 +761,7 @@ Item {
                             font.family: Config.theme.monoFont
                             font.pixelSize: Styling.fontSize(-2)
                             font.bold: true
-                            color: NightLightService.active ? Colors.overPrimary : Colors.overSurfaceVariant
+                            color: NightLightService.active ? root.shellPalette.overPrimary : root.shellPalette.overSurfaceVariant
                         }
                     }
 
@@ -817,7 +820,7 @@ Item {
                     font.family: Config.theme.monoFont
                     font.pixelSize: Styling.fontSize(-2)
                     font.bold: true
-                    color: Colors.overSurfaceVariant
+                    color: root.shellPalette.overSurfaceVariant
                 }
 
                 Item { Layout.fillWidth: true }

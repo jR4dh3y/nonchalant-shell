@@ -10,6 +10,7 @@ import org.kde.syntaxhighlighting
 
 ColumnLayout {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
     property string code: ""
     property string language: "txt"
     property alias implicitWidth: root.width
@@ -22,7 +23,7 @@ ColumnLayout {
     StyledRect {
         Layout.fillWidth: true
         Layout.preferredHeight: 32
-        variant: "surface"
+        variant: "pane"
         topLeftRadius: Styling.radius(4)
         topRightRadius: Styling.radius(4)
         bottomLeftRadius: 0
@@ -42,7 +43,7 @@ ColumnLayout {
                 renderType: Text.NativeRendering
                 font.hintingPreference: Font.PreferFullHinting
                 text: root.language || "text"
-                color: Colors.outline
+                color: root.shellPalette.outline
                 font.family: Config.theme.font
                 font.pixelSize: 12
                 font.weight: Font.Bold
@@ -61,7 +62,7 @@ ColumnLayout {
                 contentItem: Text {
                     text: Icons.copy
                     font.family: Icons.font
-                    color: parent.hovered ? Styling.srItem("overprimary") : Colors.outline
+                    color: parent.hovered ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.outline
                     font.pixelSize: 14
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -84,7 +85,7 @@ ColumnLayout {
                     text: "Copied!"
                     font.family: Config.theme.font
                     font.pixelSize: 10
-                    color: Colors.success
+                    color: root.shellPalette.success
                     visible: false
                     anchors.right: parent.left
                     anchors.verticalCenter: parent.verticalCenter
@@ -121,7 +122,7 @@ ColumnLayout {
             text: root.code
             font.family: "Monospace"
             font.pixelSize: 13
-            color: Colors.overSurface
+            color: root.shellPalette.overSurface
             readOnly: true
             selectByMouse: true
             wrapMode: TextEdit.Wrap

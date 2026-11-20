@@ -8,6 +8,7 @@ import qs.modules.components
 
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     Layout.fillHeight: !resizeParent || vertical
     Layout.fillWidth: !resizeParent || !vertical
@@ -30,8 +31,8 @@ Item {
     property real dragPosition: 0.0
     property real progressRatio: isDragging ? dragPosition : value
     property string tooltipText: `${Math.round(value * 100)}%`
-    property color progressColor: Styling.srItem("overprimary")
-    property color backgroundColor: Colors.surfaceBright
+    property color progressColor: Styling.srItem("overprimary", root.shellPalette)
+    property color backgroundColor: root.shellPalette.surfaceBright
     property bool wavy: false
     property bool playing: false // Nuevo estado para controlar la animación
     property real wavyAmplitude: 0.8
@@ -44,7 +45,7 @@ Item {
     property string iconPos: "start"
     property real size: 100
     property real thickness: 4
-    property color iconColor: Colors.overBackground
+    property color iconColor: root.shellPalette.overBackground
     property real handleSpacing: 4
     property bool resizeParent: true
     property real iconRotation: 0
@@ -131,7 +132,7 @@ Item {
                 width: root.isDragging ? 2 : 4
                 height: root.isDragging ? Math.max(20, root.thickness + 12) : Math.max(16, root.thickness + 8)
                 radius: Styling.radius(0)
-                color: Colors.overBackground
+                color: root.shellPalette.overBackground
                 z: 2
                 Behavior on width {
                     enabled: root.smoothDrag
@@ -313,7 +314,7 @@ Item {
         text: root.icon
         font.family: Icons.font
         font.pixelSize: 18
-        color: Colors.overBackground
+        color: root.shellPalette.overBackground
         rotation: root.iconRotation
         scale: root.iconScale
         x: !root.vertical ? (root.iconPos === "start" ? 0 : parent.width - width) : (parent.width - width) / 2
@@ -326,13 +327,13 @@ Item {
             z: 4
             onEntered: {
                 if (root.iconClickable) {
-                    iconColor = Styling.srItem("overprimary");
+                    iconColor = Styling.srItem("overprimary", root.shellPalette);
                     root.iconHovered(true);
                 }
             }
             onExited: {
                 if (root.iconClickable) {
-                    iconColor = Colors.overBackground;
+                    iconColor = root.shellPalette.overBackground;
                     root.iconHovered(false);
                 }
             }

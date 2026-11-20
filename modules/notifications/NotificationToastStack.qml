@@ -2,17 +2,18 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Widgets
-import Quickshell.Services.Notifications
 import qs.modules.services
 import qs.modules.theme
 import qs.modules.components
 import qs.config
+import "notification_utils.js" as NotificationUtils
 
 // In-panel toast stack. Enter: fade + light drop. Exit: fade + slight up.
 // Avoid sliding on +x while the host is right-anchored (that looked like
 // toasts "spawning away" off the right edge).
 Item {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root)
 
     // Name of the screen hosting this stack; toasts only show on the popup screen.
     required property string screenName
@@ -57,7 +58,7 @@ Item {
                 readonly property string appName: notif ? String(notif.appName || "") : ""
                 readonly property string summary: notif ? String(notif.summary || "") : ""
                 readonly property string body: notif ? String(notif.body || "") : ""
-                readonly property bool isCritical: notif !== null && notif.urgency === NotificationUrgency.Critical
+                readonly property bool isCritical: NotificationUtils.isCriticalUrgency(notif?.urgency)
 
                 property bool closing: false
                 property bool entered: false
@@ -193,7 +194,7 @@ Item {
                         radius: toastCard.radius
                         color: "transparent"
                         border.width: toastRoot.isCritical ? 2 : 0
-                        border.color: Colors.error
+                        border.color: root.shellPalette.danger
                         enabled: false
                         visible: toastRoot.isCritical
                     }
@@ -227,7 +228,7 @@ Item {
                                     text: toastRoot.isCritical ? Icons.alert : Icons.bell
                                     font.family: Icons.font
                                     font.pixelSize: 16
-                                    color: toastRoot.isCritical ? Colors.error : Styling.srItem("overprimary")
+                                    color: toastRoot.isCritical ? root.shellPalette.danger : Styling.srItem("overprimary", root.shellPalette)
                                 }
                             }
 
@@ -240,7 +241,7 @@ Item {
                                 font.family: Config.theme.font
                                 font.pixelSize: Styling.fontSize(-1)
                                 font.weight: Font.DemiBold
-                                color: Colors.overBackground
+                                color: root.shellPalette.overBackground
                                 elide: Text.ElideRight
                             }
 
@@ -265,7 +266,7 @@ Item {
                                     text: Icons.cancel
                                     font.family: Icons.font
                                     font.pixelSize: 14
-                                    color: cardMa.containsMouse && !toastRoot.closing ? Colors.overBackground : Colors.outline
+                                    color: cardMa.containsMouse && !toastRoot.closing ? root.shellPalette.overBackground : root.shellPalette.outline
                                 }
                             }
                         }
@@ -279,7 +280,7 @@ Item {
                             font.family: Config.theme.font
                             font.pixelSize: Config.theme.fontSize
                             font.weight: Font.Medium
-                            color: Colors.overBackground
+                            color: root.shellPalette.overBackground
                             wrapMode: Text.Wrap
                         }
 
@@ -292,7 +293,7 @@ Item {
                             textFormat: Text.StyledText
                             font.family: Config.theme.font
                             font.pixelSize: Styling.fontSize(-1)
-                            color: Colors.outline
+                            color: root.shellPalette.outline
                             wrapMode: Text.Wrap
                             maximumLineCount: 6
                             elide: Text.ElideRight

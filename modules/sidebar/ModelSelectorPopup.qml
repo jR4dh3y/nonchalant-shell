@@ -10,6 +10,7 @@ import qs.modules.components
 
 Popup {
     id: root
+    readonly property ShellPalette shellPalette: DisplayPalettes.forItem(root.parent)
 
     signal modelSelected(string agentName)
 
@@ -213,7 +214,7 @@ Popup {
                             text: Ai.fetchingModels ? Icons.circleNotch : (refreshBtn.confirming ? Icons.sync : Icons.arrowCounterClockwise)
                             font.family: Icons.font
                             font.pixelSize: 20
-                            color: refreshBtn.confirming ? Styling.srItem("primary") : Styling.srItem("overprimary")
+                            color: refreshBtn.confirming ? Styling.srItem("primary", root.shellPalette) : Styling.srItem("overprimary", root.shellPalette)
 
                             RotationAnimation on rotation {
                                 loops: Animation.Infinite
@@ -248,7 +249,7 @@ Popup {
                         font.family: Config.theme.font
                         font.pixelSize: 13
                         font.weight: Font.Bold
-                        color: Styling.srItem("primary")
+                        color: Styling.srItem("primary", root.shellPalette)
 
                         opacity: refreshBtn.confirming ? 1 : 0
                         visible: opacity > 0
@@ -263,8 +264,12 @@ Popup {
                 }
 
                 background: StyledRect {
-                    variant: parent.confirming ? "primary" : (parent.hovered || parent.activeFocus ? "focus" : "pane")
+                    variant: parent.confirming ? "primary" : (parent.hovered ? "focus" : "pane")
                     radius: Styling.radius(4)
+
+                    FocusRing {
+                        shown: refreshBtn.activeFocus
+                    }
 
                     Behavior on color {
                         enabled: Config.animDuration > 0
@@ -473,7 +478,7 @@ Popup {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
                             text: modelData.name
-                            color: delegateBtn.isSelected ? Styling.srItem("primary") : (delegateBtn.isActiveModel ? Styling.srItem("overprimary") : Colors.overBackground)
+                            color: delegateBtn.isSelected ? Styling.srItem("primary", root.shellPalette) : (delegateBtn.isActiveModel ? Styling.srItem("overprimary", root.shellPalette) : root.shellPalette.overBackground)
                             font.family: Config.theme.font
                             font.pixelSize: 14
                             font.weight: Font.Medium
@@ -493,7 +498,7 @@ Popup {
                             renderType: Text.NativeRendering
                             font.hintingPreference: Font.PreferFullHinting
                             text: "ACP • " + modelData.command.join(" ")
-                            color: delegateBtn.isSelected ? Styling.srItem("primary") : Colors.outline
+                            color: delegateBtn.isSelected ? Styling.srItem("primary", root.shellPalette) : root.shellPalette.outline
                             font.family: Config.theme.font
                             font.pixelSize: 11
                             Layout.fillWidth: true
@@ -523,7 +528,7 @@ Popup {
                             font.family: Icons.font
                             font.pixelSize: 16
                             // On primary highlight, color should be readable. srPrimary itemColor usually contrasts well.
-                            color: delegateBtn.isSelected ? Styling.srItem("primary") : Styling.srItem("overprimary")
+                            color: delegateBtn.isSelected ? Styling.srItem("primary", root.shellPalette) : Styling.srItem("overprimary", root.shellPalette)
                             visible: delegateBtn.isActiveModel
 
                             Behavior on color {
